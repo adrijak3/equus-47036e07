@@ -46,7 +46,7 @@ export default function Paskyra() {
   const { user, profile, refreshProfile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
-  const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean }[]>([]);
+  const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,10 +69,12 @@ export default function Paskyra() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
+    // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
+    try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
     const [b, s, m, p, ts] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", user.id).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", user.id).order("purchase_date", { ascending: false }),
-      supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
       supabase.from("permanent_slots").select("*").eq("user_id", user.id).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
     ]);
@@ -83,6 +85,15 @@ export default function Paskyra() {
     setAvailableSlots(ts.data ?? []);
     setLoading(false);
   };
+
+  // Mark received admin replies as read once user opens the page
+  useEffect(() => {
+    if (!user) return;
+    const unread = messages.filter((m) => m.from_admin && !m.read_by_user).map((m) => m.id);
+    if (unread.length > 0) {
+      supabase.from("messages").update({ read_by_user: true }).in("id", unread);
+    }
+  }, [messages, user]);
 
   useEffect(() => { load(); }, [user]);
 
