@@ -216,7 +216,7 @@ export default function Paskyra() {
           <TabsTrigger value="lessons">Pamokos</TabsTrigger>
           <TabsTrigger value="subs">Abonementai</TabsTrigger>
           <TabsTrigger value="messages">Žinutės</TabsTrigger>
-          <TabsTrigger value="settings"><Settings className="w-3.5 h-3.5" /></TabsTrigger>
+          <TabsTrigger value="settings" className="gap-1.5"><Settings className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuostatos</span></TabsTrigger>
         </TabsList>
 
         {/* LESSONS */}
