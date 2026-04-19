@@ -98,25 +98,42 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          from_admin: boolean
           id: string
+          parent_id: string | null
           read_by_admin: boolean
+          read_by_user: boolean
           user_id: string
         }
         Insert: {
           body: string
           created_at?: string
+          from_admin?: boolean
           id?: string
+          parent_id?: string | null
           read_by_admin?: boolean
+          read_by_user?: boolean
           user_id: string
         }
         Update: {
           body?: string
           created_at?: string
+          from_admin?: boolean
           id?: string
+          parent_id?: string | null
           read_by_admin?: boolean
+          read_by_user?: boolean
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permanent_slots: {
         Row: {
