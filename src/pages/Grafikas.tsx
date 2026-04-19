@@ -472,6 +472,80 @@ export default function Grafikas() {
         </div>
       )}
 
+      {/* Permanent cancel choice dialog */}
+      <Dialog open={!!permCancelDialog} onOpenChange={(o) => !o && setPermCancelDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
+              <Star className="w-5 h-5 fill-gold text-gold" /> Nuolatinis laikas
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Tai jūsų nuolatinis laikas. Ką norite daryti?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <button
+              onClick={() => {
+                const b = permCancelDialog!.booking;
+                setPermCancelDialog(null);
+                const hours = hoursUntil(b.slot_date, b.slot_time);
+                if (hours > 48) {
+                  setConfirmDialog({
+                    title: "Atšaukti tik šią pamoką?",
+                    description: "Nuolatinis laikas išliks ateities savaitėms.",
+                    onConfirm: () => cancelSingleBooking(b),
+                  });
+                } else {
+                  setCancelDialog({ booking: b });
+                  setCancelReason("");
+                  setCancelSickness(false);
+                }
+              }}
+              className="w-full text-left p-4 rounded-md border border-gold/20 hover:border-gold/50 hover:bg-gold/5 transition-colors"
+            >
+              <div className="font-medium text-foreground">Atšaukti tik šią pamoką</div>
+              <div className="text-xs text-muted-foreground mt-1">Vienkartinis atšaukimas — kitos savaitės liks.</div>
+            </button>
+            <button
+              onClick={() => {
+                const b = permCancelDialog!.booking;
+                setPermCancelDialog(null);
+                setConfirmDialog({
+                  title: "Pašalinti nuolatinį laiką VISAM laikui?",
+                  description: "Visos jūsų būsimos pamokos šiuo laiku bus atšauktos. Šio veiksmo atšaukti negalėsite.",
+                  onConfirm: () => removePermanentForever(b),
+                });
+              }}
+              className="w-full text-left p-4 rounded-md border border-destructive/20 hover:border-destructive/50 hover:bg-destructive/5 transition-colors"
+            >
+              <div className="font-medium text-destructive">Pašalinti nuolatinį laiką visam laikui</div>
+              <div className="text-xs text-muted-foreground mt-1">Visos būsimos pamokos šiuo laiku bus atšauktos.</div>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPermCancelDialog(null)}>Atgal</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generic confirm dialog */}
+      <Dialog open={!!confirmDialog} onOpenChange={(o) => !o && setConfirmDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">{confirmDialog?.title}</DialogTitle>
+            {confirmDialog?.description && (
+              <DialogDescription className="text-muted-foreground">{confirmDialog.description}</DialogDescription>
+            )}
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmDialog(null)}>Atgal</Button>
+            <Button variant="gold" onClick={() => { confirmDialog?.onConfirm(); setConfirmDialog(null); }}>
+              Patvirtinti
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Late cancel dialog */}
       <Dialog open={!!cancelDialog} onOpenChange={(o) => !o && setCancelDialog(null)}>
         <DialogContent className="bg-gradient-card border-gold/20">
