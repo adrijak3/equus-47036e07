@@ -212,11 +212,16 @@ export default function Paskyra() {
       </motion.header>
 
       <Tabs defaultValue="lessons">
-        <TabsList className="grid grid-cols-4 w-full bg-background/50 mb-6">
-          <TabsTrigger value="lessons">Pamokos</TabsTrigger>
-          <TabsTrigger value="subs">Abonementai</TabsTrigger>
-          <TabsTrigger value="messages">Žinutės</TabsTrigger>
-          <TabsTrigger value="settings" className="gap-1.5"><Settings className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuostatos</span></TabsTrigger>
+        <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto">
+          <TabsTrigger value="lessons" className="text-xs sm:text-sm">Pamokos</TabsTrigger>
+          <TabsTrigger value="subs" className="text-xs sm:text-sm">Abonementai</TabsTrigger>
+          <TabsTrigger value="permanent" className="gap-1 text-xs sm:text-sm">
+            <Star className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuolatiniai</span>
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="text-xs sm:text-sm">Žinutės</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm">
+            <Settings className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuostatos</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* LESSONS */}
