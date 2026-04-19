@@ -200,50 +200,44 @@ export default function Grafikas() {
     loadData();
   };
 
+  const cancelSingleBooking = async (booking: Booking) => {
+    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pamoka atšaukta");
+    loadData();
+  };
+
+  const removePermanentForever = async (booking: Booking) => {
+    if (!user) return;
+    const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
+    const { data: ps } = await supabase
+      .from("permanent_slots").select("id")
+      .eq("user_id", user.id).eq("day_of_week", dow).eq("slot_time", booking.slot_time)
+      .maybeSingle();
+    if (ps?.id) await supabase.from("permanent_slots").delete().eq("id", ps.id);
+    await supabase.from("bookings").update({ status: "cancelled" })
+      .eq("user_id", user.id).eq("slot_time", booking.slot_time)
+      .gte("slot_date", booking.slot_date).eq("status", "active");
+    toast.success("Nuolatinis laikas pašalintas. Visos būsimos pamokos atšauktos.");
+    loadData();
+  };
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
 
-    // Permanent booking: ask whether to cancel just this one or remove the standing slot
+    // Permanent booking → ask via dialog whether single or forever
     if (perm) {
-      const choice = window.prompt(
-        "Tai NUOLATINIS laikas.\n\nĮrašykite:\n  1 — atšaukti tik šią pamoką\n  2 — pašalinti nuolatinį laiką VISAM laikui (visos būsimos pamokos bus atšauktos)",
-        "1",
-      );
-      if (choice !== "1" && choice !== "2") return;
-
-      if (choice === "2") {
-        // Find permanent slot row
-        const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
-        const { data: ps } = await supabase
-          .from("permanent_slots")
-          .select("id")
-          .eq("user_id", user!.id)
-          .eq("day_of_week", dow)
-          .eq("slot_time", booking.slot_time)
-          .maybeSingle();
-        if (ps?.id) await supabase.from("permanent_slots").delete().eq("id", ps.id);
-        // Cancel this + all future bookings of same user/dow/time
-        await supabase
-          .from("bookings")
-          .update({ status: "cancelled" })
-          .eq("user_id", user!.id)
-          .eq("slot_time", booking.slot_time)
-          .gte("slot_date", booking.slot_date)
-          .eq("status", "active");
-        toast.success("Nuolatinis laikas pašalintas");
-        loadData();
-        return;
-      }
-      // choice === "1" → fall through to single-cancel
+      setPermCancelDialog({ booking });
+      return;
     }
 
     if (hours > 48) {
-      if (!confirm("Atšaukti pamoką?")) return;
-      const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Pamoka atšaukta");
-      loadData();
+      setConfirmDialog({
+        title: "Atšaukti pamoką?",
+        description: "Pamoka bus pažymėta kaip atšaukta.",
+        onConfirm: () => cancelSingleBooking(booking),
+      });
     } else {
       setCancelDialog({ booking });
       setCancelReason("");
