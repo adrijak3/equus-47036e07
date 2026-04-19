@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star } from "lucide-react";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; }
 interface CancelReq {
