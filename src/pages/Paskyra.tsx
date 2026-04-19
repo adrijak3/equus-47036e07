@@ -647,40 +647,4 @@ function SubscriptionCard({ s, onMarkPaid }: { s: Subscription; onMarkPaid?: (id
     </div>
   );
 }
-  const remaining = s.lessons_total - s.lessons_used;
-  const expired = new Date(s.expires_at) < new Date();
-  const empty = remaining <= 0;
-  return (
-    <div className={cn(
-      "p-5 rounded-lg border bg-gradient-card transition-all",
-      empty ? "border-destructive/40 shadow-[0_0_30px_-8px_hsl(var(--destructive)/0.3)]" : "border-gold/15",
-      expired && "opacity-60",
-    )}>
-      <div className="flex items-baseline justify-between mb-3">
-        <span className="text-3xl font-display text-gradient-gold tabular-nums">
-          {s.lessons_used}/{s.lessons_total}
-        </span>
-        {s.paid ? (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Apmokėta
-          </span>
-        ) : (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 flex items-center gap-1">
-            <XCircle className="w-3 h-3" /> Neapmokėta
-          </span>
-        )}
-      </div>
-      <div className="text-sm space-y-1 text-muted-foreground">
-        <div>Pirkta: <span className="text-foreground">{s.purchase_date}</span></div>
-        <div>Galioja iki: <span className={cn("text-foreground", expired && "text-destructive")}>{s.expires_at}</span></div>
-        <div>Suma: <span className="text-foreground tabular-nums">{Number(s.price).toFixed(2)} €</span></div>
-        {s.sickness_credits > 0 && (
-          <div className="text-blush">+{s.sickness_credits} (liga)</div>
-        )}
-      </div>
-      {empty && !expired && (
-        <p className="mt-3 text-xs text-destructive font-medium">Pamokos baigėsi — pridėkite naują abonementą</p>
-      )}
-    </div>
-  );
-}
+
