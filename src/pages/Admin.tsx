@@ -421,3 +421,70 @@ function MessagesTab() {
     </ul>
   );
 }
+
+/* ---------- PERMANENT SLOTS (admin overview) ---------- */
+interface PermSlotRow { id: string; user_id: string; day_of_week: number; slot_time: string; profile_name?: string; }
+
+function PermanentSlotsAdminTab() {
+  const [rows, setRows] = useState<PermSlotRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("permanent_slots").select("*").order("day_of_week").order("slot_time");
+    const ids = Array.from(new Set((data ?? []).map((r) => r.user_id)));
+    let nameMap: Record<string, string> = {};
+    if (ids.length) {
+      const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+      nameMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p.full_name]));
+    }
+    setRows((data ?? []).map((r) => ({ ...r, profile_name: nameMap[r.user_id] ?? "—" })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const remove = async (row: PermSlotRow) => {
+    if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?\n\nVartotojo būsimos pamokos NEBUS automatiškai atšauktos — tik nustos kartotis.`)) return;
+    const { error } = await supabase.from("permanent_slots").delete().eq("id", row.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pašalinta"); load();
+  };
+
+  if (loading) return <p className="text-center text-muted-foreground italic py-12">Kraunama…</p>;
+  if (rows.length === 0) return <p className="text-center text-muted-foreground italic py-12">Niekas neturi nuolatinių laikų</p>;
+
+  const byDay: Record<number, Record<string, PermSlotRow[]>> = {};
+  for (const r of rows) {
+    (byDay[r.day_of_week] ||= {})[r.slot_time] ||= [];
+    byDay[r.day_of_week][r.slot_time].push(r);
+  }
+
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {[1,2,3,4,5,6,7].filter((d) => byDay[d]).map((dow) => (
+        <div key={dow} className="bg-gradient-card border border-gold/15 rounded-lg p-4">
+          <h3 className="font-display text-lg text-gold mb-3 flex items-center gap-2">
+            <Star className="w-4 h-4 fill-gold" /> {WEEKDAYS_LT[dow - 1]}
+          </h3>
+          <ul className="space-y-3">
+            {Object.entries(byDay[dow]).sort(([a],[b]) => a.localeCompare(b)).map(([time, list]) => (
+              <li key={time}>
+                <div className="text-sm font-medium tabular-nums text-foreground mb-1">{formatTime(time)}</div>
+                <ul className="pl-3 space-y-1">
+                  {list.map((r) => (
+                    <li key={r.id} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground/85">• {r.profile_name}</span>
+                      <button onClick={() => remove(r)} className="text-muted-foreground hover:text-destructive">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
