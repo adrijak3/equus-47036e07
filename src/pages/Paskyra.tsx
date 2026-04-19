@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubscriptionPrice, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
+import { calculateSubscriptionPrice, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
 import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -46,7 +46,7 @@ export default function Paskyra() {
   const { user, profile, refreshProfile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
-  const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean }[]>([]);
+  const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,10 +69,12 @@ export default function Paskyra() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
+    // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
+    try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
     const [b, s, m, p, ts] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", user.id).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", user.id).order("purchase_date", { ascending: false }),
-      supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
       supabase.from("permanent_slots").select("*").eq("user_id", user.id).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
     ]);
@@ -83,6 +85,15 @@ export default function Paskyra() {
     setAvailableSlots(ts.data ?? []);
     setLoading(false);
   };
+
+  // Mark received admin replies as read once user opens the page
+  useEffect(() => {
+    if (!user) return;
+    const unread = messages.filter((m) => m.from_admin && !m.read_by_user).map((m) => m.id);
+    if (unread.length > 0) {
+      supabase.from("messages").update({ read_by_user: true }).in("id", unread);
+    }
+  }, [messages, user]);
 
   useEffect(() => { load(); }, [user]);
 
@@ -151,10 +162,35 @@ export default function Paskyra() {
   };
 
   const removePermanent = async (id: string) => {
-    if (!confirm("Pašalinti nuolatinį laiką? (Jau egzistuojančios registracijos liks — jas reikia atšaukti rankiniu būdu)")) return;
+    const slot = permanents.find((p) => p.id === id);
+    if (!slot) return;
+    if (!confirm("Pašalinti nuolatinį laiką? Visos jūsų būsimos pamokos šiuo laiku bus atšauktos.")) return;
     const { error } = await supabase.from("permanent_slots").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Pašalinta");
+    // Cancel all future active bookings for this user that fall on this weekday + time
+    const todayISO = formatDateISO(new Date());
+    const { data: future } = await supabase
+      .from("bookings")
+      .select("id, slot_date")
+      .eq("user_id", user!.id)
+      .eq("slot_time", slot.slot_time)
+      .gte("slot_date", todayISO)
+      .eq("status", "active");
+    const ids = (future ?? [])
+      .filter((b) => dbDayOfWeek(new Date(`${b.slot_date}T00:00:00`)) === slot.day_of_week)
+      .map((b) => b.id);
+    if (ids.length > 0) {
+      await supabase.from("bookings").update({ status: "cancelled" }).in("id", ids);
+    }
+    toast.success("Pašalinta. Būsimos pamokos atšauktos.");
+    load();
+  };
+
+  const markSubPaid = async (subId: string) => {
+    if (!confirm("Pažymėti šį abonementą kaip APMOKĖTĄ?")) return;
+    const { error } = await supabase.from("subscriptions").update({ paid: true }).eq("id", subId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pažymėta apmokėta. Administracija patvirtins.");
     load();
   };
 
@@ -229,7 +265,7 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} />)}
+              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} />)}
             </div>
           )}
         </TabsContent>
@@ -255,17 +291,28 @@ export default function Paskyra() {
             </div>
           </div>
           {messages.length > 0 && (
-            <Section title="Išsiųstos žinutės">
-              <ul className="divide-y divide-gold/5">
+            <Section title="Pokalbis su administracija">
+              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">
                 {messages.map((m) => (
-                  <li key={m.id} className="px-5 py-3">
-                    <div className="text-sm whitespace-pre-wrap">{m.body}</div>
-                    <div className="text-xs text-muted-foreground mt-1.5 flex justify-between">
-                      <span>{new Date(m.created_at).toLocaleString("lt-LT")}</span>
-                      <span className={m.read_by_admin ? "text-gold/70" : ""}>
-                        {m.read_by_admin ? "✓ Perskaityta" : "Nauja"}
+                  <li
+                    key={m.id}
+                    className={cn(
+                      "px-5 py-3",
+                      m.from_admin && "bg-gold/5",
+                    )}
+                  >
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span className={cn("text-xs uppercase tracking-wide", m.from_admin ? "text-gold" : "text-muted-foreground")}>
+                        {m.from_admin ? "✦ Administracija" : "Jūs"}
                       </span>
+                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
                     </div>
+                    <div className="text-sm whitespace-pre-wrap">{m.body}</div>
+                    {!m.from_admin && (
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        {m.read_by_admin ? "✓ Perskaityta" : "Išsiųsta"}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -547,13 +594,17 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
       </div>
       <div>
         {b.status === "cancelled" && <span className="text-xs px-2 py-0.5 rounded bg-destructive/15 text-destructive">Atšaukta</span>}
-        {past && b.status === "active" && <span className="text-xs text-gold/80">✓ Įvyko</span>}
+        {past && (b.status === "completed" || b.status === "active") && (
+          <span className="text-xs text-gold/80">
+            ✓ {b.counts_in_subscription === false ? "Įvyko (nesiskaičiuoja)" : "Įvyko"}
+          </span>
+        )}
       </div>
     </li>
   );
 }
 
-function SubscriptionCard({ s }: { s: Subscription }) {
+function SubscriptionCard({ s, onMarkPaid }: { s: Subscription; onMarkPaid?: (id: string) => void }) {
   const remaining = s.lessons_total - s.lessons_used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
@@ -572,9 +623,14 @@ function SubscriptionCard({ s }: { s: Subscription }) {
             <CheckCircle2 className="w-3 h-3" /> Apmokėta
           </span>
         ) : (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 flex items-center gap-1">
-            <XCircle className="w-3 h-3" /> Neapmokėta
-          </span>
+          <button
+            type="button"
+            onClick={() => onMarkPaid?.(s.id)}
+            className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 flex items-center gap-1 hover:bg-blush/25 transition-colors cursor-pointer"
+            title="Spauskite, kad pažymėtumėte kaip apmokėtą"
+          >
+            <XCircle className="w-3 h-3" /> Neapmokėta · pažymėti
+          </button>
         )}
       </div>
       <div className="text-sm space-y-1 text-muted-foreground">
@@ -591,3 +647,4 @@ function SubscriptionCard({ s }: { s: Subscription }) {
     </div>
   );
 }
+
