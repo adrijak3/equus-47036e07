@@ -118,6 +118,30 @@ export type Database = {
         }
         Relationships: []
       }
+      permanent_slots: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          id: string
+          slot_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          id?: string
+          slot_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          slot_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -288,12 +312,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      materialize_permanent_bookings: {
+        Args: { _end: string; _start: string }
+        Returns: number
       }
     }
     Enums: {
