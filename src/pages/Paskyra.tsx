@@ -265,7 +265,7 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} />)}
+              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} />)}
             </div>
           )}
         </TabsContent>
@@ -291,17 +291,28 @@ export default function Paskyra() {
             </div>
           </div>
           {messages.length > 0 && (
-            <Section title="Išsiųstos žinutės">
-              <ul className="divide-y divide-gold/5">
+            <Section title="Pokalbis su administracija">
+              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">
                 {messages.map((m) => (
-                  <li key={m.id} className="px-5 py-3">
-                    <div className="text-sm whitespace-pre-wrap">{m.body}</div>
-                    <div className="text-xs text-muted-foreground mt-1.5 flex justify-between">
-                      <span>{new Date(m.created_at).toLocaleString("lt-LT")}</span>
-                      <span className={m.read_by_admin ? "text-gold/70" : ""}>
-                        {m.read_by_admin ? "✓ Perskaityta" : "Nauja"}
+                  <li
+                    key={m.id}
+                    className={cn(
+                      "px-5 py-3",
+                      m.from_admin && "bg-gold/5",
+                    )}
+                  >
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span className={cn("text-xs uppercase tracking-wide", m.from_admin ? "text-gold" : "text-muted-foreground")}>
+                        {m.from_admin ? "✦ Administracija" : "Jūs"}
                       </span>
+                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
                     </div>
+                    <div className="text-sm whitespace-pre-wrap">{m.body}</div>
+                    {!m.from_admin && (
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        {m.read_by_admin ? "✓ Perskaityta" : "Išsiųsta"}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -583,13 +594,59 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
       </div>
       <div>
         {b.status === "cancelled" && <span className="text-xs px-2 py-0.5 rounded bg-destructive/15 text-destructive">Atšaukta</span>}
-        {past && b.status === "active" && <span className="text-xs text-gold/80">✓ Įvyko</span>}
+        {past && (b.status === "completed" || b.status === "active") && (
+          <span className="text-xs text-gold/80">
+            ✓ {b.counts_in_subscription === false ? "Įvyko (nesiskaičiuoja)" : "Įvyko"}
+          </span>
+        )}
       </div>
     </li>
   );
 }
 
-function SubscriptionCard({ s }: { s: Subscription }) {
+function SubscriptionCard({ s, onMarkPaid }: { s: Subscription; onMarkPaid?: (id: string) => void }) {
+  const remaining = s.lessons_total - s.lessons_used;
+  const expired = new Date(s.expires_at) < new Date();
+  const empty = remaining <= 0;
+  return (
+    <div className={cn(
+      "p-5 rounded-lg border bg-gradient-card transition-all",
+      empty ? "border-destructive/40 shadow-[0_0_30px_-8px_hsl(var(--destructive)/0.3)]" : "border-gold/15",
+      expired && "opacity-60",
+    )}>
+      <div className="flex items-baseline justify-between mb-3">
+        <span className="text-3xl font-display text-gradient-gold tabular-nums">
+          {s.lessons_used}/{s.lessons_total}
+        </span>
+        {s.paid ? (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Apmokėta
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onMarkPaid?.(s.id)}
+            className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 flex items-center gap-1 hover:bg-blush/25 transition-colors cursor-pointer"
+            title="Spauskite, kad pažymėtumėte kaip apmokėtą"
+          >
+            <XCircle className="w-3 h-3" /> Neapmokėta · pažymėti
+          </button>
+        )}
+      </div>
+      <div className="text-sm space-y-1 text-muted-foreground">
+        <div>Pirkta: <span className="text-foreground">{s.purchase_date}</span></div>
+        <div>Galioja iki: <span className={cn("text-foreground", expired && "text-destructive")}>{s.expires_at}</span></div>
+        <div>Suma: <span className="text-foreground tabular-nums">{Number(s.price).toFixed(2)} €</span></div>
+        {s.sickness_credits > 0 && (
+          <div className="text-blush">+{s.sickness_credits} (liga)</div>
+        )}
+      </div>
+      {empty && !expired && (
+        <p className="mt-3 text-xs text-destructive font-medium">Pamokos baigėsi — pridėkite naują abonementą</p>
+      )}
+    </div>
+  );
+}
   const remaining = s.lessons_total - s.lessons_used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
