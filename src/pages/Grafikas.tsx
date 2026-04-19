@@ -65,6 +65,10 @@ export default function Grafikas() {
   const [cancelDialog, setCancelDialog] = useState<{ booking: Booking } | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSickness, setCancelSickness] = useState(false);
+  // Permanent-cancel choice dialog
+  const [permCancelDialog, setPermCancelDialog] = useState<{ booking: Booking } | null>(null);
+  // Simple confirm dialog (replaces window.confirm)
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string; description?: string; onConfirm: () => void } | null>(null);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = days[6];
