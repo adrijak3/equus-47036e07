@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubscriptionPrice, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
+import { calculateSubscriptionPrice, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
 import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -167,15 +167,21 @@ export default function Paskyra() {
     if (!confirm("Pašalinti nuolatinį laiką? Visos jūsų būsimos pamokos šiuo laiku bus atšauktos.")) return;
     const { error } = await supabase.from("permanent_slots").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    // Cancel all future active bookings for this user/dow/time
+    // Cancel all future active bookings for this user that fall on this weekday + time
     const todayISO = formatDateISO(new Date());
-    await supabase
+    const { data: future } = await supabase
       .from("bookings")
-      .update({ status: "cancelled" })
+      .select("id, slot_date")
       .eq("user_id", user!.id)
       .eq("slot_time", slot.slot_time)
       .gte("slot_date", todayISO)
       .eq("status", "active");
+    const ids = (future ?? [])
+      .filter((b) => dbDayOfWeek(new Date(`${b.slot_date}T00:00:00`)) === slot.day_of_week)
+      .map((b) => b.id);
+    if (ids.length > 0) {
+      await supabase.from("bookings").update({ status: "cancelled" }).in("id", ids);
+    }
     toast.success("Pašalinta. Būsimos pamokos atšauktos.");
     load();
   };
