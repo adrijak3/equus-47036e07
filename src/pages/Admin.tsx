@@ -208,6 +208,7 @@ function CancellationsTab() {
 function UsersTab() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = async () => {
     const [p, s] = await Promise.all([
@@ -225,6 +226,24 @@ function UsersTab() {
     load();
   };
 
+  const deleteUser = async (p: Profile) => {
+    const txt = prompt(
+      `Visiškai ištrinti vartotoją "${p.full_name}"?\n\nVisi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negrįžtamai pašalinti.\n\nĮrašykite vartotojo vardą patvirtinti:`
+    );
+    if (txt !== p.full_name) { if (txt !== null) toast.error("Vardas nesutampa — atšaukta"); return; }
+    setDeleting(p.id);
+    const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+      body: { user_id: p.id },
+    });
+    setDeleting(null);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Klaida");
+      return;
+    }
+    toast.success(`${p.full_name} ištrintas`);
+    load();
+  };
+
   return (
     <div className="space-y-3">
       {profiles.map((p) => {
@@ -239,7 +258,7 @@ function UsersTab() {
               </div>
               {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Yra neapmokėta</span>}
             </summary>
-            <div className="border-t border-gold/10 px-5 py-3">
+            <div className="border-t border-gold/10 px-5 py-3 space-y-3">
               {userSubs.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
               ) : (
@@ -258,6 +277,18 @@ function UsersTab() {
                   ))}
                 </ul>
               )}
+              <div className="flex justify-end pt-2 border-t border-gold/5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  disabled={deleting === p.id}
+                  onClick={() => deleteUser(p)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {deleting === p.id ? "Trinama…" : "Ištrinti vartotoją"}
+                </Button>
+              </div>
             </div>
           </details>
         );
