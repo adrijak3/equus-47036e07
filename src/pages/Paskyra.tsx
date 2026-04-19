@@ -325,14 +325,18 @@ export default function Paskyra() {
           )}
         </TabsContent>
 
-        {/* SETTINGS */}
-        <TabsContent value="settings" className="space-y-6">
-          <ProfileSettings onSaved={refreshProfile} />
+        {/* PERMANENT SLOTS */}
+        <TabsContent value="permanent" className="space-y-4">
           <PermanentSlotsSection
             permanents={permanents}
             onAdd={() => { setPermDay(1); setPermTime(""); setPermDialog(true); }}
             onRemove={removePermanent}
           />
+        </TabsContent>
+
+        {/* SETTINGS */}
+        <TabsContent value="settings" className="space-y-6">
+          <ProfileSettings onSaved={refreshProfile} />
           <PasswordChange />
         </TabsContent>
       </Tabs>
