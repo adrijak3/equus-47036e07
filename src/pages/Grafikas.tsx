@@ -241,15 +241,25 @@ export default function Grafikas() {
   const monthLabel = `${MONTHS_LT[weekStart.getMonth()]} ${weekStart.getFullYear()}`;
 
   return (
-    <div className="container max-w-5xl py-8 sm:py-14">
+    <div className="container max-w-5xl py-8 sm:py-14 relative">
+      {/* Decorative floral accents */}
+      <FloralAccent className="absolute -top-8 -left-12 hidden md:block" size={180} delay={0.2} rotate={-15} />
+      <FloralAccent className="absolute top-32 -right-16 hidden md:block" size={150} delay={0.5} rotate={20} />
+      <HorseFlourish className="absolute top-4 right-4 sm:right-12" size={70} />
+
       {/* Hero */}
-      <header className="text-center mb-10 animate-fade-up">
+      <motion.header
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center mb-10 relative"
+      >
         <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo klubas</p>
         <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
           Mylintiems žirgus<br className="sm:hidden" /> ir laisvę
         </h1>
         <div className="gold-divider max-w-[140px] mx-auto" />
-      </header>
+      </motion.header>
 
       {/* Week navigation */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
