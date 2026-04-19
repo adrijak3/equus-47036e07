@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { FloralAccent, HorseFlourish } from "@/components/Decorations";
 
 interface TimeSlot {
   id: string;
@@ -42,6 +44,11 @@ interface WaitingEntry {
   slot_time: string;
   profile_name?: string;
 }
+interface PermanentSlot {
+  user_id: string;
+  day_of_week: number;
+  slot_time: string;
+}
 
 export default function Grafikas() {
   const { user, profile } = useAuth();
@@ -50,6 +57,7 @@ export default function Grafikas() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
   const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
+  const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -66,12 +74,16 @@ export default function Grafikas() {
     const startISO = formatDateISO(weekStart);
     const endISO = formatDateISO(weekEnd);
 
-    const [slotsRes, bookingsRes, overridesRes, waitingRes] = await Promise.all([
+    // Materialise any missing permanent bookings for this week (idempotent, server-side)
+    await supabase.rpc("materialize_permanent_bookings", { _start: startISO, _end: endISO });
+
+    const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes] = await Promise.all([
       supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
       supabase.from("bookings").select("id, user_id, slot_date, slot_time, status")
         .gte("slot_date", startISO).lte("slot_date", endISO).eq("status", "active"),
       supabase.from("slot_overrides").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
       supabase.from("waiting_list").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
+      supabase.from("permanent_slots").select("user_id, day_of_week, slot_time"),
     ]);
 
     const userIds = new Set<string>();
@@ -88,6 +100,7 @@ export default function Grafikas() {
     setBookings((bookingsRes.data ?? []).map((b) => ({ ...b, profile_name: nameMap[b.user_id] })));
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
+    setPermanents(permRes.data ?? []);
     setLoading(false);
   };
 
@@ -95,6 +108,14 @@ export default function Grafikas() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
+
+  const isPermanentBooking = (b: Booking) => {
+    const dow = dbDayOfWeek(new Date(`${b.slot_date}T${b.slot_time}`));
+    return permanents.some(
+      (p) => p.user_id === b.user_id && p.day_of_week === dow &&
+             p.slot_time.slice(0, 5) === b.slot_time.slice(0, 5),
+    );
+  };
 
   const getDaySlots = (date: Date) => {
     const dow = dbDayOfWeek(date);
