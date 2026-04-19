@@ -341,20 +341,15 @@ export default function Grafikas() {
                     const slotWaiting = getWaitingFor(date, slot.slot_time);
                     const iAmWaiting = amIWaiting(date, slot.slot_time);
                     const slotPast = new Date(`${formatDateISO(date)}T${slot.slot_time}`).getTime() < Date.now();
-                    const isPermanent = !!slot.is_permanent_for;
 
                     return (
                       <div key={slot.id} className="px-5 sm:px-6 py-4 hover:bg-gold/5 transition-colors">
                         <div className="flex items-center justify-between gap-3 mb-2">
                           <div className="flex items-center gap-3">
                             <Clock className="w-4 h-4 text-gold/60" />
-                            <span className={cn(
-                              "font-display text-xl tabular-nums",
-                              isPermanent ? "font-bold text-gold" : "text-foreground",
-                            )}>
+                            <span className="font-display text-xl tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
-                            {isPermanent && <Star className="w-3.5 h-3.5 text-gold fill-gold" />}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Users className="w-3.5 h-3.5" />
