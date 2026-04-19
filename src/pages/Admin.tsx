@@ -32,14 +32,16 @@ export default function Admin() {
       </header>
 
       <Tabs defaultValue="schedule">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full bg-background/50 mb-6 h-auto">
-          <TabsTrigger value="schedule" className="gap-2"><CalendarCog className="w-4 h-4" /> Tvarkaraštis</TabsTrigger>
-          <TabsTrigger value="cancels" className="gap-2"><Inbox className="w-4 h-4" /> Atšaukimai</TabsTrigger>
-          <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Vartotojai</TabsTrigger>
-          <TabsTrigger value="messages" className="gap-2"><MessageSquare className="w-4 h-4" /> Žinutės</TabsTrigger>
+        <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full bg-background/50 mb-6 h-auto">
+          <TabsTrigger value="schedule" className="gap-1.5 text-xs sm:text-sm"><CalendarCog className="w-4 h-4" /> <span className="hidden sm:inline">Tvarkaraštis</span></TabsTrigger>
+          <TabsTrigger value="permanent" className="gap-1.5 text-xs sm:text-sm"><Star className="w-4 h-4" /> <span className="hidden sm:inline">Nuolatiniai</span></TabsTrigger>
+          <TabsTrigger value="cancels" className="gap-1.5 text-xs sm:text-sm"><Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Atšaukimai</span></TabsTrigger>
+          <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="w-4 h-4" /> <span className="hidden sm:inline">Vartotojai</span></TabsTrigger>
+          <TabsTrigger value="messages" className="gap-1.5 text-xs sm:text-sm"><MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Žinutės</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule"><ScheduleTab /></TabsContent>
+        <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
         <TabsContent value="cancels"><CancellationsTab /></TabsContent>
         <TabsContent value="users"><UsersTab /></TabsContent>
         <TabsContent value="messages"><MessagesTab /></TabsContent>
