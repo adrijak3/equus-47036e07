@@ -360,28 +360,37 @@ export default function Grafikas() {
                         {/* Booked names */}
                         {slotBookings.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mb-2 pl-7">
-                            {slotBookings.map((b) => (
-                              <span
-                                key={b.id}
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border",
-                                  isMyBooking(b)
-                                    ? "bg-gold/15 border-gold/40 text-gold"
-                                    : "bg-background/50 border-gold/10 text-foreground/80",
-                                )}
-                              >
-                                {formatBookedName(b.profile_name ?? "—")}
-                                {isMyBooking(b) && !slotPast && (
-                                  <button
-                                    onClick={() => handleCancelClick(b)}
-                                    className="ml-0.5 hover:text-destructive transition-colors"
-                                    aria-label="Atšaukti"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </span>
-                            ))}
+                            {slotBookings.map((b) => {
+                              const perm = isPermanentBooking(b);
+                              return (
+                                <motion.span
+                                  key={b.id}
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.3 }}
+                                  className={cn(
+                                    "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border",
+                                    isMyBooking(b)
+                                      ? "bg-gold/15 border-gold/40 text-gold"
+                                      : "bg-background/50 border-gold/10 text-foreground/80",
+                                    perm && "font-bold",
+                                  )}
+                                  title={perm ? "Nuolatinis laikas" : undefined}
+                                >
+                                  {perm && <Star className="w-3 h-3 text-gold fill-gold" />}
+                                  {formatBookedName(b.profile_name ?? "—")}
+                                  {isMyBooking(b) && !slotPast && (
+                                    <button
+                                      onClick={() => handleCancelClick(b)}
+                                      className="ml-0.5 hover:text-destructive transition-colors"
+                                      aria-label="Atšaukti"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </motion.span>
+                              );
+                            })}
                           </div>
                         )}
 
