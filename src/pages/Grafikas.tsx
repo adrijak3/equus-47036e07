@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { FloralAccent, HorseFlourish } from "@/components/Decorations";
 
 interface TimeSlot {
   id: string;
@@ -42,6 +44,11 @@ interface WaitingEntry {
   slot_time: string;
   profile_name?: string;
 }
+interface PermanentSlot {
+  user_id: string;
+  day_of_week: number;
+  slot_time: string;
+}
 
 export default function Grafikas() {
   const { user, profile } = useAuth();
@@ -50,6 +57,7 @@ export default function Grafikas() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
   const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
+  const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -66,12 +74,16 @@ export default function Grafikas() {
     const startISO = formatDateISO(weekStart);
     const endISO = formatDateISO(weekEnd);
 
-    const [slotsRes, bookingsRes, overridesRes, waitingRes] = await Promise.all([
+    // Materialise any missing permanent bookings for this week (idempotent, server-side)
+    await supabase.rpc("materialize_permanent_bookings", { _start: startISO, _end: endISO });
+
+    const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes] = await Promise.all([
       supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
       supabase.from("bookings").select("id, user_id, slot_date, slot_time, status")
         .gte("slot_date", startISO).lte("slot_date", endISO).eq("status", "active"),
       supabase.from("slot_overrides").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
       supabase.from("waiting_list").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
+      supabase.from("permanent_slots").select("user_id, day_of_week, slot_time"),
     ]);
 
     const userIds = new Set<string>();
@@ -88,6 +100,7 @@ export default function Grafikas() {
     setBookings((bookingsRes.data ?? []).map((b) => ({ ...b, profile_name: nameMap[b.user_id] })));
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
+    setPermanents(permRes.data ?? []);
     setLoading(false);
   };
 
@@ -95,6 +108,14 @@ export default function Grafikas() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
+
+  const isPermanentBooking = (b: Booking) => {
+    const dow = dbDayOfWeek(new Date(`${b.slot_date}T${b.slot_time}`));
+    return permanents.some(
+      (p) => p.user_id === b.user_id && p.day_of_week === dow &&
+             p.slot_time.slice(0, 5) === b.slot_time.slice(0, 5),
+    );
+  };
 
   const getDaySlots = (date: Date) => {
     const dow = dbDayOfWeek(date);
@@ -220,15 +241,25 @@ export default function Grafikas() {
   const monthLabel = `${MONTHS_LT[weekStart.getMonth()]} ${weekStart.getFullYear()}`;
 
   return (
-    <div className="container max-w-5xl py-8 sm:py-14">
+    <div className="container max-w-5xl py-8 sm:py-14 relative">
+      {/* Decorative floral accents */}
+      <FloralAccent className="absolute -top-8 -left-12 hidden md:block" size={180} delay={0.2} rotate={-15} />
+      <FloralAccent className="absolute top-32 -right-16 hidden md:block" size={150} delay={0.5} rotate={20} />
+      <HorseFlourish className="absolute top-4 right-4 sm:right-12" size={70} />
+
       {/* Hero */}
-      <header className="text-center mb-10 animate-fade-up">
+      <motion.header
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center mb-10 relative"
+      >
         <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo klubas</p>
         <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
           Mylintiems žirgus<br className="sm:hidden" /> ir laisvę
         </h1>
         <div className="gold-divider max-w-[140px] mx-auto" />
-      </header>
+      </motion.header>
 
       {/* Week navigation */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
@@ -310,20 +341,15 @@ export default function Grafikas() {
                     const slotWaiting = getWaitingFor(date, slot.slot_time);
                     const iAmWaiting = amIWaiting(date, slot.slot_time);
                     const slotPast = new Date(`${formatDateISO(date)}T${slot.slot_time}`).getTime() < Date.now();
-                    const isPermanent = !!slot.is_permanent_for;
 
                     return (
                       <div key={slot.id} className="px-5 sm:px-6 py-4 hover:bg-gold/5 transition-colors">
                         <div className="flex items-center justify-between gap-3 mb-2">
                           <div className="flex items-center gap-3">
                             <Clock className="w-4 h-4 text-gold/60" />
-                            <span className={cn(
-                              "font-display text-xl tabular-nums",
-                              isPermanent ? "font-bold text-gold" : "text-foreground",
-                            )}>
+                            <span className="font-display text-xl tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
-                            {isPermanent && <Star className="w-3.5 h-3.5 text-gold fill-gold" />}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Users className="w-3.5 h-3.5" />
@@ -334,28 +360,37 @@ export default function Grafikas() {
                         {/* Booked names */}
                         {slotBookings.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mb-2 pl-7">
-                            {slotBookings.map((b) => (
-                              <span
-                                key={b.id}
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border",
-                                  isMyBooking(b)
-                                    ? "bg-gold/15 border-gold/40 text-gold"
-                                    : "bg-background/50 border-gold/10 text-foreground/80",
-                                )}
-                              >
-                                {formatBookedName(b.profile_name ?? "—")}
-                                {isMyBooking(b) && !slotPast && (
-                                  <button
-                                    onClick={() => handleCancelClick(b)}
-                                    className="ml-0.5 hover:text-destructive transition-colors"
-                                    aria-label="Atšaukti"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </span>
-                            ))}
+                            {slotBookings.map((b) => {
+                              const perm = isPermanentBooking(b);
+                              return (
+                                <motion.span
+                                  key={b.id}
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.3 }}
+                                  className={cn(
+                                    "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border",
+                                    isMyBooking(b)
+                                      ? "bg-gold/15 border-gold/40 text-gold"
+                                      : "bg-background/50 border-gold/10 text-foreground/80",
+                                    perm && "font-bold",
+                                  )}
+                                  title={perm ? "Nuolatinis laikas" : undefined}
+                                >
+                                  {perm && <Star className="w-3 h-3 text-gold fill-gold" />}
+                                  {formatBookedName(b.profile_name ?? "—")}
+                                  {isMyBooking(b) && !slotPast && (
+                                    <button
+                                      onClick={() => handleCancelClick(b)}
+                                      className="ml-0.5 hover:text-destructive transition-colors"
+                                      aria-label="Atšaukti"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </motion.span>
+                              );
+                            })}
                           </div>
                         )}
 

@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubscriptionPrice, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM } from "@/lib/equus";
-import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare } from "lucide-react";
+import { calculateSubscriptionPrice, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
+import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { FloralAccent } from "@/components/Decorations";
 
 interface Booking {
   id: string;
@@ -29,12 +31,24 @@ interface Subscription {
   expires_at: string;
   paid: boolean;
 }
+interface PermanentSlot {
+  id: string;
+  day_of_week: number;
+  slot_time: string;
+}
+interface AvailableSlot {
+  id: string;
+  day_of_week: number;
+  slot_time: string;
+}
 
 export default function Paskyra() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean }[]>([]);
+  const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add subscription dialog
@@ -43,6 +57,11 @@ export default function Paskyra() {
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
 
+  // Permanent slot dialog
+  const [permDialog, setPermDialog] = useState(false);
+  const [permDay, setPermDay] = useState(1);
+  const [permTime, setPermTime] = useState("");
+
   // Message
   const [msgBody, setMsgBody] = useState("");
   const [sending, setSending] = useState(false);
@@ -50,14 +69,18 @@ export default function Paskyra() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [b, s, m] = await Promise.all([
+    const [b, s, m, p, ts] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", user.id).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", user.id).order("purchase_date", { ascending: false }),
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("permanent_slots").select("*").eq("user_id", user.id).order("day_of_week").order("slot_time"),
+      supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
     ]);
     setBookings(b.data ?? []);
     setSubs(s.data ?? []);
     setMessages(m.data ?? []);
+    setPermanents(p.data ?? []);
+    setAvailableSlots(ts.data ?? []);
     setLoading(false);
   };
 
@@ -67,7 +90,6 @@ export default function Paskyra() {
   const future = bookings.filter((b) => b.status === "active" && new Date(`${b.slot_date}T${b.slot_time}`) >= now);
   const past = bookings.filter((b) => new Date(`${b.slot_date}T${b.slot_time}`) < now);
 
-  // Attendance for current month
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const monthBookings = past.filter((b) => {
@@ -108,21 +130,57 @@ export default function Paskyra() {
     load();
   };
 
+  // Permanent slots
+  const slotsForPermDay = availableSlots.filter((s) => s.day_of_week === permDay);
+
+  const addPermanent = async () => {
+    if (!user || !permTime) { toast.error("Pasirinkite laiką"); return; }
+    const { error } = await supabase.from("permanent_slots").insert({
+      user_id: user.id,
+      day_of_week: permDay,
+      slot_time: permTime,
+    });
+    if (error) {
+      toast.error(error.code === "23505" ? "Šis nuolatinis laikas jau pridėtas" : error.message);
+      return;
+    }
+    toast.success("Pridėtas nuolatinis laikas. Užregistruoti į pamokas 12-os savaičių į priekį.");
+    setPermDialog(false);
+    setPermTime("");
+    load();
+  };
+
+  const removePermanent = async (id: string) => {
+    if (!confirm("Pašalinti nuolatinį laiką? (Jau egzistuojančios registracijos liks — jas reikia atšaukti rankiniu būdu)")) return;
+    const { error } = await supabase.from("permanent_slots").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pašalinta");
+    load();
+  };
+
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
-    <div className="container max-w-4xl py-8 sm:py-14">
-      <header className="mb-8 animate-fade-up">
+    <div className="container max-w-4xl py-8 sm:py-14 relative">
+      <FloralAccent className="absolute -top-4 -right-12 hidden md:block" size={140} delay={0.3} rotate={25} />
+
+      <motion.header
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="mb-8"
+      >
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Sveiki sugrįžę</p>
         <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">{profile?.full_name ?? "—"}</h1>
         <div className="gold-divider mt-4 max-w-[120px]" />
-      </header>
+      </motion.header>
 
       <Tabs defaultValue="lessons">
-        <TabsList className="grid grid-cols-3 w-full bg-background/50 mb-6">
+        <TabsList className="grid grid-cols-4 w-full bg-background/50 mb-6">
           <TabsTrigger value="lessons">Pamokos</TabsTrigger>
           <TabsTrigger value="subs">Abonementai</TabsTrigger>
           <TabsTrigger value="messages">Žinutės</TabsTrigger>
+          <TabsTrigger value="settings"><Settings className="w-3.5 h-3.5" /></TabsTrigger>
         </TabsList>
 
         {/* LESSONS */}
@@ -214,6 +272,17 @@ export default function Paskyra() {
             </Section>
           )}
         </TabsContent>
+
+        {/* SETTINGS */}
+        <TabsContent value="settings" className="space-y-6">
+          <ProfileSettings onSaved={refreshProfile} />
+          <PermanentSlotsSection
+            permanents={permanents}
+            onAdd={() => { setPermDay(1); setPermTime(""); setPermDialog(true); }}
+            onRemove={removePermanent}
+          />
+          <PasswordChange />
+        </TabsContent>
       </Tabs>
 
       {/* Add subscription dialog */}
@@ -250,18 +319,215 @@ export default function Paskyra() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Permanent slot dialog */}
+      <Dialog open={permDialog} onOpenChange={setPermDialog}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
+              <Star className="w-5 h-5 fill-gold text-gold" /> Nuolatinis laikas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Jūs būsite automatiškai užregistruota į šią pamoką kiekvieną savaitę. Vardas tvarkaraštyje bus pažymėtas paryškintai.
+            </p>
+            <div>
+              <Label>Diena</Label>
+              <select
+                value={permDay}
+                onChange={(e) => { setPermDay(Number(e.target.value)); setPermTime(""); }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Laikas</Label>
+              <select
+                value={permTime}
+                onChange={(e) => setPermTime(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">— pasirinkite —</option>
+                {slotsForPermDay.map((s) => (
+                  <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
+                ))}
+              </select>
+              {slotsForPermDay.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną nėra pamokų</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPermDialog(false)}>Atšaukti</Button>
+            <Button variant="gold" onClick={addPermanent} disabled={!permTime}>Pridėti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+/* ───────────── Settings sub-sections ───────────── */
+
+function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
+  const { user, profile } = useAuth();
+  const [name, setName] = useState(profile?.full_name ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setName(profile?.full_name ?? "");
+    setPhone(profile?.phone ?? "");
+  }, [profile]);
+
+  const save = async () => {
+    if (!user) return;
+    if (name.trim().length < 2) { toast.error("Vardas per trumpas"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("profiles")
+      .update({ full_name: name.trim(), phone: phone.trim() || null })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Išsaugota");
+    await onSaved();
+  };
+
+  return (
+    <Section title="Profilis" icon={<UserIcon className="w-4 h-4" />}>
+      <div className="p-5 space-y-3">
+        <div>
+          <Label htmlFor="pf-name">Vardas ir pavardė</Label>
+          <Input id="pf-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+        </div>
+        <div>
+          <Label htmlFor="pf-phone">Telefonas</Label>
+          <Input id="pf-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
+          <p className="text-xs text-muted-foreground mt-1">Naudojamas slaptažodžio atstatymui</p>
+        </div>
+        <div className="flex justify-end pt-1">
+          <Button variant="gold" onClick={save} disabled={saving}>{saving ? "Saugoma…" : "Išsaugoti"}</Button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function PermanentSlotsSection({
+  permanents,
+  onAdd,
+  onRemove,
+}: {
+  permanents: PermanentSlot[];
+  onAdd: () => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <Section title="Nuolatiniai laikai" icon={<Star className="w-4 h-4" />}>
+      <div className="p-5">
+        <p className="text-sm text-muted-foreground mb-4">
+          Pridėkite savaitės laiką, ir būsite automatiškai užregistruota kiekvieną savaitę.
+        </p>
+        {permanents.length === 0 ? (
+          <p className="text-sm italic text-muted-foreground py-3">Nepridėta nė vieno nuolatinio laiko</p>
+        ) : (
+          <ul className="space-y-2 mb-4">
+            {permanents.map((p) => (
+              <li key={p.id} className="flex items-center justify-between bg-gold/5 border border-gold/15 rounded-md px-4 py-2.5">
+                <span className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 fill-gold text-gold" />
+                  <span className="font-medium">{WEEKDAYS_LT[p.day_of_week - 1]}</span>
+                  <span className="text-muted-foreground tabular-nums">{formatTime(p.slot_time)}</span>
+                </span>
+                <button
+                  onClick={() => onRemove(p.id)}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Pašalinti"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Button variant="outlineGold" onClick={onAdd}>
+          <Plus className="w-4 h-4" /> Pridėti nuolatinį laiką
+        </Button>
+      </div>
+    </Section>
+  );
+}
+
+function PasswordChange() {
+  const { user, profile } = useAuth();
+  const [phone, setPhone] = useState("");
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!user?.email) return;
+    if (pw.length < 8) { toast.error("Slaptažodis turi būti bent 8 simbolių"); return; }
+    if (pw !== pw2) { toast.error("Slaptažodžiai nesutampa"); return; }
+    if (!phone.trim()) { toast.error("Įveskite telefono numerį"); return; }
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("reset-password-by-phone", {
+      body: { email: user.email, phone: phone.trim(), new_password: pw },
+    });
+    setBusy(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Klaida");
+      return;
+    }
+    toast.success("Slaptažodis pakeistas");
+    setPhone(""); setPw(""); setPw2("");
+  };
+
+  return (
+    <Section title="Pakeisti slaptažodį" icon={<KeyRound className="w-4 h-4" />}>
+      <div className="p-5 space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Įveskite savo telefono numerį (turi sutapti su paskyroje nurodytu — <span className="text-foreground/80">{profile?.phone ?? "nenurodytas"}</span>) ir naują slaptažodį.
+        </p>
+        <div>
+          <Label htmlFor="pc-phone">Telefonas patvirtinimui</Label>
+          <Input id="pc-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="pc-pw">Naujas slaptažodis</Label>
+            <Input id="pc-pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} minLength={8} />
+          </div>
+          <div>
+            <Label htmlFor="pc-pw2">Pakartokite</Label>
+            <Input id="pc-pw2" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} minLength={8} />
+          </div>
+        </div>
+        <div className="flex justify-end pt-1">
+          <Button variant="gold" onClick={submit} disabled={busy}>{busy ? "Keičiama…" : "Pakeisti"}</Button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ───────────── Shared bits ───────────── */
+
 function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="bg-gradient-card border border-gold/15 rounded-lg overflow-hidden shadow-elegant">
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="bg-gradient-card border border-gold/15 rounded-lg overflow-hidden shadow-elegant"
+    >
       <h2 className="px-5 py-3 border-b border-gold/10 font-display text-lg text-gold flex items-center gap-2">
         {icon} {title}
       </h2>
       {children}
-    </section>
+    </motion.section>
   );
 }
 

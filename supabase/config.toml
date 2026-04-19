@@ -2,3 +2,9 @@ project_id = "tkksskpvpartlhpnctzu"
 
 [functions.process-lessons]
 verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = true
+
+[functions.reset-password-by-phone]
+verify_jwt = false
