@@ -65,6 +65,10 @@ export default function Grafikas() {
   const [cancelDialog, setCancelDialog] = useState<{ booking: Booking } | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSickness, setCancelSickness] = useState(false);
+  // Permanent-cancel choice dialog
+  const [permCancelDialog, setPermCancelDialog] = useState<{ booking: Booking } | null>(null);
+  // Simple confirm dialog (replaces window.confirm)
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string; description?: string; onConfirm: () => void } | null>(null);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = days[6];
@@ -196,50 +200,44 @@ export default function Grafikas() {
     loadData();
   };
 
+  const cancelSingleBooking = async (booking: Booking) => {
+    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pamoka atšaukta");
+    loadData();
+  };
+
+  const removePermanentForever = async (booking: Booking) => {
+    if (!user) return;
+    const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
+    const { data: ps } = await supabase
+      .from("permanent_slots").select("id")
+      .eq("user_id", user.id).eq("day_of_week", dow).eq("slot_time", booking.slot_time)
+      .maybeSingle();
+    if (ps?.id) await supabase.from("permanent_slots").delete().eq("id", ps.id);
+    await supabase.from("bookings").update({ status: "cancelled" })
+      .eq("user_id", user.id).eq("slot_time", booking.slot_time)
+      .gte("slot_date", booking.slot_date).eq("status", "active");
+    toast.success("Nuolatinis laikas pašalintas. Visos būsimos pamokos atšauktos.");
+    loadData();
+  };
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
 
-    // Permanent booking: ask whether to cancel just this one or remove the standing slot
+    // Permanent booking → ask via dialog whether single or forever
     if (perm) {
-      const choice = window.prompt(
-        "Tai NUOLATINIS laikas.\n\nĮrašykite:\n  1 — atšaukti tik šią pamoką\n  2 — pašalinti nuolatinį laiką VISAM laikui (visos būsimos pamokos bus atšauktos)",
-        "1",
-      );
-      if (choice !== "1" && choice !== "2") return;
-
-      if (choice === "2") {
-        // Find permanent slot row
-        const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
-        const { data: ps } = await supabase
-          .from("permanent_slots")
-          .select("id")
-          .eq("user_id", user!.id)
-          .eq("day_of_week", dow)
-          .eq("slot_time", booking.slot_time)
-          .maybeSingle();
-        if (ps?.id) await supabase.from("permanent_slots").delete().eq("id", ps.id);
-        // Cancel this + all future bookings of same user/dow/time
-        await supabase
-          .from("bookings")
-          .update({ status: "cancelled" })
-          .eq("user_id", user!.id)
-          .eq("slot_time", booking.slot_time)
-          .gte("slot_date", booking.slot_date)
-          .eq("status", "active");
-        toast.success("Nuolatinis laikas pašalintas");
-        loadData();
-        return;
-      }
-      // choice === "1" → fall through to single-cancel
+      setPermCancelDialog({ booking });
+      return;
     }
 
     if (hours > 48) {
-      if (!confirm("Atšaukti pamoką?")) return;
-      const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Pamoka atšaukta");
-      loadData();
+      setConfirmDialog({
+        title: "Atšaukti pamoką?",
+        description: "Pamoka bus pažymėta kaip atšaukta.",
+        onConfirm: () => cancelSingleBooking(booking),
+      });
     } else {
       setCancelDialog({ booking });
       setCancelReason("");
@@ -473,6 +471,80 @@ export default function Grafikas() {
           })}
         </div>
       )}
+
+      {/* Permanent cancel choice dialog */}
+      <Dialog open={!!permCancelDialog} onOpenChange={(o) => !o && setPermCancelDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
+              <Star className="w-5 h-5 fill-gold text-gold" /> Nuolatinis laikas
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Tai jūsų nuolatinis laikas. Ką norite daryti?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <button
+              onClick={() => {
+                const b = permCancelDialog!.booking;
+                setPermCancelDialog(null);
+                const hours = hoursUntil(b.slot_date, b.slot_time);
+                if (hours > 48) {
+                  setConfirmDialog({
+                    title: "Atšaukti tik šią pamoką?",
+                    description: "Nuolatinis laikas išliks ateities savaitėms.",
+                    onConfirm: () => cancelSingleBooking(b),
+                  });
+                } else {
+                  setCancelDialog({ booking: b });
+                  setCancelReason("");
+                  setCancelSickness(false);
+                }
+              }}
+              className="w-full text-left p-4 rounded-md border border-gold/20 hover:border-gold/50 hover:bg-gold/5 transition-colors"
+            >
+              <div className="font-medium text-foreground">Atšaukti tik šią pamoką</div>
+              <div className="text-xs text-muted-foreground mt-1">Vienkartinis atšaukimas — kitos savaitės liks.</div>
+            </button>
+            <button
+              onClick={() => {
+                const b = permCancelDialog!.booking;
+                setPermCancelDialog(null);
+                setConfirmDialog({
+                  title: "Pašalinti nuolatinį laiką VISAM laikui?",
+                  description: "Visos jūsų būsimos pamokos šiuo laiku bus atšauktos. Šio veiksmo atšaukti negalėsite.",
+                  onConfirm: () => removePermanentForever(b),
+                });
+              }}
+              className="w-full text-left p-4 rounded-md border border-destructive/20 hover:border-destructive/50 hover:bg-destructive/5 transition-colors"
+            >
+              <div className="font-medium text-destructive">Pašalinti nuolatinį laiką visam laikui</div>
+              <div className="text-xs text-muted-foreground mt-1">Visos būsimos pamokos šiuo laiku bus atšauktos.</div>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPermCancelDialog(null)}>Atgal</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generic confirm dialog */}
+      <Dialog open={!!confirmDialog} onOpenChange={(o) => !o && setConfirmDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">{confirmDialog?.title}</DialogTitle>
+            {confirmDialog?.description && (
+              <DialogDescription className="text-muted-foreground">{confirmDialog.description}</DialogDescription>
+            )}
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmDialog(null)}>Atgal</Button>
+            <Button variant="gold" onClick={() => { confirmDialog?.onConfirm(); setConfirmDialog(null); }}>
+              Patvirtinti
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Late cancel dialog */}
       <Dialog open={!!cancelDialog} onOpenChange={(o) => !o && setCancelDialog(null)}>
