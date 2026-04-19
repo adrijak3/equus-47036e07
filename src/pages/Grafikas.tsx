@@ -197,9 +197,44 @@ export default function Grafikas() {
   };
 
   const handleCancelClick = async (booking: Booking) => {
+    const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
+
+    // Permanent booking: ask whether to cancel just this one or remove the standing slot
+    if (perm) {
+      const choice = window.prompt(
+        "Tai NUOLATINIS laikas.\n\nĮrašykite:\n  1 — atšaukti tik šią pamoką\n  2 — pašalinti nuolatinį laiką VISAM laikui (visos būsimos pamokos bus atšauktos)",
+        "1",
+      );
+      if (choice !== "1" && choice !== "2") return;
+
+      if (choice === "2") {
+        // Find permanent slot row
+        const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
+        const { data: ps } = await supabase
+          .from("permanent_slots")
+          .select("id")
+          .eq("user_id", user!.id)
+          .eq("day_of_week", dow)
+          .eq("slot_time", booking.slot_time)
+          .maybeSingle();
+        if (ps?.id) await supabase.from("permanent_slots").delete().eq("id", ps.id);
+        // Cancel this + all future bookings of same user/dow/time
+        await supabase
+          .from("bookings")
+          .update({ status: "cancelled" })
+          .eq("user_id", user!.id)
+          .eq("slot_time", booking.slot_time)
+          .gte("slot_date", booking.slot_date)
+          .eq("status", "active");
+        toast.success("Nuolatinis laikas pašalintas");
+        loadData();
+        return;
+      }
+      // choice === "1" → fall through to single-cancel
+    }
+
     if (hours > 48) {
-      // instant cancel
       if (!confirm("Atšaukti pamoką?")) return;
       const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
       if (error) { toast.error(error.message); return; }
@@ -357,41 +392,42 @@ export default function Grafikas() {
                           </div>
                         </div>
 
-                        {/* Booked names */}
+                        {/* Booked names — bullet list */}
                         {slotBookings.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mb-2 pl-7">
+                          <ul className="pl-7 mb-2 space-y-1">
                             {slotBookings.map((b) => {
                               const perm = isPermanentBooking(b);
+                              const mine = isMyBooking(b);
                               return (
-                                <motion.span
+                                <motion.li
                                   key={b.id}
-                                  initial={{ opacity: 0, scale: 0.9 }}
-                                  animate={{ opacity: 1, scale: 1 }}
+                                  initial={{ opacity: 0, x: -6 }}
+                                  animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.3 }}
                                   className={cn(
-                                    "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border",
-                                    isMyBooking(b)
-                                      ? "bg-gold/15 border-gold/40 text-gold"
-                                      : "bg-background/50 border-gold/10 text-foreground/80",
+                                    "flex items-center gap-2 text-sm",
+                                    mine ? "text-gold" : "text-foreground/85",
                                     perm && "font-bold",
                                   )}
-                                  title={perm ? "Nuolatinis laikas" : undefined}
                                 >
+                                  <span className={cn("text-base leading-none", mine ? "text-gold" : "text-gold/40")}>
+                                    •
+                                  </span>
                                   {perm && <Star className="w-3 h-3 text-gold fill-gold" />}
-                                  {formatBookedName(b.profile_name ?? "—")}
-                                  {isMyBooking(b) && !slotPast && (
+                                  <span>{formatBookedName(b.profile_name ?? "—")}</span>
+                                  {mine && !slotPast && (
                                     <button
                                       onClick={() => handleCancelClick(b)}
-                                      className="ml-0.5 hover:text-destructive transition-colors"
+                                      className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
                                       aria-label="Atšaukti"
                                     >
-                                      <X className="w-3 h-3" />
+                                      <X className="w-3.5 h-3.5" />
                                     </button>
                                   )}
-                                </motion.span>
+                                </motion.li>
                               );
                             })}
-                          </div>
+                          </ul>
                         )}
 
                         {/* Action button */}
