@@ -14,16 +14,292 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          counts_in_subscription: boolean
+          created_at: string
+          id: string
+          slot_date: string
+          slot_time: string
+          status: Database["public"]["Enums"]["booking_status"]
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          counts_in_subscription?: boolean
+          created_at?: string
+          id?: string
+          slot_date: string
+          slot_time: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          counts_in_subscription?: boolean
+          created_at?: string
+          id?: string
+          slot_date?: string
+          slot_time?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cancellation_requests: {
+        Row: {
+          admin_decision_counts: boolean | null
+          booking_id: string
+          created_at: string
+          decided_at: string | null
+          id: string
+          reason: string
+          sickness: boolean
+          status: Database["public"]["Enums"]["cancel_status"]
+          user_id: string
+        }
+        Insert: {
+          admin_decision_counts?: boolean | null
+          booking_id: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          reason: string
+          sickness?: boolean
+          status?: Database["public"]["Enums"]["cancel_status"]
+          user_id: string
+        }
+        Update: {
+          admin_decision_counts?: boolean | null
+          booking_id?: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          reason?: string
+          sickness?: boolean
+          status?: Database["public"]["Enums"]["cancel_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read_by_admin: boolean
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read_by_admin?: boolean
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read_by_admin?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      slot_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          max_capacity: number
+          slot_date: string
+          slot_time: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_capacity: number
+          slot_date: string
+          slot_time: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_capacity?: number
+          slot_date?: string
+          slot_time?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          lessons_total: number
+          lessons_used: number
+          paid: boolean
+          price: number
+          purchase_date: string
+          sickness_credits: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          lessons_total: number
+          lessons_used?: number
+          paid?: boolean
+          price: number
+          purchase_date: string
+          sickness_credits?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          lessons_total?: number
+          lessons_used?: number
+          paid?: boolean
+          price?: number
+          purchase_date?: string
+          sickness_credits?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      time_slots: {
+        Row: {
+          active: boolean
+          created_at: string
+          day_of_week: number
+          id: string
+          is_permanent_for: string | null
+          max_capacity: number
+          slot_time: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_permanent_for?: string | null
+          max_capacity?: number
+          slot_time: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_permanent_for?: string | null
+          max_capacity?: number
+          slot_time?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      waiting_list: {
+        Row: {
+          created_at: string
+          id: string
+          slot_date: string
+          slot_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slot_date: string
+          slot_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slot_date?: string
+          slot_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      booking_status: "active" | "cancelled" | "completed" | "pending_cancel"
+      cancel_status: "pending" | "approved" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +426,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      booking_status: ["active", "cancelled", "completed", "pending_cancel"],
+      cancel_status: ["pending", "approved", "declined"],
+    },
   },
 } as const
