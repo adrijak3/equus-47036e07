@@ -162,10 +162,29 @@ export default function Paskyra() {
   };
 
   const removePermanent = async (id: string) => {
-    if (!confirm("Pašalinti nuolatinį laiką? (Jau egzistuojančios registracijos liks — jas reikia atšaukti rankiniu būdu)")) return;
+    const slot = permanents.find((p) => p.id === id);
+    if (!slot) return;
+    if (!confirm("Pašalinti nuolatinį laiką? Visos jūsų būsimos pamokos šiuo laiku bus atšauktos.")) return;
     const { error } = await supabase.from("permanent_slots").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Pašalinta");
+    // Cancel all future active bookings for this user/dow/time
+    const todayISO = formatDateISO(new Date());
+    await supabase
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("user_id", user!.id)
+      .eq("slot_time", slot.slot_time)
+      .gte("slot_date", todayISO)
+      .eq("status", "active");
+    toast.success("Pašalinta. Būsimos pamokos atšauktos.");
+    load();
+  };
+
+  const markSubPaid = async (subId: string) => {
+    if (!confirm("Pažymėti šį abonementą kaip APMOKĖTĄ?")) return;
+    const { error } = await supabase.from("subscriptions").update({ paid: true }).eq("id", subId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pažymėta apmokėta. Administracija patvirtins.");
     load();
   };
 
