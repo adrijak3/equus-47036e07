@@ -20,7 +20,7 @@ interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean;
 }
-interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; profile_name?: string; }
+interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
 export default function Admin() {
   return (
@@ -297,12 +297,19 @@ function UsersTab() {
   );
 }
 
-/* ---------- MESSAGES ---------- */
+/* ---------- MESSAGES (threaded) ---------- */
 function MessagesTab() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [replyOpen, setReplyOpen] = useState<string | null>(null); // user_id being replied to
+  const [replyBody, setReplyBody] = useState("");
+  const [sending, setSending] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(100);
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .limit(500);
     const ids = Array.from(new Set((data ?? []).map((m) => m.user_id)));
     let nameMap: Record<string, string> = {};
     if (ids.length) {
@@ -313,25 +320,98 @@ function MessagesTab() {
   };
   useEffect(() => { load(); }, []);
 
-  const markRead = async (id: string) => {
-    await supabase.from("messages").update({ read_by_admin: true }).eq("id", id);
+  // Group by user_id, show newest thread first
+  const threads = (() => {
+    const byUser: Record<string, Msg[]> = {};
+    for (const m of msgs) {
+      (byUser[m.user_id] ||= []).push(m);
+    }
+    return Object.entries(byUser)
+      .map(([uid, list]) => ({
+        user_id: uid,
+        name: list[0]?.profile_name ?? "—",
+        list,
+        last: list[list.length - 1],
+        hasUnread: list.some((m) => !m.from_admin && !m.read_by_admin),
+      }))
+      .sort((a, b) => new Date(b.last.created_at).getTime() - new Date(a.last.created_at).getTime());
+  })();
+
+  const markRead = async (userId: string) => {
+    const ids = msgs.filter((m) => m.user_id === userId && !m.from_admin && !m.read_by_admin).map((m) => m.id);
+    if (ids.length === 0) return;
+    await supabase.from("messages").update({ read_by_admin: true }).in("id", ids);
     load();
   };
 
-  if (msgs.length === 0) return <p className="text-center text-muted-foreground italic py-12">Nėra žinučių</p>;
+  const sendReply = async (userId: string) => {
+    const body = replyBody.trim();
+    if (!body) return;
+    setSending(true);
+    const { error } = await supabase.from("messages").insert({
+      user_id: userId,
+      body,
+      from_admin: true,
+      read_by_admin: true,
+      read_by_user: false,
+    });
+    setSending(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atsakymas išsiųstas");
+    setReplyBody("");
+    setReplyOpen(null);
+    load();
+  };
+
+  if (threads.length === 0) return <p className="text-center text-muted-foreground italic py-12">Nėra žinučių</p>;
 
   return (
     <ul className="space-y-3">
-      {msgs.map((m) => (
-        <li key={m.id} className={`bg-gradient-card border rounded-lg p-4 ${!m.read_by_admin ? "border-gold/40 shadow-gold" : "border-gold/15"}`}>
-          <div className="flex items-baseline justify-between gap-2 mb-1.5">
-            <span className="font-display text-gold">{m.profile_name}</span>
-            <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
+      {threads.map((t) => (
+        <li
+          key={t.user_id}
+          className={`bg-gradient-card border rounded-lg overflow-hidden ${t.hasUnread ? "border-gold/40 shadow-gold" : "border-gold/15"}`}
+        >
+          <div className="flex items-baseline justify-between gap-2 px-5 pt-4 pb-2">
+            <span className="font-display text-gold text-lg">{t.name}</span>
+            <span className="text-xs text-muted-foreground">{new Date(t.last.created_at).toLocaleString("lt-LT")}</span>
           </div>
-          <p className="text-sm whitespace-pre-wrap">{m.body}</p>
-          {!m.read_by_admin && (
-            <div className="flex justify-end mt-2">
-              <Button variant="ghostGold" size="sm" onClick={() => markRead(m.id)}>Pažymėti perskaityta</Button>
+          <ul className="divide-y divide-gold/5 max-h-64 overflow-auto">
+            {t.list.map((m) => (
+              <li key={m.id} className={`px-5 py-2.5 ${m.from_admin ? "bg-gold/5" : ""}`}>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                  {m.from_admin ? "✦ Jūs (admin)" : t.name}
+                </div>
+                <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="border-t border-gold/10 px-5 py-3 flex flex-wrap gap-2 justify-end">
+            {t.hasUnread && (
+              <Button variant="ghostGold" size="sm" onClick={() => markRead(t.user_id)}>Pažymėti perskaityta</Button>
+            )}
+            <Button variant="gold" size="sm" onClick={() => { setReplyOpen(t.user_id); setReplyBody(""); markRead(t.user_id); }}>
+              Atsakyti
+            </Button>
+          </div>
+          {replyOpen === t.user_id && (
+            <div className="border-t border-gold/10 p-4 space-y-2 bg-background/40">
+              <Label htmlFor={`reply-${t.user_id}`}>Atsakymas {t.name}</Label>
+              <textarea
+                id={`reply-${t.user_id}`}
+                value={replyBody}
+                onChange={(e) => setReplyBody(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Rašykite atsakymą..."
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setReplyOpen(null)}>Atšaukti</Button>
+                <Button variant="gold" size="sm" disabled={sending || !replyBody.trim()} onClick={() => sendReply(t.user_id)}>
+                  Siųsti
+                </Button>
+              </div>
             </div>
           )}
         </li>
