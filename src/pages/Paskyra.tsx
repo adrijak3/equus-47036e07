@@ -329,7 +329,6 @@ export default function Paskyra() {
         <TabsContent value="permanent" className="space-y-4">
           <PermanentSlotsSection
             permanents={permanents}
-            onAdd={() => { setPermDay(1); setPermTime(""); setPermDialog(true); }}
             onRemove={removePermanent}
           />
         </TabsContent>
@@ -473,23 +472,23 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
 
 function PermanentSlotsSection({
   permanents,
-  onAdd,
   onRemove,
 }: {
   permanents: PermanentSlot[];
-  onAdd: () => void;
   onRemove: (id: string) => void;
 }) {
   return (
     <Section title="Nuolatiniai laikai" icon={<Star className="w-4 h-4" />}>
       <div className="p-5">
         <p className="text-sm text-muted-foreground mb-4">
-          Pridėkite savaitės laiką, ir būsite automatiškai užregistruota kiekvieną savaitę.
+          Nuolatiniai laikai – tai jūsų savaitiniai pamokų laikai, į kuriuos esate automatiškai užregistruojama kiekvieną savaitę.
+          Juos prideda <span className="text-foreground/85">administracija</span>. Jei norite pridėti ar pakeisti –
+          parašykite žinutę administracijai.
         </p>
         {permanents.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground py-3">Nepridėta nė vieno nuolatinio laiko</p>
+          <p className="text-sm italic text-muted-foreground py-3">Šiuo metu neturite nuolatinių laikų</p>
         ) : (
-          <ul className="space-y-2 mb-4">
+          <ul className="space-y-2">
             {permanents.map((p) => (
               <li key={p.id} className="flex items-center justify-between bg-gold/5 border border-gold/15 rounded-md px-4 py-2.5">
                 <span className="flex items-center gap-2">
@@ -501,6 +500,7 @@ function PermanentSlotsSection({
                   onClick={() => onRemove(p.id)}
                   className="text-muted-foreground hover:text-destructive transition-colors"
                   aria-label="Pašalinti"
+                  title="Pašalinti nuolatinį laiką"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -508,9 +508,6 @@ function PermanentSlotsSection({
             ))}
           </ul>
         )}
-        <Button variant="outlineGold" onClick={onAdd}>
-          <Plus className="w-4 h-4" /> Pridėti nuolatinį laiką
-        </Button>
       </div>
     </Section>
   );
