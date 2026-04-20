@@ -57,10 +57,7 @@ export default function Paskyra() {
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
 
-  // Permanent slot dialog
-  const [permDialog, setPermDialog] = useState(false);
-  const [permDay, setPermDay] = useState(1);
-  const [permTime, setPermTime] = useState("");
+
 
   // Message
   const [msgBody, setMsgBody] = useState("");
@@ -141,25 +138,7 @@ export default function Paskyra() {
     load();
   };
 
-  // Permanent slots
-  const slotsForPermDay = availableSlots.filter((s) => s.day_of_week === permDay);
-
-  const addPermanent = async () => {
-    if (!user || !permTime) { toast.error("Pasirinkite laiką"); return; }
-    const { error } = await supabase.from("permanent_slots").insert({
-      user_id: user.id,
-      day_of_week: permDay,
-      slot_time: permTime,
-    });
-    if (error) {
-      toast.error(error.code === "23505" ? "Šis nuolatinis laikas jau pridėtas" : error.message);
-      return;
-    }
-    toast.success("Pridėtas nuolatinis laikas. Užregistruoti į pamokas 12-os savaičių į priekį.");
-    setPermDialog(false);
-    setPermTime("");
-    load();
-  };
+  // Permanent slots — users can only view & remove (admin adds them)
 
   const removePermanent = async (id: string) => {
     const slot = permanents.find((p) => p.id === id);
@@ -329,7 +308,6 @@ export default function Paskyra() {
         <TabsContent value="permanent" className="space-y-4">
           <PermanentSlotsSection
             permanents={permanents}
-            onAdd={() => { setPermDay(1); setPermTime(""); setPermDialog(true); }}
             onRemove={removePermanent}
           />
         </TabsContent>
@@ -372,52 +350,6 @@ export default function Paskyra() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSubDialog(false)}>Atšaukti</Button>
             <Button variant="gold" onClick={addSubscription}>Pridėti</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Permanent slot dialog */}
-      <Dialog open={permDialog} onOpenChange={setPermDialog}>
-        <DialogContent className="bg-gradient-card border-gold/20">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
-              <Star className="w-5 h-5 fill-gold text-gold" /> Nuolatinis laikas
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Jūs būsite automatiškai užregistruota į šią pamoką kiekvieną savaitę. Vardas tvarkaraštyje bus pažymėtas paryškintai.
-            </p>
-            <div>
-              <Label>Diena</Label>
-              <select
-                value={permDay}
-                onChange={(e) => { setPermDay(Number(e.target.value)); setPermTime(""); }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Laikas</Label>
-              <select
-                value={permTime}
-                onChange={(e) => setPermTime(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— pasirinkite —</option>
-                {slotsForPermDay.map((s) => (
-                  <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
-                ))}
-              </select>
-              {slotsForPermDay.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną nėra pamokų</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPermDialog(false)}>Atšaukti</Button>
-            <Button variant="gold" onClick={addPermanent} disabled={!permTime}>Pridėti</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -473,23 +405,23 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
 
 function PermanentSlotsSection({
   permanents,
-  onAdd,
   onRemove,
 }: {
   permanents: PermanentSlot[];
-  onAdd: () => void;
   onRemove: (id: string) => void;
 }) {
   return (
     <Section title="Nuolatiniai laikai" icon={<Star className="w-4 h-4" />}>
       <div className="p-5">
         <p className="text-sm text-muted-foreground mb-4">
-          Pridėkite savaitės laiką, ir būsite automatiškai užregistruota kiekvieną savaitę.
+          Nuolatiniai laikai – tai jūsų savaitiniai pamokų laikai, į kuriuos esate automatiškai užregistruojama kiekvieną savaitę.
+          Juos prideda <span className="text-foreground/85">administracija</span>. Jei norite pridėti ar pakeisti –
+          parašykite žinutę administracijai.
         </p>
         {permanents.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground py-3">Nepridėta nė vieno nuolatinio laiko</p>
+          <p className="text-sm italic text-muted-foreground py-3">Šiuo metu neturite nuolatinių laikų</p>
         ) : (
-          <ul className="space-y-2 mb-4">
+          <ul className="space-y-2">
             {permanents.map((p) => (
               <li key={p.id} className="flex items-center justify-between bg-gold/5 border border-gold/15 rounded-md px-4 py-2.5">
                 <span className="flex items-center gap-2">
@@ -501,6 +433,7 @@ function PermanentSlotsSection({
                   onClick={() => onRemove(p.id)}
                   className="text-muted-foreground hover:text-destructive transition-colors"
                   aria-label="Pašalinti"
+                  title="Pašalinti nuolatinį laiką"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -508,9 +441,6 @@ function PermanentSlotsSection({
             ))}
           </ul>
         )}
-        <Button variant="outlineGold" onClick={onAdd}>
-          <Plus className="w-4 h-4" /> Pridėti nuolatinį laiką
-        </Button>
       </div>
     </Section>
   );

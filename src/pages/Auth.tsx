@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { KeyRound } from "lucide-react";
 
 const signUpSchema = z.object({
   full_name: z.string().trim().min(2, "Vardas per trumpas").max(80),
@@ -25,6 +27,14 @@ export default function Auth() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState(params.get("tab") === "signup" ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
+
+  // Forgot-password dialog state
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [fpEmail, setFpEmail] = useState("");
+  const [fpPhone, setFpPhone] = useState("");
+  const [fpPw, setFpPw] = useState("");
+  const [fpPw2, setFpPw2] = useState("");
+  const [fpBusy, setFpBusy] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -79,6 +89,25 @@ export default function Auth() {
     navigate("/");
   };
 
+  const submitForgot = async () => {
+    if (!fpEmail.trim()) { toast.error("Įveskite el. paštą"); return; }
+    if (!fpPhone.trim()) { toast.error("Įveskite telefono numerį"); return; }
+    if (fpPw.length < 8) { toast.error("Slaptažodis turi būti bent 8 simbolių"); return; }
+    if (fpPw !== fpPw2) { toast.error("Slaptažodžiai nesutampa"); return; }
+    setFpBusy(true);
+    const { data, error } = await supabase.functions.invoke("reset-password-by-phone", {
+      body: { email: fpEmail.trim(), phone: fpPhone.trim(), new_password: fpPw },
+    });
+    setFpBusy(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Klaida");
+      return;
+    }
+    toast.success("Slaptažodis pakeistas. Galite prisijungti.");
+    setForgotOpen(false);
+    setFpEmail(""); setFpPhone(""); setFpPw(""); setFpPw2("");
+  };
+
   return (
     <div className="container max-w-md py-12 sm:py-20">
       <div className="text-center mb-10 animate-fade-up">
@@ -109,9 +138,13 @@ export default function Auth() {
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Jungiamasi…" : "Prisijungti"}
               </Button>
-              <p className="text-xs text-muted-foreground text-center pt-2">
-                Pamiršote slaptažodį? Susisiekite su administracija.
-              </p>
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="w-full text-xs text-gold/80 hover:text-gold underline-offset-4 hover:underline pt-2 transition-colors"
+              >
+                Pamiršote slaptažodį?
+              </button>
             </form>
           </TabsContent>
 
@@ -140,6 +173,47 @@ export default function Auth() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Forgot password dialog */}
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-gold" /> Pamiršote slaptažodį?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Įveskite paskyros el. paštą ir telefono numerį. Jei jie sutaps su paskyra –
+              galėsite iškart nustatyti naują slaptažodį.
+            </p>
+            <div>
+              <Label htmlFor="fp-email">El. paštas</Label>
+              <Input id="fp-email" type="email" value={fpEmail} onChange={(e) => setFpEmail(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="fp-phone">Telefono numeris</Label>
+              <Input id="fp-phone" type="tel" value={fpPhone} onChange={(e) => setFpPhone(e.target.value)} placeholder="+370" />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="fp-pw">Naujas slaptažodis</Label>
+                <Input id="fp-pw" type="password" value={fpPw} onChange={(e) => setFpPw(e.target.value)} minLength={8} />
+              </div>
+              <div>
+                <Label htmlFor="fp-pw2">Pakartokite</Label>
+                <Input id="fp-pw2" type="password" value={fpPw2} onChange={(e) => setFpPw2(e.target.value)} minLength={8} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setForgotOpen(false)}>Atšaukti</Button>
+            <Button variant="gold" onClick={submitForgot} disabled={fpBusy}>
+              {fpBusy ? "Keičiama…" : "Pakeisti slaptažodį"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
