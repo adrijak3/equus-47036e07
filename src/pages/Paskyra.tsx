@@ -57,10 +57,7 @@ export default function Paskyra() {
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
 
-  // Permanent slot dialog
-  const [permDialog, setPermDialog] = useState(false);
-  const [permDay, setPermDay] = useState(1);
-  const [permTime, setPermTime] = useState("");
+
 
   // Message
   const [msgBody, setMsgBody] = useState("");
@@ -141,25 +138,7 @@ export default function Paskyra() {
     load();
   };
 
-  // Permanent slots
-  const slotsForPermDay = availableSlots.filter((s) => s.day_of_week === permDay);
-
-  const addPermanent = async () => {
-    if (!user || !permTime) { toast.error("Pasirinkite laiką"); return; }
-    const { error } = await supabase.from("permanent_slots").insert({
-      user_id: user.id,
-      day_of_week: permDay,
-      slot_time: permTime,
-    });
-    if (error) {
-      toast.error(error.code === "23505" ? "Šis nuolatinis laikas jau pridėtas" : error.message);
-      return;
-    }
-    toast.success("Pridėtas nuolatinis laikas. Užregistruoti į pamokas 12-os savaičių į priekį.");
-    setPermDialog(false);
-    setPermTime("");
-    load();
-  };
+  // Permanent slots — users can only view & remove (admin adds them)
 
   const removePermanent = async (id: string) => {
     const slot = permanents.find((p) => p.id === id);
@@ -371,52 +350,6 @@ export default function Paskyra() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSubDialog(false)}>Atšaukti</Button>
             <Button variant="gold" onClick={addSubscription}>Pridėti</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Permanent slot dialog */}
-      <Dialog open={permDialog} onOpenChange={setPermDialog}>
-        <DialogContent className="bg-gradient-card border-gold/20">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
-              <Star className="w-5 h-5 fill-gold text-gold" /> Nuolatinis laikas
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Jūs būsite automatiškai užregistruota į šią pamoką kiekvieną savaitę. Vardas tvarkaraštyje bus pažymėtas paryškintai.
-            </p>
-            <div>
-              <Label>Diena</Label>
-              <select
-                value={permDay}
-                onChange={(e) => { setPermDay(Number(e.target.value)); setPermTime(""); }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Laikas</Label>
-              <select
-                value={permTime}
-                onChange={(e) => setPermTime(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— pasirinkite —</option>
-                {slotsForPermDay.map((s) => (
-                  <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
-                ))}
-              </select>
-              {slotsForPermDay.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną nėra pamokų</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPermDialog(false)}>Atšaukti</Button>
-            <Button variant="gold" onClick={addPermanent} disabled={!permTime}>Pridėti</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
