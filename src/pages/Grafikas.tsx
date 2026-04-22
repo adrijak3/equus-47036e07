@@ -279,7 +279,7 @@ export default function Grafikas() {
     : `${weekStart.getDate()} ${MONTHS_LT[weekStart.getMonth()].toLowerCase()} – ${weekEnd.getDate()} ${MONTHS_LT[weekEnd.getMonth()].toLowerCase()} ${weekEnd.getFullYear()}`;
 
   return (
-    <div className="container max-w-5xl py-8 sm:py-14 relative">
+    <div className="container max-w-[1400px] py-8 sm:py-14 relative">
       {/* Decorative floral accents */}
       <FloralAccent className="absolute -top-8 -left-12 hidden md:block" size={180} delay={0.2} rotate={-15} />
       <FloralAccent className="absolute top-32 -right-16 hidden md:block" size={150} delay={0.5} rotate={20} />
