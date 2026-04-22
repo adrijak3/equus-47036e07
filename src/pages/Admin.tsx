@@ -233,9 +233,17 @@ function CancellationsTab() {
             <span className="text-muted-foreground">Priežastis: </span>{r.reason}
             {r.sickness && <span className="ml-2 px-2 py-0.5 rounded bg-blush/15 text-blush text-xs">Liga</span>}
           </p>
-          <div className="flex gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outlineGold" size="sm" onClick={() => decide(r, false)}>
               <Check className="w-4 h-4" /> NEskaičiuoti
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => grantMakeup(r)}
+              className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40"
+              title="Pamoką atidirbti iki sekmadienio (tos pačios savaitės)"
+            >
+              <Clock className="w-4 h-4" /> Atidirbti šią savaitę
             </Button>
             <Button variant="gold" size="sm" onClick={() => decide(r, true)}>
               <X className="w-4 h-4" /> Skaičiuoti
