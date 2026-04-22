@@ -8,6 +8,7 @@ import {
   WEEKDAYS_LT, MONTHS_LT, addDays, dbDayOfWeek, formatDateISO, formatTime,
   formatBookedName, hoursUntil, startOfWeek,
 } from "@/lib/equus";
+import { WEEKDAYS_LT_SHORT } from "@/lib/equus";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
