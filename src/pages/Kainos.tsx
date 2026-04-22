@@ -29,10 +29,6 @@ export default function Kainos() {
             <Row label="30 min" price="20 €" />
             <Row label="45 min" price="35 €" />
           </ul>
-          <div className="gold-divider my-6" />
-          <p className="text-sm text-muted-foreground italic">
-            Daugiau informacijos — kreiptis į administraciją.
-          </p>
         </section>
       </div>
     </div>

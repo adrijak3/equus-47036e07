@@ -52,7 +52,7 @@ interface PermanentSlot {
 }
 
 export default function Grafikas() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -223,6 +223,24 @@ export default function Grafikas() {
     loadData();
   };
 
+  /** Admin: bump capacity by +1 for this specific date+time */
+  const adminAddOneSeat = async (date: Date, time: string, currentCap: number) => {
+    const dateISO = formatDateISO(date);
+    const existing = overrides.find((o) => o.slot_date === dateISO && o.slot_time === time);
+    if (existing) {
+      const { error } = await supabase.from("slot_overrides")
+        .update({ max_capacity: existing.max_capacity + 1 })
+        .eq("slot_date", dateISO).eq("slot_time", time);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const { error } = await supabase.from("slot_overrides")
+        .insert({ slot_date: dateISO, slot_time: time, max_capacity: currentCap + 1 });
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success("Vieta pridėta (+1)");
+    loadData();
+  };
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
@@ -378,7 +396,7 @@ export default function Grafikas() {
 
                   {daySlots.length === 0 && (
                     <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
-                      {dow === 7 ? "Individualus" : "Pamokų nėra"}
+                      {dow === 7 ? "Individualus" : "Treniruočių nėra"}
                     </div>
                   )}
 
@@ -403,14 +421,27 @@ export default function Grafikas() {
                         {/* Slot header */}
                         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
                           <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-gold/60" />
-                            <span className="font-display text-base tabular-nums text-foreground">
+                            <Clock className="w-4 h-4 text-gold/60" />
+                            <span className="font-display text-lg tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <Users className="w-3 h-3" />
-                            <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Users className="w-3 h-3" />
+                              <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
+                            </div>
+                            {isAdmin && !slotPast && (
+                              <button
+                                type="button"
+                                onClick={() => adminAddOneSeat(date, slot.slot_time, cap)}
+                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                                title="Pridėti +1 vietą šiai treniruotei"
+                                aria-label="Pridėti vietą"
+                              >
+                                +1
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -427,7 +458,7 @@ export default function Grafikas() {
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.25 }}
                                   className={cn(
-                                    "flex items-center gap-1.5 text-xs leading-snug",
+                                    "flex items-center gap-1.5 text-sm leading-snug",
                                     mine ? "text-gold" : "text-foreground/85",
                                     perm && "font-bold",
                                   )}
@@ -496,7 +527,7 @@ export default function Grafikas() {
           {/* Legend */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gold" /> Jūsų rezervacija</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border border-gold/40" /> Kiti dalyviai</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border border-gold/40" /> Kiti</span>
             <span className="flex items-center gap-1.5"><Star className="w-3 h-3 fill-gold text-gold" /> Pastovi vieta (paryškintas vardas)</span>
             <span className="flex items-center gap-1.5"><span className="text-blush">●</span> Pilnas / Laukimų sąrašas</span>
           </div>
