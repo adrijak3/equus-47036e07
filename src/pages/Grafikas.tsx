@@ -300,16 +300,20 @@ export default function Grafikas() {
       </motion.header>
 
       {/* Week navigation */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <Button variant="outlineGold" size="icon" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Praėjusi savaitė">
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <div className="text-center">
-          <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Tvarkaraštis</div>
-          <div className="font-display text-xl sm:text-2xl text-gradient-gold capitalize">{monthLabel.toLowerCase()}</div>
+      <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
+        <div className="flex items-center gap-2 rounded-md border border-gold/20 bg-card/40 px-2 py-1.5">
+          <Button variant="ghost" size="icon" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Praėjusi savaitė">
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div className="font-display text-base sm:text-lg text-gradient-gold capitalize px-2 min-w-[180px] text-center">
+            {rangeLabel}
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Kita savaitė">
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
-        <Button variant="outlineGold" size="icon" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Kita savaitė">
-          <ChevronRight className="w-4 h-4" />
+        <Button variant="outlineGold" size="sm" onClick={() => setWeekStart(startOfWeek(new Date()))}>
+          📅 Šiandien
         </Button>
       </div>
 
