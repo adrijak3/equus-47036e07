@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return json({ error: "Missing auth" }, 401);
     }
 
@@ -20,15 +20,17 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller is admin
+    // Verify caller via JWT claims (works with ES256 signing keys)
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) return json({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
+    const callerId = claimsData.claims.sub as string;
 
     const { data: isAdmin } = await userClient.rpc("has_role", {
-      _user_id: user.id,
+      _user_id: callerId,
       _role: "admin",
     });
     if (!isAdmin) return json({ error: "Forbidden" }, 403);
@@ -37,7 +39,7 @@ Deno.serve(async (req) => {
     if (!user_id || typeof user_id !== "string") {
       return json({ error: "user_id required" }, 400);
     }
-    if (user_id === user.id) {
+    if (user_id === callerId) {
       return json({ error: "Negalima ištrinti savęs" }, 400);
     }
 
