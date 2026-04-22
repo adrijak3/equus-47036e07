@@ -330,51 +330,59 @@ export default function Grafikas() {
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : (
-        <div className="space-y-4">
-          {days.map((date, idx) => {
-            const daySlots = getDaySlots(date);
-            const isToday = date.getTime() === today.getTime();
-            const isPast = date.getTime() < today.getTime();
-            const dow = dbDayOfWeek(date); // 1..7
+        <>
+          {/* Horizontal weekly grid: 7 day columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+            {days.map((date, idx) => {
+              const daySlots = getDaySlots(date);
+              const isToday = date.getTime() === today.getTime();
+              const isPast = date.getTime() < today.getTime();
+              const dow = dbDayOfWeek(date);
 
-            return (
-              <section
-                key={idx}
-                className={cn(
-                  "bg-gradient-card border rounded-lg overflow-hidden transition-all",
-                  isToday ? "border-gold/40 shadow-gold" : "border-gold/10",
-                  isPast && "opacity-60",
-                )}
-              >
-                <div className="flex items-baseline justify-between px-5 sm:px-6 py-4 border-b border-gold/10">
-                  <div>
-                    <h3 className="font-display text-2xl text-gold">{WEEKDAYS_LT[idx]}</h3>
-                    <p className="text-xs text-muted-foreground tracking-wide mt-0.5">
-                      {date.getDate()} {MONTHS_LT[date.getMonth()].toLowerCase()}
-                    </p>
+              return (
+                <div key={idx} className={cn("flex flex-col gap-2", isPast && "opacity-60")}>
+                  {/* Day header */}
+                  <div
+                    className={cn(
+                      "rounded-md border px-3 py-2.5 bg-gradient-card",
+                      isToday ? "border-gold/50 shadow-gold" : "border-gold/15",
+                    )}
+                  >
+                    <div className="flex items-baseline justify-between gap-1">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-medium">
+                        <span className="hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
+                        <span className="xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
+                      </div>
+                      {isToday && (
+                        <span className="text-[9px] uppercase tracking-[0.15em] text-gold bg-gold/10 px-1.5 py-0.5 rounded-sm">
+                          Šiandien
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-display text-2xl text-gradient-gold leading-none mt-1.5 tabular-nums">
+                      {String(date.getDate()).padStart(2, "0")}.{String(date.getMonth() + 1).padStart(2, "0")}
+                    </div>
                   </div>
-                  {isToday && <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80">Šiandien</span>}
-                </div>
 
-                <div className="divide-y divide-gold/5">
-                  {/* Weekend training info banners */}
+                  {/* Weekend banners */}
                   {dow === 6 && (
-                    <div className="px-5 sm:px-6 py-3 bg-gold/5 text-sm italic text-foreground/80">
+                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
                       Treniruotės pas Jolitą 10–13 val., pas Jovitą 15 val.
                     </div>
                   )}
                   {dow === 7 && (
-                    <div className="px-5 sm:px-6 py-3 bg-gold/5 text-sm italic text-foreground/80">
+                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
                       Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
                     </div>
                   )}
 
                   {daySlots.length === 0 && (
-                    <div className="px-5 sm:px-6 py-6 text-sm text-muted-foreground text-center italic">
-                      {dow === 7 ? "Sekmadienio tvarkaraštis nustatomas individualiai" : "Pamokų nėra"}
+                    <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
+                      {dow === 7 ? "Individualus" : "Pamokų nėra"}
                     </div>
                   )}
 
+                  {/* Slot cards stacked vertically */}
                   {daySlots.map((slot) => {
                     const slotBookings = getSlotBookings(date, slot.slot_time);
                     const cap = getCapacity(date, slot.slot_time, slot.max_capacity);
@@ -385,50 +393,55 @@ export default function Grafikas() {
                     const slotPast = new Date(`${formatDateISO(date)}T${slot.slot_time}`).getTime() < Date.now();
 
                     return (
-                      <div key={slot.id} className="px-5 sm:px-6 py-4 hover:bg-gold/5 transition-colors">
-                        <div className="flex items-center justify-between gap-3 mb-2">
-                          <div className="flex items-center gap-3">
-                            <Clock className="w-4 h-4 text-gold/60" />
-                            <span className="font-display text-xl tabular-nums text-foreground">
+                      <div
+                        key={slot.id}
+                        className={cn(
+                          "rounded-md border bg-gradient-card overflow-hidden transition-colors",
+                          myBooking ? "border-gold/50" : "border-gold/15 hover:border-gold/30",
+                        )}
+                      >
+                        {/* Slot header */}
+                        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-gold/60" />
+                            <span className="font-display text-base tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Users className="w-3.5 h-3.5" />
+                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Users className="w-3 h-3" />
                             <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
                           </div>
                         </div>
 
-                        {/* Booked names — bullet list */}
+                        {/* Booked names */}
                         {slotBookings.length > 0 && (
-                          <ul className="pl-7 mb-2 space-y-1">
+                          <ul className="px-3 py-2 space-y-1">
                             {slotBookings.map((b) => {
                               const perm = isPermanentBooking(b);
                               const mine = isMyBooking(b);
                               return (
                                 <motion.li
                                   key={b.id}
-                                  initial={{ opacity: 0, x: -6 }}
+                                  initial={{ opacity: 0, x: -4 }}
                                   animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.3 }}
+                                  transition={{ duration: 0.25 }}
                                   className={cn(
-                                    "flex items-center gap-2 text-sm",
+                                    "flex items-center gap-1.5 text-xs leading-snug",
                                     mine ? "text-gold" : "text-foreground/85",
                                     perm && "font-bold",
                                   )}
                                 >
-                                  <span className={cn("text-base leading-none", mine ? "text-gold" : "text-gold/40")}>
-                                    •
-                                  </span>
-                                  {perm && <Star className="w-3 h-3 text-gold fill-gold" />}
-                                  <span>{formatBookedName(b.profile_name ?? "—")}</span>
+                                  <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
+                                  {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
+                                  <span className="truncate">{formatBookedName(b.profile_name ?? "—")}</span>
                                   {mine && !slotPast && (
                                     <button
                                       onClick={() => handleCancelClick(b)}
-                                      className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                                      className="ml-auto text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
                                       aria-label="Atšaukti"
                                     >
-                                      <X className="w-3.5 h-3.5" />
+                                      <X className="w-3 h-3" />
                                     </button>
                                   )}
                                 </motion.li>
@@ -439,46 +452,55 @@ export default function Grafikas() {
 
                         {/* Action button */}
                         {!slotPast && user && !myBooking && (
-                          <div className="pl-7 mt-2">
+                          <div className="px-2 pb-2 pt-1">
                             {!isFull ? (
                               <Button
                                 variant="ghostGold"
                                 size="sm"
+                                className="w-full h-8 text-xs"
                                 disabled={busy === `book-${formatDateISO(date)}-${slot.slot_time}`}
                                 onClick={() => handleBook(date, slot.slot_time)}
                               >
                                 + Registruotis
                               </Button>
                             ) : iAmWaiting ? (
-                              <Button variant="ghost" size="sm" onClick={() => handleLeaveWaiting(date, slot.slot_time)}>
-                                Pašalinti iš laukiančiųjų ({slotWaiting.findIndex((w) => w.user_id === user.id) + 1} eilėje)
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full h-8 text-[11px]"
+                                onClick={() => handleLeaveWaiting(date, slot.slot_time)}
+                              >
+                                Iš laukiančiųjų ({slotWaiting.findIndex((w) => w.user_id === user.id) + 1})
                               </Button>
                             ) : (
                               <Button
                                 variant="ghostGold"
                                 size="sm"
+                                className="w-full h-8 text-[11px]"
                                 disabled={busy === `wait-${formatDateISO(date)}-${slot.slot_time}`}
                                 onClick={() => handleJoinWaiting(date, slot.slot_time)}
                               >
-                                + Į laukiančiųjų sąrašą {slotWaiting.length > 0 && `(${slotWaiting.length})`}
+                                + Laukiantis {slotWaiting.length > 0 && `(${slotWaiting.length})`}
                               </Button>
                             )}
-                          </div>
-                        )}
-
-                        {!user && !slotPast && !isFull && (
-                          <div className="pl-7 text-xs text-muted-foreground italic">
-                            Prisijunkite norėdami registruotis
                           </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
-              </section>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gold" /> Jūsų rezervacija</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border border-gold/40" /> Kiti dalyviai</span>
+            <span className="flex items-center gap-1.5"><Star className="w-3 h-3 fill-gold text-gold" /> Pastovi vieta (paryškintas vardas)</span>
+            <span className="flex items-center gap-1.5"><span className="text-blush">●</span> Pilnas / Laukimų sąrašas</span>
+          </div>
+        </>
       )}
 
       {/* Permanent cancel choice dialog */}
