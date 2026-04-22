@@ -238,9 +238,10 @@ function CancellationsTab() {
               <Check className="w-4 h-4" /> NEskaičiuoti
             </Button>
             <Button
+              variant="ghostGold"
               size="sm"
               onClick={() => grantMakeup(r)}
-              className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40"
+              className="border border-gold/40 bg-gold/10"
               title="Pamoką atidirbti iki sekmadienio (tos pačios savaitės)"
             >
               <Clock className="w-4 h-4" /> Atidirbti šią savaitę
