@@ -414,9 +414,7 @@ function PermanentSlotsSection({
     <Section title="Nuolatiniai laikai" icon={<Star className="w-4 h-4" />}>
       <div className="p-5">
         <p className="text-sm text-muted-foreground mb-4">
-          Nuolatiniai laikai – tai jūsų savaitiniai pamokų laikai, į kuriuos esate automatiškai užregistruojama kiekvieną savaitę.
-          Juos prideda <span className="text-foreground/85">administracija</span>. Jei norite pridėti ar pakeisti –
-          parašykite žinutę administracijai.
+          Nuolatiniai laikai – tai jūsų savaitiniai treniruočių laikai, į kuriuos esate automatiškai užregistruojama kiekvieną savaitę.
         </p>
         {permanents.length === 0 ? (
           <p className="text-sm italic text-muted-foreground py-3">Šiuo metu neturite nuolatinių laikų</p>
