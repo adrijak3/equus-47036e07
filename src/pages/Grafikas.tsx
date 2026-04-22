@@ -52,7 +52,7 @@ interface PermanentSlot {
 }
 
 export default function Grafikas() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -220,6 +220,24 @@ export default function Grafikas() {
       .eq("user_id", user.id).eq("slot_time", booking.slot_time)
       .gte("slot_date", booking.slot_date).eq("status", "active");
     toast.success("Nuolatinis laikas pašalintas. Visos būsimos pamokos atšauktos.");
+    loadData();
+  };
+
+  /** Admin: bump capacity by +1 for this specific date+time */
+  const adminAddOneSeat = async (date: Date, time: string, currentCap: number) => {
+    const dateISO = formatDateISO(date);
+    const existing = overrides.find((o) => o.slot_date === dateISO && o.slot_time === time);
+    if (existing) {
+      const { error } = await supabase.from("slot_overrides")
+        .update({ max_capacity: existing.max_capacity + 1 })
+        .eq("slot_date", dateISO).eq("slot_time", time);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const { error } = await supabase.from("slot_overrides")
+        .insert({ slot_date: dateISO, slot_time: time, max_capacity: currentCap + 1 });
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success("Vieta pridėta (+1)");
     loadData();
   };
 
