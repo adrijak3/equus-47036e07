@@ -273,6 +273,10 @@ export default function Grafikas() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const monthLabel = `${MONTHS_LT[weekStart.getMonth()]} ${weekStart.getFullYear()}`;
+  const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+  const rangeLabel = sameMonth
+    ? `${weekStart.getDate()}–${weekEnd.getDate()} ${MONTHS_LT[weekStart.getMonth()].toLowerCase()} ${weekStart.getFullYear()}`
+    : `${weekStart.getDate()} ${MONTHS_LT[weekStart.getMonth()].toLowerCase()} – ${weekEnd.getDate()} ${MONTHS_LT[weekEnd.getMonth()].toLowerCase()} ${weekEnd.getFullYear()}`;
 
   return (
     <div className="container max-w-5xl py-8 sm:py-14 relative">
