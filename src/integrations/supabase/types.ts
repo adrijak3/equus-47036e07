@@ -57,6 +57,7 @@ export type Database = {
           created_at: string
           decided_at: string | null
           id: string
+          makeup_deadline: string | null
           reason: string
           sickness: boolean
           status: Database["public"]["Enums"]["cancel_status"]
@@ -68,6 +69,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           id?: string
+          makeup_deadline?: string | null
           reason: string
           sickness?: boolean
           status?: Database["public"]["Enums"]["cancel_status"]
@@ -79,6 +81,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           id?: string
+          makeup_deadline?: string | null
           reason?: string
           sickness?: boolean
           status?: Database["public"]["Enums"]["cancel_status"]
@@ -330,6 +333,7 @@ export type Database = {
     }
     Functions: {
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
+      expire_makeup_cancellations: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
