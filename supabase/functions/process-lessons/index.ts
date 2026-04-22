@@ -33,6 +33,11 @@ Deno.serve(async (req) => {
 
   const { date: todayISO, time: nowTime } = vilniusNow();
 
+  // Expire any past-deadline makeup grants → mark booking as counts_in_subscription
+  let makeupsExpired = 0;
+  const { data: expiredCount } = await supabase.rpc("expire_makeup_cancellations");
+  if (typeof expiredCount === "number") makeupsExpired = expiredCount;
+
   const { data: pastActive, error: e1 } = await supabase
     .from("bookings")
     .select("id, user_id, slot_date, slot_time, counts_in_subscription, subscription_id")
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
   }
 
   return new Response(
-    JSON.stringify({ ok: true, processed, consumed, today: todayISO, now: nowTime }),
+    JSON.stringify({ ok: true, processed, consumed, makeupsExpired, today: todayISO, now: nowTime }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
   );
 });

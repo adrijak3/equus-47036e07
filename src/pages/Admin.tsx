@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock } from "lucide-react";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; }
 interface CancelReq {
@@ -160,17 +160,58 @@ function CancellationsTab() {
   };
   useEffect(() => { load(); }, []);
 
+  // Returns Sunday (end of week) of given ISO date
+  const endOfWeek = (iso: string): string => {
+    const d = new Date(iso + "T00:00:00");
+    const dow = d.getDay(); // 0=Sun..6=Sat
+    const daysUntilSun = dow === 0 ? 0 : 7 - dow;
+    d.setDate(d.getDate() + daysUntilSun);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const sendUserMessage = async (userId: string, body: string) => {
+    await supabase.from("messages").insert({
+      user_id: userId, body, from_admin: true, read_by_user: false, read_by_admin: true,
+    });
+  };
+
   const decide = async (req: CancelReq, counts: boolean) => {
-    // Update cancellation request
     const { error: e1 } = await supabase.from("cancellation_requests")
-      .update({ status: "approved", admin_decision_counts: counts, decided_at: new Date().toISOString() })
+      .update({
+        status: "approved", admin_decision_counts: counts,
+        makeup_deadline: null, decided_at: new Date().toISOString(),
+      })
       .eq("id", req.id);
     if (e1) { toast.error(e1.message); return; }
-    // Mark booking accordingly
     const { error: e2 } = await supabase.from("bookings")
       .update({ counts_in_subscription: counts }).eq("id", req.booking_id);
     if (e2) { toast.error(e2.message); return; }
+    await sendUserMessage(req.user_id, counts
+      ? `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) buvo įskaityta į abonementą.`
+      : `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) NEbus įskaityta į abonementą.`);
     toast.success(counts ? "Pamoka skaičiuosis" : "Pamoka neskaičiuosis");
+    load();
+  };
+
+  const grantMakeup = async (req: CancelReq) => {
+    if (!req.slot_date) return;
+    const deadline = endOfWeek(req.slot_date);
+    const { error: e1 } = await supabase.from("cancellation_requests")
+      .update({
+        status: "approved", admin_decision_counts: false,
+        makeup_deadline: deadline, decided_at: new Date().toISOString(),
+      })
+      .eq("id", req.id);
+    if (e1) { toast.error(e1.message); return; }
+    const { error: e2 } = await supabase.from("bookings")
+      .update({ counts_in_subscription: false }).eq("id", req.booking_id);
+    if (e2) { toast.error(e2.message); return; }
+    await sendUserMessage(req.user_id,
+      `Jūsų atšaukimas (${req.slot_date} ${req.slot_time?.slice(0, 5)}) patvirtintas su sąlyga: ` +
+      `pamoką turite atidirbti iki ${deadline} (sekmadienio imtinai). ` +
+      `Užsiregistruokite į kitą laiką tą pačią savaitę. ` +
+      `Jei to nepadarysite, pamoka bus įskaityta į abonementą automatiškai.`);
+    toast.success(`Atidirbti iki ${deadline}`);
     load();
   };
 
@@ -192,9 +233,18 @@ function CancellationsTab() {
             <span className="text-muted-foreground">Priežastis: </span>{r.reason}
             {r.sickness && <span className="ml-2 px-2 py-0.5 rounded bg-blush/15 text-blush text-xs">Liga</span>}
           </p>
-          <div className="flex gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outlineGold" size="sm" onClick={() => decide(r, false)}>
               <Check className="w-4 h-4" /> NEskaičiuoti
+            </Button>
+            <Button
+              variant="ghostGold"
+              size="sm"
+              onClick={() => grantMakeup(r)}
+              className="border border-gold/40 bg-gold/10"
+              title="Pamoką atidirbti iki sekmadienio (tos pačios savaitės)"
+            >
+              <Clock className="w-4 h-4" /> Atidirbti šią savaitę
             </Button>
             <Button variant="gold" size="sm" onClick={() => decide(r, true)}>
               <X className="w-4 h-4" /> Skaičiuoti
