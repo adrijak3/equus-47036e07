@@ -106,6 +106,12 @@ export default function Paskyra() {
   });
   const monthAttended = monthBookings.filter((b) => b.status === "active" || b.status === "completed");
 
+  // Lifetime stats
+  const totalAttended = past.filter(
+    (b) => (b.status === "active" || b.status === "completed") && b.counts_in_subscription === true,
+  ).length;
+  const totalCancelled = bookings.filter((b) => b.status === "cancelled").length;
+
   const newSubPrice = calculateSubscriptionPrice(newSubLessons);
 
   const addSubscription = async () => {
@@ -192,7 +198,7 @@ export default function Paskyra() {
 
       <Tabs defaultValue="lessons">
         <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto">
-          <TabsTrigger value="lessons" className="text-xs sm:text-sm">Pamokos</TabsTrigger>
+          <TabsTrigger value="lessons" className="text-xs sm:text-sm">Treniruotės</TabsTrigger>
           <TabsTrigger value="subs" className="text-xs sm:text-sm">Abonementai</TabsTrigger>
           <TabsTrigger value="permanent" className="gap-1 text-xs sm:text-sm">
             <Star className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuolatiniai</span>
@@ -205,9 +211,21 @@ export default function Paskyra() {
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-6">
-          <Section title="Ateities pamokos" icon={<CalendarDays className="w-4 h-4" />}>
+          {/* Lifetime stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Iš viso treniruočių</div>
+              <div className="font-display text-4xl text-gradient-gold tabular-nums mt-1">{totalAttended}</div>
+            </div>
+            <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Atšauktų</div>
+              <div className="font-display text-4xl text-blush tabular-nums mt-1">{totalCancelled}</div>
+            </div>
+          </div>
+
+          <Section title="Užsirašytos treniruotės" icon={<CalendarDays className="w-4 h-4" />}>
             {future.length === 0 ? (
-              <Empty text="Nėra suplanuotų pamokų" />
+              <Empty text="Nėra suplanuotų treniruočių" />
             ) : (
               <ul className="divide-y divide-gold/5">
                 {future.map((b) => <BookingRow key={b.id} b={b} />)}
@@ -218,7 +236,7 @@ export default function Paskyra() {
           <Section title={`${monthLabel} lankomumas`} icon={<CheckCircle2 className="w-4 h-4" />}>
             <div className="flex items-baseline gap-3 px-5 py-3">
               <span className="font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</span>
-              <span className="text-sm text-muted-foreground">pamokų šį mėnesį</span>
+              <span className="text-sm text-muted-foreground">treniruočių šį mėnesį</span>
             </div>
             {monthBookings.length > 0 && (
               <ul className="divide-y divide-gold/5 border-t border-gold/10">
@@ -229,7 +247,7 @@ export default function Paskyra() {
 
           <Section title="Visos praėjusios" icon={<Clock className="w-4 h-4" />}>
             {past.length === 0 ? (
-              <Empty text="Dar nebuvo pamokų" />
+              <Empty text="Dar nebuvo treniruočių" />
             ) : (
               <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
                 {past.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
