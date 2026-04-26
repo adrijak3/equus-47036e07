@@ -255,6 +255,17 @@ export default function Grafikas() {
     loadData();
   };
 
+  /** Admin: remove the +1 override (back to default capacity) */
+  const adminRemoveOverride = async (date: Date, time: string) => {
+    const dateISO = formatDateISO(date);
+    const { error } = await supabase.from("slot_overrides")
+      .delete()
+      .eq("slot_date", dateISO).eq("slot_time", time);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Papildoma vieta pašalinta");
+    loadData();
+  };
+
   /** Admin: force-add a user to a slot */
   const adminAddUserToSlot = async (date: Date, time: string, userId: string) => {
     if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
@@ -482,6 +493,17 @@ export default function Grafikas() {
                                 aria-label="Pridėti vietą"
                               >
                                 +1
+                              </button>
+                            )}
+                            {isAdmin && !slotPast && overrides.some((o) => o.slot_date === formatDateISO(date) && o.slot_time === slot.slot_time) && (
+                              <button
+                                type="button"
+                                onClick={() => adminRemoveOverride(date, slot.slot_time)}
+                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-blush/40 text-blush hover:bg-blush/10 transition-colors text-[11px] leading-none"
+                                title="Pašalinti papildomą vietą (atstatyti į numatytą)"
+                                aria-label="Pašalinti papildomą vietą"
+                              >
+                                −1
                               </button>
                             )}
                             {isAdmin && !slotPast && (
