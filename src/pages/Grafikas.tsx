@@ -50,6 +50,7 @@ interface PermanentSlot {
   day_of_week: number;
   slot_time: string;
 }
+interface ProfileLite { id: string; full_name: string; }
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
@@ -70,6 +71,11 @@ export default function Grafikas() {
   const [permCancelDialog, setPermCancelDialog] = useState<{ booking: Booking } | null>(null);
   // Simple confirm dialog (replaces window.confirm)
   const [confirmDialog, setConfirmDialog] = useState<{ title: string; description?: string; onConfirm: () => void } | null>(null);
+  // Admin manage-slot dialog
+  const [adminSlotDialog, setAdminSlotDialog] = useState<{ date: Date; time: string } | null>(null);
+  const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
+  const [adminAddUserId, setAdminAddUserId] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = days[6];
@@ -113,6 +119,14 @@ export default function Grafikas() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
+
+  // Load all profiles once for admin user-picker
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase.from("profiles").select("id, full_name").order("full_name").then(({ data }) => {
+      setAllProfiles(data ?? []);
+    });
+  }, [isAdmin]);
 
   const isPermanentBooking = (b: Booking) => {
     const dow = dbDayOfWeek(new Date(`${b.slot_date}T${b.slot_time}`));
@@ -238,6 +252,34 @@ export default function Grafikas() {
       if (error) { toast.error(error.message); return; }
     }
     toast.success("Vieta pridėta (+1)");
+    loadData();
+  };
+
+  /** Admin: force-add a user to a slot */
+  const adminAddUserToSlot = async (date: Date, time: string, userId: string) => {
+    if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings").insert({
+      user_id: userId, slot_date: formatDateISO(date), slot_time: time, status: "active",
+    });
+    setAdminBusy(false);
+    if (error) {
+      toast.error(error.code === "23505" ? "Vartotojas jau užregistruotas" : error.message);
+      return;
+    }
+    toast.success("Pridėta");
+    setAdminAddUserId("");
+    loadData();
+  };
+
+  /** Admin: force-remove a booking */
+  const adminRemoveBooking = async (bookingId: string) => {
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings")
+      .update({ status: "cancelled" }).eq("id", bookingId);
+    setAdminBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pašalinta");
     loadData();
   };
 
