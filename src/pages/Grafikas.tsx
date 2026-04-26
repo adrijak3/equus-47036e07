@@ -255,6 +255,17 @@ export default function Grafikas() {
     loadData();
   };
 
+  /** Admin: remove the +1 override (back to default capacity) */
+  const adminRemoveOverride = async (date: Date, time: string) => {
+    const dateISO = formatDateISO(date);
+    const { error } = await supabase.from("slot_overrides")
+      .delete()
+      .eq("slot_date", dateISO).eq("slot_time", time);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Papildoma vieta pašalinta");
+    loadData();
+  };
+
   /** Admin: force-add a user to a slot */
   const adminAddUserToSlot = async (date: Date, time: string, userId: string) => {
     if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
