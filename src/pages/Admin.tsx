@@ -506,10 +506,32 @@ function PermanentSlotsAdminTab() {
   useEffect(() => { load(); }, []);
 
   const remove = async (row: PermSlotRow) => {
-    if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?\n\nVartotojo būsimos pamokos NEBUS automatiškai atšauktos — tik nustos kartotis.`)) return;
-    const { error } = await supabase.from("permanent_slots").delete().eq("id", row.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Pašalinta"); load();
+    if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?\n\nVisos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos kartotis.`)) return;
+    // 1) Delete the recurring rule
+    const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
+    if (e1) { toast.error(e1.message); return; }
+    // 2) Cancel all future active bookings for this user at this weekday/time
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const { data: future } = await supabase
+      .from("bookings")
+      .select("id, slot_date")
+      .eq("user_id", row.user_id)
+      .eq("slot_time", row.slot_time)
+      .eq("status", "active")
+      .gte("slot_date", todayISO);
+    const ids = (future ?? [])
+      .filter((b) => {
+        // map Postgres dow (0=Sun..6=Sat) → app dow (1=Mon..7=Sun)
+        const d = new Date(b.slot_date + "T00:00:00");
+        const dow = d.getDay() === 0 ? 7 : d.getDay();
+        return dow === row.day_of_week;
+      })
+      .map((b) => b.id);
+    if (ids.length > 0) {
+      await supabase.from("bookings").update({ status: "cancelled" }).in("id", ids);
+    }
+    toast.success(`Pašalinta. Atšaukta ${ids.length} būsimų pamokų.`);
+    load();
   };
 
   const add = async () => {
