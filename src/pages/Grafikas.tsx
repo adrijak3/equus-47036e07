@@ -495,6 +495,17 @@ export default function Grafikas() {
                                 +1
                               </button>
                             )}
+                            {isAdmin && !slotPast && overrides.some((o) => o.slot_date === formatDateISO(date) && o.slot_time === slot.slot_time) && (
+                              <button
+                                type="button"
+                                onClick={() => adminRemoveOverride(date, slot.slot_time)}
+                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-blush/40 text-blush hover:bg-blush/10 transition-colors text-[11px] leading-none"
+                                title="Pašalinti papildomą vietą (atstatyti į numatytą)"
+                                aria-label="Pašalinti papildomą vietą"
+                              >
+                                −1
+                              </button>
+                            )}
                             {isAdmin && !slotPast && (
                               <button
                                 type="button"
