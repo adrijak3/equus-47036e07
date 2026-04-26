@@ -50,6 +50,7 @@ interface PermanentSlot {
   day_of_week: number;
   slot_time: string;
 }
+interface ProfileLite { id: string; full_name: string; }
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
@@ -70,6 +71,11 @@ export default function Grafikas() {
   const [permCancelDialog, setPermCancelDialog] = useState<{ booking: Booking } | null>(null);
   // Simple confirm dialog (replaces window.confirm)
   const [confirmDialog, setConfirmDialog] = useState<{ title: string; description?: string; onConfirm: () => void } | null>(null);
+  // Admin manage-slot dialog
+  const [adminSlotDialog, setAdminSlotDialog] = useState<{ date: Date; time: string } | null>(null);
+  const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
+  const [adminAddUserId, setAdminAddUserId] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = days[6];
@@ -113,6 +119,14 @@ export default function Grafikas() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
+
+  // Load all profiles once for admin user-picker
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase.from("profiles").select("id, full_name").order("full_name").then(({ data }) => {
+      setAllProfiles(data ?? []);
+    });
+  }, [isAdmin]);
 
   const isPermanentBooking = (b: Booking) => {
     const dow = dbDayOfWeek(new Date(`${b.slot_date}T${b.slot_time}`));
@@ -238,6 +252,34 @@ export default function Grafikas() {
       if (error) { toast.error(error.message); return; }
     }
     toast.success("Vieta pridėta (+1)");
+    loadData();
+  };
+
+  /** Admin: force-add a user to a slot */
+  const adminAddUserToSlot = async (date: Date, time: string, userId: string) => {
+    if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings").insert({
+      user_id: userId, slot_date: formatDateISO(date), slot_time: time, status: "active",
+    });
+    setAdminBusy(false);
+    if (error) {
+      toast.error(error.code === "23505" ? "Vartotojas jau užregistruotas" : error.message);
+      return;
+    }
+    toast.success("Pridėta");
+    setAdminAddUserId("");
+    loadData();
+  };
+
+  /** Admin: force-remove a booking */
+  const adminRemoveBooking = async (bookingId: string) => {
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings")
+      .update({ status: "cancelled" }).eq("id", bookingId);
+    setAdminBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pašalinta");
     loadData();
   };
 
@@ -440,6 +482,17 @@ export default function Grafikas() {
                                 aria-label="Pridėti vietą"
                               >
                                 +1
+                              </button>
+                            )}
+                            {isAdmin && !slotPast && (
+                              <button
+                                type="button"
+                                onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time }); setAdminAddUserId(""); }}
+                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                                title="Valdyti dalyvius (admin)"
+                                aria-label="Valdyti"
+                              >
+                                ⚙
                               </button>
                             )}
                           </div>
@@ -647,6 +700,86 @@ export default function Grafikas() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCancelDialog(null)}>Atgal</Button>
             <Button variant="gold" onClick={submitLateCancel}>Patvirtinti atšaukimą</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin: manage slot participants */}
+      <Dialog open={!!adminSlotDialog} onOpenChange={(o) => !o && setAdminSlotDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold">
+              Valdyti dalyvius
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground tabular-nums">
+              {adminSlotDialog && `${formatDateISO(adminSlotDialog.date)} · ${formatTime(adminSlotDialog.time)}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Užsiregistravę</Label>
+              {adminSlotDialog && (() => {
+                const list = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time);
+                if (list.length === 0) {
+                  return <p className="text-sm italic text-muted-foreground mt-2">Nėra užsiregistravusių</p>;
+                }
+                return (
+                  <ul className="mt-2 space-y-1.5">
+                    {list.map((b) => (
+                      <li key={b.id} className="flex items-center justify-between text-sm border border-gold/10 rounded px-3 py-2">
+                        <span className="text-foreground/85">{b.profile_name ?? "—"}</span>
+                        <button
+                          onClick={() => adminRemoveBooking(b.id)}
+                          disabled={adminBusy}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          aria-label="Pašalinti"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
+            </div>
+
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti vartotoją</Label>
+              <div className="flex gap-2 mt-2">
+                <select
+                  value={adminAddUserId}
+                  onChange={(e) => setAdminAddUserId(e.target.value)}
+                  className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">— pasirinkite —</option>
+                  {allProfiles
+                    .filter((p) => {
+                      if (!adminSlotDialog) return true;
+                      const booked = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time);
+                      return !booked.some((b) => b.user_id === p.id);
+                    })
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>{p.full_name}</option>
+                    ))}
+                </select>
+                <Button
+                  variant="gold"
+                  size="sm"
+                  disabled={adminBusy || !adminAddUserId}
+                  onClick={() => adminSlotDialog && adminAddUserToSlot(adminSlotDialog.date, adminSlotDialog.time, adminAddUserId)}
+                >
+                  Pridėti
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5 italic">
+                Talpos limitas ignoruojamas. Norint pridėti +1 vietą, naudokite +1 mygtuką.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAdminSlotDialog(null)}>Uždaryti</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
