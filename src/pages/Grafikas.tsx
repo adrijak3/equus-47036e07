@@ -484,6 +484,17 @@ export default function Grafikas() {
                                 +1
                               </button>
                             )}
+                            {isAdmin && !slotPast && (
+                              <button
+                                type="button"
+                                onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time }); setAdminAddUserId(""); }}
+                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                                title="Valdyti dalyvius (admin)"
+                                aria-label="Valdyti"
+                              >
+                                ⚙
+                              </button>
+                            )}
                           </div>
                         </div>
 
