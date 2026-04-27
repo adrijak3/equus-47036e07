@@ -462,7 +462,7 @@ export default function Grafikas() {
       ) : (
         <>
           {/* Horizontal weekly grid: 7 day columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-3">
             {days.map((date, idx) => {
               const daySlots = getDaySlots(date);
               const isToday = date.getTime() === today.getTime();
@@ -470,7 +470,18 @@ export default function Grafikas() {
               const dow = dbDayOfWeek(date);
 
               return (
-                <div key={idx} className={cn("flex flex-col gap-2", isPast && "opacity-60")}>
+                <div key={idx} className={cn("flex flex-col gap-2 relative", isPast && "opacity-60")}>
+                  {/* Mobile-only separator between days */}
+                  {idx > 0 && (
+                    <div
+                      aria-hidden
+                      className="sm:hidden flex items-center justify-center -mt-1 mb-2 select-none"
+                    >
+                      <div className="flex-1 h-px bg-gold/20" />
+                      <div className="px-2 text-gold/40 text-xs">•</div>
+                      <div className="flex-1 h-px bg-gold/20" />
+                    </div>
+                  )}
                   {/* Day header */}
                   <div
                     className={cn(
@@ -479,9 +490,9 @@ export default function Grafikas() {
                     )}
                   >
                     <div className="flex items-baseline justify-between gap-1">
-                      <div className="text-xs sm:text-[11px] uppercase tracking-[0.18em] text-gold font-bold">
-                        <span className="hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
-                        <span className="xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
+                      <div className="text-sm sm:text-[11px] uppercase tracking-[0.18em] text-gold font-bold">
+                        <span className="sm:hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
+                        <span className="hidden sm:inline xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
                       </div>
                       {isToday && (
                         <span className="text-[9px] uppercase tracking-[0.15em] text-gold bg-gold/10 px-1.5 py-0.5 rounded-sm">
