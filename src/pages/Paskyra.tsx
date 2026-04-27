@@ -197,14 +197,14 @@ export default function Paskyra() {
       </motion.header>
 
       <Tabs defaultValue="lessons">
-        <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto">
-          <TabsTrigger value="lessons" className="text-xs sm:text-sm">Treniruotės</TabsTrigger>
-          <TabsTrigger value="subs" className="text-xs sm:text-sm">Abonementai</TabsTrigger>
-          <TabsTrigger value="permanent" className="gap-1 text-xs sm:text-sm">
+        <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+          <TabsTrigger value="lessons" className="text-[11px] sm:text-sm px-1 sm:px-3 whitespace-nowrap">Treniruotės</TabsTrigger>
+          <TabsTrigger value="subs" className="text-[11px] sm:text-sm px-1 sm:px-3 whitespace-nowrap">Abonementai</TabsTrigger>
+          <TabsTrigger value="permanent" className="gap-1 text-[11px] sm:text-sm px-1 sm:px-3">
             <Star className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuolatiniai</span>
           </TabsTrigger>
-          <TabsTrigger value="messages" className="text-xs sm:text-sm">Žinutės</TabsTrigger>
-          <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm">
+          <TabsTrigger value="messages" className="text-[11px] sm:text-sm px-1 sm:px-3 whitespace-nowrap">Žinutės</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-1 text-[11px] sm:text-sm px-1 sm:px-3">
             <Settings className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuostatos</span>
           </TabsTrigger>
         </TabsList>
