@@ -567,7 +567,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-function SubscriptionCard({ s, onMarkPaid }: { s: Subscription; onMarkPaid?: (id: string) => void }) {
+function SubscriptionCard({ s, onMarkPaid, onDelete }: { s: Subscription; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void }) {
   const remaining = s.lessons_total - s.lessons_used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
@@ -606,6 +606,18 @@ function SubscriptionCard({ s, onMarkPaid }: { s: Subscription; onMarkPaid?: (id
       </div>
       {empty && !expired && (
         <p className="mt-3 text-xs text-destructive font-medium">Pamokos baigėsi — pridėkite naują abonementą</p>
+      )}
+      {onDelete && (
+        <div className="mt-4 pt-3 border-t border-gold/10 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onDelete(s.id)}
+            className="text-xs text-muted-foreground hover:text-destructive transition-colors inline-flex items-center gap-1"
+            title="Ištrinti šį abonementą"
+          >
+            <Trash2 className="w-3 h-3" /> Ištrinti
+          </button>
+        </div>
       )}
     </div>
   );
