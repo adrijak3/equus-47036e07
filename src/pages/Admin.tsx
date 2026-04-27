@@ -278,6 +278,26 @@ function UsersTab() {
     load();
   };
 
+  const editLessons = async (s: Sub) => {
+    const txt = prompt(`Naujas treniruočių skaičius (dabar ${s.lessons_total}):`, String(s.lessons_total));
+    if (txt === null) return;
+    const n = parseInt(txt);
+    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
+    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
+    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atnaujinta");
+    load();
+  };
+
+  const deleteSub = async (s: Sub) => {
+    if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
+    const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Ištrinta");
+    load();
+  };
+
   const deleteUser = async (p: Profile) => {
     const txt = prompt(
       `Visiškai ištrinti vartotoją "${p.full_name}"?\n\nVisi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negrįžtamai pašalinti.\n\nĮrašykite vartotojo vardą patvirtinti:`
@@ -317,14 +337,31 @@ function UsersTab() {
                 <ul className="space-y-2">
                   {userSubs.map((s) => (
                     <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5">
-                      <span className="tabular-nums">{s.lessons_used}/{s.lessons_total} · {s.price}€</span>
-                      <span className="text-xs text-muted-foreground">{s.purchase_date} → {s.expires_at}</span>
                       <button
-                        onClick={() => togglePaid(s.id, !s.paid)}
-                        className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}
+                        type="button"
+                        onClick={() => editLessons(s)}
+                        className="tabular-nums hover:text-gold transition-colors"
+                        title="Spauskite, kad pakeistumėte treniruočių skaičių"
                       >
-                        {s.paid ? "Apmokėta" : "Neapmokėta"}
+                        {s.lessons_used}/{s.lessons_total} · {s.price}€
                       </button>
+                      <span className="text-xs text-muted-foreground">{s.purchase_date} → {s.expires_at}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => togglePaid(s.id, !s.paid)}
+                          className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}
+                        >
+                          {s.paid ? "Apmokėta" : "Neapmokėta"}
+                        </button>
+                        <button
+                          onClick={() => deleteSub(s)}
+                          className="text-muted-foreground hover:text-destructive p-1"
+                          title="Ištrinti abonementą"
+                          aria-label="Ištrinti"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

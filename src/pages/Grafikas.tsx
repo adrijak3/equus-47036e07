@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,7 @@ import { WEEKDAYS_LT_SHORT } from "@/lib/equus";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -51,6 +52,13 @@ interface PermanentSlot {
   slot_time: string;
 }
 interface ProfileLite { id: string; full_name: string; }
+interface DayNote {
+  id: string;
+  note_date: string;
+  link: string;
+  label: string | null;
+  added_by: string;
+}
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
@@ -76,6 +84,13 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+
+  // Day notes
+  const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
+  const [notesDialog, setNotesDialog] = useState<{ date: Date } | null>(null);
+  const [newNoteLink, setNewNoteLink] = useState("");
+  const [newNoteLabel, setNewNoteLabel] = useState("");
+  const [noteBusy, setNoteBusy] = useState(false);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = days[6];
@@ -112,6 +127,16 @@ export default function Grafikas() {
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
+
+    // Load day notes for this week (and a buffer day on each side)
+    const { data: notes } = await supabase
+      .from("day_notes")
+      .select("*")
+      .gte("note_date", startISO)
+      .lte("note_date", endISO)
+      .order("created_at", { ascending: true });
+    setDayNotes((notes ?? []) as DayNote[]);
+
     setLoading(false);
   };
 
@@ -294,6 +319,40 @@ export default function Grafikas() {
     loadData();
   };
 
+  /** Day notes: add */
+  const addDayNote = async () => {
+    if (!user) { toast.error("Pirma prisijunkite"); return; }
+    if (!notesDialog) return;
+    const link = newNoteLink.trim();
+    if (!/^https?:\/\//i.test(link)) { toast.error("Įveskite pilną nuorodą (https://...)"); return; }
+    setNoteBusy(true);
+    const { error } = await supabase.from("day_notes").insert({
+      note_date: formatDateISO(notesDialog.date),
+      link,
+      label: newNoteLabel.trim() || null,
+      added_by: user.id,
+    });
+    setNoteBusy(false);
+    if (error) {
+      if (error.message.includes("MAX_15_LINKS_REACHED")) toast.error("Pasiekta 15 nuorodų riba");
+      else toast.error(error.message);
+      return;
+    }
+    setNewNoteLink(""); setNewNoteLabel("");
+    toast.success("Pridėta");
+    loadData();
+  };
+
+  const removeDayNote = async (id: string) => {
+    const { error } = await supabase.from("day_notes").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pašalinta");
+    loadData();
+  };
+
+  const getDayNotes = (date: Date) =>
+    dayNotes.filter((n) => n.note_date === formatDateISO(date));
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
@@ -403,7 +462,7 @@ export default function Grafikas() {
       ) : (
         <>
           {/* Horizontal weekly grid: 7 day columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-3">
             {days.map((date, idx) => {
               const daySlots = getDaySlots(date);
               const isToday = date.getTime() === today.getTime();
@@ -411,18 +470,29 @@ export default function Grafikas() {
               const dow = dbDayOfWeek(date);
 
               return (
-                <div key={idx} className={cn("flex flex-col gap-2", isPast && "opacity-60")}>
+                <div key={idx} className={cn("flex flex-col gap-2 relative", isPast && "opacity-60")}>
+                  {/* Mobile-only separator between days */}
+                  {idx > 0 && (
+                    <div
+                      aria-hidden
+                      className="sm:hidden flex items-center justify-center -mt-1 mb-2 select-none"
+                    >
+                      <div className="flex-1 h-px bg-gold/20" />
+                      <div className="px-2 text-gold/40 text-xs">•</div>
+                      <div className="flex-1 h-px bg-gold/20" />
+                    </div>
+                  )}
                   {/* Day header */}
                   <div
                     className={cn(
-                      "rounded-md border px-3 py-2.5 bg-gradient-card",
+                      "rounded-md border px-3 py-2.5 bg-gradient-card relative",
                       isToday ? "border-gold/50 shadow-gold" : "border-gold/15",
                     )}
                   >
                     <div className="flex items-baseline justify-between gap-1">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-medium">
-                        <span className="hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
-                        <span className="xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
+                      <div className="text-sm sm:text-[11px] uppercase tracking-[0.18em] text-gold font-bold">
+                        <span className="sm:hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
+                        <span className="hidden sm:inline xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
                       </div>
                       {isToday && (
                         <span className="text-[9px] uppercase tracking-[0.15em] text-gold bg-gold/10 px-1.5 py-0.5 rounded-sm">
@@ -430,17 +500,29 @@ export default function Grafikas() {
                         </span>
                       )}
                     </div>
-                    <div className="font-display text-2xl text-gradient-gold leading-none mt-1.5 tabular-nums">
-                      {String(date.getDate()).padStart(2, "0")}.{String(date.getMonth() + 1).padStart(2, "0")}
+                    <div className="flex items-baseline justify-between gap-2 mt-1.5">
+                      <div className="font-display text-2xl text-gradient-gold leading-none tabular-nums">
+                        {date.getDate()} <span className="text-base text-gold/70">{MONTHS_LT[date.getMonth()].toLowerCase().slice(0, 3)}.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setNotesDialog({ date }); setNewNoteLink(""); setNewNoteLabel(""); }}
+                        className="relative inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
+                        aria-label="Dienos nuorodos"
+                        title="Dienos nuorodos"
+                      >
+                        <FileText className="w-3 h-3" />
+                        <span>Nuorodos</span>
+                        {getDayNotes(date).length > 0 && (
+                          <span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-gold text-background text-[9px] font-bold px-1">
+                            {getDayNotes(date).length}
+                          </span>
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   {/* Weekend banners */}
-                  {dow === 6 && (
-                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                      Treniruotės pas Jolitą 10–13 val., pas Jovitą 15 val.
-                    </div>
-                  )}
                   {dow === 7 && (
                     <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
                       Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
@@ -475,7 +557,7 @@ export default function Grafikas() {
                         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-4 h-4 text-gold/60" />
-                            <span className="font-display text-lg tabular-nums text-foreground">
+                            <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
                           </div>
@@ -533,7 +615,7 @@ export default function Grafikas() {
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.25 }}
                                   className={cn(
-                                    "flex items-center gap-1.5 text-sm leading-snug",
+                                    "flex items-center gap-1.5 text-base leading-snug",
                                     mine ? "text-gold" : "text-foreground/85",
                                     perm && "font-bold",
                                   )}
@@ -802,6 +884,102 @@ export default function Grafikas() {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAdminSlotDialog(null)}>Uždaryti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Day notes dialog */}
+      <Dialog open={!!notesDialog} onOpenChange={(o) => !o && setNotesDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-gold" /> Dienos nuorodos
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {notesDialog && (
+                <>
+                  {notesDialog.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })}
+                  {" · "}
+                  <span className="text-[11px] italic">nuorodos automatiškai ištrinamos po 2 dienų</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {notesDialog && (() => {
+              const list = getDayNotes(notesDialog.date);
+              if (list.length === 0) {
+                return <p className="text-sm italic text-muted-foreground py-2">Nuorodų dar nėra</p>;
+              }
+              return (
+                <ul className="space-y-2 max-h-80 overflow-auto">
+                  {list.map((n) => {
+                    const canDelete = user && (n.added_by === user.id || isAdmin);
+                    return (
+                      <li
+                        key={n.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-gold/15 bg-background/40 px-3 py-2"
+                      >
+                        <a
+                          href={n.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-sm text-gold hover:underline truncate flex-1 min-w-0"
+                          title={n.link}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="truncate">{n.label?.trim() || n.link}</span>
+                        </a>
+                        {canDelete && (
+                          <button
+                            onClick={() => removeDayNote(n.id)}
+                            className="text-muted-foreground hover:text-destructive flex-shrink-0"
+                            aria-label="Pašalinti"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
+
+            {user ? (
+              <div className="space-y-2 pt-2 border-t border-gold/10">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti nuorodą</Label>
+                <Input
+                  value={newNoteLink}
+                  onChange={(e) => setNewNoteLink(e.target.value)}
+                  placeholder="https://wetransfer.com/…"
+                  type="url"
+                />
+                <Input
+                  value={newNoteLabel}
+                  onChange={(e) => setNewNoteLabel(e.target.value)}
+                  placeholder="Pavadinimas (neprivaloma)"
+                  maxLength={80}
+                />
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>
+                    {notesDialog ? `${getDayNotes(notesDialog.date).length}/15 nuorodų` : ""}
+                  </span>
+                  <Button variant="gold" size="sm" disabled={noteBusy || !newNoteLink.trim()} onClick={addDayNote}>
+                    <Plus className="w-3.5 h-3.5" /> Pridėti
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic pt-2 border-t border-gold/10">
+                Prisijunkite, kad galėtumėte pridėti nuorodą.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNotesDialog(null)}>Uždaryti</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

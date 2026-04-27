@@ -9,16 +9,16 @@ export default function Kainos() {
       <div className="grid sm:grid-cols-2 gap-6">
         {/* Standard */}
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
-          <h2 className="text-2xl font-display text-gold mb-6">Pamokos</h2>
+          <h2 className="text-2xl font-display text-gold mb-6">Treniruotės</h2>
           <ul className="space-y-4 font-body">
-            <Row label="1 pamoka" price="35 €" />
-            <Row label="4 pamokos" price="140 €" />
-            <Row label="8 pamokos" price="240 €" />
+            <Row label="1 treniruotė" price="35 €" />
+            <Row label="4 treniruotės" price="140 €" />
+            <Row label="8 treniruotės" price="240 €" />
           </ul>
           <div className="gold-divider my-6" />
           <div className="text-sm text-muted-foreground space-y-1.5">
-            <p>≤ 7 pamokos — 35 € / pamoka</p>
-            <p>≥ 8 pamokos — 30 € / pamoka</p>
+            <p>≤ 7 treniruotės — 35 € / treniruotė</p>
+            <p>≥ 8 treniruotės — 30 € / treniruotė</p>
           </div>
         </section>
 
@@ -29,6 +29,20 @@ export default function Kainos() {
             <Row label="30 min" price="20 €" />
             <Row label="45 min" price="35 €" />
           </ul>
+        </section>
+
+        {/* Individuali treniruotė */}
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up sm:col-span-2">
+          <h2 className="text-2xl font-display text-gold mb-6">Individuali treniruotė</h2>
+          <ul className="space-y-4 font-body">
+            <Row label="1 individuali treniruotė" price="40 €" />
+          </ul>
+          <div className="gold-divider my-6" />
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Individualiai treniruotei laiką reikia suderinti su Laura. Susitarus, parašykite žinutę
+            administracijai per savo paskyrą („Žinutės" skiltyje), kad būtumėte užregistruoti
+            tuo ir tuo laiku individualiai treniruotei.
+          </p>
         </section>
       </div>
     </div>

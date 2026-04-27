@@ -18,9 +18,11 @@ const signUpSchema = z.object({
 });
 
 const signInSchema = z.object({
-  email: z.string().trim().email("Neteisingas el. paštas"),
+  identifier: z.string().trim().min(3, "Įveskite el. paštą arba telefoną"),
   password: z.string().min(1, "Įveskite slaptažodį"),
 });
+
+const isEmail = (s: string) => /\S+@\S+\.\S+/.test(s);
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -70,14 +72,27 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const parsed = signInSchema.safeParse({ email: fd.get("email"), password: fd.get("password") });
+    const parsed = signInSchema.safeParse({ identifier: fd.get("identifier"), password: fd.get("password") });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
     }
     setLoading(true);
+    let email = parsed.data.identifier;
+    if (!isEmail(email)) {
+      // Treat as phone — look up email
+      const { data, error: lookupErr } = await supabase.functions.invoke("lookup-email-by-phone", {
+        body: { phone: email },
+      });
+      if (lookupErr || (data as any)?.error || !(data as any)?.email) {
+        setLoading(false);
+        toast.error("Neteisingas telefonas arba slaptažodis");
+        return;
+      }
+      email = (data as any).email;
+    }
     const { error } = await supabase.auth.signInWithPassword({
-      email: parsed.data.email,
+      email,
       password: parsed.data.password,
     });
     setLoading(false);
@@ -128,8 +143,8 @@ export default function Auth() {
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div>
-                <Label htmlFor="si-email">El. paštas</Label>
-                <Input id="si-email" name="email" type="email" required autoComplete="email" />
+                <Label htmlFor="si-id">El. paštas arba telefonas</Label>
+                <Input id="si-id" name="identifier" type="text" required autoComplete="username" placeholder="vardas@email.lt arba +370…" />
               </div>
               <div>
                 <Label htmlFor="si-pw">Slaptažodis</Label>
