@@ -898,14 +898,14 @@ export default function Grafikas() {
         <DialogContent className="bg-gradient-card border-gold/20 max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gold" /> Dienos nuorodos
+              <FileText className="w-5 h-5 text-gold" /> Dienos video
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {notesDialog && (
                 <>
                   {notesDialog.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })}
                   {" · "}
-                  <span className="text-[11px] italic">nuorodos automatiškai ištrinamos po 2 dienų</span>
+                  <span className="text-[11px] italic">video nuorodos automatiškai ištrinamos po 2 dienų</span>
                 </>
               )}
             </DialogDescription>
@@ -915,7 +915,7 @@ export default function Grafikas() {
             {notesDialog && (() => {
               const list = getDayNotes(notesDialog.date);
               if (list.length === 0) {
-                return <p className="text-sm italic text-muted-foreground py-2">Nuorodų dar nėra</p>;
+                return <p className="text-sm italic text-muted-foreground py-2">Video dar nėra</p>;
               }
               return (
                 <ul className="space-y-2 max-h-80 overflow-auto">
@@ -954,7 +954,7 @@ export default function Grafikas() {
 
             {user ? (
               <div className="space-y-2 pt-2 border-t border-gold/10">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti nuorodą</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti video nuorodą</Label>
                 <Input
                   value={newNoteLink}
                   onChange={(e) => setNewNoteLink(e.target.value)}
@@ -969,7 +969,7 @@ export default function Grafikas() {
                 />
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>
-                    {notesDialog ? `${getDayNotes(notesDialog.date).length}/15 nuorodų` : ""}
+                    {notesDialog ? `${getDayNotes(notesDialog.date).length}/15 video` : ""}
                   </span>
                   <Button variant="gold" size="sm" disabled={noteBusy || !newNoteLink.trim()} onClick={addDayNote}>
                     <Plus className="w-3.5 h-3.5" /> Pridėti
@@ -978,7 +978,7 @@ export default function Grafikas() {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic pt-2 border-t border-gold/10">
-                Prisijunkite, kad galėtumėte pridėti nuorodą.
+                Prisijunkite, kad galėtumėte pridėti video nuorodą.
               </p>
             )}
           </div>
