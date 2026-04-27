@@ -546,7 +546,7 @@ export default function Grafikas() {
                         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-4 h-4 text-gold/60" />
-                            <span className="font-display text-lg tabular-nums text-foreground">
+                            <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
                           </div>
@@ -604,7 +604,7 @@ export default function Grafikas() {
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.25 }}
                                   className={cn(
-                                    "flex items-center gap-1.5 text-sm leading-snug",
+                                    "flex items-center gap-1.5 text-base leading-snug",
                                     mine ? "text-gold" : "text-foreground/85",
                                     perm && "font-bold",
                                   )}
