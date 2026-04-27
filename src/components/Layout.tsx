@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -139,8 +139,28 @@ export default function Layout({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-gold/10 mt-16">
-        <div className="container py-8 text-center">
-          <div className="font-display text-lg text-gradient-gold mb-2">Equus jojimo klubas</div>
+        <div className="container py-10 text-center space-y-4">
+          <div className="font-display text-lg text-gradient-gold">Equus jojimo klubas</div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-6 text-sm">
+            <a
+              href="tel:+37065822872"
+              className="inline-flex items-center justify-center gap-1.5 text-foreground/85 hover:text-gold transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5 text-gold" />
+              Laura · +370 658 22872
+            </a>
+            <a
+              href="https://maps.app.goo.gl/Tjd1rUUVSabq52ip6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 text-foreground/85 hover:text-gold transition-colors"
+            >
+              <MapPin className="w-3.5 h-3.5 text-gold" />
+              Daučionys, 14245 Vilniaus r. sav.
+            </a>
+          </div>
+
           <p className="text-xs text-muted-foreground tracking-wide">
             Mylintiems žirgus ir laisvę · © {new Date().getFullYear()}
           </p>
