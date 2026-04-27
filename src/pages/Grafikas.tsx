@@ -502,17 +502,17 @@ export default function Grafikas() {
                     </div>
                     <div className="flex items-baseline justify-between gap-2 mt-1.5">
                       <div className="font-display text-2xl text-gradient-gold leading-none tabular-nums">
-                        {date.getDate()} <span className="text-base text-gold/70">{MONTHS_LT[date.getMonth()].toLowerCase().slice(0, 3)}.</span>
+                        {String(date.getMonth() + 1).padStart(2, "0")}.{String(date.getDate()).padStart(2, "0")}
                       </div>
                       <button
                         type="button"
                         onClick={() => { setNotesDialog({ date }); setNewNoteLink(""); setNewNoteLabel(""); }}
                         className="relative inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
-                        aria-label="Dienos nuorodos"
-                        title="Dienos nuorodos"
+                        aria-label="Dienos video"
+                        title="Dienos video"
                       >
                         <FileText className="w-3 h-3" />
-                        <span>Nuorodos</span>
+                        <span>Video</span>
                         {getDayNotes(date).length > 0 && (
                           <span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-gold text-background text-[9px] font-bold px-1">
                             {getDayNotes(date).length}
@@ -522,11 +522,16 @@ export default function Grafikas() {
                     </div>
                   </div>
 
-                  {/* Weekend banners */}
-                  {dow === 7 && (
-                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                      Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
-                    </div>
+                  {/* Weekend banners — Saturday only */}
+                  {dow === 6 && (
+                    <>
+                      <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
+                        Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
+                      </div>
+                      <div className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs italic text-foreground/85 leading-snug">
+                        Treniruotės pas Vytautą
+                      </div>
+                    </>
                   )}
 
                   {daySlots.length === 0 && (
@@ -893,14 +898,14 @@ export default function Grafikas() {
         <DialogContent className="bg-gradient-card border-gold/20 max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gold" /> Dienos nuorodos
+              <FileText className="w-5 h-5 text-gold" /> Dienos video
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {notesDialog && (
                 <>
                   {notesDialog.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })}
                   {" · "}
-                  <span className="text-[11px] italic">nuorodos automatiškai ištrinamos po 2 dienų</span>
+                  <span className="text-[11px] italic">video nuorodos automatiškai ištrinamos po 2 dienų</span>
                 </>
               )}
             </DialogDescription>
@@ -910,7 +915,7 @@ export default function Grafikas() {
             {notesDialog && (() => {
               const list = getDayNotes(notesDialog.date);
               if (list.length === 0) {
-                return <p className="text-sm italic text-muted-foreground py-2">Nuorodų dar nėra</p>;
+                return <p className="text-sm italic text-muted-foreground py-2">Video dar nėra</p>;
               }
               return (
                 <ul className="space-y-2 max-h-80 overflow-auto">
@@ -949,7 +954,7 @@ export default function Grafikas() {
 
             {user ? (
               <div className="space-y-2 pt-2 border-t border-gold/10">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti nuorodą</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti video nuorodą</Label>
                 <Input
                   value={newNoteLink}
                   onChange={(e) => setNewNoteLink(e.target.value)}
@@ -964,7 +969,7 @@ export default function Grafikas() {
                 />
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>
-                    {notesDialog ? `${getDayNotes(notesDialog.date).length}/15 nuorodų` : ""}
+                    {notesDialog ? `${getDayNotes(notesDialog.date).length}/15 video` : ""}
                   </span>
                   <Button variant="gold" size="sm" disabled={noteBusy || !newNoteLink.trim()} onClick={addDayNote}>
                     <Plus className="w-3.5 h-3.5" /> Pridėti
@@ -973,7 +978,7 @@ export default function Grafikas() {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic pt-2 border-t border-gold/10">
-                Prisijunkite, kad galėtumėte pridėti nuorodą.
+                Prisijunkite, kad galėtumėte pridėti video nuorodą.
               </p>
             )}
           </div>

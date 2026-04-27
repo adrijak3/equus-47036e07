@@ -5,10 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+const NAV_PUBLIC = [
   { to: "/", label: "Grafikas", icon: Calendar },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/paskyra", label: "Paskyra", icon: UserIcon },
+];
+
+const NAV_ADMIN = [
+  { to: "/", label: "Grafikas", icon: Calendar },
+  { to: "/kainos", label: "Kainos", icon: Tag },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -74,7 +79,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-1">
-            {NAV.map(({ to, label, icon: Icon }) => {
+            {(isAdmin ? NAV_ADMIN : NAV_PUBLIC).map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
                 <Link
