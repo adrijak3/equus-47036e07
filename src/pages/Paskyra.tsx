@@ -179,6 +179,14 @@ export default function Paskyra() {
     load();
   };
 
+  const deleteSub = async (subId: string) => {
+    if (!confirm("Ar tikrai norite ištrinti šį abonementą? Šio veiksmo atšaukti negalėsite.")) return;
+    const { error } = await supabase.from("subscriptions").delete().eq("id", subId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Abonementas ištrintas");
+    load();
+  };
+
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
@@ -267,7 +275,7 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} />)}
+              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} />)}
             </div>
           )}
         </TabsContent>
