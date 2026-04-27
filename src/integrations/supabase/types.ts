@@ -97,6 +97,33 @@ export type Database = {
           },
         ]
       }
+      day_notes: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          label: string | null
+          link: string
+          note_date: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          link: string
+          note_date: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          link?: string
+          note_date?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -333,6 +360,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_bookings: { Args: never; Returns: number }
+      cleanup_old_day_notes: { Args: never; Returns: number }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       expire_makeup_cancellations: { Args: never; Returns: number }
       has_role: {
