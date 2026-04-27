@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,7 @@ import { WEEKDAYS_LT_SHORT } from "@/lib/equus";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -51,6 +52,13 @@ interface PermanentSlot {
   slot_time: string;
 }
 interface ProfileLite { id: string; full_name: string; }
+interface DayNote {
+  id: string;
+  note_date: string;
+  link: string;
+  label: string | null;
+  added_by: string;
+}
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
@@ -76,6 +84,13 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+
+  // Day notes
+  const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
+  const [notesDialog, setNotesDialog] = useState<{ date: Date } | null>(null);
+  const [newNoteLink, setNewNoteLink] = useState("");
+  const [newNoteLabel, setNewNoteLabel] = useState("");
+  const [noteBusy, setNoteBusy] = useState(false);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = days[6];
@@ -112,6 +127,16 @@ export default function Grafikas() {
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
+
+    // Load day notes for this week (and a buffer day on each side)
+    const { data: notes } = await supabase
+      .from("day_notes")
+      .select("*")
+      .gte("note_date", startISO)
+      .lte("note_date", endISO)
+      .order("created_at", { ascending: true });
+    setDayNotes((notes ?? []) as DayNote[]);
+
     setLoading(false);
   };
 
@@ -294,6 +319,40 @@ export default function Grafikas() {
     loadData();
   };
 
+  /** Day notes: add */
+  const addDayNote = async () => {
+    if (!user) { toast.error("Pirma prisijunkite"); return; }
+    if (!notesDialog) return;
+    const link = newNoteLink.trim();
+    if (!/^https?:\/\//i.test(link)) { toast.error("Įveskite pilną nuorodą (https://...)"); return; }
+    setNoteBusy(true);
+    const { error } = await supabase.from("day_notes").insert({
+      note_date: formatDateISO(notesDialog.date),
+      link,
+      label: newNoteLabel.trim() || null,
+      added_by: user.id,
+    });
+    setNoteBusy(false);
+    if (error) {
+      if (error.message.includes("MAX_15_LINKS_REACHED")) toast.error("Pasiekta 15 nuorodų riba");
+      else toast.error(error.message);
+      return;
+    }
+    setNewNoteLink(""); setNewNoteLabel("");
+    toast.success("Pridėta");
+    loadData();
+  };
+
+  const removeDayNote = async (id: string) => {
+    const { error } = await supabase.from("day_notes").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pašalinta");
+    loadData();
+  };
+
+  const getDayNotes = (date: Date) =>
+    dayNotes.filter((n) => n.note_date === formatDateISO(date));
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
@@ -415,12 +474,12 @@ export default function Grafikas() {
                   {/* Day header */}
                   <div
                     className={cn(
-                      "rounded-md border px-3 py-2.5 bg-gradient-card",
+                      "rounded-md border px-3 py-2.5 bg-gradient-card relative",
                       isToday ? "border-gold/50 shadow-gold" : "border-gold/15",
                     )}
                   >
                     <div className="flex items-baseline justify-between gap-1">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-medium">
+                      <div className="text-xs sm:text-[11px] uppercase tracking-[0.18em] text-gold font-bold">
                         <span className="hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
                         <span className="xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
                       </div>
@@ -430,17 +489,29 @@ export default function Grafikas() {
                         </span>
                       )}
                     </div>
-                    <div className="font-display text-2xl text-gradient-gold leading-none mt-1.5 tabular-nums">
-                      {String(date.getDate()).padStart(2, "0")}.{String(date.getMonth() + 1).padStart(2, "0")}
+                    <div className="flex items-baseline justify-between gap-2 mt-1.5">
+                      <div className="font-display text-2xl text-gradient-gold leading-none tabular-nums">
+                        {date.getDate()} <span className="text-base text-gold/70">{MONTHS_LT[date.getMonth()].toLowerCase().slice(0, 3)}.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setNotesDialog({ date }); setNewNoteLink(""); setNewNoteLabel(""); }}
+                        className="relative inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
+                        aria-label="Dienos nuorodos"
+                        title="Dienos nuorodos"
+                      >
+                        <FileText className="w-3 h-3" />
+                        <span>Nuorodos</span>
+                        {getDayNotes(date).length > 0 && (
+                          <span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-gold text-background text-[9px] font-bold px-1">
+                            {getDayNotes(date).length}
+                          </span>
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   {/* Weekend banners */}
-                  {dow === 6 && (
-                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                      Treniruotės pas Jolitą 10–13 val., pas Jovitą 15 val.
-                    </div>
-                  )}
                   {dow === 7 && (
                     <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
                       Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
