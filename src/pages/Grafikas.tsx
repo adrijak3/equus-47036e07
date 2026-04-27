@@ -887,6 +887,102 @@ export default function Grafikas() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Day notes dialog */}
+      <Dialog open={!!notesDialog} onOpenChange={(o) => !o && setNotesDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-gold" /> Dienos nuorodos
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {notesDialog && (
+                <>
+                  {notesDialog.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })}
+                  {" · "}
+                  <span className="text-[11px] italic">nuorodos automatiškai ištrinamos po 2 dienų</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {notesDialog && (() => {
+              const list = getDayNotes(notesDialog.date);
+              if (list.length === 0) {
+                return <p className="text-sm italic text-muted-foreground py-2">Nuorodų dar nėra</p>;
+              }
+              return (
+                <ul className="space-y-2 max-h-80 overflow-auto">
+                  {list.map((n) => {
+                    const canDelete = user && (n.added_by === user.id || isAdmin);
+                    return (
+                      <li
+                        key={n.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-gold/15 bg-background/40 px-3 py-2"
+                      >
+                        <a
+                          href={n.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-sm text-gold hover:underline truncate flex-1 min-w-0"
+                          title={n.link}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="truncate">{n.label?.trim() || n.link}</span>
+                        </a>
+                        {canDelete && (
+                          <button
+                            onClick={() => removeDayNote(n.id)}
+                            className="text-muted-foreground hover:text-destructive flex-shrink-0"
+                            aria-label="Pašalinti"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
+
+            {user ? (
+              <div className="space-y-2 pt-2 border-t border-gold/10">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti nuorodą</Label>
+                <Input
+                  value={newNoteLink}
+                  onChange={(e) => setNewNoteLink(e.target.value)}
+                  placeholder="https://wetransfer.com/…"
+                  type="url"
+                />
+                <Input
+                  value={newNoteLabel}
+                  onChange={(e) => setNewNoteLabel(e.target.value)}
+                  placeholder="Pavadinimas (neprivaloma)"
+                  maxLength={80}
+                />
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>
+                    {notesDialog ? `${getDayNotes(notesDialog.date).length}/15 nuorodų` : ""}
+                  </span>
+                  <Button variant="gold" size="sm" disabled={noteBusy || !newNoteLink.trim()} onClick={addDayNote}>
+                    <Plus className="w-3.5 h-3.5" /> Pridėti
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic pt-2 border-t border-gold/10">
+                Prisijunkite, kad galėtumėte pridėti nuorodą.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNotesDialog(null)}>Uždaryti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
