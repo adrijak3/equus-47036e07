@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { WEEKDAYS_LT, formatTime } from "@/lib/equus";
+import { WEEKDAYS_LT, formatTime, TIME_SLOT_OPTIONS } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock } from "lucide-react";
 
-interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; }
+interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
   id: string; booking_id: string; user_id: string; reason: string; sickness: boolean;
   status: string; created_at: string; admin_decision_counts: boolean | null;
@@ -57,6 +57,8 @@ function ScheduleTab() {
   const [newDay, setNewDay] = useState(1);
   const [newTime, setNewTime] = useState("17:00");
   const [newCap, setNewCap] = useState(5);
+  const [newOneOff, setNewOneOff] = useState(false);
+  const [newOneOffDate, setNewOneOffDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   const load = async () => {
     const { data } = await supabase.from("time_slots").select("*").eq("active", true)
@@ -66,11 +68,21 @@ function ScheduleTab() {
   useEffect(() => { load(); }, []);
 
   const add = async () => {
+    let dayToUse = newDay;
+    let oneOff: string | null = null;
+    if (newOneOff) {
+      oneOff = newOneOffDate;
+      // Derive day_of_week from the chosen date so it appears on the right column
+      const d = new Date(newOneOffDate + "T00:00:00");
+      const js = d.getDay(); // 0=Sun..6=Sat
+      dayToUse = js === 0 ? 7 : js;
+    }
     const { error } = await supabase.from("time_slots").insert({
-      day_of_week: newDay, slot_time: newTime, max_capacity: newCap,
-    });
+      day_of_week: dayToUse, slot_time: newTime, max_capacity: newCap, one_off_date: oneOff,
+    } as any);
     if (error) { toast.error(error.code === "23505" ? "Toks slot jau egzistuoja" : error.message); return; }
-    toast.success("Pridėta"); setOpen(false); load();
+    toast.success(oneOff ? `Pridėta tik ${oneOff}` : "Pridėta (kas savaitę)");
+    setOpen(false); setNewOneOff(false); load();
   };
 
   const remove = async (id: string) => {
@@ -93,7 +105,12 @@ function ScheduleTab() {
             <ul className="space-y-1.5">
               {slots.filter((s) => s.day_of_week === dow).map((s) => (
                 <li key={s.id} className="flex items-center justify-between text-sm px-2 py-1.5 rounded hover:bg-gold/5">
-                  <span className="tabular-nums">{formatTime(s.slot_time)}</span>
+                  <span className="tabular-nums">
+                    {formatTime(s.slot_time)}
+                    {s.one_off_date && (
+                      <span className="ml-1.5 text-[10px] text-blush">({s.one_off_date})</span>
+                    )}
+                  </span>
                   <span className="text-xs text-muted-foreground">cap {s.max_capacity}</span>
                   <button onClick={() => remove(s.id)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -112,16 +129,30 @@ function ScheduleTab() {
         <DialogContent className="bg-gradient-card border-gold/20">
           <DialogHeader><DialogTitle className="font-display text-gradient-gold text-2xl">Naujas laikas</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Diena</Label>
-              <select value={newDay} onChange={(e) => setNewDay(Number(e.target.value))}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
-              </select>
-            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={newOneOff} onChange={(e) => setNewOneOff(e.target.checked)} className="accent-gold" />
+              Tik šį kartą (vienai dienai, neatsikartoja kas savaitę)
+            </label>
+            {newOneOff ? (
+              <div>
+                <Label>Data</Label>
+                <Input type="date" value={newOneOffDate} onChange={(e) => setNewOneOffDate(e.target.value)} />
+              </div>
+            ) : (
+              <div>
+                <Label>Diena (kas savaitę)</Label>
+                <select value={newDay} onChange={(e) => setNewDay(Number(e.target.value))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <Label>Laikas</Label>
-              <Input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
+              <select value={newTime} onChange={(e) => setNewTime(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums">
+                {TIME_SLOT_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
             <div>
               <Label>Talpa</Label>

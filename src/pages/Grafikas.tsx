@@ -25,6 +25,7 @@ interface TimeSlot {
   slot_time: string;
   max_capacity: number;
   is_permanent_for: string | null;
+  one_off_date?: string | null;
 }
 interface Booking {
   id: string;
@@ -33,6 +34,7 @@ interface Booking {
   slot_time: string;
   status: string;
   profile_name?: string;
+  display_name?: string | null;
 }
 interface SlotOverride {
   slot_date: string;
@@ -52,6 +54,7 @@ interface PermanentSlot {
   slot_time: string;
 }
 interface ProfileLite { id: string; full_name: string; }
+interface ProfileLiteWithDisplay { id: string; full_name: string; display_name: string | null; }
 interface DayNote {
   id: string;
   note_date: string;
@@ -117,13 +120,15 @@ export default function Grafikas() {
     (waitingRes.data ?? []).forEach((w) => userIds.add(w.user_id));
 
     let nameMap: Record<string, string> = {};
+    let displayMap: Record<string, string | null> = {};
     if (userIds.size > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", Array.from(userIds));
+      const { data: profs } = await supabase.from("profiles").select("id, full_name, display_name").in("id", Array.from(userIds));
       nameMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p.full_name]));
+      displayMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.display_name]));
     }
 
     setSlots(slotsRes.data ?? []);
-    setBookings((bookingsRes.data ?? []).map((b) => ({ ...b, profile_name: nameMap[b.user_id] })));
+    setBookings((bookingsRes.data ?? []).map((b) => ({ ...b, profile_name: nameMap[b.user_id], display_name: displayMap[b.user_id] })));
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
@@ -163,7 +168,13 @@ export default function Grafikas() {
 
   const getDaySlots = (date: Date) => {
     const dow = dbDayOfWeek(date);
-    return slots.filter((s) => s.day_of_week === dow);
+    const dateISO = formatDateISO(date);
+    return slots.filter((s) => {
+      if (s.day_of_week !== dow) return false;
+      // One-off slots only show on their specific date
+      if (s.one_off_date) return s.one_off_date === dateISO;
+      return true;
+    });
   };
 
   const getCapacity = (date: Date, time: string, baseCapacity: number) => {
@@ -526,12 +537,19 @@ export default function Grafikas() {
                   {dow === 6 && (
                     <>
                       <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                        Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
+                        Treniruotės pas Jolitą 10–13 val., pas Jovitą 15 val.
                       </div>
                       <div className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs italic text-foreground/85 leading-snug">
                         Treniruotės pas Vytautą
                       </div>
                     </>
+                  )}
+
+                  {/* Sunday banner */}
+                  {dow === 7 && (
+                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
+                      Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
+                    </div>
                   )}
 
                   {daySlots.length === 0 && (
@@ -627,7 +645,7 @@ export default function Grafikas() {
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
-                                  <span className="truncate">{formatBookedName(b.profile_name ?? "—")}</span>
+                                  <span className="truncate">{formatBookedName(b.profile_name ?? "—", b.display_name)}</span>
                                   {mine && !slotPast && (
                                     <button
                                       onClick={() => handleCancelClick(b)}
