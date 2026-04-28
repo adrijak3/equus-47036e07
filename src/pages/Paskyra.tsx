@@ -389,6 +389,7 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const { user, profile } = useAuth();
   const [name, setName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [displayName, setDisplayName] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -396,12 +397,23 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
     setPhone(profile?.phone ?? "");
   }, [profile]);
 
+  // Load display_name separately (not in AuthContext profile shape)
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+      .then(({ data }) => setDisplayName((data as any)?.display_name ?? ""));
+  }, [user]);
+
   const save = async () => {
     if (!user) return;
     if (name.trim().length < 2) { toast.error("Vardas per trumpas"); return; }
     setSaving(true);
     const { error } = await supabase.from("profiles")
-      .update({ full_name: name.trim(), phone: phone.trim() || null })
+      .update({
+        full_name: name.trim(),
+        phone: phone.trim() || null,
+        display_name: displayName.trim() || null,
+      } as any)
       .eq("id", user.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -415,6 +427,19 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
         <div>
           <Label htmlFor="pf-name">Vardas ir pavardė</Label>
           <Input id="pf-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+        </div>
+        <div>
+          <Label htmlFor="pf-display">Vardas tvarkaraštyje</Label>
+          <Input
+            id="pf-display"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            maxLength={40}
+            placeholder="Palikite tuščią — naudosis numatytas"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Numatytas vaizdas: vardas + pirmos 3 pavardės raidės (pvz. „Adrija Kal“). Įrašykite, jei norite kitokio.
+          </p>
         </div>
         <div>
           <Label htmlFor="pf-phone">Telefonas</Label>
