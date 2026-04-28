@@ -192,6 +192,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          display_name: string | null
           full_name: string
           id: string
           phone: string | null
@@ -199,6 +200,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           full_name: string
           id: string
           phone?: string | null
@@ -206,6 +208,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -287,6 +290,7 @@ export type Database = {
           id: string
           is_permanent_for: string | null
           max_capacity: number
+          one_off_date: string | null
           slot_time: string
         }
         Insert: {
@@ -296,6 +300,7 @@ export type Database = {
           id?: string
           is_permanent_for?: string | null
           max_capacity?: number
+          one_off_date?: string | null
           slot_time: string
         }
         Update: {
@@ -305,6 +310,7 @@ export type Database = {
           id?: string
           is_permanent_for?: string | null
           max_capacity?: number
+          one_off_date?: string | null
           slot_time?: string
         }
         Relationships: []
