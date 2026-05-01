@@ -83,6 +83,22 @@ export const TIME_SLOT_OPTIONS: string[] = (() => {
   return out;
 })();
 
+/** Quarter-hour suggestions for admin pickers (08:00 → 22:00, every 15 min) */
+export const TIME_SLOT_OPTIONS_FINE: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 8; h <= 22; h++) {
+    for (const m of [0, 15, 30, 45]) {
+      out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return out;
+})();
+
+/** Validate any HH:MM string admin types in. */
+export function isValidTime(s: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+}
+
 /** Auto-pricing: <8 → 35€/lesson, >=8 → 30€/lesson */
 export function calculateSubscriptionPrice(lessons: number): number {
   if (lessons <= 0) return 0;
