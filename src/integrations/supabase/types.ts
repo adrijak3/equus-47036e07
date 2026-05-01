@@ -18,7 +18,10 @@ export type Database = {
         Row: {
           counts_in_subscription: boolean
           created_at: string
+          guest_name: string | null
           id: string
+          is_guest: boolean
+          is_individual: boolean
           slot_date: string
           slot_time: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -29,7 +32,10 @@ export type Database = {
         Insert: {
           counts_in_subscription?: boolean
           created_at?: string
+          guest_name?: string | null
           id?: string
+          is_guest?: boolean
+          is_individual?: boolean
           slot_date: string
           slot_time: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -40,7 +46,10 @@ export type Database = {
         Update: {
           counts_in_subscription?: boolean
           created_at?: string
+          guest_name?: string | null
           id?: string
+          is_guest?: boolean
+          is_individual?: boolean
           slot_date?: string
           slot_time?: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -121,6 +130,101 @@ export type Database = {
           label?: string | null
           link?: string
           note_date?: string
+        }
+        Relationships: []
+      }
+      horse_assignments: {
+        Row: {
+          assigned_by: string
+          booking_id: string | null
+          created_at: string
+          guest_name: string | null
+          horse_id: string
+          id: string
+          slot_date: string
+          slot_time: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_by: string
+          booking_id?: string | null
+          created_at?: string
+          guest_name?: string | null
+          horse_id: string
+          id?: string
+          slot_date: string
+          slot_time: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_by?: string
+          booking_id?: string | null
+          created_at?: string
+          guest_name?: string | null
+          horse_id?: string
+          id?: string
+          slot_date?: string
+          slot_time?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "horse_assignments_horse_id_fkey"
+            columns: ["horse_id"]
+            isOneToOne: false
+            referencedRelation: "horses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      horse_requests: {
+        Row: {
+          created_at: string
+          id: string
+          slot_date: string
+          slot_time: string
+          user_id: string
+          wished_horse: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slot_date: string
+          slot_time: string
+          user_id: string
+          wished_horse: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slot_date?: string
+          slot_time?: string
+          user_id?: string
+          wished_horse?: string
+        }
+        Relationships: []
+      }
+      horses: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
         }
         Relationships: []
       }
@@ -245,12 +349,14 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          lesson_type: string
           lessons_total: number
           lessons_used: number
           paid: boolean
           price: number
           purchase_date: string
           sickness_credits: number
+          start_from_date: string | null
           updated_at: string
           user_id: string
         }
@@ -258,12 +364,14 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          lesson_type?: string
           lessons_total: number
           lessons_used?: number
           paid?: boolean
           price: number
           purchase_date: string
           sickness_credits?: number
+          start_from_date?: string | null
           updated_at?: string
           user_id: string
         }
@@ -271,12 +379,14 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          lesson_type?: string
           lessons_total?: number
           lessons_used?: number
           paid?: boolean
           price?: number
           purchase_date?: string
           sickness_credits?: number
+          start_from_date?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -382,7 +492,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "trainer"
       booking_status: "active" | "cancelled" | "completed" | "pending_cancel"
       cancel_status: "pending" | "approved" | "declined"
     }
@@ -512,7 +622,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "trainer"],
       booking_status: ["active", "cancelled", "completed", "pending_cancel"],
       cancel_status: ["pending", "approved", "declined"],
     },

@@ -60,13 +60,16 @@ export function formatTime(t: string): string {
 
 /** Format full name → "Vardas Pav" (first 3 letters of surname) */
 export function formatBookedName(fullName: string, displayName?: string | null): string {
-  // If user has chosen a custom display name, use that verbatim
-  if (displayName && displayName.trim().length > 0) return displayName.trim();
-  const parts = fullName.trim().split(/\s+/);
+  // Display rule (forced for everyone): "Vardas Pa" — first 2 letters of surname.
+  // displayName is intentionally ignored to keep the schedule consistent.
+  void displayName;
+  const name = (fullName ?? "").trim();
+  if (!name) return "—";
+  const parts = name.split(/\s+/);
   if (parts.length === 1) return parts[0];
   const first = parts[0];
   const surname = parts[parts.length - 1];
-  return `${first} ${surname.slice(0, 3)}`;
+  return `${first} ${surname.slice(0, 2)}`;
 }
 
 /** Half-hour time slot options for admin pickers (08:00 → 22:00) */
@@ -80,9 +83,49 @@ export const TIME_SLOT_OPTIONS: string[] = (() => {
   return out;
 })();
 
+/** Quarter-hour suggestions for admin pickers (08:00 → 22:00, every 15 min) */
+export const TIME_SLOT_OPTIONS_FINE: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 8; h <= 22; h++) {
+    for (const m of [0, 15, 30, 45]) {
+      out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return out;
+})();
+
+/** Validate any HH:MM string admin types in. */
+export function isValidTime(s: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+}
+
 /** Auto-pricing: <8 → 35€/lesson, >=8 → 30€/lesson */
 export function calculateSubscriptionPrice(lessons: number): number {
   if (lessons <= 0) return 0;
+  return lessons >= 8 ? lessons * 30 : lessons * 35;
+}
+
+/** Lesson types for subscriptions */
+export type LessonType = "sportine" | "nesportine" | "vienkartine";
+
+export const LESSON_TYPE_LABEL: Record<LessonType, string> = {
+  sportine: "Sportinė",
+  nesportine: "Nesportinė",
+  vienkartine: "Vienkartinė",
+};
+
+/** Returns total price for a given lesson count + type. */
+export function calculateSubPriceByType(lessons: number, type: LessonType): number {
+  if (lessons <= 0) return 0;
+  if (type === "vienkartine") return 35; // single lesson, fixed
+  if (type === "nesportine") {
+    // Tiered: 8-card 200€, 4-card 120€, 1 lesson 35€; otherwise per-lesson 35€
+    if (lessons === 8) return 200;
+    if (lessons === 4) return 120;
+    if (lessons === 1) return 35;
+    return lessons * 35;
+  }
+  // sportine (default existing rule)
   return lessons >= 8 ? lessons * 30 : lessons * 35;
 }
 

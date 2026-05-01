@@ -438,7 +438,7 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
             placeholder="Palikite tuščią — naudosis numatytas"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Numatytas vaizdas: vardas + pirmos 3 pavardės raidės (pvz. „Adrija Kal“). Įrašykite, jei norite kitokio.
+            Numatytas vaizdas: vardas + pirmos 2 pavardės raidės (pvz. „Vardas Pa“). Įrašykite, jei norite kitokio.
           </p>
         </div>
         <div>

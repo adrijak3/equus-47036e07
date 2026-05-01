@@ -13,6 +13,7 @@ interface AuthContextValue {
   user: User | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isTrainer: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTrainer, setIsTrainer] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadUserData = async (uid: string) => {
@@ -34,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setProfile(prof ?? null);
     setIsAdmin((roles ?? []).some((r) => r.role === "admin"));
+    setIsTrainer((roles ?? []).some((r) => r.role === "trainer"));
   };
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setIsAdmin(false);
+        setIsTrainer(false);
       }
     });
 
@@ -69,10 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setIsAdmin(false);
+    setIsTrainer(false);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, isAdmin, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, isAdmin, isTrainer, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
