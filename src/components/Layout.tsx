@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,9 +16,14 @@ const NAV_ADMIN = [
   { to: "/kainos", label: "Kainos", icon: Tag },
 ];
 
+const NAV_TRAINER = [
+  { to: "/", label: "Grafikas", icon: Calendar },
+  { to: "/kainos", label: "Kainos", icon: Tag },
+];
+
 export default function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { user, isAdmin, profile, signOut } = useAuth();
+  const { user, isAdmin, isTrainer, profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -79,7 +84,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-1">
-            {(isAdmin ? NAV_ADMIN : NAV_PUBLIC).map(({ to, label, icon: Icon }) => {
+            {(isAdmin ? NAV_ADMIN : isTrainer ? NAV_TRAINER : NAV_PUBLIC).map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
                 <Link
@@ -111,6 +116,21 @@ export default function Layout({ children }: { children: ReactNode }) {
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span className="text-base font-display tracking-wide">Admin</span>
+              </Link>
+            )}
+            {isTrainer && (
+              <Link
+                to="/trener"
+                onClick={close}
+                className={cn(
+                  "flex items-center gap-4 px-4 py-3.5 rounded-md transition-all border-l-2",
+                  location.pathname.startsWith("/trener")
+                    ? "bg-gold/10 text-gold border-gold"
+                    : "text-gold/80 hover:bg-gold/5 border-transparent",
+                )}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-base font-display tracking-wide">Trenerio sritis</span>
               </Link>
             )}
           </nav>
