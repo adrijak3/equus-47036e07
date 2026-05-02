@@ -629,7 +629,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-function SubscriptionCard({ s, onMarkPaid, onDelete }: { s: Subscription; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void }) {
+function SubscriptionCard({ s, onMarkPaid, onDelete, onEditLessons }: { s: Subscription; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void }) {
   const remaining = s.lessons_total - s.lessons_used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
@@ -640,9 +640,20 @@ function SubscriptionCard({ s, onMarkPaid, onDelete }: { s: Subscription; onMark
       expired && "opacity-60",
     )}>
       <div className="flex items-baseline justify-between mb-3">
-        <span className="text-3xl font-display text-gradient-gold tabular-nums">
-          {s.lessons_used}/{s.lessons_total}
-        </span>
+        {onEditLessons ? (
+          <button
+            type="button"
+            onClick={() => onEditLessons(s)}
+            className="text-3xl font-display text-gradient-gold tabular-nums hover:opacity-80 transition-opacity"
+            title="Pakeisti treniruočių skaičių"
+          >
+            {s.lessons_used}/{s.lessons_total}
+          </button>
+        ) : (
+          <span className="text-3xl font-display text-gradient-gold tabular-nums">
+            {s.lessons_used}/{s.lessons_total}
+          </span>
+        )}
         {s.paid ? (
           <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" /> Apmokėta
