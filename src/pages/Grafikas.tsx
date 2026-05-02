@@ -87,6 +87,8 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+  // Guest (naujokė) name
+  const [adminGuestName, setAdminGuestName] = useState("");
 
   // Day notes
   const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
