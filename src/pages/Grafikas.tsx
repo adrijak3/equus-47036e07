@@ -321,6 +321,49 @@ export default function Grafikas() {
     loadData();
   };
 
+  /** Admin: add a guest ("naujokė") booking — uses admin's user_id with is_guest flag */
+  const adminAddGuest = async (date: Date, time: string) => {
+    if (!user) return;
+    const name = adminGuestName.trim();
+    if (name.length < 2) { toast.error("Įveskite svečio vardą"); return; }
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings").insert({
+      user_id: user.id,
+      slot_date: formatDateISO(date),
+      slot_time: time,
+      status: "active",
+      is_guest: true,
+      guest_name: name,
+      counts_in_subscription: false,
+    } as any);
+    setAdminBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Pridėta naujokė: ${name}`);
+    setAdminGuestName("");
+    loadData();
+  };
+
+  /** Admin: add an individual lesson booking for a chosen user (marked is_individual). */
+  const adminAddIndividual = async (date: Date, time: string, userId: string) => {
+    if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings").insert({
+      user_id: userId,
+      slot_date: formatDateISO(date),
+      slot_time: time,
+      status: "active",
+      is_individual: true,
+    } as any);
+    setAdminBusy(false);
+    if (error) {
+      toast.error(error.code === "23505" ? "Vartotojas jau užregistruotas šiuo laiku" : error.message);
+      return;
+    }
+    toast.success("Individuali pridėta");
+    setAdminAddUserId("");
+    loadData();
+  };
+
   /** Admin: force-remove a booking */
   const adminRemoveBooking = async (bookingId: string) => {
     setAdminBusy(true);
