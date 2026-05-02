@@ -187,6 +187,30 @@ export default function Paskyra() {
     load();
   };
 
+  const editSubLessons = async (s: Subscription) => {
+    const txt = prompt(
+      `Pakeisti treniruočių skaičių abonemente.\n\nDabar: ${s.lessons_used}/${s.lessons_total}\nGalima sumažinti tik tiek, kad būtų ne mažiau už jau panaudotų (${s.lessons_used}).`,
+      String(s.lessons_total),
+    );
+    if (txt === null) return;
+    const n = parseInt(txt);
+    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Įveskite skaičių 1–100"); return; }
+    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
+    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atnaujinta");
+    load();
+  };
+
+  const deleteConversation = async () => {
+    if (!user) return;
+    if (!confirm("Ištrinti visą pokalbį su administracija? Šio veiksmo atšaukti negalėsite.")) return;
+    const { error } = await supabase.from("messages").delete().eq("user_id", user.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pokalbis ištrintas");
+    load();
+  };
+
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
