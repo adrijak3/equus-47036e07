@@ -299,7 +299,7 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} />)}
+              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />)}
             </div>
           )}
         </TabsContent>
@@ -326,7 +326,20 @@ export default function Paskyra() {
           </div>
           {messages.length > 0 && (
             <Section title="Pokalbis su administracija">
-              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">
+              <div className="flex justify-end px-5 pt-3">
+                <button
+                  type="button"
+                  onClick={deleteConversation}
+                  className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
+                  title="Ištrinti visą pokalbį"
+                >
+                  <Trash2 className="w-3 h-3" /> Ištrinti pokalbį
+                </button>
+              </div>
+              <p className="px-5 pt-1 text-[11px] text-muted-foreground italic">
+                Pokalbiai automatiškai ištrinami po 3 dienų nuo paskutinės žinutės.
+              </p>
+              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto mt-2">
                 {messages.map((m) => (
                   <li
                     key={m.id}
