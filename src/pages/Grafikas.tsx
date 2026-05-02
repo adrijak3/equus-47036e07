@@ -693,7 +693,14 @@ export default function Grafikas() {
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
-                                  <span className="truncate">{formatBookedName(b.profile_name ?? "—", b.display_name)}</span>
+                                  <span className="truncate">
+                                    {b.is_guest
+                                      ? `${b.guest_name ?? "Naujokė"} (naujokė)`
+                                      : formatBookedName(b.profile_name ?? "—", b.display_name)}
+                                    {b.is_individual && (
+                                      <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">· individuali</span>
+                                    )}
+                                  </span>
                                   {mine && !slotPast && (
                                     <button
                                       onClick={() => handleCancelClick(b)}
