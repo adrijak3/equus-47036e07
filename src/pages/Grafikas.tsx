@@ -113,7 +113,7 @@ export default function Grafikas() {
 
     const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes] = await Promise.all([
       supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
-      supabase.from("bookings").select("id, user_id, slot_date, slot_time, status")
+      supabase.from("bookings").select("id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual")
         .gte("slot_date", startISO).lte("slot_date", endISO).eq("status", "active"),
       supabase.from("slot_overrides").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
       supabase.from("waiting_list").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
