@@ -35,6 +35,9 @@ interface Booking {
   status: string;
   profile_name?: string;
   display_name?: string | null;
+  is_guest?: boolean;
+  guest_name?: string | null;
+  is_individual?: boolean;
 }
 interface SlotOverride {
   slot_date: string;
@@ -87,6 +90,8 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+  // Guest (naujokė) name
+  const [adminGuestName, setAdminGuestName] = useState("");
 
   // Day notes
   const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
@@ -108,7 +113,7 @@ export default function Grafikas() {
 
     const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes] = await Promise.all([
       supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
-      supabase.from("bookings").select("id, user_id, slot_date, slot_time, status")
+      supabase.from("bookings").select("id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual")
         .gte("slot_date", startISO).lte("slot_date", endISO).eq("status", "active"),
       supabase.from("slot_overrides").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
       supabase.from("waiting_list").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
@@ -315,6 +320,49 @@ export default function Grafikas() {
       return;
     }
     toast.success("Pridėta");
+    setAdminAddUserId("");
+    loadData();
+  };
+
+  /** Admin: add a guest ("naujokė") booking — uses admin's user_id with is_guest flag */
+  const adminAddGuest = async (date: Date, time: string) => {
+    if (!user) return;
+    const name = adminGuestName.trim();
+    if (name.length < 2) { toast.error("Įveskite svečio vardą"); return; }
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings").insert({
+      user_id: user.id,
+      slot_date: formatDateISO(date),
+      slot_time: time,
+      status: "active",
+      is_guest: true,
+      guest_name: name,
+      counts_in_subscription: false,
+    } as any);
+    setAdminBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Pridėta naujokė: ${name}`);
+    setAdminGuestName("");
+    loadData();
+  };
+
+  /** Admin: add an individual lesson booking for a chosen user (marked is_individual). */
+  const adminAddIndividual = async (date: Date, time: string, userId: string) => {
+    if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    setAdminBusy(true);
+    const { error } = await supabase.from("bookings").insert({
+      user_id: userId,
+      slot_date: formatDateISO(date),
+      slot_time: time,
+      status: "active",
+      is_individual: true,
+    } as any);
+    setAdminBusy(false);
+    if (error) {
+      toast.error(error.code === "23505" ? "Vartotojas jau užregistruotas šiuo laiku" : error.message);
+      return;
+    }
+    toast.success("Individuali pridėta");
     setAdminAddUserId("");
     loadData();
   };
@@ -645,7 +693,14 @@ export default function Grafikas() {
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
-                                  <span className="truncate">{formatBookedName(b.profile_name ?? "—", b.display_name)}</span>
+                                  <span className="truncate">
+                                    {b.is_guest
+                                      ? `${b.guest_name ?? "Naujokė"} (naujokė)`
+                                      : formatBookedName(b.profile_name ?? "—", b.display_name)}
+                                    {b.is_individual && (
+                                      <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">· individuali</span>
+                                    )}
+                                  </span>
                                   {mine && !slotPast && (
                                     <button
                                       onClick={() => handleCancelClick(b)}
@@ -855,7 +910,12 @@ export default function Grafikas() {
                   <ul className="mt-2 space-y-1.5">
                     {list.map((b) => (
                       <li key={b.id} className="flex items-center justify-between text-sm border border-gold/10 rounded px-3 py-2">
-                        <span className="text-foreground/85">{b.profile_name ?? "—"}</span>
+                        <span className="text-foreground/85">
+                          {b.is_guest ? `${b.guest_name ?? "Naujokė"} (naujokė)` : (b.profile_name ?? "—")}
+                          {b.is_individual && (
+                            <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">· individuali</span>
+                          )}
+                        </span>
                         <button
                           onClick={() => adminRemoveBooking(b.id)}
                           disabled={adminBusy}
@@ -898,9 +958,42 @@ export default function Grafikas() {
                 >
                   Pridėti
                 </Button>
+                <Button
+                  variant="ghostGold"
+                  size="sm"
+                  disabled={adminBusy || !adminAddUserId}
+                  onClick={() => adminSlotDialog && adminAddIndividual(adminSlotDialog.date, adminSlotDialog.time, adminAddUserId)}
+                  title="Pridėti kaip individualią treniruotę"
+                >
+                  Individuali
+                </Button>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1.5 italic">
                 Talpos limitas ignoruojamas. Norint pridėti +1 vietą, naudokite +1 mygtuką.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-gold/10">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti naujokę (svečią)</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={adminGuestName}
+                  onChange={(e) => setAdminGuestName(e.target.value)}
+                  placeholder="Vardas (ir pavardė)"
+                  maxLength={60}
+                  className="flex-1"
+                />
+                <Button
+                  variant="gold"
+                  size="sm"
+                  disabled={adminBusy || adminGuestName.trim().length < 2}
+                  onClick={() => adminSlotDialog && adminAddGuest(adminSlotDialog.date, adminSlotDialog.time)}
+                >
+                  Pridėti svečią
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5 italic">
+                Svečio rezervacija nesusieta su jokiu vartotoju ir neskaičiuoja abonemento.
               </p>
             </div>
           </div>

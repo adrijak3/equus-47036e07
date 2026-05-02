@@ -187,6 +187,30 @@ export default function Paskyra() {
     load();
   };
 
+  const editSubLessons = async (s: Subscription) => {
+    const txt = prompt(
+      `Pakeisti treniruočių skaičių abonemente.\n\nDabar: ${s.lessons_used}/${s.lessons_total}\nGalima sumažinti tik tiek, kad būtų ne mažiau už jau panaudotų (${s.lessons_used}).`,
+      String(s.lessons_total),
+    );
+    if (txt === null) return;
+    const n = parseInt(txt);
+    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Įveskite skaičių 1–100"); return; }
+    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
+    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atnaujinta");
+    load();
+  };
+
+  const deleteConversation = async () => {
+    if (!user) return;
+    if (!confirm("Ištrinti visą pokalbį su administracija? Šio veiksmo atšaukti negalėsite.")) return;
+    const { error } = await supabase.from("messages").delete().eq("user_id", user.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pokalbis ištrintas");
+    load();
+  };
+
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
@@ -275,7 +299,7 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} />)}
+              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />)}
             </div>
           )}
         </TabsContent>
@@ -302,7 +326,20 @@ export default function Paskyra() {
           </div>
           {messages.length > 0 && (
             <Section title="Pokalbis su administracija">
-              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">
+              <div className="flex justify-end px-5 pt-3">
+                <button
+                  type="button"
+                  onClick={deleteConversation}
+                  className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
+                  title="Ištrinti visą pokalbį"
+                >
+                  <Trash2 className="w-3 h-3" /> Ištrinti pokalbį
+                </button>
+              </div>
+              <p className="px-5 pt-1 text-[11px] text-muted-foreground italic">
+                Pokalbiai automatiškai ištrinami po 3 dienų nuo paskutinės žinutės.
+              </p>
+              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto mt-2">
                 {messages.map((m) => (
                   <li
                     key={m.id}
@@ -592,7 +629,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-function SubscriptionCard({ s, onMarkPaid, onDelete }: { s: Subscription; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void }) {
+function SubscriptionCard({ s, onMarkPaid, onDelete, onEditLessons }: { s: Subscription; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void }) {
   const remaining = s.lessons_total - s.lessons_used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
@@ -603,9 +640,20 @@ function SubscriptionCard({ s, onMarkPaid, onDelete }: { s: Subscription; onMark
       expired && "opacity-60",
     )}>
       <div className="flex items-baseline justify-between mb-3">
-        <span className="text-3xl font-display text-gradient-gold tabular-nums">
-          {s.lessons_used}/{s.lessons_total}
-        </span>
+        {onEditLessons ? (
+          <button
+            type="button"
+            onClick={() => onEditLessons(s)}
+            className="text-3xl font-display text-gradient-gold tabular-nums hover:opacity-80 transition-opacity"
+            title="Pakeisti treniruočių skaičių"
+          >
+            {s.lessons_used}/{s.lessons_total}
+          </button>
+        ) : (
+          <span className="text-3xl font-display text-gradient-gold tabular-nums">
+            {s.lessons_used}/{s.lessons_total}
+          </span>
+        )}
         {s.paid ? (
           <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" /> Apmokėta
