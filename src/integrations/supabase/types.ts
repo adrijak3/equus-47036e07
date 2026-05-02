@@ -476,6 +476,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_bookings: { Args: never; Returns: number }
+      cleanup_old_conversations: { Args: never; Returns: number }
       cleanup_old_day_notes: { Args: never; Returns: number }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       expire_makeup_cancellations: { Args: never; Returns: number }
