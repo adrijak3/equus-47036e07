@@ -910,7 +910,12 @@ export default function Grafikas() {
                   <ul className="mt-2 space-y-1.5">
                     {list.map((b) => (
                       <li key={b.id} className="flex items-center justify-between text-sm border border-gold/10 rounded px-3 py-2">
-                        <span className="text-foreground/85">{b.profile_name ?? "—"}</span>
+                        <span className="text-foreground/85">
+                          {b.is_guest ? `${b.guest_name ?? "Naujokė"} (naujokė)` : (b.profile_name ?? "—")}
+                          {b.is_individual && (
+                            <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">· individuali</span>
+                          )}
+                        </span>
                         <button
                           onClick={() => adminRemoveBooking(b.id)}
                           disabled={adminBusy}
