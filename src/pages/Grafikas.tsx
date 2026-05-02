@@ -35,6 +35,9 @@ interface Booking {
   status: string;
   profile_name?: string;
   display_name?: string | null;
+  is_guest?: boolean;
+  guest_name?: string | null;
+  is_individual?: boolean;
 }
 interface SlotOverride {
   slot_date: string;
