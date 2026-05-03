@@ -11,6 +11,7 @@ import Kainos from "./pages/Kainos";
 import Paskyra from "./pages/Paskyra";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import Trener from "./pages/Trener";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/paskyra" element={<RequireAuth><PaskyraRoute /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
+              <Route path="/trener" element={<RequireAuth><Trener /></RequireAuth>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
