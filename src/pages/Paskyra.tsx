@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubscriptionPrice, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
+import { calculateSubPriceByType, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
 import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -30,6 +30,7 @@ interface Subscription {
   purchase_date: string;
   expires_at: string;
   paid: boolean;
+  lesson_type?: string;
 }
 interface PermanentSlot {
   id: string;
@@ -56,6 +57,7 @@ export default function Paskyra() {
   const [newSubLessons, setNewSubLessons] = useState(8);
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
+  const [newSubType, setNewSubType] = useState<LessonType>("sportine");
 
 
 
@@ -112,24 +114,27 @@ export default function Paskyra() {
   ).length;
   const totalCancelled = bookings.filter((b) => b.status === "cancelled").length;
 
-  const newSubPrice = calculateSubscriptionPrice(newSubLessons);
+  const effLessons = newSubType === "vienkartine" ? 1 : newSubLessons;
+  const newSubPrice = calculateSubPriceByType(effLessons, newSubType);
 
   const addSubscription = async () => {
     if (!user) return;
-    if (newSubLessons < 1 || newSubLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
+    if (effLessons < 1 || effLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
     const { error } = await supabase.from("subscriptions").insert({
       user_id: user.id,
-      lessons_total: newSubLessons,
+      lessons_total: effLessons,
+      lesson_type: newSubType,
       price: newSubPrice,
       purchase_date: newSubDate,
       expires_at: expiryFromPurchase(newSubDate),
       paid: newSubPaid,
-    });
+    } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Abonementas pridėtas");
     setSubDialog(false);
     setNewSubLessons(8);
     setNewSubPaid(false);
+    setNewSubType("sportine");
     load();
   };
 
@@ -394,13 +399,24 @@ export default function Paskyra() {
               <Input id="sub-date" type="date" value={newSubDate} onChange={(e) => setNewSubDate(e.target.value)} />
             </div>
             <div>
+              <Label htmlFor="sub-type">Tipas</Label>
+              <select id="sub-type" value={newSubType} onChange={(e) => setNewSubType(e.target.value as LessonType)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="sportine">Sportinė</option>
+                <option value="nesportine">Nesportinė</option>
+                <option value="vienkartine">Vienkartinė (1 pamoka)</option>
+              </select>
+            </div>
+            {newSubType !== "vienkartine" && (
+            <div>
               <Label htmlFor="sub-lessons">Pamokų skaičius</Label>
               <Input id="sub-lessons" type="number" min={1} max={50} value={newSubLessons}
                 onChange={(e) => setNewSubLessons(parseInt(e.target.value) || 0)} />
               <p className="text-xs text-muted-foreground mt-1.5">
-                Galioja 30 dienų · {newSubLessons >= 8 ? "30 €" : "35 €"} už pamoką
+                Galioja 30 dienų
               </p>
             </div>
+            )}
             <div className="flex items-baseline justify-between p-4 rounded-md bg-gold/5 border border-gold/15">
               <span className="text-sm">Iš viso</span>
               <span className="text-3xl font-display text-gradient-gold tabular-nums">{newSubPrice} €</span>
