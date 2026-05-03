@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { WEEKDAYS_LT, formatTime, TIME_SLOT_OPTIONS } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock } from "lucide-react";
+import { WEEKDAYS_LT, formatTime, TIME_SLOT_OPTIONS_FINE, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet } from "lucide-react";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -19,6 +19,7 @@ interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean;
+  lesson_type?: string;
 }
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
@@ -32,11 +33,12 @@ export default function Admin() {
       </header>
 
       <Tabs defaultValue="schedule">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full bg-background/50 mb-6 h-auto">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full bg-background/50 mb-6 h-auto">
           <TabsTrigger value="schedule" className="gap-1.5 text-xs sm:text-sm"><CalendarCog className="w-4 h-4" /> <span className="hidden sm:inline">Tvarkaraštis</span></TabsTrigger>
           <TabsTrigger value="permanent" className="gap-1.5 text-xs sm:text-sm"><Star className="w-4 h-4" /> <span className="hidden sm:inline">Nuolatiniai</span></TabsTrigger>
           <TabsTrigger value="cancels" className="gap-1.5 text-xs sm:text-sm"><Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Atšaukimai</span></TabsTrigger>
           <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="w-4 h-4" /> <span className="hidden sm:inline">Vartotojai</span></TabsTrigger>
+          <TabsTrigger value="subs" className="gap-1.5 text-xs sm:text-sm"><Wallet className="w-4 h-4" /> <span className="hidden sm:inline">Abonimentai</span></TabsTrigger>
           <TabsTrigger value="messages" className="gap-1.5 text-xs sm:text-sm"><MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Žinutės</span></TabsTrigger>
         </TabsList>
 
@@ -44,6 +46,7 @@ export default function Admin() {
         <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
         <TabsContent value="cancels"><CancellationsTab /></TabsContent>
         <TabsContent value="users"><UsersTab /></TabsContent>
+        <TabsContent value="subs"><SubsTab /></TabsContent>
         <TabsContent value="messages"><MessagesTab /></TabsContent>
       </Tabs>
     </div>
@@ -151,7 +154,7 @@ function ScheduleTab() {
               <Label>Laikas</Label>
               <select value={newTime} onChange={(e) => setNewTime(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums">
-                {TIME_SLOT_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TIME_SLOT_OPTIONS_FINE.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
@@ -162,6 +165,214 @@ function ScheduleTab() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
             <Button variant="gold" onClick={add}>Pridėti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ---------- SUBSCRIPTIONS (full overview, per-user add) ---------- */
+function SubsTab() {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [subs, setSubs] = useState<Sub[]>([]);
+  const [filter, setFilter] = useState("");
+  const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(false);
+
+  // Add dialog
+  const [open, setOpen] = useState(false);
+  const [selUser, setSelUser] = useState("");
+  const [lessonType, setLessonType] = useState<LessonType>("sportine");
+  const [lessons, setLessons] = useState(8);
+  const [purchaseDate, setPurchaseDate] = useState(formatDateISO(new Date()));
+  const [paid, setPaid] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    const [p, s] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
+      supabase.from("subscriptions").select("*").order("purchase_date", { ascending: false }),
+    ]);
+    setProfiles(p.data ?? []);
+    setSubs((s.data ?? []) as any);
+  };
+  useEffect(() => { load(); }, []);
+
+  const togglePaid = async (subId: string, p: boolean) => {
+    const { error } = await supabase.from("subscriptions").update({ paid: p }).eq("id", subId);
+    if (error) { toast.error(error.message); return; }
+    load();
+  };
+
+  const editLessons = async (s: Sub) => {
+    const txt = prompt(`Naujas treniruočių skaičius (dabar ${s.lessons_total}):`, String(s.lessons_total));
+    if (txt === null) return;
+    const n = parseInt(txt);
+    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
+    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
+    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atnaujinta"); load();
+  };
+
+  const deleteSub = async (s: Sub) => {
+    if (!confirm(`Ištrinti abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
+    const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Ištrinta"); load();
+  };
+
+  const newPrice = calculateSubPriceByType(lessons, lessonType);
+
+  const addSub = async () => {
+    if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
+    const lt = lessonType === "vienkartine" ? 1 : lessons;
+    setSaving(true);
+    const { error } = await supabase.from("subscriptions").insert({
+      user_id: selUser,
+      lessons_total: lt,
+      lesson_type: lessonType,
+      price: newPrice,
+      purchase_date: purchaseDate,
+      expires_at: expiryFromPurchase(purchaseDate),
+      paid,
+    } as any);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pridėta");
+    setOpen(false);
+    setSelUser(""); setLessons(8); setPaid(false); setLessonType("sportine");
+    load();
+  };
+
+  const filteredProfiles = profiles.filter((p) => {
+    if (filter && !p.full_name.toLowerCase().includes(filter.toLowerCase())) return false;
+    if (showOnlyUnpaid) {
+      const us = subs.filter((s) => s.user_id === p.id);
+      if (!us.some((s) => !s.paid)) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <Input
+          placeholder="Ieškoti vartotojo..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="max-w-xs"
+        />
+        <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+          <input type="checkbox" checked={showOnlyUnpaid} onChange={(e) => setShowOnlyUnpaid(e.target.checked)} className="accent-gold" />
+          Tik su neapmokėtais
+        </label>
+        <div className="flex-1" />
+        <Button variant="gold" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Naujas abonementas</Button>
+      </div>
+
+      <div className="space-y-2">
+        {filteredProfiles.map((p) => {
+          const us = subs.filter((s) => s.user_id === p.id);
+          const unpaid = us.some((s) => !s.paid);
+          return (
+            <details key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg" open={us.length > 0 && unpaid}>
+              <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
+                <div>
+                  <div className="font-display text-base text-gold">{p.full_name}</div>
+                  <div className="text-xs text-muted-foreground">{p.phone ?? "—"} · {us.length} ab.</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</span>}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelUser(p.id); setOpen(true);
+                    }}
+                    className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
+                  >
+                    + Pridėti
+                  </button>
+                </div>
+              </summary>
+              <div className="border-t border-gold/10 px-5 py-3">
+                {us.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {us.map((s) => (
+                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-gold/5 last:border-0">
+                        <button type="button" onClick={() => editLessons(s)} className="tabular-nums hover:text-gold">
+                          {s.lessons_used}/{s.lessons_total} · {Number(s.price).toFixed(0)}€
+                        </button>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
+                          {LESSON_TYPE_LABEL[(s.lesson_type ?? "sportine") as LessonType] ?? s.lesson_type}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums">{s.purchase_date} → {s.expires_at}</span>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => togglePaid(s.id, !s.paid)}
+                            className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}>
+                            {s.paid ? "Apmokėta" : "Neapmokėta"}
+                          </button>
+                          <button onClick={() => deleteSub(s)} className="text-muted-foreground hover:text-destructive p-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">Naujas abonementas</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Vartotojas</Label>
+              <select value={selUser} onChange={(e) => setSelUser(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">— pasirinkite —</option>
+                {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Tipas</Label>
+              <select value={lessonType} onChange={(e) => setLessonType(e.target.value as LessonType)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="sportine">Sportinė (8 → 30€/pam, kitaip 35€)</option>
+                <option value="nesportine">Nesportinė (1=35€, 4=120€, 8=200€)</option>
+                <option value="vienkartine">Vienkartinė (35€)</option>
+              </select>
+            </div>
+            {lessonType !== "vienkartine" && (
+              <div>
+                <Label>Pamokų sk.</Label>
+                <Input type="number" min={1} max={50} value={lessons}
+                  onChange={(e) => setLessons(parseInt(e.target.value) || 0)} />
+              </div>
+            )}
+            <div>
+              <Label>Pirkimo data</Label>
+              <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
+            </div>
+            <div className="flex items-baseline justify-between p-3 rounded-md bg-gold/5 border border-gold/15">
+              <span className="text-sm">Iš viso</span>
+              <span className="text-2xl font-display text-gradient-gold tabular-nums">{newPrice} €</span>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} className="accent-gold" />
+              Jau apmokėta
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
+            <Button variant="gold" onClick={addSub} disabled={saving}>Pridėti</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
