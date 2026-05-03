@@ -686,6 +686,9 @@ function SubscriptionCard({ s, onMarkPaid, onDelete, onEditLessons }: { s: Subsc
         )}
       </div>
       <div className="text-sm space-y-1 text-muted-foreground">
+        {s.lesson_type && (
+          <div>Tipas: <span className="text-foreground">{LESSON_TYPE_LABEL[(s.lesson_type as LessonType)] ?? s.lesson_type}</span></div>
+        )}
         <div>Pirkta: <span className="text-foreground">{s.purchase_date}</span></div>
         <div>Galioja iki: <span className={cn("text-foreground", expired && "text-destructive")}>{s.expires_at}</span></div>
         <div>Suma: <span className="text-foreground tabular-nums">{Number(s.price).toFixed(2)} €</span></div>
