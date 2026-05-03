@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2, Sparkles } from "lucide-react";
-import { formatDateISO, formatTime, WEEKDAYS_LT } from "@/lib/equus";
+import { formatDateISO, formatTime } from "@/lib/equus";
 
 interface Horse { id: string; name: string; notes: string | null; active: boolean; }
 interface Booking { id: string; user_id: string; slot_date: string; slot_time: string; status: string; is_guest: boolean; guest_name: string | null; profile_name?: string; }
@@ -31,12 +31,14 @@ export default function Trener() {
         <div className="gold-divider mt-4 max-w-[120px]" />
       </header>
       <Tabs defaultValue="today">
-        <TabsList className="grid grid-cols-2 w-full bg-background/50 mb-6 h-auto">
+        <TabsList className="grid grid-cols-3 w-full bg-background/50 mb-6 h-auto">
           <TabsTrigger value="today">Šiandienos žirgai</TabsTrigger>
           <TabsTrigger value="horses">Žirgų sąrašas</TabsTrigger>
+          <TabsTrigger value="subs">Abonimentai</TabsTrigger>
         </TabsList>
         <TabsContent value="today"><TodayAssignments /></TabsContent>
         <TabsContent value="horses"><HorsesTab /></TabsContent>
+        <TabsContent value="subs"><SubsOverview /></TabsContent>
       </Tabs>
     </div>
   );
@@ -181,11 +183,13 @@ function TodayAssignments() {
                 {list.map((b) => {
                   const a = getAssignment(b);
                   const req = requests.find((r) => (r.user_id === b.user_id) && r.slot_time === b.slot_time);
+                  const assignedHorse = a ? horses.find((h) => h.id === a.horse_id) : null;
                   return (
                     <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                       <div>
                         <span className="font-medium">{b.is_guest ? `${b.guest_name} (naujokė)` : b.profile_name}</span>
                         {req && <span className="ml-2 text-xs text-blush">pageidauja: {req.wished_horse}</span>}
+                        {assignedHorse && <span className="ml-2 text-xs text-gold">→ {assignedHorse.name}</span>}
                       </div>
                       <select
                         value={a?.horse_id ?? ""}
@@ -202,6 +206,55 @@ function TodayAssignments() {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+interface SubRow { id: string; user_id: string; lessons_total: number; lessons_used: number; lesson_type: string; expires_at: string; paid: boolean; price: number; }
+
+function SubsOverview() {
+  const [rows, setRows] = useState<(SubRow & { full_name: string })[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const today = formatDateISO(new Date());
+      const [{ data: subs }, { data: profs }] = await Promise.all([
+        supabase.from("subscriptions").select("*").gte("expires_at", today).order("expires_at"),
+        supabase.from("profiles").select("id, full_name"),
+      ]);
+      const map = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      setRows((subs ?? []).map((s: any) => ({ ...s, full_name: map[s.user_id] ?? "—" })));
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = rows.filter((r) => !filter || r.full_name.toLowerCase().includes(filter.toLowerCase()));
+
+  if (loading) return <p className="text-center text-muted-foreground italic py-8">Kraunama…</p>;
+  return (
+    <div className="space-y-3">
+      <Input placeholder="Ieškoti pagal vardą…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+      {filtered.length === 0 ? (
+        <p className="text-center text-muted-foreground italic py-8">Nėra aktyvių abonimentų</p>
+      ) : (
+        <ul className="space-y-2">
+          {filtered.map((s) => (
+            <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 bg-gradient-card border border-gold/15 rounded-lg px-4 py-3 text-sm">
+              <div>
+                <div className="font-medium">{s.full_name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {s.lesson_type} · galioja iki {s.expires_at} {s.paid ? "" : "· neapmokėta"}
+                </div>
+              </div>
+              <div className="font-display text-gold tabular-nums">
+                {s.lessons_used}/{s.lessons_total}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
