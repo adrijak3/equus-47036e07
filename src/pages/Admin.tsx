@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { WEEKDAYS_LT, formatTime, TIME_SLOT_OPTIONS } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock } from "lucide-react";
+import { WEEKDAYS_LT, formatTime, TIME_SLOT_OPTIONS_FINE, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet } from "lucide-react";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -19,6 +19,7 @@ interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean;
+  lesson_type?: string;
 }
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
@@ -32,11 +33,12 @@ export default function Admin() {
       </header>
 
       <Tabs defaultValue="schedule">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full bg-background/50 mb-6 h-auto">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full bg-background/50 mb-6 h-auto">
           <TabsTrigger value="schedule" className="gap-1.5 text-xs sm:text-sm"><CalendarCog className="w-4 h-4" /> <span className="hidden sm:inline">Tvarkaraštis</span></TabsTrigger>
           <TabsTrigger value="permanent" className="gap-1.5 text-xs sm:text-sm"><Star className="w-4 h-4" /> <span className="hidden sm:inline">Nuolatiniai</span></TabsTrigger>
           <TabsTrigger value="cancels" className="gap-1.5 text-xs sm:text-sm"><Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Atšaukimai</span></TabsTrigger>
           <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="w-4 h-4" /> <span className="hidden sm:inline">Vartotojai</span></TabsTrigger>
+          <TabsTrigger value="subs" className="gap-1.5 text-xs sm:text-sm"><Wallet className="w-4 h-4" /> <span className="hidden sm:inline">Abonimentai</span></TabsTrigger>
           <TabsTrigger value="messages" className="gap-1.5 text-xs sm:text-sm"><MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Žinutės</span></TabsTrigger>
         </TabsList>
 
@@ -44,6 +46,7 @@ export default function Admin() {
         <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
         <TabsContent value="cancels"><CancellationsTab /></TabsContent>
         <TabsContent value="users"><UsersTab /></TabsContent>
+        <TabsContent value="subs"><SubsTab /></TabsContent>
         <TabsContent value="messages"><MessagesTab /></TabsContent>
       </Tabs>
     </div>
@@ -151,7 +154,7 @@ function ScheduleTab() {
               <Label>Laikas</Label>
               <select value={newTime} onChange={(e) => setNewTime(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums">
-                {TIME_SLOT_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TIME_SLOT_OPTIONS_FINE.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
