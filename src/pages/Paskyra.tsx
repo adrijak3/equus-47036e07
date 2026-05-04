@@ -38,6 +38,14 @@ interface PermanentSlot {
   day_of_week: number;
   slot_time: string;
 }
+interface PendingSickReq {
+  id: string;
+  booking_id: string;
+  document_url: string | null;
+  document_deadline: string | null;
+  slot_date?: string;
+  slot_time?: string;
+}
 interface AvailableSlot {
   id: string;
   day_of_week: number;
@@ -51,6 +59,7 @@ export default function Paskyra() {
   const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add subscription dialog
@@ -103,8 +112,37 @@ export default function Paskyra() {
     setMessages(m.data ?? []);
     setPermanents(p.data ?? []);
     setAvailableSlots(ts.data ?? []);
+
+    // Load pending sickness cancellations awaiting / with documents
+    const { data: sr } = await supabase
+      .from("cancellation_requests")
+      .select("id, booking_id, document_url, document_deadline, status, sickness, bookings(slot_date, slot_time)")
+      .eq("user_id", user.id)
+      .eq("sickness", true)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setSickReqs((sr ?? []).map((r: any) => ({
+      id: r.id, booking_id: r.booking_id,
+      document_url: r.document_url, document_deadline: r.document_deadline,
+      slot_date: r.bookings?.slot_date, slot_time: r.bookings?.slot_time,
+    })));
+
     setLoading(false);
   };
+  const uploadSickDoc = async (req: PendingSickReq, file: File) => {
+    if (!user) return;
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${user.id}/${req.booking_id}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("cancellation-docs").upload(path, file);
+    if (upErr) { toast.error(upErr.message); return; }
+    const { error } = await supabase.from("cancellation_requests")
+      .update({ document_url: path, document_uploaded_at: new Date().toISOString() })
+      .eq("id", req.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pažyma įkelta");
+    load();
+  };
+
 
   // Mark received admin replies as read once user opens the page
   useEffect(() => {
