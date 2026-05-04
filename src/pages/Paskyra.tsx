@@ -20,6 +20,7 @@ interface Booking {
   slot_time: string;
   status: string;
   counts_in_subscription: boolean;
+  horse_name?: string | null;
 }
 interface Subscription {
   id: string;
@@ -58,6 +59,7 @@ export default function Paskyra() {
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
   const [newSubType, setNewSubType] = useState<LessonType>("sportine");
+  const [newSubAlreadyUsed, setNewSubAlreadyUsed] = useState(0);
 
 
 
@@ -77,7 +79,26 @@ export default function Paskyra() {
       supabase.from("permanent_slots").select("*").eq("user_id", user.id).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
     ]);
-    setBookings(b.data ?? []);
+    // attach horse names from horse_assignments
+    const bs = (b.data ?? []) as any[];
+    if (bs.length) {
+      const ids = bs.map((x) => x.id);
+      const { data: ha } = await supabase
+        .from("horse_assignments")
+        .select("booking_id, horse_id, slot_date, slot_time")
+        .in("booking_id", ids);
+      const horseIds = Array.from(new Set((ha ?? []).map((x: any) => x.horse_id)));
+      let horseMap: Record<string, string> = {};
+      if (horseIds.length) {
+        const { data: hs } = await supabase.from("horses").select("id, name").in("id", horseIds);
+        horseMap = Object.fromEntries((hs ?? []).map((h: any) => [h.id, h.name]));
+      }
+      const haMap: Record<string, string> = {};
+      (ha ?? []).forEach((x: any) => { if (x.booking_id) haMap[x.booking_id] = horseMap[x.horse_id]; });
+      setBookings(bs.map((x) => ({ ...x, horse_name: haMap[x.id] ?? null })));
+    } else {
+      setBookings([]);
+    }
     setSubs(s.data ?? []);
     setMessages(m.data ?? []);
     setPermanents(p.data ?? []);
@@ -120,9 +141,14 @@ export default function Paskyra() {
   const addSubscription = async () => {
     if (!user) return;
     if (effLessons < 1 || effLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
+    if (newSubAlreadyUsed < 0 || newSubAlreadyUsed > effLessons) {
+      toast.error("Panaudota turi būti tarp 0 ir " + effLessons);
+      return;
+    }
     const { error } = await supabase.from("subscriptions").insert({
       user_id: user.id,
       lessons_total: effLessons,
+      lessons_used: newSubAlreadyUsed,
       lesson_type: newSubType,
       price: newSubPrice,
       purchase_date: newSubDate,
@@ -135,6 +161,7 @@ export default function Paskyra() {
     setNewSubLessons(8);
     setNewSubPaid(false);
     setNewSubType("sportine");
+    setNewSubAlreadyUsed(0);
     load();
   };
 
