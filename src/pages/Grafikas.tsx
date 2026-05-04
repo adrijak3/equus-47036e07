@@ -857,7 +857,7 @@ export default function Grafikas() {
                 const b = permCancelDialog!.booking;
                 setPermCancelDialog(null);
                 const hours = hoursUntil(b.slot_date, b.slot_time);
-                if (hours > 48) {
+                if (hours > 24) {
                   setConfirmDialog({
                     title: "Atšaukti tik šią pamoką?",
                     description: "Nuolatinis laikas išliks ateities savaitėms.",
