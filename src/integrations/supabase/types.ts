@@ -65,6 +65,9 @@ export type Database = {
           booking_id: string
           created_at: string
           decided_at: string | null
+          document_deadline: string | null
+          document_uploaded_at: string | null
+          document_url: string | null
           id: string
           makeup_deadline: string | null
           reason: string
@@ -77,6 +80,9 @@ export type Database = {
           booking_id: string
           created_at?: string
           decided_at?: string | null
+          document_deadline?: string | null
+          document_uploaded_at?: string | null
+          document_url?: string | null
           id?: string
           makeup_deadline?: string | null
           reason: string
@@ -89,6 +95,9 @@ export type Database = {
           booking_id?: string
           created_at?: string
           decided_at?: string | null
+          document_deadline?: string | null
+          document_uploaded_at?: string | null
+          document_url?: string | null
           id?: string
           makeup_deadline?: string | null
           reason?: string
