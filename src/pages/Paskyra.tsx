@@ -313,6 +313,41 @@ export default function Paskyra() {
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-6">
+          {sickReqs.filter((r) => !r.document_url && r.document_deadline).length > 0 && (
+            <Section title="Ligos pažymos" icon={<XCircle className="w-4 h-4" />}>
+              <ul className="divide-y divide-gold/5">
+                {sickReqs.filter((r) => !r.document_url && r.document_deadline).map((r) => {
+                  const overdue = r.document_deadline && r.document_deadline < formatDateISO(new Date());
+                  return (
+                    <li key={r.id} className="px-5 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <div className="font-medium">
+                          Pamoka {r.slot_date} {r.slot_time?.slice(0, 5)}
+                        </div>
+                        <div className={cn("text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
+                          {overdue
+                            ? "Terminas pasibaigęs — laukia administracijos sprendimo"
+                            : `Įkelti pažymą iki: ${r.document_deadline}`}
+                        </div>
+                      </div>
+                      {!overdue && (
+                        <Input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
+                          className="max-w-xs"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadSickDoc(r, f);
+                          }}
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Section>
+          )}
+
           {/* Lifetime stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
