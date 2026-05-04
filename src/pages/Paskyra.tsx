@@ -20,6 +20,7 @@ interface Booking {
   slot_time: string;
   status: string;
   counts_in_subscription: boolean;
+  horse_name?: string | null;
 }
 interface Subscription {
   id: string;
@@ -37,6 +38,14 @@ interface PermanentSlot {
   day_of_week: number;
   slot_time: string;
 }
+interface PendingSickReq {
+  id: string;
+  booking_id: string;
+  document_url: string | null;
+  document_deadline: string | null;
+  slot_date?: string;
+  slot_time?: string;
+}
 interface AvailableSlot {
   id: string;
   day_of_week: number;
@@ -50,6 +59,7 @@ export default function Paskyra() {
   const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add subscription dialog
@@ -58,6 +68,7 @@ export default function Paskyra() {
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
   const [newSubType, setNewSubType] = useState<LessonType>("sportine");
+  const [newSubAlreadyUsed, setNewSubAlreadyUsed] = useState(0);
 
 
 
@@ -77,13 +88,61 @@ export default function Paskyra() {
       supabase.from("permanent_slots").select("*").eq("user_id", user.id).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
     ]);
-    setBookings(b.data ?? []);
+    // attach horse names from horse_assignments
+    const bs = (b.data ?? []) as any[];
+    if (bs.length) {
+      const ids = bs.map((x) => x.id);
+      const { data: ha } = await supabase
+        .from("horse_assignments")
+        .select("booking_id, horse_id, slot_date, slot_time")
+        .in("booking_id", ids);
+      const horseIds = Array.from(new Set((ha ?? []).map((x: any) => x.horse_id)));
+      let horseMap: Record<string, string> = {};
+      if (horseIds.length) {
+        const { data: hs } = await supabase.from("horses").select("id, name").in("id", horseIds);
+        horseMap = Object.fromEntries((hs ?? []).map((h: any) => [h.id, h.name]));
+      }
+      const haMap: Record<string, string> = {};
+      (ha ?? []).forEach((x: any) => { if (x.booking_id) haMap[x.booking_id] = horseMap[x.horse_id]; });
+      setBookings(bs.map((x) => ({ ...x, horse_name: haMap[x.id] ?? null })));
+    } else {
+      setBookings([]);
+    }
     setSubs(s.data ?? []);
     setMessages(m.data ?? []);
     setPermanents(p.data ?? []);
     setAvailableSlots(ts.data ?? []);
+
+    // Load pending sickness cancellations awaiting / with documents
+    const { data: sr } = await supabase
+      .from("cancellation_requests")
+      .select("id, booking_id, document_url, document_deadline, status, sickness, bookings(slot_date, slot_time)")
+      .eq("user_id", user.id)
+      .eq("sickness", true)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setSickReqs((sr ?? []).map((r: any) => ({
+      id: r.id, booking_id: r.booking_id,
+      document_url: r.document_url, document_deadline: r.document_deadline,
+      slot_date: r.bookings?.slot_date, slot_time: r.bookings?.slot_time,
+    })));
+
     setLoading(false);
   };
+  const uploadSickDoc = async (req: PendingSickReq, file: File) => {
+    if (!user) return;
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${user.id}/${req.booking_id}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("cancellation-docs").upload(path, file);
+    if (upErr) { toast.error(upErr.message); return; }
+    const { error } = await supabase.from("cancellation_requests")
+      .update({ document_url: path, document_uploaded_at: new Date().toISOString() })
+      .eq("id", req.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Pažyma įkelta");
+    load();
+  };
+
 
   // Mark received admin replies as read once user opens the page
   useEffect(() => {
@@ -120,9 +179,14 @@ export default function Paskyra() {
   const addSubscription = async () => {
     if (!user) return;
     if (effLessons < 1 || effLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
+    if (newSubAlreadyUsed < 0 || newSubAlreadyUsed > effLessons) {
+      toast.error("Panaudota turi būti tarp 0 ir " + effLessons);
+      return;
+    }
     const { error } = await supabase.from("subscriptions").insert({
       user_id: user.id,
       lessons_total: effLessons,
+      lessons_used: newSubAlreadyUsed,
       lesson_type: newSubType,
       price: newSubPrice,
       purchase_date: newSubDate,
@@ -135,6 +199,7 @@ export default function Paskyra() {
     setNewSubLessons(8);
     setNewSubPaid(false);
     setNewSubType("sportine");
+    setNewSubAlreadyUsed(0);
     load();
   };
 
@@ -248,6 +313,41 @@ export default function Paskyra() {
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-6">
+          {sickReqs.filter((r) => !r.document_url && r.document_deadline).length > 0 && (
+            <Section title="Ligos pažymos" icon={<XCircle className="w-4 h-4" />}>
+              <ul className="divide-y divide-gold/5">
+                {sickReqs.filter((r) => !r.document_url && r.document_deadline).map((r) => {
+                  const overdue = r.document_deadline && r.document_deadline < formatDateISO(new Date());
+                  return (
+                    <li key={r.id} className="px-5 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <div className="font-medium">
+                          Pamoka {r.slot_date} {r.slot_time?.slice(0, 5)}
+                        </div>
+                        <div className={cn("text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
+                          {overdue
+                            ? "Terminas pasibaigęs — laukia administracijos sprendimo"
+                            : `Įkelti pažymą iki: ${r.document_deadline}`}
+                        </div>
+                      </div>
+                      {!overdue && (
+                        <Input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
+                          className="max-w-xs"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadSickDoc(r, f);
+                          }}
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Section>
+          )}
+
           {/* Lifetime stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
@@ -417,6 +517,20 @@ export default function Paskyra() {
               </p>
             </div>
             )}
+            <div>
+              <Label htmlFor="sub-used">Jau panaudota treniruočių</Label>
+              <Input
+                id="sub-used"
+                type="number"
+                min={0}
+                max={effLessons}
+                value={newSubAlreadyUsed}
+                onChange={(e) => setNewSubAlreadyUsed(Math.max(0, parseInt(e.target.value) || 0))}
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Jeigu šio abonemento jau buvote panaudoję — įrašykite kiek. Naujam abonementui palikite 0.
+              </p>
+            </div>
             <div className="flex items-baseline justify-between p-4 rounded-md bg-gold/5 border border-gold/15">
               <span className="text-sm">Iš viso</span>
               <span className="text-3xl font-display text-gradient-gold tabular-nums">{newSubPrice} €</span>
@@ -631,7 +745,12 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
         <div className="font-medium">
           {d.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })}
         </div>
-        <div className="text-muted-foreground tabular-nums">{formatTime(b.slot_time)}</div>
+        <div className="text-muted-foreground tabular-nums">
+          {formatTime(b.slot_time)}
+          {b.horse_name && (
+            <span className="ml-2 text-xs text-gold/80 font-mono">({b.horse_name})</span>
+          )}
+        </div>
       </div>
       <div>
         {b.status === "cancelled" && <span className="text-xs px-2 py-0.5 rounded bg-destructive/15 text-destructive">Atšaukta</span>}

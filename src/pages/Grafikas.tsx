@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +56,16 @@ interface PermanentSlot {
   day_of_week: number;
   slot_time: string;
 }
+interface HorseAssignment {
+  id: string;
+  booking_id: string | null;
+  user_id: string | null;
+  guest_name: string | null;
+  slot_date: string;
+  slot_time: string;
+  horse_id: string;
+  horse_name?: string;
+}
 interface ProfileLite { id: string; full_name: string; }
 interface ProfileLiteWithDisplay { id: string; full_name: string; display_name: string | null; }
 interface DayNote {
@@ -74,6 +84,7 @@ export default function Grafikas() {
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
   const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
+  const [assignments, setAssignments] = useState<HorseAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -81,6 +92,8 @@ export default function Grafikas() {
   const [cancelDialog, setCancelDialog] = useState<{ booking: Booking } | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSickness, setCancelSickness] = useState(false);
+  const [cancelFile, setCancelFile] = useState<File | null>(null);
+  const [cancelUploading, setCancelUploading] = useState(false);
   // Permanent-cancel choice dialog
   const [permCancelDialog, setPermCancelDialog] = useState<{ booking: Booking } | null>(null);
   // Simple confirm dialog (replaces window.confirm)
@@ -137,6 +150,18 @@ export default function Grafikas() {
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
+
+    // Load horse assignments + horse names for this week
+    const { data: assignsRaw } = await supabase
+      .from("horse_assignments").select("*")
+      .gte("slot_date", startISO).lte("slot_date", endISO);
+    const horseIds = Array.from(new Set((assignsRaw ?? []).map((a: any) => a.horse_id)));
+    let horseNameMap: Record<string, string> = {};
+    if (horseIds.length) {
+      const { data: hs } = await supabase.from("horses").select("id, name").in("id", horseIds);
+      horseNameMap = Object.fromEntries((hs ?? []).map((h: any) => [h.id, h.name]));
+    }
+    setAssignments((assignsRaw ?? []).map((a: any) => ({ ...a, horse_name: horseNameMap[a.horse_id] })));
 
     // Load day notes for this week (and a buffer day on each side)
     const { data: notes } = await supabase
@@ -199,6 +224,15 @@ export default function Grafikas() {
   };
 
   const isMyBooking = (b: Booking) => user && b.user_id === user.id;
+  const getHorseFor = (b: Booking): string | null => {
+    const a = assignments.find((x) =>
+      x.booking_id === b.id ||
+      (x.slot_date === b.slot_date && x.slot_time === b.slot_time && (
+        (b.is_guest ? x.guest_name === b.guest_name : x.user_id === b.user_id)
+      ))
+    );
+    return a?.horse_name ?? null;
+  };
   const amIWaiting = (date: Date, time: string) =>
     user ? getWaitingFor(date, time).some((w) => w.user_id === user.id) : false;
 
@@ -422,7 +456,7 @@ export default function Grafikas() {
       return;
     }
 
-    if (hours > 48) {
+    if (hours > 24) {
       setConfirmDialog({
         title: "Atšaukti pamoką?",
         description: "Pamoka bus pažymėta kaip atšaukta.",
@@ -432,6 +466,7 @@ export default function Grafikas() {
       setCancelDialog({ booking });
       setCancelReason("");
       setCancelSickness(false);
+      setCancelFile(null);
     }
   };
 
@@ -445,17 +480,45 @@ export default function Grafikas() {
     const { error: e1 } = await supabase.from("bookings")
       .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id);
     if (e1) { toast.error(e1.message); return; }
+
+    // For sickness: 7-day window to upload doctor's note
+    let documentUrl: string | null = null;
+    let documentDeadline: string | null = null;
+    if (cancelSickness) {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      documentDeadline = formatDateISO(d);
+      if (cancelFile) {
+        setCancelUploading(true);
+        const ext = cancelFile.name.split(".").pop() || "bin";
+        const path = `${user.id}/${cancelDialog.booking.id}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("cancellation-docs").upload(path, cancelFile);
+        setCancelUploading(false);
+        if (upErr) { toast.error("Failo įkėlimas: " + upErr.message); return; }
+        documentUrl = path;
+      }
+    }
+
     const { error: e2 } = await supabase.from("cancellation_requests").insert({
       booking_id: cancelDialog.booking.id,
       user_id: user.id,
       reason: cancelSickness ? "Liga" : cancelReason.trim(),
       sickness: cancelSickness,
-      status: cancelSickness ? "approved" : "pending",
-      admin_decision_counts: cancelSickness ? false : null,
-    });
+      // Sickness cancellations now ALWAYS go pending so admin is notified
+      status: "pending",
+      admin_decision_counts: null,
+      document_url: documentUrl,
+      document_uploaded_at: documentUrl ? new Date().toISOString() : null,
+      document_deadline: documentDeadline,
+    } as any);
     if (e2) { toast.error(e2.message); return; }
-    toast.success(cancelSickness ? "Atšaukta. Pamoka neskaičiuos." : "Atšaukta. Laukia administracijos sprendimo.");
+    toast.success(
+      cancelSickness
+        ? (cancelFile ? "Atšaukta. Pažyma įkelta — laukia administracijos." : "Atšaukta. Iki 7 d. pridėkite pažymą paskyroje.")
+        : "Atšaukta. Laukia administracijos sprendimo.",
+    );
     setCancelDialog(null);
+    setCancelFile(null);
     loadData();
   };
 
@@ -700,6 +763,14 @@ export default function Grafikas() {
                                     {b.is_individual && (
                                       <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">· individuali</span>
                                     )}
+                                    {(() => {
+                                      const h = getHorseFor(b);
+                                      return h ? (
+                                        <span className="ml-1.5 text-[10px] sm:text-[11px] uppercase tracking-wide text-gold/80 font-mono">
+                                          ({h})
+                                        </span>
+                                      ) : null;
+                                    })()}
                                   </span>
                                   {mine && !slotPast && (
                                     <button
@@ -786,7 +857,7 @@ export default function Grafikas() {
                 const b = permCancelDialog!.booking;
                 setPermCancelDialog(null);
                 const hours = hoursUntil(b.slot_date, b.slot_time);
-                if (hours > 48) {
+                if (hours > 24) {
                   setConfirmDialog({
                     title: "Atšaukti tik šią pamoką?",
                     description: "Nuolatinis laikas išliks ateities savaitėms.",
@@ -847,7 +918,7 @@ export default function Grafikas() {
       <Dialog open={!!cancelDialog} onOpenChange={(o) => !o && setCancelDialog(null)}>
         <DialogContent className="bg-gradient-card border-gold/20">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold">Atšaukimas <span className="text-base text-blush">&lt; 48 val.</span></DialogTitle>
+            <DialogTitle className="font-display text-2xl text-gradient-gold">Atšaukimas <span className="text-base text-blush">&lt; 24 val.</span></DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Slot atsilaisvins iš karto. Administracija nuspręs, ar pamoka skaičiuojama abonemente.
             </DialogDescription>
@@ -860,9 +931,26 @@ export default function Grafikas() {
                 <div className="font-medium text-foreground flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-gold" /> Liga
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">Pamoka NEbus skaičiuojama</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Pridėkite gydytojo pažymą (PDF, JPG, PNG, DOC). Turite 7 d. įkelti — kitaip administracija nuspręs.
+                </div>
               </div>
             </label>
+
+            {cancelSickness && (
+              <div>
+                <Label htmlFor="sick-doc">Pridėti pažymą (neprivaloma dabar)</Label>
+                <Input
+                  id="sick-doc"
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
+                  onChange={(e) => setCancelFile(e.target.files?.[0] ?? null)}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Galima įkelti vėliau paskyroje (per 7 d.).
+                </p>
+              </div>
+            )}
 
             {!cancelSickness && (
               <div>
@@ -881,7 +969,9 @@ export default function Grafikas() {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCancelDialog(null)}>Atgal</Button>
-            <Button variant="gold" onClick={submitLateCancel}>Patvirtinti atšaukimą</Button>
+            <Button variant="gold" onClick={submitLateCancel} disabled={cancelUploading}>
+              {cancelUploading ? "Įkeliama…" : "Patvirtinti atšaukimą"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

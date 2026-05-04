@@ -14,6 +14,7 @@ interface CancelReq {
   id: string; booking_id: string; user_id: string; reason: string; sickness: boolean;
   status: string; created_at: string; admin_decision_counts: boolean | null;
   profile_name?: string; slot_date?: string; slot_time?: string;
+  document_url?: string | null; document_deadline?: string | null;
 }
 interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
@@ -400,6 +401,16 @@ function CancellationsTab() {
       slot_date: r.bookings?.slot_date, slot_time: r.bookings?.slot_time,
     })));
   };
+
+  const docUrl = async (path: string): Promise<string | null> => {
+    const { data } = await supabase.storage.from("cancellation-docs").createSignedUrl(path, 3600);
+    return data?.signedUrl ?? null;
+  };
+  const openDoc = async (path: string) => {
+    const u = await docUrl(path);
+    if (u) window.open(u, "_blank");
+    else toast.error("Nepavyko atidaryti dokumento");
+  };
   useEffect(() => { load(); }, []);
 
   // Returns Sunday (end of week) of given ISO date
@@ -474,6 +485,15 @@ function CancellationsTab() {
           <p className="text-sm text-foreground/80 mb-4">
             <span className="text-muted-foreground">Priežastis: </span>{r.reason}
             {r.sickness && <span className="ml-2 px-2 py-0.5 rounded bg-blush/15 text-blush text-xs">Liga</span>}
+            {r.sickness && (
+              r.document_url
+                ? <button onClick={() => openDoc(r.document_url!)} className="ml-2 text-xs text-gold underline">Pažiūrėti pažymą</button>
+                : <span className="ml-2 text-xs text-muted-foreground italic">
+                    {r.document_deadline && r.document_deadline < new Date().toISOString().slice(0,10)
+                      ? "Pažyma neįkelta — terminas pasibaigęs"
+                      : `Laukiama pažymos iki ${r.document_deadline ?? "—"}`}
+                  </span>
+            )}
           </p>
           <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outlineGold" size="sm" onClick={() => decide(r, false)}>
