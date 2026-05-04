@@ -444,6 +444,20 @@ export default function Paskyra() {
               </p>
             </div>
             )}
+            <div>
+              <Label htmlFor="sub-used">Jau panaudota treniruočių</Label>
+              <Input
+                id="sub-used"
+                type="number"
+                min={0}
+                max={effLessons}
+                value={newSubAlreadyUsed}
+                onChange={(e) => setNewSubAlreadyUsed(Math.max(0, parseInt(e.target.value) || 0))}
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Jeigu šio abonemento jau buvote panaudoję — įrašykite kiek. Naujam abonementui palikite 0.
+              </p>
+            </div>
             <div className="flex items-baseline justify-between p-4 rounded-md bg-gold/5 border border-gold/15">
               <span className="text-sm">Iš viso</span>
               <span className="text-3xl font-display text-gradient-gold tabular-nums">{newSubPrice} €</span>
