@@ -763,6 +763,14 @@ export default function Grafikas() {
                                     {b.is_individual && (
                                       <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">· individuali</span>
                                     )}
+                                    {(() => {
+                                      const h = getHorseFor(b);
+                                      return h ? (
+                                        <span className="ml-1.5 text-[10px] sm:text-[11px] uppercase tracking-wide text-gold/80 font-mono">
+                                          ({h})
+                                        </span>
+                                      ) : null;
+                                    })()}
                                   </span>
                                   {mine && !slotPast && (
                                     <button
