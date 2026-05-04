@@ -14,6 +14,7 @@ interface CancelReq {
   id: string; booking_id: string; user_id: string; reason: string; sickness: boolean;
   status: string; created_at: string; admin_decision_counts: boolean | null;
   profile_name?: string; slot_date?: string; slot_time?: string;
+  document_url?: string | null; document_deadline?: string | null;
 }
 interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
