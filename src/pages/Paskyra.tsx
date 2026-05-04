@@ -672,7 +672,12 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
         <div className="font-medium">
           {d.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })}
         </div>
-        <div className="text-muted-foreground tabular-nums">{formatTime(b.slot_time)}</div>
+        <div className="text-muted-foreground tabular-nums">
+          {formatTime(b.slot_time)}
+          {b.horse_name && (
+            <span className="ml-2 text-xs text-gold/80 font-mono">({b.horse_name})</span>
+          )}
+        </div>
       </div>
       <div>
         {b.status === "cancelled" && <span className="text-xs px-2 py-0.5 rounded bg-destructive/15 text-destructive">Atšaukta</span>}
