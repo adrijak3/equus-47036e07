@@ -139,7 +139,12 @@ function TodayAssignments() {
     const existing = getAssignment(b);
     if (existing) {
       const { error } = await supabase.from("horse_assignments").update({ horse_id: horseId }).eq("id", existing.id);
-      if (error) { toast.error(error.message); return; }
+      if (error) {
+        toast.error(error.message.includes("HORSE_LIMIT_REACHED")
+          ? "Šis žirgas jau priskirtas 2 kartus šiandien"
+          : error.message);
+        return;
+      }
     } else {
       const userData = (await supabase.auth.getUser()).data.user;
       const { error } = await supabase.from("horse_assignments").insert({
@@ -151,7 +156,12 @@ function TodayAssignments() {
         horse_id: horseId,
         assigned_by: userData?.id,
       } as any);
-      if (error) { toast.error(error.message); return; }
+      if (error) {
+        toast.error(error.message.includes("HORSE_LIMIT_REACHED")
+          ? "Šis žirgas jau priskirtas 2 kartus šiandien"
+          : error.message);
+        return;
+      }
     }
     load();
   };
@@ -197,7 +207,15 @@ function TodayAssignments() {
                         className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                       >
                         <option value="">— priskirti žirgą —</option>
-                        {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                        {horses.map((h) => {
+                          const used = assigns.filter((x) => x.horse_id === h.id && x.id !== a?.id).length;
+                          const disabled = used >= 2;
+                          return (
+                            <option key={h.id} value={h.id} disabled={disabled}>
+                              {h.name}{disabled ? " (×2)" : used === 1 ? " (×1)" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     </li>
                   );
