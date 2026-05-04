@@ -918,7 +918,7 @@ export default function Grafikas() {
       <Dialog open={!!cancelDialog} onOpenChange={(o) => !o && setCancelDialog(null)}>
         <DialogContent className="bg-gradient-card border-gold/20">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold">Atšaukimas <span className="text-base text-blush">&lt; 48 val.</span></DialogTitle>
+            <DialogTitle className="font-display text-2xl text-gradient-gold">Atšaukimas <span className="text-base text-blush">&lt; 24 val.</span></DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Slot atsilaisvins iš karto. Administracija nuspręs, ar pamoka skaičiuojama abonemente.
             </DialogDescription>
@@ -931,9 +931,26 @@ export default function Grafikas() {
                 <div className="font-medium text-foreground flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-gold" /> Liga
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">Pamoka NEbus skaičiuojama</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Pridėkite gydytojo pažymą (PDF, JPG, PNG, DOC). Turite 7 d. įkelti — kitaip administracija nuspręs.
+                </div>
               </div>
             </label>
+
+            {cancelSickness && (
+              <div>
+                <Label htmlFor="sick-doc">Pridėti pažymą (neprivaloma dabar)</Label>
+                <Input
+                  id="sick-doc"
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
+                  onChange={(e) => setCancelFile(e.target.files?.[0] ?? null)}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Galima įkelti vėliau paskyroje (per 7 d.).
+                </p>
+              </div>
+            )}
 
             {!cancelSickness && (
               <div>
@@ -952,7 +969,9 @@ export default function Grafikas() {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCancelDialog(null)}>Atgal</Button>
-            <Button variant="gold" onClick={submitLateCancel}>Patvirtinti atšaukimą</Button>
+            <Button variant="gold" onClick={submitLateCancel} disabled={cancelUploading}>
+              {cancelUploading ? "Įkeliama…" : "Patvirtinti atšaukimą"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
