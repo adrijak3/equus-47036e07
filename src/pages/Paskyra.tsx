@@ -317,7 +317,12 @@ export default function Paskyra() {
         className="mb-8"
       >
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Sveiki sugrįžę</p>
-        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">{profile?.full_name ?? "—"}</h1>
+        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">{activeProfileName || profile?.full_name || "—"}</h1>
+        {isLinked && (
+          <p className="text-xs text-blush/80 mt-1 italic">
+            Aktyvus profilis: {activeProfileName} · perjungti meniu
+          </p>
+        )}
         <div className="gold-divider mt-4 max-w-[120px]" />
       </motion.header>
 
@@ -427,7 +432,21 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />)}
+              {subs.map((s) => {
+                const remaining = s.lessons_total - s.lessons_used;
+                const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
+                const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
+                return (
+                  <div key={s.id} className="relative">
+                    {lowRemaining && (
+                      <div className="absolute -top-2 left-3 z-10 px-2 py-0.5 rounded-full bg-destructive/80 text-destructive-foreground text-[10px] uppercase tracking-wider font-semibold animate-pulse">
+                        {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
+                      </div>
+                    )}
+                    <SubscriptionCard s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />
+                  </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
