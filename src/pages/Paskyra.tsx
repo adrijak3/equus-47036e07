@@ -454,17 +454,7 @@ export default function Paskyra() {
           </div>
           {messages.length > 0 && (
             <Section title="Pokalbis su administracija">
-              <div className="flex justify-end px-5 pt-3">
-                <button
-                  type="button"
-                  onClick={deleteConversation}
-                  className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
-                  title="Ištrinti visą pokalbį"
-                >
-                  <Trash2 className="w-3 h-3" /> Ištrinti pokalbį
-                </button>
-              </div>
-              <p className="px-5 pt-1 text-[11px] text-muted-foreground italic">
+              <p className="px-5 pt-3 text-[11px] text-muted-foreground italic">
                 Pokalbiai automatiškai ištrinami po 3 dienų nuo paskutinės žinutės.
               </p>
               <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto mt-2">
