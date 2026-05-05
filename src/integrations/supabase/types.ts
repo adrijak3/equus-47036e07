@@ -302,6 +302,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_links: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          linked_profile_id: string
+          parent_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          linked_profile_id: string
+          parent_user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          linked_profile_id?: string
+          parent_user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -487,6 +511,7 @@ export type Database = {
       cleanup_old_bookings: { Args: never; Returns: number }
       cleanup_old_conversations: { Args: never; Returns: number }
       cleanup_old_day_notes: { Args: never; Returns: number }
+      cleanup_old_subscriptions: { Args: never; Returns: number }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       expire_makeup_cancellations: { Args: never; Returns: number }
       has_role: {
@@ -500,6 +525,7 @@ export type Database = {
         Args: { _end: string; _start: string }
         Returns: number
       }
+      owns_profile: { Args: { _pid: string; _uid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "trainer"
