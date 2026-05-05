@@ -53,7 +53,9 @@ interface AvailableSlot {
 }
 
 export default function Paskyra() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, activeProfileId, activeProfileName, linkedProfiles } = useAuth();
+  const acting = activeProfileId ?? user?.id ?? null;
+  const isLinked = !!user && acting !== user.id;
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
@@ -69,6 +71,9 @@ export default function Paskyra() {
   const [newSubPaid, setNewSubPaid] = useState(false);
   const [newSubType, setNewSubType] = useState<LessonType>("sportine");
   const [newSubAlreadyUsed, setNewSubAlreadyUsed] = useState(0);
+  /** Past bookings without a subscription (offered to attribute when buying) */
+  const [unattributedPast, setUnattributedPast] = useState<Booking[]>([]);
+  const [attributeIds, setAttributeIds] = useState<Set<string>>(new Set());
 
 
 
@@ -77,15 +82,15 @@ export default function Paskyra() {
   const [sending, setSending] = useState(false);
 
   const load = async () => {
-    if (!user) return;
+    if (!user || !acting) return;
     setLoading(true);
     // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
     try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
     const [b, s, m, p, ts] = await Promise.all([
-      supabase.from("bookings").select("*").eq("user_id", user.id).order("slot_date").order("slot_time"),
-      supabase.from("subscriptions").select("*").eq("user_id", user.id).order("purchase_date", { ascending: false }),
+      supabase.from("bookings").select("*").eq("user_id", acting).order("slot_date").order("slot_time"),
+      supabase.from("subscriptions").select("*").eq("user_id", acting).order("purchase_date", { ascending: false }),
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
-      supabase.from("permanent_slots").select("*").eq("user_id", user.id).order("day_of_week").order("slot_time"),
+      supabase.from("permanent_slots").select("*").eq("user_id", acting).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
     ]);
     // attach horse names from horse_assignments
@@ -117,7 +122,7 @@ export default function Paskyra() {
     const { data: sr } = await supabase
       .from("cancellation_requests")
       .select("id, booking_id, document_url, document_deadline, status, sickness, bookings(slot_date, slot_time)")
-      .eq("user_id", user.id)
+      .eq("user_id", acting)
       .eq("sickness", true)
       .order("created_at", { ascending: false })
       .limit(20);
@@ -153,7 +158,7 @@ export default function Paskyra() {
     }
   }, [messages, user]);
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(); }, [user, acting]);
 
   const now = new Date();
   const future = bookings.filter((b) => b.status === "active" && new Date(`${b.slot_date}T${b.slot_time}`) >= now);
@@ -176,30 +181,57 @@ export default function Paskyra() {
   const effLessons = newSubType === "vienkartine" ? 1 : newSubLessons;
   const newSubPrice = calculateSubPriceByType(effLessons, newSubType);
 
+  // When subscription dialog opens, pre-load past bookings that aren't tied to any subscription.
+  useEffect(() => {
+    if (!subDialog || !acting) return;
+    (async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("id, slot_date, slot_time, status, counts_in_subscription, subscription_id")
+        .eq("user_id", acting)
+        .is("subscription_id", null)
+        .lt("slot_date", formatDateISO(new Date()))
+        .neq("status", "cancelled")
+        .order("slot_date", { ascending: false })
+        .limit(30);
+      setUnattributedPast((data ?? []) as any);
+      setAttributeIds(new Set());
+    })();
+  }, [subDialog, acting]);
+
   const addSubscription = async () => {
-    if (!user) return;
+    if (!user || !acting) return;
     if (effLessons < 1 || effLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
-    if (newSubAlreadyUsed < 0 || newSubAlreadyUsed > effLessons) {
-      toast.error("Panaudota turi būti tarp 0 ir " + effLessons);
+    const fromAttribution = attributeIds.size;
+    const totalUsed = newSubAlreadyUsed + fromAttribution;
+    if (totalUsed > effLessons) {
+      toast.error(`Panaudota (${totalUsed}) negali viršyti pamokų sk. (${effLessons})`);
       return;
     }
-    const { error } = await supabase.from("subscriptions").insert({
-      user_id: user.id,
+    const { data: ins, error } = await supabase.from("subscriptions").insert({
+      user_id: acting,
       lessons_total: effLessons,
-      lessons_used: newSubAlreadyUsed,
+      lessons_used: totalUsed,
       lesson_type: newSubType,
       price: newSubPrice,
       purchase_date: newSubDate,
       expires_at: expiryFromPurchase(newSubDate),
       paid: newSubPaid,
-    } as any);
+    } as any).select("id").maybeSingle();
     if (error) { toast.error(error.message); return; }
+    // Attribute selected past bookings to this new subscription
+    if (ins?.id && attributeIds.size > 0) {
+      await supabase.from("bookings")
+        .update({ subscription_id: ins.id, counts_in_subscription: true } as any)
+        .in("id", Array.from(attributeIds));
+    }
     toast.success("Abonementas pridėtas");
     setSubDialog(false);
     setNewSubLessons(8);
     setNewSubPaid(false);
     setNewSubType("sportine");
     setNewSubAlreadyUsed(0);
+    setAttributeIds(new Set());
     load();
   };
 
@@ -227,7 +259,7 @@ export default function Paskyra() {
     const { data: future } = await supabase
       .from("bookings")
       .select("id, slot_date")
-      .eq("user_id", user!.id)
+      .eq("user_id", acting!)
       .eq("slot_time", slot.slot_time)
       .gte("slot_date", todayISO)
       .eq("status", "active");
@@ -272,15 +304,6 @@ export default function Paskyra() {
     load();
   };
 
-  const deleteConversation = async () => {
-    if (!user) return;
-    if (!confirm("Ištrinti visą pokalbį su administracija? Šio veiksmo atšaukti negalėsite.")) return;
-    const { error } = await supabase.from("messages").delete().eq("user_id", user.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Pokalbis ištrintas");
-    load();
-  };
-
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
@@ -294,7 +317,12 @@ export default function Paskyra() {
         className="mb-8"
       >
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Sveiki sugrįžę</p>
-        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">{profile?.full_name ?? "—"}</h1>
+        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">{activeProfileName || profile?.full_name || "—"}</h1>
+        {isLinked && (
+          <p className="text-xs text-blush/80 mt-1 italic">
+            Aktyvus profilis: {activeProfileName} · perjungti meniu
+          </p>
+        )}
         <div className="gold-divider mt-4 max-w-[120px]" />
       </motion.header>
 
@@ -404,7 +432,21 @@ export default function Paskyra() {
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => <SubscriptionCard key={s.id} s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />)}
+              {subs.map((s) => {
+                const remaining = s.lessons_total - s.lessons_used;
+                const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
+                const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
+                return (
+                  <div key={s.id} className="relative">
+                    {lowRemaining && (
+                      <div className="absolute -top-2 left-3 z-10 px-2 py-0.5 rounded-full bg-destructive/80 text-destructive-foreground text-[10px] uppercase tracking-wider font-semibold animate-pulse">
+                        {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
+                      </div>
+                    )}
+                    <SubscriptionCard s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />
+                  </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -431,17 +473,7 @@ export default function Paskyra() {
           </div>
           {messages.length > 0 && (
             <Section title="Pokalbis su administracija">
-              <div className="flex justify-end px-5 pt-3">
-                <button
-                  type="button"
-                  onClick={deleteConversation}
-                  className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
-                  title="Ištrinti visą pokalbį"
-                >
-                  <Trash2 className="w-3 h-3" /> Ištrinti pokalbį
-                </button>
-              </div>
-              <p className="px-5 pt-1 text-[11px] text-muted-foreground italic">
+              <p className="px-5 pt-3 text-[11px] text-muted-foreground italic">
                 Pokalbiai automatiškai ištrinami po 3 dienų nuo paskutinės žinutės.
               </p>
               <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto mt-2">

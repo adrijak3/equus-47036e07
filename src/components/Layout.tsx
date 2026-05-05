@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin, Sparkles } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin, Sparkles, Users as UsersIcon, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ const NAV_TRAINER = [
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { user, isAdmin, isTrainer, profile, signOut } = useAuth();
+  const { user, isAdmin, isTrainer, profile, signOut, linkedProfiles, activeProfileId, setActiveProfileId } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -142,6 +142,42 @@ export default function Layout({ children }: { children: ReactNode }) {
                   Prisijungta kaip
                   <div className="text-foreground font-medium mt-0.5">{profile?.full_name ?? user.email}</div>
                 </div>
+                {linkedProfiles.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="text-[11px] uppercase tracking-wider text-gold/70 flex items-center gap-1.5">
+                      <UsersIcon className="w-3 h-3" /> Aktyvus profilis
+                    </div>
+                    <div className="grid gap-1">
+                      <button
+                        onClick={() => { setActiveProfileId(user.id); close(); }}
+                        className={cn(
+                          "flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors",
+                          activeProfileId === user.id
+                            ? "border-gold/50 bg-gold/10 text-gold"
+                            : "border-gold/15 text-foreground/80 hover:bg-gold/5",
+                        )}
+                      >
+                        <span>{profile?.full_name ?? "Aš"}</span>
+                        {activeProfileId === user.id && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                      {linkedProfiles.map((lp) => (
+                        <button
+                          key={lp.id}
+                          onClick={() => { setActiveProfileId(lp.profile_id); close(); }}
+                          className={cn(
+                            "flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors",
+                            activeProfileId === lp.profile_id
+                              ? "border-gold/50 bg-gold/10 text-gold"
+                              : "border-gold/15 text-foreground/80 hover:bg-gold/5",
+                          )}
+                        >
+                          <span>{lp.display_name}</span>
+                          {activeProfileId === lp.profile_id && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <Button variant="outlineGold" className="w-full" onClick={handleSignOut}>
                   <LogOut className="w-4 h-4" />
                   Atsijungti
