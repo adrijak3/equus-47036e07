@@ -544,7 +544,7 @@ export default function Grafikas() {
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="text-center mb-10 relative"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo klubas</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo mokykla</p>
         <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
           Mylintiems žirgus<br className="sm:hidden" /> ir laisvę
         </h1>
@@ -592,32 +592,43 @@ export default function Grafikas() {
               const dow = dbDayOfWeek(date);
 
               return (
-                <div key={idx} className={cn("flex flex-col gap-2 relative", isPast && "opacity-60")}>
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex flex-col gap-2 relative",
+                    isPast && "opacity-60",
+                    // Mobile: make today visually pop with gold-tinted card + ring
+                    isToday && "sm:p-0 p-3 -mx-1 rounded-xl bg-gold/[0.06] ring-2 ring-gold/40 shadow-gold sm:bg-transparent sm:ring-0 sm:shadow-none sm:m-0",
+                  )}
+                >
                   {/* Mobile-only separator between days */}
                   {idx > 0 && (
                     <div
                       aria-hidden
-                      className="sm:hidden flex items-center justify-center -mt-1 mb-2 select-none"
+                      className="sm:hidden flex items-center justify-center -mt-1 mb-3 select-none"
                     >
-                      <div className="flex-1 h-px bg-gold/20" />
-                      <div className="px-2 text-gold/40 text-xs">•</div>
-                      <div className="flex-1 h-px bg-gold/20" />
+                      <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                      <div className="px-3 font-display text-gold/70 text-sm tracking-widest">◆</div>
+                      <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
                     </div>
                   )}
                   {/* Day header */}
                   <div
                     className={cn(
                       "rounded-md border px-3 py-2.5 bg-gradient-card relative",
-                      isToday ? "border-gold/50 shadow-gold" : "border-gold/15",
+                      isToday ? "border-gold/60 shadow-gold sm:shadow-none" : "border-gold/15",
                     )}
                   >
                     <div className="flex items-baseline justify-between gap-1">
-                      <div className="text-sm sm:text-[11px] uppercase tracking-[0.18em] text-gold font-bold">
+                      <div className={cn(
+                        "uppercase tracking-[0.18em] text-gold font-bold",
+                        isToday ? "text-base sm:text-[11px]" : "text-sm sm:text-[11px]",
+                      )}>
                         <span className="sm:hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
                         <span className="hidden sm:inline xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
                       </div>
                       {isToday && (
-                        <span className="text-[9px] uppercase tracking-[0.15em] text-gold bg-gold/10 px-1.5 py-0.5 rounded-sm">
+                        <span className="text-[10px] sm:text-[9px] uppercase tracking-[0.15em] font-bold text-background bg-gold px-2 py-0.5 rounded-sm">
                           Šiandien
                         </span>
                       )}

@@ -129,7 +129,7 @@ export default function Auth() {
         <Link to="/" className="inline-block">
           <h1 className="text-5xl font-display text-gradient-gold mb-2">Equus</h1>
         </Link>
-        <p className="text-sm tracking-[0.2em] uppercase text-muted-foreground">jojimo klubas</p>
+        <p className="text-sm tracking-[0.2em] uppercase text-muted-foreground">jojimo mokykla</p>
         <div className="gold-divider mt-6 max-w-[120px] mx-auto" />
       </div>
 
