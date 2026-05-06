@@ -690,6 +690,23 @@ function UsersTab() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="text-gold hover:text-gold hover:bg-gold/10"
+                  onClick={async () => {
+                    if (!confirm(`Atstatyti ${p.full_name} slaptažodį į „vardas_equus123"?`)) return;
+                    const { data, error } = await supabase.functions.invoke("admin-reset-password", { body: { user_id: p.id } });
+                    if (error || (data as any)?.error) {
+                      toast.error((data as any)?.error || error?.message || "Klaida");
+                      return;
+                    }
+                    toast.success(`Naujas slaptažodis: ${(data as any).password}`);
+                  }}
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  Atstatyti slaptažodį
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   disabled={deleting === p.id}
                   onClick={() => deleteUser(p)}
