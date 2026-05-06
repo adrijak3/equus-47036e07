@@ -25,22 +25,72 @@ interface Sub {
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
 export default function Admin() {
+  const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0 });
+  useEffect(() => {
+    (async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const [c, u] = await Promise.all([
+        supabase.from("cancellation_requests").select("id, sickness, document_url, document_deadline, status").eq("status", "pending"),
+        supabase.from("messages").select("id").eq("from_admin", false).eq("read_by_admin", false),
+      ]);
+      const reqs = (c.data ?? []) as any[];
+      setAlerts({
+        sickness: reqs.filter((r) => r.sickness).length,
+        missingDoc: reqs.filter((r) => r.sickness && !r.document_url && r.document_deadline && r.document_deadline < today).length,
+        unread: (u.data ?? []).length,
+      });
+    })();
+  }, []);
+
+  const totalAlerts = alerts.sickness + alerts.missingDoc + alerts.unread;
+
   return (
     <div className="container max-w-6xl py-8 sm:py-14">
       <header className="mb-8 animate-fade-up">
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
         <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">Valdymas</h1>
+        {totalAlerts > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {alerts.unread > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gold/15 text-gold border border-gold/40">
+                <MessageSquare className="w-3 h-3" /> {alerts.unread} nauj. žinučių
+              </span>
+            )}
+            {alerts.sickness > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-blush/15 text-blush border border-blush/40 animate-pulse">
+                <AlertCircle className="w-3 h-3" /> {alerts.sickness} ligos atšaukimų
+              </span>
+            )}
+            {alerts.missingDoc > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-destructive/15 text-destructive border border-destructive/40 animate-pulse">
+                <AlertCircle className="w-3 h-3" /> {alerts.missingDoc} be pažymos (terminas baigtas)
+              </span>
+            )}
+          </div>
+        )}
         <div className="gold-divider mt-4 max-w-[120px]" />
       </header>
 
       <Tabs defaultValue="schedule">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full bg-background/50 mb-6 h-auto">
+        <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full bg-background/50 mb-6 h-auto">
           <TabsTrigger value="schedule" className="gap-1.5 text-xs sm:text-sm"><CalendarCog className="w-4 h-4" /> <span className="hidden sm:inline">Tvarkaraštis</span></TabsTrigger>
           <TabsTrigger value="permanent" className="gap-1.5 text-xs sm:text-sm"><Star className="w-4 h-4" /> <span className="hidden sm:inline">Nuolatiniai</span></TabsTrigger>
-          <TabsTrigger value="cancels" className="gap-1.5 text-xs sm:text-sm"><Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Atšaukimai</span></TabsTrigger>
+          <TabsTrigger value="cancels" className="gap-1.5 text-xs sm:text-sm relative">
+            <Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Atšaukimai</span>
+            {(alerts.sickness + alerts.missingDoc) > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-blush text-[9px] text-white flex items-center justify-center font-bold">{alerts.sickness + alerts.missingDoc}</span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="w-4 h-4" /> <span className="hidden sm:inline">Vartotojai</span></TabsTrigger>
           <TabsTrigger value="subs" className="gap-1.5 text-xs sm:text-sm"><Wallet className="w-4 h-4" /> <span className="hidden sm:inline">Abonimentai</span></TabsTrigger>
-          <TabsTrigger value="messages" className="gap-1.5 text-xs sm:text-sm"><MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Žinutės</span></TabsTrigger>
+          <TabsTrigger value="messages" className="gap-1.5 text-xs sm:text-sm relative">
+            <MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Žinutės</span>
+            {alerts.unread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gold text-[9px] text-background flex items-center justify-center font-bold">{alerts.unread}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="links" className="gap-1.5 text-xs sm:text-sm"><Link2 className="w-4 h-4" /> <span className="hidden sm:inline">Profiliai</span></TabsTrigger>
+          <TabsTrigger value="stats" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="w-4 h-4" /> <span className="hidden sm:inline">Statistika</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule"><ScheduleTab /></TabsContent>
@@ -49,6 +99,8 @@ export default function Admin() {
         <TabsContent value="users"><UsersTab /></TabsContent>
         <TabsContent value="subs"><SubsTab /></TabsContent>
         <TabsContent value="messages"><MessagesTab /></TabsContent>
+        <TabsContent value="links"><ProfileLinksTab /></TabsContent>
+        <TabsContent value="stats"><StatsTab /></TabsContent>
       </Tabs>
     </div>
   );
