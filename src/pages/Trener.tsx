@@ -137,6 +137,15 @@ function TodayAssignments() {
 
   const assign = async (b: Booking, horseId: string) => {
     const existing = getAssignment(b);
+    if (!horseId) {
+      if (existing) {
+        const { error } = await supabase.from("horse_assignments").delete().eq("id", existing.id);
+        if (error) { toast.error(error.message); return; }
+        toast.success("Žirgas pašalintas");
+        load();
+      }
+      return;
+    }
     if (existing) {
       const { error } = await supabase.from("horse_assignments").update({ horse_id: horseId }).eq("id", existing.id);
       if (error) {
