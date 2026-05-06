@@ -231,6 +231,215 @@ function ScheduleTab() {
   );
 }
 
+/* ---------- PROFILE LINKS (joint accounts) ---------- */
+function ProfileLinksTab() {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [links, setLinks] = useState<{ id: string; parent_user_id: string; linked_profile_id: string; display_name: string }[]>([]);
+  const [parent, setParent] = useState("");
+  const [child, setChild] = useState("");
+  const [name, setName] = useState("");
+
+  const load = async () => {
+    const [p, l] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
+      supabase.from("profile_links" as any).select("*").order("created_at", { ascending: false }),
+    ]);
+    setProfiles(p.data ?? []);
+    setLinks(((l.data as any[]) ?? []) as any);
+  };
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!parent || !child || parent === child) { toast.error("Pasirinkite skirtingus profilius"); return; }
+    const dn = name.trim() || profiles.find((p) => p.id === child)?.full_name || "Profilis";
+    const { error } = await supabase.from("profile_links" as any).insert({
+      parent_user_id: parent, linked_profile_id: child, display_name: dn,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Susieta"); setParent(""); setChild(""); setName(""); load();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Pašalinti susiejimą?")) return;
+    const { error } = await supabase.from("profile_links" as any).delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    load();
+  };
+
+  const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name ?? "—";
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Susiek du profilius — „tėvinė" paskyra galės registruotis ir už susietą profilį (pvz. Jurgita ↔ Nomina).
+        </p>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div>
+            <Label>Tėvinė paskyra</Label>
+            <select value={parent} onChange={(e) => setParent(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">— pasirinkite —</option>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label>Susietas profilis</Label>
+            <select value={child} onChange={(e) => setChild(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">— pasirinkite —</option>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label>Rodomas pavadinimas</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="pvz. Nomina" />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button variant="gold" onClick={add}><Plus className="w-4 h-4" /> Susieti</Button>
+        </div>
+      </div>
+
+      {links.length === 0 ? (
+        <p className="text-center text-muted-foreground italic py-8">Susiejimų nėra</p>
+      ) : (
+        <ul className="space-y-2">
+          {links.map((l) => (
+            <li key={l.id} className="flex items-center justify-between bg-gradient-card border border-gold/15 rounded-lg px-4 py-3 text-sm">
+              <div>
+                <span className="font-medium text-gold">{nameOf(l.parent_user_id)}</span>
+                <span className="mx-2 text-muted-foreground">→</span>
+                <span>{l.display_name}</span>
+                <span className="ml-2 text-xs text-muted-foreground">({nameOf(l.linked_profile_id)})</span>
+              </div>
+              <button onClick={() => remove(l.id)} className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ---------- STATISTICS DASHBOARD ---------- */
+function StatsTab() {
+  const [stats, setStats] = useState<{
+    activeUsers: number; activeSubs: number; unpaidSubs: number;
+    bookingsThisMonth: number; cancelsThisMonth: number; sicknessThisMonth: number;
+    horseLoad: { name: string; count: number }[];
+    topUsers: { name: string; count: number }[];
+  } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const today = new Date();
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+      const todayISO = today.toISOString().slice(0, 10);
+      const [pr, subs, b, c, ha, horses] = await Promise.all([
+        supabase.from("profiles").select("id"),
+        supabase.from("subscriptions").select("id, paid, expires_at, user_id").gte("expires_at", todayISO),
+        supabase.from("bookings").select("id, user_id, status, slot_date").gte("slot_date", monthStart),
+        supabase.from("cancellation_requests").select("id, sickness, created_at").gte("created_at", monthStart),
+        supabase.from("horse_assignments").select("horse_id, slot_date").gte("slot_date", monthStart),
+        supabase.from("horses").select("id, name"),
+      ]);
+      const profMap = await supabase.from("profiles").select("id, full_name");
+      const nameById: Record<string, string> = Object.fromEntries((profMap.data ?? []).map((p: any) => [p.id, p.full_name]));
+      const horseMap: Record<string, string> = Object.fromEntries((horses.data ?? []).map((h: any) => [h.id, h.name]));
+
+      const bookings = (b.data ?? []) as any[];
+      const horseCount: Record<string, number> = {};
+      for (const a of (ha.data ?? []) as any[]) {
+        const n = horseMap[a.horse_id] ?? "—";
+        horseCount[n] = (horseCount[n] ?? 0) + 1;
+      }
+      const userCount: Record<string, number> = {};
+      for (const x of bookings.filter((x) => x.status === "active")) {
+        const n = nameById[x.user_id] ?? "—";
+        userCount[n] = (userCount[n] ?? 0) + 1;
+      }
+
+      setStats({
+        activeUsers: (pr.data ?? []).length,
+        activeSubs: (subs.data ?? []).length,
+        unpaidSubs: (subs.data ?? []).filter((s: any) => !s.paid).length,
+        bookingsThisMonth: bookings.filter((x) => x.status === "active").length,
+        cancelsThisMonth: ((c.data ?? []) as any[]).length,
+        sicknessThisMonth: ((c.data ?? []) as any[]).filter((x) => x.sickness).length,
+        horseLoad: Object.entries(horseCount).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })),
+        topUsers: Object.entries(userCount).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, count]) => ({ name, count })),
+      });
+    })();
+  }, []);
+
+  if (!stats) return <p className="text-center text-muted-foreground italic py-8">Kraunama…</p>;
+
+  const Stat = ({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) => (
+    <div className={`rounded-lg border p-4 ${accent ? "bg-gold/10 border-gold/40" : "bg-gradient-card border-gold/15"}`}>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="font-display text-3xl text-gradient-gold tabular-nums mt-1">{value}</div>
+    </div>
+  );
+
+  const maxHorse = Math.max(1, ...stats.horseLoad.map((h) => h.count));
+  const maxUser = Math.max(1, ...stats.topUsers.map((u) => u.count));
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Stat label="Vartotojų" value={stats.activeUsers} />
+        <Stat label="Aktyvių abon." value={stats.activeSubs} accent />
+        <Stat label="Neapmokėtų" value={stats.unpaidSubs} />
+        <Stat label="Šio mėn. pamokos" value={stats.bookingsThisMonth} accent />
+        <Stat label="Atšaukimai" value={stats.cancelsThisMonth} />
+        <Stat label="Iš jų liga" value={stats.sicknessThisMonth} />
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <div className="bg-gradient-card border border-gold/15 rounded-lg p-5">
+          <h3 className="font-display text-lg text-gold mb-3">Žirgų krūvis (šį mėn.)</h3>
+          {stats.horseLoad.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Nėra duomenų</p>
+          ) : (
+            <ul className="space-y-2">
+              {stats.horseLoad.map((h) => (
+                <li key={h.name}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{h.name}</span><span className="text-gold tabular-nums">{h.count}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gold/10 overflow-hidden">
+                    <div className="h-full bg-gold/70" style={{ width: `${(h.count / maxHorse) * 100}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="bg-gradient-card border border-gold/15 rounded-lg p-5">
+          <h3 className="font-display text-lg text-gold mb-3">TOP vartotojai (šį mėn.)</h3>
+          {stats.topUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Nėra duomenų</p>
+          ) : (
+            <ul className="space-y-2">
+              {stats.topUsers.map((u) => (
+                <li key={u.name}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{u.name}</span><span className="text-gold tabular-nums">{u.count}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gold/10 overflow-hidden">
+                    <div className="h-full bg-gold/70" style={{ width: `${(u.count / maxUser) * 100}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- SUBSCRIPTIONS (full overview, per-user add) ---------- */
 function SubsTab() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
