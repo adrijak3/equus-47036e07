@@ -544,7 +544,7 @@ export default function Grafikas() {
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="text-center mb-10 relative"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo klubas</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo mokykla</p>
         <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
           Mylintiems žirgus<br className="sm:hidden" /> ir laisvę
         </h1>

@@ -43,7 +43,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-2.5 group" onClick={close}>
             <span className="text-2xl font-display tracking-wide text-gradient-gold">Equus</span>
             <span className="hidden sm:inline text-xs uppercase tracking-[0.25em] text-muted-foreground/70 font-body">
-              jojimo klubas
+              jojimo mokykla
             </span>
           </Link>
 
@@ -201,7 +201,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-gold/10 mt-16">
         <div className="container py-10 text-center space-y-4">
-          <div className="font-display text-lg text-gradient-gold">Equus jojimo klubas</div>
+          <div className="font-display text-lg text-gradient-gold">Equus jojimo mokykla</div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-6 text-sm">
             <a
