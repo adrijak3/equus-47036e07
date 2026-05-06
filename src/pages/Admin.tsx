@@ -72,6 +72,7 @@ function ScheduleTab() {
   useEffect(() => { load(); }, []);
 
   const add = async () => {
+    if (!isValidTime(newTime)) { toast.error("Įveskite laiką formatu HH:MM"); return; }
     let dayToUse = newDay;
     let oneOff: string | null = null;
     if (newOneOff) {
@@ -153,10 +154,15 @@ function ScheduleTab() {
             )}
             <div>
               <Label>Laikas</Label>
-              <select value={newTime} onChange={(e) => setNewTime(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums">
-                {TIME_SLOT_OPTIONS_FINE.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="pvz. 17:30"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="tabular-nums"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Formatas HH:MM (24h), pvz. 09:15, 17:00</p>
             </div>
             <div>
               <Label>Talpa</Label>
