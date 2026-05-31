@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin, Sparkles, Users as UsersIcon, Check } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin, Sparkles, Users as UsersIcon, Check, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,17 +8,20 @@ import { cn } from "@/lib/utils";
 const NAV_PUBLIC = [
   { to: "/", label: "Grafikas", icon: Calendar },
   { to: "/kainos", label: "Kainos", icon: Tag },
+  { to: "/informacija", label: "Informacija", icon: Info },
   { to: "/paskyra", label: "Paskyra", icon: UserIcon },
 ];
 
 const NAV_ADMIN = [
   { to: "/", label: "Grafikas", icon: Calendar },
   { to: "/kainos", label: "Kainos", icon: Tag },
+  { to: "/informacija", label: "Informacija", icon: Info },
 ];
 
 const NAV_TRAINER = [
   { to: "/", label: "Grafikas", icon: Calendar },
   { to: "/kainos", label: "Kainos", icon: Tag },
+  { to: "/informacija", label: "Informacija", icon: Info },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {

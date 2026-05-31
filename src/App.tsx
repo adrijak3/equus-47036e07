@@ -12,6 +12,7 @@ import Paskyra from "./pages/Paskyra";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Trener from "./pages/Trener";
+import Informacija from "./pages/Informacija";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Grafikas />} />
               <Route path="/kainos" element={<Kainos />} />
+              <Route path="/informacija" element={<Informacija />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/paskyra" element={<RequireAuth><PaskyraRoute /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />

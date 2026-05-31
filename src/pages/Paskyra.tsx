@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon, Wallet, Inbox } from "lucide-react";
+import { Horse } from "@/components/icons/Horse";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FloralAccent } from "@/components/Decorations";
@@ -20,6 +22,7 @@ interface Booking {
   slot_time: string;
   status: string;
   counts_in_subscription: boolean;
+  subscription_id?: string | null;
   horse_name?: string | null;
 }
 interface Subscription {
@@ -185,19 +188,21 @@ export default function Paskyra() {
   useEffect(() => {
     if (!subDialog || !acting) return;
     (async () => {
+      // Include today's bookings too — admin/user chooses whether today counts
       const { data } = await supabase
         .from("bookings")
         .select("id, slot_date, slot_time, status, counts_in_subscription, subscription_id")
         .eq("user_id", acting)
         .is("subscription_id", null)
-        .lt("slot_date", formatDateISO(new Date()))
+        .lte("slot_date", formatDateISO(new Date()))
         .neq("status", "cancelled")
+        .gte("slot_date", newSubDate)
         .order("slot_date", { ascending: false })
         .limit(30);
       setUnattributedPast((data ?? []) as any);
       setAttributeIds(new Set());
     })();
-  }, [subDialog, acting]);
+  }, [subDialog, acting, newSubDate]);
 
   const addSubscription = async () => {
     if (!user || !acting) return;
@@ -328,14 +333,20 @@ export default function Paskyra() {
 
       <Tabs defaultValue="lessons">
         <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
-          <TabsTrigger value="lessons" className="text-[11px] sm:text-sm px-1 sm:px-3 whitespace-nowrap">Treniruotės</TabsTrigger>
-          <TabsTrigger value="subs" className="text-[11px] sm:text-sm px-1 sm:px-3 whitespace-nowrap">Abonementai</TabsTrigger>
-          <TabsTrigger value="permanent" className="gap-1 text-[11px] sm:text-sm px-1 sm:px-3">
-            <Star className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuolatiniai</span>
+          <TabsTrigger value="lessons" aria-label="Treniruotės" title="Treniruotės" className="py-2">
+            <Horse size={18} />
           </TabsTrigger>
-          <TabsTrigger value="messages" className="text-[11px] sm:text-sm px-1 sm:px-3 whitespace-nowrap">Žinutės</TabsTrigger>
-          <TabsTrigger value="settings" className="gap-1 text-[11px] sm:text-sm px-1 sm:px-3">
-            <Settings className="w-3.5 h-3.5" /><span className="hidden sm:inline">Nuostatos</span>
+          <TabsTrigger value="subs" aria-label="Abonementai" title="Abonementai" className="py-2">
+            <Wallet className="w-[18px] h-[18px]" />
+          </TabsTrigger>
+          <TabsTrigger value="permanent" aria-label="Nuolatiniai" title="Nuolatiniai laikai" className="py-2">
+            <Star className="w-[18px] h-[18px]" />
+          </TabsTrigger>
+          <TabsTrigger value="messages" aria-label="Žinutės" title="Žinutės" className="py-2">
+            <Inbox className="w-[18px] h-[18px]" />
+          </TabsTrigger>
+          <TabsTrigger value="settings" aria-label="Nuostatos" title="Nuostatos" className="py-2">
+            <Settings className="w-[18px] h-[18px]" />
           </TabsTrigger>
         </TabsList>
 
@@ -410,15 +421,33 @@ export default function Paskyra() {
             )}
           </Section>
 
-          <Section title="Visos praėjusios" icon={<Clock className="w-4 h-4" />}>
-            {past.length === 0 ? (
-              <Empty text="Dar nebuvo treniruočių" />
-            ) : (
-              <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
-                {past.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
-              </ul>
-            )}
-          </Section>
+          {(() => {
+            const pastAttended = past.filter((b) => b.status === "active" || b.status === "completed");
+            const pastCancelled = bookings.filter((b) => b.status === "cancelled");
+            return (
+              <>
+                <Section title="Įvykusios treniruotės" icon={<CheckCircle2 className="w-4 h-4" />}>
+                  {pastAttended.length === 0 ? (
+                    <Empty text="Dar nebuvo įvykusių treniruočių" />
+                  ) : (
+                    <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
+                      {pastAttended.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
+                    </ul>
+                  )}
+                </Section>
+
+                <Section title="Atšauktos treniruotės" icon={<XCircle className="w-4 h-4" />}>
+                  {pastCancelled.length === 0 ? (
+                    <Empty text="Atšauktų treniruočių nėra" />
+                  ) : (
+                    <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
+                      {pastCancelled.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
+                    </ul>
+                  )}
+                </Section>
+              </>
+            );
+          })()}
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
@@ -433,7 +462,12 @@ export default function Paskyra() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {subs.map((s) => {
-                const remaining = s.lessons_total - s.lessons_used;
+                const actualUsed = bookings.filter((b) =>
+                  b.subscription_id === s.id &&
+                  b.status !== "cancelled" &&
+                  b.counts_in_subscription !== false,
+                ).length;
+                const remaining = s.lessons_total - actualUsed;
                 const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
                 const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
                 return (
@@ -443,7 +477,7 @@ export default function Paskyra() {
                         {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
                       </div>
                     )}
-                    <SubscriptionCard s={s} onMarkPaid={markSubPaid} onDelete={deleteSub} onEditLessons={editSubLessons} />
+                    <SubscriptionCard s={s} effectiveUsed={actualUsed} onMarkPaid={markSubPaid} onDelete={undefined} onEditLessons={undefined} />
                   </div>
                 );
               })}
@@ -563,6 +597,43 @@ export default function Paskyra() {
                 Jeigu šio abonemento jau buvote panaudoję — įrašykite kiek. Naujam abonementui palikite 0.
               </p>
             </div>
+            {unattributedPast.length > 0 && (
+              <div className="border border-gold/15 rounded-md p-3 bg-background/30">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Įtraukti į šį abonementą (nuo pirkimo dienos)
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-1 mb-2">
+                  Pažymėkite jau įvykusias treniruotes (įsk. šiandienos), kurios turėtų skaičiuotis šiame abonemente.
+                </p>
+                <ul className="space-y-1 max-h-44 overflow-auto">
+                  {unattributedPast.map((b) => {
+                    const checked = attributeIds.has(b.id);
+                    const isToday = b.slot_date === formatDateISO(new Date());
+                    return (
+                      <li key={b.id}>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer rounded px-2 py-1 hover:bg-gold/5">
+                          <input
+                            type="checkbox"
+                            className="accent-gold"
+                            checked={checked}
+                            onChange={(e) => {
+                              setAttributeIds((prev) => {
+                                const next = new Set(prev);
+                                if (e.target.checked) next.add(b.id);
+                                else next.delete(b.id);
+                                return next;
+                              });
+                            }}
+                          />
+                          <span className="tabular-nums">{b.slot_date} · {formatTime(b.slot_time)}</span>
+                          {isToday && <span className="text-[10px] uppercase tracking-wider text-gold">šiandien</span>}
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             <div className="flex items-baseline justify-between p-4 rounded-md bg-gold/5 border border-gold/15">
               <span className="text-sm">Iš viso</span>
               <span className="text-3xl font-display text-gradient-gold tabular-nums">{newSubPrice} €</span>
@@ -796,8 +867,9 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-function SubscriptionCard({ s, onMarkPaid, onDelete, onEditLessons }: { s: Subscription; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void }) {
-  const remaining = s.lessons_total - s.lessons_used;
+function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void }) {
+  const used = effectiveUsed ?? s.lessons_used;
+  const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
   return (
@@ -814,11 +886,11 @@ function SubscriptionCard({ s, onMarkPaid, onDelete, onEditLessons }: { s: Subsc
             className="text-3xl font-display text-gradient-gold tabular-nums hover:opacity-80 transition-opacity"
             title="Pakeisti treniruočių skaičių"
           >
-            {s.lessons_used}/{s.lessons_total}
+            {used}/{s.lessons_total}
           </button>
         ) : (
           <span className="text-3xl font-display text-gradient-gold tabular-nums">
-            {s.lessons_used}/{s.lessons_total}
+            {used}/{s.lessons_total}
           </span>
         )}
         {s.paid ? (

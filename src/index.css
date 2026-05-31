@@ -9,57 +9,57 @@
 
 @layer base {
   :root {
-    /* Core surfaces */
-    --background: 24 14% 6%;          /* near-black warm ink */
-    --foreground: 38 35% 92%;         /* warm ivory */
+    /* Core surfaces — lifted ~6% to read better in daylight */
+    --background: 28 14% 12%;
+    --foreground: 38 38% 94%;
 
-    --card: 24 16% 9%;
-    --card-foreground: 38 35% 92%;
+    --card: 28 14% 16%;
+    --card-foreground: 38 35% 93%;
 
-    --popover: 24 18% 8%;
-    --popover-foreground: 38 35% 92%;
+    --popover: 28 16% 14%;
+    --popover-foreground: 38 35% 93%;
 
     /* Brand: champagne gold */
-    --primary: 40 55% 58%;            /* champagne gold */
+    --primary: 40 58% 62%;
     --primary-foreground: 24 30% 8%;
 
-    --gold: 40 55% 58%;
-    --gold-soft: 40 45% 48%;
-    --gold-glow: 44 70% 72%;
+    --gold: 40 58% 62%;
+    --gold-soft: 40 48% 52%;
+    --gold-glow: 44 72% 76%;
     --gold-foreground: 24 30% 8%;
 
     /* Muted blush accent — used sparingly */
-    --blush: 12 30% 78%;
+    --blush: 12 35% 80%;
 
     /* Neutrals on dark */
-    --secondary: 24 12% 14%;
-    --secondary-foreground: 38 30% 88%;
+    --secondary: 28 12% 20%;
+    --secondary-foreground: 38 30% 90%;
 
-    --muted: 24 10% 16%;
-    --muted-foreground: 38 12% 62%;
+    --muted: 28 10% 22%;
+    --muted-foreground: 38 14% 70%;
 
-    --accent: 40 45% 22%;             /* deep gold tint */
-    --accent-foreground: 40 60% 80%;
+    --accent: 40 45% 28%;
+    --accent-foreground: 40 60% 84%;
 
-    --destructive: 0 65% 52%;
+    --destructive: 0 65% 56%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 30 15% 18%;
-    --input: 30 15% 18%;
-    --ring: 40 55% 58%;
+    --border: 30 15% 24%;
+    --input: 30 15% 24%;
+    --ring: 40 58% 62%;
 
     --radius: 0.5rem;
 
     /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(44 70% 72%) 0%, hsl(40 55% 58%) 50%, hsl(36 45% 42%) 100%);
-    --gradient-ink: radial-gradient(ellipse at top, hsl(30 20% 12%) 0%, hsl(24 14% 6%) 60%, hsl(0 0% 0%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(24 18% 11%) 0%, hsl(24 16% 8%) 100%);
-    --gradient-text-gold: linear-gradient(180deg, hsl(44 70% 80%) 0%, hsl(40 55% 55%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(44 72% 76%) 0%, hsl(40 58% 62%) 50%, hsl(36 48% 48%) 100%);
+    --gradient-ink: radial-gradient(ellipse at top, hsl(30 18% 18%) 0%, hsl(28 14% 12%) 60%, hsl(24 12% 8%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(28 16% 18%) 0%, hsl(28 14% 14%) 100%);
+    --gradient-text-gold: linear-gradient(180deg, hsl(44 72% 82%) 0%, hsl(40 58% 60%) 100%);
 
     /* Shadows */
-    --shadow-elegant: 0 30px 80px -20px hsl(0 0% 0% / 0.6), 0 8px 30px -10px hsl(0 0% 0% / 0.5);
-    --shadow-gold: 0 10px 40px -10px hsl(40 55% 58% / 0.35);
-    --shadow-soft: 0 1px 0 0 hsl(40 55% 58% / 0.08) inset, 0 12px 40px -12px hsl(0 0% 0% / 0.5);
+    --shadow-elegant: 0 24px 70px -20px hsl(0 0% 0% / 0.55), 0 8px 26px -10px hsl(0 0% 0% / 0.4);
+    --shadow-gold: 0 10px 40px -10px hsl(40 58% 62% / 0.35);
+    --shadow-soft: 0 1px 0 0 hsl(40 58% 62% / 0.1) inset, 0 12px 36px -12px hsl(0 0% 0% / 0.45);
 
     /* Motion */
     --ease-elegant: cubic-bezier(0.22, 1, 0.36, 1);
