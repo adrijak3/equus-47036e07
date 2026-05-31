@@ -33,8 +33,8 @@ export default function Informacija() {
           <div>
             <h2 className="text-xl font-display text-gold">Jojimo paslaugų sutartis</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Kiekvienas asmuo <strong className="text-foreground">privalo pasirašyti</strong> šią sutartį
-              <strong className="text-foreground"> prieš pirmą treniruotę</strong>. Be pasirašytos sutarties pamoka negali įvykti.
+              Kiekvienas raitelis <strong className="text-foreground">privalo pasirašyti</strong> šią sutartį
+              <strong className="text-foreground"> prieš pirmąją treniruotę</strong>. Be pasirašytos sutarties treniruotė nevyks.
             </p>
           </div>
         </div>
