@@ -1140,6 +1140,18 @@ function UsersTab() {
     load();
   };
 
+  const renameUser = async (p: Profile) => {
+    const txt = prompt(`Pakeisti vardą ir pavardę (dabar: ${p.full_name}):`, p.full_name);
+    if (txt === null) return;
+    const newName = txt.trim();
+    if (!newName) { toast.error("Vardas negali būti tuščias"); return; }
+    if (newName === p.full_name) return;
+    const { error } = await supabase.from("profiles").update({ full_name: newName }).eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atnaujinta");
+    load();
+  };
+
   return (
     <div className="space-y-3">
       {profiles.map((p) => {
@@ -1191,6 +1203,14 @@ function UsersTab() {
                 </ul>
               )}
               <div className="flex justify-end pt-2 border-t border-gold/5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-foreground/80 hover:text-gold hover:bg-gold/10"
+                  onClick={() => renameUser(p)}
+                >
+                  Pervardyti
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
