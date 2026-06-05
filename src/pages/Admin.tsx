@@ -579,8 +579,9 @@ function SubsTab() {
     if (txt === null) return;
     const n = parseInt(txt);
     if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
-    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    const newUsed = Math.min(s.lessons_used, n);
+    const { error } = await supabase.from("subscriptions")
+      .update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Atnaujinta"); load();
   };
