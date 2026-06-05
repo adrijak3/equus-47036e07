@@ -222,7 +222,16 @@ export default function Grafikas() {
 
   const getSlotBookings = (date: Date, time: string) => {
     const dateISO = formatDateISO(date);
-    return bookings.filter((b) => b.slot_date === dateISO && b.slot_time === time);
+    const list = bookings.filter((b) => b.slot_date === dateISO && b.slot_time === time);
+    // Permanent slot users first, then everyone else, alphabetical within each group
+    return list.sort((a, b) => {
+      const pa = isPermanentBooking(a) ? 0 : 1;
+      const pb = isPermanentBooking(b) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      const na = (a.is_guest ? a.guest_name : a.profile_name) ?? "";
+      const nb = (b.is_guest ? b.guest_name : b.profile_name) ?? "";
+      return na.localeCompare(nb, "lt");
+    });
   };
 
   const getWaitingFor = (date: Date, time: string) => {

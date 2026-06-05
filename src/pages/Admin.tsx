@@ -579,8 +579,9 @@ function SubsTab() {
     if (txt === null) return;
     const n = parseInt(txt);
     if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
-    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    const newUsed = Math.min(s.lessons_used, n);
+    const { error } = await supabase.from("subscriptions")
+      .update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Atnaujinta"); load();
   };
@@ -1105,8 +1106,9 @@ function UsersTab() {
     if (txt === null) return;
     const n = parseInt(txt);
     if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    if (n < s.lessons_used) { toast.error(`Negalima mažiau už jau panaudotų (${s.lessons_used})`); return; }
-    const { error } = await supabase.from("subscriptions").update({ lessons_total: n }).eq("id", s.id);
+    const newUsed = Math.min(s.lessons_used, n);
+    const { error } = await supabase.from("subscriptions")
+      .update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Atnaujinta");
     load();
@@ -1135,6 +1137,18 @@ function UsersTab() {
       return;
     }
     toast.success(`${p.full_name} ištrintas`);
+    load();
+  };
+
+  const renameUser = async (p: Profile) => {
+    const txt = prompt(`Pakeisti vardą ir pavardę (dabar: ${p.full_name}):`, p.full_name);
+    if (txt === null) return;
+    const newName = txt.trim();
+    if (!newName) { toast.error("Vardas negali būti tuščias"); return; }
+    if (newName === p.full_name) return;
+    const { error } = await supabase.from("profiles").update({ full_name: newName }).eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Atnaujinta");
     load();
   };
 
@@ -1189,6 +1203,14 @@ function UsersTab() {
                 </ul>
               )}
               <div className="flex justify-end pt-2 border-t border-gold/5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-foreground/80 hover:text-gold hover:bg-gold/10"
+                  onClick={() => renameUser(p)}
+                >
+                  Pervardyti
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
