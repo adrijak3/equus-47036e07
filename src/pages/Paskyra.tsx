@@ -463,11 +463,13 @@ export default function Paskyra() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {subs.map((s) => {
-                const actualUsed = bookings.filter((b) =>
+                const attributedUsed = bookings.filter((b) =>
                   b.subscription_id === s.id &&
                   b.status !== "cancelled" &&
                   b.counts_in_subscription !== false,
                 ).length;
+                // Honor manually-entered "already used" baseline stored in lessons_used
+                const actualUsed = Math.max(attributedUsed, s.lessons_used ?? 0);
                 const remaining = s.lessons_total - actualUsed;
                 const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
                 const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
