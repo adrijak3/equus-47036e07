@@ -137,18 +137,34 @@ export default function Paskyra() {
 
     setLoading(false);
   };
-  const uploadSickDoc = async (req: PendingSickReq, file: File) => {
-    if (!user) return;
-    const ext = file.name.split(".").pop() || "bin";
-    const path = `${user.id}/${req.booking_id}-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("cancellation-docs").upload(path, file);
-    if (upErr) { toast.error(upErr.message); return; }
+  const markSickDocSubmitted = async (req: PendingSickReq, sentinel: string) => {
     const { error } = await supabase.from("cancellation_requests")
-      .update({ document_url: path, document_uploaded_at: new Date().toISOString() })
+      .update({ document_url: sentinel, document_uploaded_at: new Date().toISOString() })
       .eq("id", req.id);
+    if (error) { toast.error(error.message); return false; }
+    return true;
+  };
+
+  const sendSickDocViaMessage = async (req: PendingSickReq) => {
+    if (!user) return;
+    const body = `[Ligos pažyma] Pamoka ${req.slot_date} ${req.slot_time?.slice(0,5)} — pažymą atsiųsiu žinute (prikabinsiu nuotrauką arba PDF).`;
+    const { error } = await supabase.from("messages").insert({ user_id: user.id, body });
     if (error) { toast.error(error.message); return; }
-    toast.success("Pažyma įkelta");
-    load();
+    if (await markSickDocSubmitted(req, "SENT_VIA_MESSAGE")) {
+      toast.success("Pranešta administracijai — prisekite failą žinučių skiltyje");
+      load();
+    }
+  };
+
+  const sendSickDocViaEmail = async (req: PendingSickReq) => {
+    const adminEmail = "jojimomokykla@gmail.com";
+    const subject = encodeURIComponent(`Ligos pažyma — ${req.slot_date} ${req.slot_time?.slice(0,5)}`);
+    const bodyTxt = encodeURIComponent(`Sveiki,\n\nSiunčiu ligos pažymą už pamoką ${req.slot_date} ${req.slot_time?.slice(0,5)}.\n\nAčiū.`);
+    window.open(`mailto:${adminEmail}?subject=${subject}&body=${bodyTxt}`, "_blank");
+    if (await markSickDocSubmitted(req, "SENT_VIA_EMAIL")) {
+      toast.success("Pažymėta — neužmirškite išsiųsti laiško");
+      load();
+    }
   };
 
 
