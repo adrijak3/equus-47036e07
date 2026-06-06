@@ -123,6 +123,19 @@ export default function Grafikas() {
   const [customBusy, setCustomBusy] = useState(false);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
+  useEffect(() => {
+    if (!pendingScrollToToday) return;
+    const t = setTimeout(() => {
+      const todayMs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+      const idx = days.findIndex((d) => d.getTime() === todayMs);
+      if (idx >= 0) {
+        dayRefs.current[idx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      setPendingScrollToToday(false);
+    }, 80);
+    return () => clearTimeout(t);
+  }, [pendingScrollToToday, days]);
   const weekEnd = days[6];
 
   const loadData = async () => {
