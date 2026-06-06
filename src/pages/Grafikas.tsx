@@ -656,6 +656,7 @@ export default function Grafikas() {
               return (
                 <div
                   key={idx}
+                  ref={(el) => { dayRefs.current[idx] = el; }}
                   className={cn(
                     "flex flex-col gap-2 relative",
                     isPast && "opacity-60",
