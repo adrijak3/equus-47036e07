@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload } from "lucide-react";
 import { motion } from "framer-motion";
@@ -80,6 +80,8 @@ interface DayNote {
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
@@ -608,7 +610,10 @@ export default function Grafikas() {
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
-        <Button variant="outlineGold" size="sm" onClick={() => setWeekStart(startOfWeek(new Date()))}>
+        <Button variant="outlineGold" size="sm" onClick={() => {
+          setWeekStart(startOfWeek(new Date()));
+          setPendingScrollToToday(true);
+        }}>
           📅 Šiandien
         </Button>
       </div>
