@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload } from "lucide-react";
 import { motion } from "framer-motion";
@@ -80,6 +80,8 @@ interface DayNote {
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
@@ -121,6 +123,19 @@ export default function Grafikas() {
   const [customBusy, setCustomBusy] = useState(false);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
+  useEffect(() => {
+    if (!pendingScrollToToday) return;
+    const t = setTimeout(() => {
+      const todayMs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+      const idx = days.findIndex((d) => d.getTime() === todayMs);
+      if (idx >= 0) {
+        dayRefs.current[idx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      setPendingScrollToToday(false);
+    }, 80);
+    return () => clearTimeout(t);
+  }, [pendingScrollToToday, days]);
   const weekEnd = days[6];
 
   const loadData = async () => {
@@ -608,7 +623,10 @@ export default function Grafikas() {
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
-        <Button variant="outlineGold" size="sm" onClick={() => setWeekStart(startOfWeek(new Date()))}>
+        <Button variant="outlineGold" size="sm" onClick={() => {
+          setWeekStart(startOfWeek(new Date()));
+          setPendingScrollToToday(true);
+        }}>
           📅 Šiandien
         </Button>
       </div>
@@ -638,6 +656,7 @@ export default function Grafikas() {
               return (
                 <div
                   key={idx}
+                  ref={(el) => { dayRefs.current[idx] = el; }}
                   className={cn(
                     "flex flex-col gap-2 relative",
                     isPast && "opacity-60",

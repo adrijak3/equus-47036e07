@@ -168,6 +168,19 @@ function ScheduleTab() {
   return (
     <div>
       <div className="flex justify-end mb-4">
+        <Button variant="ghost" size="sm" className="mr-2" onClick={async () => {
+          const today = new Date().toISOString().slice(0,10);
+          const { data: stale } = await supabase.from("time_slots")
+            .select("id, one_off_date").not("one_off_date","is",null).lt("one_off_date", today);
+          const ids = (stale ?? []).map((s: any) => s.id);
+          if (ids.length === 0) { toast.info("Pasenusių vienkartinių laikų nėra"); return; }
+          if (!confirm(`Ištrinti ${ids.length} pasenusių vienkartinių laikų?`)) return;
+          const { error } = await supabase.from("time_slots").delete().in("id", ids);
+          if (error) { toast.error(error.message); return; }
+          toast.success(`Ištrinta ${ids.length}`); load();
+        }}>
+          🧹 Išvalyti senus
+        </Button>
         <Button variant="gold" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Naujas laikas</Button>
       </div>
 

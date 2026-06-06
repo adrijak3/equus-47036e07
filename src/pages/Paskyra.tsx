@@ -137,18 +137,34 @@ export default function Paskyra() {
 
     setLoading(false);
   };
-  const uploadSickDoc = async (req: PendingSickReq, file: File) => {
-    if (!user) return;
-    const ext = file.name.split(".").pop() || "bin";
-    const path = `${user.id}/${req.booking_id}-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("cancellation-docs").upload(path, file);
-    if (upErr) { toast.error(upErr.message); return; }
+  const markSickDocSubmitted = async (req: PendingSickReq, sentinel: string) => {
     const { error } = await supabase.from("cancellation_requests")
-      .update({ document_url: path, document_uploaded_at: new Date().toISOString() })
+      .update({ document_url: sentinel, document_uploaded_at: new Date().toISOString() })
       .eq("id", req.id);
+    if (error) { toast.error(error.message); return false; }
+    return true;
+  };
+
+  const sendSickDocViaMessage = async (req: PendingSickReq) => {
+    if (!user) return;
+    const body = `[Ligos pažyma] Pamoka ${req.slot_date} ${req.slot_time?.slice(0,5)} — pažymą atsiųsiu žinute (prikabinsiu nuotrauką arba PDF).`;
+    const { error } = await supabase.from("messages").insert({ user_id: user.id, body });
     if (error) { toast.error(error.message); return; }
-    toast.success("Pažyma įkelta");
-    load();
+    if (await markSickDocSubmitted(req, "SENT_VIA_MESSAGE")) {
+      toast.success("Pranešta administracijai — prisekite failą žinučių skiltyje");
+      load();
+    }
+  };
+
+  const sendSickDocViaEmail = async (req: PendingSickReq) => {
+    const adminEmail = "jojimomokykla@gmail.com";
+    const subject = encodeURIComponent(`Ligos pažyma — ${req.slot_date} ${req.slot_time?.slice(0,5)}`);
+    const bodyTxt = encodeURIComponent(`Sveiki,\n\nSiunčiu ligos pažymą už pamoką ${req.slot_date} ${req.slot_time?.slice(0,5)}.\n\nAčiū.`);
+    window.open(`mailto:${adminEmail}?subject=${subject}&body=${bodyTxt}`, "_blank");
+    if (await markSickDocSubmitted(req, "SENT_VIA_EMAIL")) {
+      toast.success("Pažymėta — neužmirškite išsiųsti laiško");
+      load();
+    }
   };
 
 
@@ -371,15 +387,14 @@ export default function Paskyra() {
                         </div>
                       </div>
                       {!overdue && (
-                        <Input
-                          type="file"
-                          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
-                          className="max-w-xs"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) uploadSickDoc(r, f);
-                          }}
-                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="gold" onClick={() => sendSickDocViaMessage(r)}>
+                            <MessageSquare className="w-4 h-4" /> Žinute administracijai
+                          </Button>
+                          <Button size="sm" variant="outlineGold" onClick={() => sendSickDocViaEmail(r)}>
+                            El. paštu
+                          </Button>
+                        </div>
                       )}
                     </li>
                   );
@@ -463,11 +478,13 @@ export default function Paskyra() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {subs.map((s) => {
-                const actualUsed = bookings.filter((b) =>
+                const attributedUsed = bookings.filter((b) =>
                   b.subscription_id === s.id &&
                   b.status !== "cancelled" &&
                   b.counts_in_subscription !== false,
                 ).length;
+                // Honor manually-entered "already used" baseline stored in lessons_used
+                const actualUsed = Math.max(attributedUsed, s.lessons_used ?? 0);
                 const remaining = s.lessons_total - actualUsed;
                 const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
                 const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
@@ -551,6 +568,7 @@ export default function Paskyra() {
         <TabsContent value="settings" className="space-y-6">
           <ProfileSettings onSaved={refreshProfile} />
           <PasswordChange />
+          <VacationMode userId={acting} onChanged={load} />
         </TabsContent>
       </Tabs>
 
@@ -820,6 +838,77 @@ function PasswordChange() {
 }
 
 /* ───────────── Shared bits ───────────── */
+
+function VacationMode({ userId, onChanged }: { userId: string | null; onChanged: () => void | Promise<void> }) {
+  const [from, setFrom] = useState(formatDateISO(new Date()));
+  const [to, setTo] = useState(formatDateISO(new Date()));
+  const [busy, setBusy] = useState(false);
+  const apply = async () => {
+    if (!userId) return;
+    if (to < from) { toast.error("Pabaigos data turi būti po pradžios"); return; }
+    if (!confirm(`Atšaukti visas treniruotes ${from} – ${to}? Jei treniruotės priskirtos abonementui, jos bus grąžintos.`)) return;
+    setBusy(true);
+    // Find active bookings in range
+    const { data: bs, error: ferr } = await supabase
+      .from("bookings")
+      .select("id, subscription_id, counts_in_subscription, status")
+      .eq("user_id", userId)
+      .gte("slot_date", from)
+      .lte("slot_date", to)
+      .eq("status", "active");
+    if (ferr) { toast.error(ferr.message); setBusy(false); return; }
+    const ids = (bs ?? []).map((b: any) => b.id);
+    if (ids.length === 0) {
+      toast.info("Tame laikotarpyje nėra aktyvių treniruočių");
+      setBusy(false); return;
+    }
+    // Refund to subscriptions: decrement lessons_used per attributed booking
+    const refundCounts = new Map<string, number>();
+    for (const b of (bs ?? []) as any[]) {
+      if (b.subscription_id && b.counts_in_subscription !== false) {
+        refundCounts.set(b.subscription_id, (refundCounts.get(b.subscription_id) ?? 0) + 1);
+      }
+    }
+    const { error: uerr } = await supabase.from("bookings")
+      .update({ status: "cancelled", counts_in_subscription: false } as any)
+      .in("id", ids);
+    if (uerr) { toast.error(uerr.message); setBusy(false); return; }
+    for (const [subId, n] of refundCounts.entries()) {
+      const { data: sub } = await supabase.from("subscriptions").select("lessons_used").eq("id", subId).maybeSingle();
+      if (sub) {
+        const newUsed = Math.max(0, (sub as any).lessons_used - n);
+        await supabase.from("subscriptions").update({ lessons_used: newUsed }).eq("id", subId);
+      }
+    }
+    toast.success(`Atostogos pažymėtos — atšaukta ${ids.length} treniruočių`);
+    setBusy(false);
+    await onChanged();
+  };
+  return (
+    <Section title="Atostogų režimas" icon={<CalendarDays className="w-4 h-4" />}>
+      <div className="px-5 py-4 space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Nurodykite laikotarpį — visos jūsų užregistruotos treniruotės tame intervale bus atšauktos ir, jei priskirtos abonementui, grąžintos. Nuolatiniai laikai šiame intervale nebus iš naujo sukurti.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="vac-from">Nuo</Label>
+            <Input id="vac-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="vac-to">Iki (imtinai)</Label>
+            <Input id="vac-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button variant="gold" onClick={apply} disabled={busy || !userId}>
+            {busy ? "Vykdoma…" : "Aktyvuoti atostogas"}
+          </Button>
+        </div>
+      </div>
+    </Section>
+  );
+}
 
 function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
