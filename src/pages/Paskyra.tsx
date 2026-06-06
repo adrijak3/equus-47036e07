@@ -568,6 +568,7 @@ export default function Paskyra() {
         <TabsContent value="settings" className="space-y-6">
           <ProfileSettings onSaved={refreshProfile} />
           <PasswordChange />
+          <VacationMode userId={acting} onChanged={load} />
         </TabsContent>
       </Tabs>
 
