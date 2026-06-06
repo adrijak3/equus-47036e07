@@ -387,15 +387,14 @@ export default function Paskyra() {
                         </div>
                       </div>
                       {!overdue && (
-                        <Input
-                          type="file"
-                          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
-                          className="max-w-xs"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) uploadSickDoc(r, f);
-                          }}
-                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="gold" onClick={() => sendSickDocViaMessage(r)}>
+                            <MessageSquare className="w-4 h-4" /> Žinute administracijai
+                          </Button>
+                          <Button size="sm" variant="outlineGold" onClick={() => sendSickDocViaEmail(r)}>
+                            El. paštu
+                          </Button>
+                        </div>
                       )}
                     </li>
                   );
