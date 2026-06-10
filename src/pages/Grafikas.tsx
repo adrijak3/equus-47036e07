@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
@@ -781,33 +782,59 @@ export default function Grafikas() {
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                              <Users className="w-3 h-3" />
-                              <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
-                            </div>
-                            {isAdmin && !slotPast && (
-                              <button
-                                type="button"
-                                onClick={() => adminAddOneSeat(date, slot.slot_time, cap)}
-                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
-                                title="Pridėti +1 vietą šiai treniruotei"
-                                aria-label="Pridėti vietą"
-                              >
-                                +1
-                              </button>
-                            )}
-                            {isAdmin && !slotPast && overrides.some((o) => o.slot_date === formatDateISO(date) && o.slot_time === slot.slot_time) && (
-                              <button
-                                type="button"
-                                onClick={() => adminRemoveOverride(date, slot.slot_time)}
-                                className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-blush/40 text-blush hover:bg-blush/10 transition-colors text-[11px] leading-none"
-                                title="Pašalinti papildomą vietą (atstatyti į numatytą)"
-                                aria-label="Pašalinti papildomą vietą"
-                              >
-                                −1
-                              </button>
-                            )}
-                            {isAdmin && !slotPast && (
+                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Users className="w-3 h-3" />
+                            <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
+                          </div>
+                          {/* Waiting list dot — visible to everyone */}
+                          {slotWaiting.length > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-blush/20 text-blush border border-blush/30 text-[10px] font-bold px-1 animate-pulse cursor-pointer hover:bg-blush/30 transition-colors"
+                                  title="Laukiančiųjų sąrašas"
+                                  aria-label={`Laukiančiųjų sąrašas (${slotWaiting.length})`}
+                                >
+                                  {slotWaiting.length}
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-56 bg-gradient-card border-gold/20 p-3" side="top" align="center">
+                                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Laukiančiųjų sąrašas</div>
+                                <ul className="space-y-1">
+                                  {slotWaiting.map((w, i) => (
+                                    <li key={w.id} className="flex items-center gap-2 text-sm">
+                                      <span className="text-gold/60 text-xs">{i + 1}.</span>
+                                      <span className="truncate">{w.profile_name ?? "—"}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                          {isAdmin && !slotPast && (
+                            <button
+                              type="button"
+                              onClick={() => adminAddOneSeat(date, slot.slot_time, cap)}
+                              className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                              title="Pridėti +1 vietą šiai treniruotei"
+                              aria-label="Pridėti vietą"
+                            >
+                              +1
+                            </button>
+                          )}
+                          {isAdmin && !slotPast && overrides.some((o) => o.slot_date === formatDateISO(date) && o.slot_time === slot.slot_time) && (
+                            <button
+                              type="button"
+                              onClick={() => adminRemoveOverride(date, slot.slot_time)}
+                              className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-blush/40 text-blush hover:bg-blush/10 transition-colors text-[11px] leading-none"
+                              title="Pašalinti papildomą vietą (atstatyti į numatytą)"
+                              aria-label="Pašalinti papildomą vietą"
+                            >
+                              −1
+                            </button>
+                          )}
+                          {isAdmin && !slotPast && (
                               <button
                                 type="button"
                                 onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time }); setAdminAddUserId(""); }}
