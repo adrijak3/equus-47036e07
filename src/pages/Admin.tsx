@@ -1187,39 +1187,28 @@ function UsersTab() {
               {userSubs.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
               ) : (
-                <ul className="space-y-2">
-                  {userSubs.map((s) => {
-                    const usedDisp = s.lessons_used ?? 0;
-                    return (
-                    <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5">
-                      <button
-                        type="button"
-                        onClick={() => editLessons(s)}
-                        className="tabular-nums hover:text-gold transition-colors"
-                        title="Spauskite, kad pakeistumėte treniruočių skaičių"
-                      >
-                        {usedDisp}/{s.lessons_total} · {s.price}€
-                      </button>
-                      <span className="text-xs text-muted-foreground">{s.purchase_date} → {s.expires_at}</span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => togglePaid(s.id, !s.paid)}
-                          className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}
-                        >
-                          {s.paid ? "Apmokėta" : "Neapmokėta"}
-                        </button>
-                        <button
-                          onClick={() => deleteSub(s)}
-                          className="text-muted-foreground hover:text-destructive p-1"
-                          title="Ištrinti abonementą"
-                          aria-label="Ištrinti"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </li>
-                  );})}
-                </ul>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {userSubs.map((s) => (
+                    <SubscriptionCard
+                      key={s.id}
+                      s={s as any}
+                      effectiveUsed={s.lessons_used ?? 0}
+                      onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
+                      onEditLessons={() => editLessons(s)}
+                      onDelete={() => deleteSub(s)}
+                      extra={s.paid ? (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => togglePaid(s.id, false)}
+                            className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
+                          >
+                            Pažymėti neapmokėta
+                          </button>
+                        </div>
+                      ) : undefined}
+                    />
+                  ))}
+                </div>
               )}
               <div className="flex justify-end pt-2 border-t border-gold/5">
                 <Button
