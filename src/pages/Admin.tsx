@@ -1186,7 +1186,9 @@ function UsersTab() {
                 <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
               ) : (
                 <ul className="space-y-2">
-                  {userSubs.map((s) => (
+                  {userSubs.map((s) => {
+                    const usedDisp = s.lessons_used ?? 0;
+                    return (
                     <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5">
                       <button
                         type="button"
@@ -1194,7 +1196,7 @@ function UsersTab() {
                         className="tabular-nums hover:text-gold transition-colors"
                         title="Spauskite, kad pakeistumėte treniruočių skaičių"
                       >
-                        {s.lessons_used}/{s.lessons_total} · {s.price}€
+                        {usedDisp}/{s.lessons_total} · {s.price}€
                       </button>
                       <span className="text-xs text-muted-foreground">{s.purchase_date} → {s.expires_at}</span>
                       <div className="flex items-center gap-1.5">
@@ -1214,7 +1216,7 @@ function UsersTab() {
                         </button>
                       </div>
                     </li>
-                  ))}
+                  );})}
                 </ul>
               )}
               <div className="flex justify-end pt-2 border-t border-gold/5">
