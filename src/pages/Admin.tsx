@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
+import { SubscriptionCard } from "@/pages/Paskyra";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
