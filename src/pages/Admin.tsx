@@ -694,40 +694,41 @@ function SubsTab() {
                 {us.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
                 ) : (
-                  <ul className="space-y-2">
+                  <div className="grid sm:grid-cols-2 gap-3">
                     {us.map((s) => {
                       const actual = Math.max(usageMap[s.id] ?? 0, s.lessons_used ?? 0);
                       return (
-                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-gold/5 last:border-0">
-                        <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => editLessons(s)} className="tabular-nums hover:text-gold" title="Įvykusios treniruotės / iš viso">
-                            {actual}/{s.lessons_total} · {Number(s.price).toFixed(0)}€
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDetailSub(s)}
-                            className="text-[11px] px-1.5 py-0.5 rounded border border-gold/20 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
-                            title="Žiūrėti, kurios pamokos įskaičiuotos"
-                          >
-                            <ListTree className="w-3 h-3" /> Įvykusios treniruotės
-                          </button>
-                        </div>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
-                          {LESSON_TYPE_LABEL[(s.lesson_type ?? "sportine") as LessonType] ?? s.lesson_type}
-                        </span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{s.purchase_date} → {s.expires_at}</span>
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => togglePaid(s.id, !s.paid)}
-                            className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}>
-                            {s.paid ? "Apmokėta" : "Neapmokėta"}
-                          </button>
-                          <button onClick={() => deleteSub(s)} className="text-muted-foreground hover:text-destructive p-1">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </li>
-                    );})}
-                  </ul>
+                        <SubscriptionCard
+                          key={s.id}
+                          s={s as any}
+                          effectiveUsed={actual}
+                          onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
+                          onEditLessons={() => editLessons(s)}
+                          onDelete={() => deleteSub(s)}
+                          extra={
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setDetailSub(s)}
+                                className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
+                                title="Žiūrėti, kurios pamokos įskaičiuotos"
+                              >
+                                <ListTree className="w-3 h-3" /> Įvykusios treniruotės
+                              </button>
+                              {s.paid && (
+                                <button
+                                  onClick={() => togglePaid(s.id, false)}
+                                  className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
+                                >
+                                  Pažymėti neapmokėta
+                                </button>
+                              )}
+                            </div>
+                          }
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </details>
