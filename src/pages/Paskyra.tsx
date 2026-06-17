@@ -1005,7 +1005,7 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
         <div>Pirkta: <span className="text-foreground">{s.purchase_date}</span></div>
         <div>Galioja iki: <span className={cn("text-foreground", expired && "text-destructive")}>{s.expires_at}</span></div>
         <div>Suma: <span className="text-foreground tabular-nums">{Number(s.price).toFixed(2)} €</span></div>
-        {s.sickness_credits > 0 && (
+        {(s.sickness_credits ?? 0) > 0 && (
           <div className="text-blush">+{s.sickness_credits} (liga)</div>
         )}
       </div>
