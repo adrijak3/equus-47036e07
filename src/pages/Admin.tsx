@@ -695,7 +695,7 @@ function SubsTab() {
                 ) : (
                   <ul className="space-y-2">
                     {us.map((s) => {
-                      const actual = usageMap[s.id] ?? 0;
+                      const actual = Math.max(usageMap[s.id] ?? 0, s.lessons_used ?? 0);
                       return (
                       <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-gold/5 last:border-0">
                         <div className="flex items-center gap-2">
