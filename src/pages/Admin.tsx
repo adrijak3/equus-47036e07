@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
+import { SubscriptionCard } from "@/pages/Paskyra";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -693,40 +694,41 @@ function SubsTab() {
                 {us.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
                 ) : (
-                  <ul className="space-y-2">
+                  <div className="grid sm:grid-cols-2 gap-3">
                     {us.map((s) => {
-                      const actual = usageMap[s.id] ?? 0;
+                      const actual = Math.max(usageMap[s.id] ?? 0, s.lessons_used ?? 0);
                       return (
-                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-gold/5 last:border-0">
-                        <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => editLessons(s)} className="tabular-nums hover:text-gold" title="Įvykusios treniruotės / iš viso">
-                            {actual}/{s.lessons_total} · {Number(s.price).toFixed(0)}€
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDetailSub(s)}
-                            className="text-[11px] px-1.5 py-0.5 rounded border border-gold/20 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
-                            title="Žiūrėti, kurios pamokos įskaičiuotos"
-                          >
-                            <ListTree className="w-3 h-3" /> Įvykusios treniruotės
-                          </button>
-                        </div>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
-                          {LESSON_TYPE_LABEL[(s.lesson_type ?? "sportine") as LessonType] ?? s.lesson_type}
-                        </span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{s.purchase_date} → {s.expires_at}</span>
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => togglePaid(s.id, !s.paid)}
-                            className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}>
-                            {s.paid ? "Apmokėta" : "Neapmokėta"}
-                          </button>
-                          <button onClick={() => deleteSub(s)} className="text-muted-foreground hover:text-destructive p-1">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </li>
-                    );})}
-                  </ul>
+                        <SubscriptionCard
+                          key={s.id}
+                          s={s as any}
+                          effectiveUsed={actual}
+                          onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
+                          onEditLessons={() => editLessons(s)}
+                          onDelete={() => deleteSub(s)}
+                          extra={
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setDetailSub(s)}
+                                className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
+                                title="Žiūrėti, kurios pamokos įskaičiuotos"
+                              >
+                                <ListTree className="w-3 h-3" /> Įvykusios treniruotės
+                              </button>
+                              {s.paid && (
+                                <button
+                                  onClick={() => togglePaid(s.id, false)}
+                                  className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
+                                >
+                                  Pažymėti neapmokėta
+                                </button>
+                              )}
+                            </div>
+                          }
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </details>
@@ -800,6 +802,12 @@ function SubDetailDialog({
 }: { sub: Sub; userName: string; onClose: () => void; onChanged: () => void }) {
   const [rows, setRows] = useState<{ id: string; slot_date: string; slot_time: string; status: string; counts_in_subscription: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liveSub, setLiveSub] = useState<Sub>(sub);
+  useEffect(() => { setLiveSub(sub); }, [sub]);
+  const refreshSub = async () => {
+    const { data } = await supabase.from("subscriptions").select("*").eq("id", sub.id).maybeSingle();
+    if (data) setLiveSub(data as any);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -818,17 +826,18 @@ function SubDetailDialog({
       .update({ subscription_id: null } as any).eq("id", bookingId);
     if (error) { toast.error(error.message); return; }
     // Decrement stored counter if it's > 0
-    if (sub.lessons_used > 0) {
+    if (liveSub.lessons_used > 0) {
       await supabase.from("subscriptions")
-        .update({ lessons_used: sub.lessons_used - 1 }).eq("id", sub.id);
+        .update({ lessons_used: liveSub.lessons_used - 1 }).eq("id", sub.id);
     }
     toast.success("Atkabinta");
-    load();
+    load(); refreshSub();
     onChanged();
   };
 
   const counted = rows.filter((r) => r.status !== "cancelled" && r.counts_in_subscription !== false);
   const cancelled = rows.filter((r) => r.status === "cancelled" || r.counts_in_subscription === false);
+  const displayUsed = Math.max(counted.length, liveSub.lessons_used ?? 0);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -838,21 +847,21 @@ function SubDetailDialog({
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <div className="rounded-md bg-gold/5 border border-gold/15 px-3 py-2 tabular-nums">
-            <div className="text-base">Įvykusios treniruotės: <span className="text-gold">{counted.length}/{sub.lessons_total}</span></div>
-            <div className="text-xs text-muted-foreground mt-1">{sub.purchase_date} → {sub.expires_at}</div>
-            {counted.length !== sub.lessons_used && (
+            <div className="text-base">Įvykusios treniruotės: <span className="text-gold">{displayUsed}/{liveSub.lessons_total}</span></div>
+            <div className="text-xs text-muted-foreground mt-1">{liveSub.purchase_date} → {liveSub.expires_at}</div>
+            {counted.length !== liveSub.lessons_used && (
               <button
                 type="button"
                 onClick={async () => {
                   const { error } = await supabase.from("subscriptions")
                     .update({ lessons_used: counted.length }).eq("id", sub.id);
                   if (error) { toast.error(error.message); return; }
-                  toast.success("Sinchronizuota"); onChanged();
+                  toast.success("Sinchronizuota"); await refreshSub(); onChanged();
                 }}
                 className="mt-2 text-[11px] px-2 py-1 rounded border border-blush/40 text-blush hover:bg-blush/10"
-                title={`Vidinis skaitiklis: ${sub.lessons_used} — paspauskite, kad sutaptų su tikru`}
+                title={`Vidinis skaitiklis: ${liveSub.lessons_used} — paspauskite, kad sutaptų su tikru`}
               >
-                Sinchronizuoti vidinį skaitiklį ({sub.lessons_used} → {counted.length})
+                Sinchronizuoti vidinį skaitiklį ({liveSub.lessons_used} → {counted.length})
               </button>
             )}
           </div>
@@ -861,13 +870,8 @@ function SubDetailDialog({
             <button
               type="button"
               onClick={async () => {
-                // Auto-attach this user's completed bookings from the current month that have no subscription
-                const now = new Date();
-                const y = now.getFullYear();
-                const m = String(now.getMonth() + 1).padStart(2, "0");
-                const monthStart = `${y}-${m}-01`;
-                const monthEnd = `${y}-${m}-31`;
-                const remaining = sub.lessons_total - counted.length;
+                // Auto-attach this user's completed bookings within the subscription validity window
+                const remaining = liveSub.lessons_total - counted.length;
                 if (remaining <= 0) { toast.error("Abonementas pilnas"); return; }
                 const { data: bks } = await supabase.from("bookings")
                   .select("id")
@@ -875,34 +879,34 @@ function SubDetailDialog({
                   .eq("status", "completed")
                   .neq("counts_in_subscription", false)
                   .is("subscription_id", null)
-                  .gte("slot_date", monthStart)
-                  .lte("slot_date", monthEnd)
+                  .gte("slot_date", liveSub.purchase_date)
+                  .lte("slot_date", liveSub.expires_at)
                   .order("slot_date", { ascending: true })
                   .limit(remaining);
                 const ids = (bks ?? []).map((b: any) => b.id);
-                if (ids.length === 0) { toast.message("Šio mėnesio neįskaičiuotų nėra"); return; }
+                if (ids.length === 0) { toast.message("Neįskaičiuotų pamokų nėra šio abonemento laikotarpyje"); return; }
                 const { error } = await supabase.from("bookings")
                   .update({ subscription_id: sub.id } as any).in("id", ids);
                 if (error) { toast.error(error.message); return; }
                 await supabase.from("subscriptions")
                   .update({ lessons_used: counted.length + ids.length }).eq("id", sub.id);
-                toast.success(`Priskirta ${ids.length}`); load(); onChanged();
+                toast.success(`Priskirta ${ids.length}`); load(); await refreshSub(); onChanged();
               }}
               className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
             >
-              Auto-priskirti šio mėnesio įvykusias
+              Auto-priskirti šio abonemento įvykusias
             </button>
             <button
               type="button"
               onClick={async () => {
-                const txt = prompt(`Kiek pamokų jau panaudota? (0–${sub.lessons_total})`, String(sub.lessons_used));
+                const txt = prompt(`Kiek pamokų jau panaudota? (0–${liveSub.lessons_total})`, String(liveSub.lessons_used));
                 if (txt === null) return;
                 const n = parseInt(txt);
-                if (!Number.isFinite(n) || n < 0 || n > sub.lessons_total) { toast.error("Neteisingas skaičius"); return; }
+                if (!Number.isFinite(n) || n < 0 || n > liveSub.lessons_total) { toast.error("Neteisingas skaičius"); return; }
                 const { error } = await supabase.from("subscriptions")
                   .update({ lessons_used: n }).eq("id", sub.id);
                 if (error) { toast.error(error.message); return; }
-                toast.success("Atnaujinta"); onChanged();
+                toast.success("Atnaujinta"); await refreshSub(); onChanged();
               }}
               className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
             >
@@ -1183,37 +1187,28 @@ function UsersTab() {
               {userSubs.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
               ) : (
-                <ul className="space-y-2">
+                <div className="grid sm:grid-cols-2 gap-3">
                   {userSubs.map((s) => (
-                    <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5">
-                      <button
-                        type="button"
-                        onClick={() => editLessons(s)}
-                        className="tabular-nums hover:text-gold transition-colors"
-                        title="Spauskite, kad pakeistumėte treniruočių skaičių"
-                      >
-                        {s.lessons_used}/{s.lessons_total} · {s.price}€
-                      </button>
-                      <span className="text-xs text-muted-foreground">{s.purchase_date} → {s.expires_at}</span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => togglePaid(s.id, !s.paid)}
-                          className={`text-xs px-2 py-1 rounded border ${s.paid ? "border-gold/30 text-gold bg-gold/10" : "border-blush/30 text-blush bg-blush/10"}`}
-                        >
-                          {s.paid ? "Apmokėta" : "Neapmokėta"}
-                        </button>
-                        <button
-                          onClick={() => deleteSub(s)}
-                          className="text-muted-foreground hover:text-destructive p-1"
-                          title="Ištrinti abonementą"
-                          aria-label="Ištrinti"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </li>
+                    <SubscriptionCard
+                      key={s.id}
+                      s={s as any}
+                      effectiveUsed={s.lessons_used ?? 0}
+                      onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
+                      onEditLessons={() => editLessons(s)}
+                      onDelete={() => deleteSub(s)}
+                      extra={s.paid ? (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => togglePaid(s.id, false)}
+                            className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
+                          >
+                            Pažymėti neapmokėta
+                          </button>
+                        </div>
+                      ) : undefined}
+                    />
                   ))}
-                </ul>
+                </div>
               )}
               <div className="flex justify-end pt-2 border-t border-gold/5">
                 <Button
