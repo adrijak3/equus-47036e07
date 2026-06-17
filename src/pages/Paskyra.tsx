@@ -957,7 +957,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void }) {
+export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode }) {
   const used = effectiveUsed ?? s.lessons_used;
   const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
@@ -1011,6 +1011,9 @@ function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLesson
       </div>
       {empty && !expired && (
         <p className="mt-3 text-xs text-destructive font-medium">Pamokos baigėsi — pridėkite naują abonementą</p>
+      )}
+      {extra && (
+        <div className="mt-3 pt-3 border-t border-gold/10">{extra}</div>
       )}
       {onDelete && (
         <div className="mt-4 pt-3 border-t border-gold/10 flex justify-end">
