@@ -1408,6 +1408,8 @@ function PermanentSlotsAdminTab() {
   const [selUser, setSelUser] = useState("");
   const [selDay, setSelDay] = useState(1);
   const [selTime, setSelTime] = useState("");
+  const [customTime, setCustomTime] = useState(false);
+  const [customTimeValue, setCustomTimeValue] = useState("17:00");
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -1457,12 +1459,16 @@ function PermanentSlotsAdminTab() {
 
   const add = async () => {
     if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
-    if (!selTime) { toast.error("Pasirinkite laiką"); return; }
+    const finalTime = customTime ? customTimeValue : selTime;
+    if (!finalTime) { toast.error("Pasirinkite laiką"); return; }
+    if (customTime && !isValidTime(customTimeValue)) {
+      toast.error("Įveskite laiką formatu HH:MM"); return;
+    }
     setSaving(true);
     const { error } = await supabase.from("permanent_slots").insert({
       user_id: selUser,
       day_of_week: selDay,
-      slot_time: selTime,
+      slot_time: finalTime,
     });
     setSaving(false);
     if (error) {
@@ -1471,7 +1477,7 @@ function PermanentSlotsAdminTab() {
     }
     toast.success("Pridėta. Vartotojas užregistruotas 12-os savaičių į priekį.");
     setOpen(false);
-    setSelUser(""); setSelTime(""); setSelDay(1);
+    setSelUser(""); setSelTime(""); setSelDay(1); setCustomTime(false);
     load();
   };
 
@@ -1560,18 +1566,26 @@ function PermanentSlotsAdminTab() {
             </div>
             <div>
               <Label>Laikas</Label>
-              <select
-                value={selTime}
-                onChange={(e) => setSelTime(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— pasirinkite —</option>
-                {slotsForSelDay.map((s) => (
-                  <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
-                ))}
-              </select>
-              {slotsForSelDay.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra pamokų</p>
+              {customTime ? (
+                <TimeInput value={customTimeValue} onChange={setCustomTimeValue} />
+              ) : (
+                <select
+                  value={selTime}
+                  onChange={(e) => setSelTime(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">— pasirinkite —</option>
+                  {slotsForSelDay.map((s) => (
+                    <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
+                  ))}
+                </select>
+              )}
+              <label className="flex items-center gap-2 text-xs mt-2 cursor-pointer text-muted-foreground">
+                <input type="checkbox" checked={customTime} onChange={(e) => setCustomTime(e.target.checked)} className="accent-gold" />
+                Įvesti laiką rankiniu būdu (individuali pamoka)
+              </label>
+              {!customTime && slotsForSelDay.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra pamokų — pažymėk „rankiniu būdu“.</p>
               )}
             </div>
           </div>
