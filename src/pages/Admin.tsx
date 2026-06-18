@@ -313,7 +313,7 @@ function SlotRow({
       {editCap ? (
         <div className="flex items-center gap-1">
           <Input
-            type="number" min={1} max={50}
+            type="number" min={1} max={999}
             value={c}
             onChange={(e) => setC(e.target.value)}
             className="h-7 w-14 text-xs tabular-nums"
@@ -775,7 +775,7 @@ function SubsTab() {
             {lessonType !== "vienkartine" && (
               <div>
                 <Label>Pamokų sk.</Label>
-                <Input type="number" min={1} max={50} value={lessons}
+                <Input type="number" min={1} max={999} value={lessons}
                   onChange={(e) => setLessons(parseInt(e.target.value) || 0)} />
               </div>
             )}
