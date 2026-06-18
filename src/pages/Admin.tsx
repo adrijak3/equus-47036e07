@@ -275,13 +275,18 @@ function SlotRow({
   const [editTime, setEditTime] = useState(false);
   const [editCap, setEditCap] = useState(false);
   const [t, setT] = useState(slot.slot_time.slice(0, 5));
-  const [c, setC] = useState(slot.max_capacity);
+  const [c, setC] = useState<string>(String(slot.max_capacity));
 
   useEffect(() => { setT(slot.slot_time.slice(0, 5)); }, [slot.slot_time]);
-  useEffect(() => { setC(slot.max_capacity); }, [slot.max_capacity]);
+  useEffect(() => { setC(String(slot.max_capacity)); }, [slot.max_capacity]);
 
   const saveTime = async () => { await onTime(t); setEditTime(false); };
-  const saveCap = async () => { await onCapacity(c); setEditCap(false); };
+  const saveCap = async () => {
+    const n = parseInt(c, 10);
+    if (!Number.isFinite(n)) { return; }
+    await onCapacity(n);
+    setEditCap(false);
+  };
 
   return (
     <li className="flex items-center justify-between gap-2 text-sm px-2 py-1.5 rounded hover:bg-gold/5">
@@ -310,13 +315,13 @@ function SlotRow({
           <Input
             type="number" min={1} max={50}
             value={c}
-            onChange={(e) => setC(parseInt(e.target.value) || 0)}
+            onChange={(e) => setC(e.target.value)}
             className="h-7 w-14 text-xs tabular-nums"
           />
           <button onClick={saveCap} className="text-gold hover:text-gold/80" title="Išsaugoti">
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => { setC(slot.max_capacity); setEditCap(false); }} className="text-muted-foreground hover:text-destructive" title="Atšaukti">
+          <button onClick={() => { setC(String(slot.max_capacity)); setEditCap(false); }} className="text-muted-foreground hover:text-destructive" title="Atšaukti">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
