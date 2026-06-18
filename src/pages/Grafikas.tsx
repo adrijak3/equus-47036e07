@@ -848,8 +848,9 @@ export default function Grafikas() {
                           </div>
                         </div>
 
+                      
                         {/* Booked names */}
-                        {slotBookings.length > 0 && formatDateISO(date) >= vilniusTodayISO && (
+{slotBookings.length > 0 && (
                           <ul className="px-3 py-2 space-y-1">
                             {slotBookings.map((b) => {
                               const perm = isPermanentBooking(b);
