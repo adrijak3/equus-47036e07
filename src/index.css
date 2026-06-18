@@ -3,76 +3,77 @@
 @tailwind utilities;
 
 /* ============================================
-   EQUUS — Dark luxury equestrian design system
+   EQUUS — Arctic Frost summer design system
+   Icy blues, silver whites, crisp ocean breeze.
    All colors HSL. Never hardcode in components.
    ============================================ */
 
 @layer base {
   :root {
-    /* Core surfaces — lifted ~6% to read better in daylight */
-    --background: 28 14% 12%;
-    --foreground: 38 38% 94%;
+    /* Core surfaces — icy white */
+    --background: 210 45% 96%;
+    --foreground: 200 50% 28%;
 
-    --card: 28 14% 16%;
-    --card-foreground: 38 35% 93%;
+    --card: 210 40% 94%;
+    --card-foreground: 200 50% 26%;
 
-    --popover: 28 16% 14%;
-    --popover-foreground: 38 35% 93%;
+    --popover: 210 45% 97%;
+    --popover-foreground: 200 50% 26%;
 
-    /* Brand: champagne gold */
-    --primary: 40 58% 62%;
-    --primary-foreground: 24 30% 8%;
+    /* Brand: ocean blue */
+    --primary: 203 50% 58%;
+    --primary-foreground: 210 60% 97%;
 
-    --gold: 40 58% 62%;
-    --gold-soft: 40 48% 52%;
-    --gold-glow: 44 72% 76%;
-    --gold-foreground: 24 30% 8%;
+    --gold: 203 50% 58%;
+    --gold-soft: 200 48% 48%;
+    --gold-glow: 195 65% 82%;
+    --gold-foreground: 200 55% 22%;
 
-    /* Muted blush accent — used sparingly */
-    --blush: 12 35% 80%;
+    /* Warm sand accent — for subtle contrast */
+    --blush: 15 55% 76%;
 
-    /* Neutrals on dark */
-    --secondary: 28 12% 20%;
-    --secondary-foreground: 38 30% 90%;
+    /* Neutrals on light */
+    --secondary: 205 25% 88%;
+    --secondary-foreground: 200 35% 28%;
 
-    --muted: 28 10% 22%;
-    --muted-foreground: 38 14% 70%;
+    --muted: 205 20% 90%;
+    --muted-foreground: 200 18% 52%;
 
-    --accent: 40 45% 28%;
-    --accent-foreground: 40 60% 84%;
+    --accent: 195 42% 76%;
+    --accent-foreground: 200 50% 24%;
 
     --destructive: 0 65% 56%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 30 15% 24%;
-    --input: 30 15% 24%;
-    --ring: 40 58% 62%;
+    --border: 205 30% 86%;
+    --input: 205 30% 86%;
+    --ring: 203 50% 58%;
 
     --radius: 0.5rem;
 
     /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(44 72% 76%) 0%, hsl(40 58% 62%) 50%, hsl(36 48% 48%) 100%);
-    --gradient-ink: radial-gradient(ellipse at top, hsl(30 18% 18%) 0%, hsl(28 14% 12%) 60%, hsl(24 12% 8%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(28 16% 18%) 0%, hsl(28 14% 14%) 100%);
-    --gradient-text-gold: linear-gradient(180deg, hsl(44 72% 82%) 0%, hsl(40 58% 60%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(195 65% 82%) 0%, hsl(203 50% 58%) 50%, hsl(200 55% 40%) 100%);
+    --gradient-ink: radial-gradient(ellipse at top, hsl(210 45% 97%) 0%, hsl(210 45% 95%) 60%, hsl(200 30% 90%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(210 45% 97%) 0%, hsl(210 40% 93%) 100%);
+    --gradient-text-gold: linear-gradient(180deg, hsl(195 65% 82%) 0%, hsl(203 50% 52%) 100%);
 
-    /* Shadows */
-    --shadow-elegant: 0 24px 70px -20px hsl(0 0% 0% / 0.55), 0 8px 26px -10px hsl(0 0% 0% / 0.4);
-    --shadow-gold: 0 10px 40px -10px hsl(40 58% 62% / 0.35);
-    --shadow-soft: 0 1px 0 0 hsl(40 58% 62% / 0.1) inset, 0 12px 36px -12px hsl(0 0% 0% / 0.45);
+    /* Shadows — softer on light bg */
+    --shadow-elegant: 0 24px 70px -20px hsl(200 50% 25% / 0.12), 0 8px 26px -10px hsl(200 50% 25% / 0.08);
+    --shadow-gold: 0 10px 40px -10px hsl(203 50% 58% / 0.3);
+    --shadow-soft: 0 1px 0 0 hsl(203 50% 58% / 0.06) inset, 0 12px 36px -12px hsl(200 50% 25% / 0.1);
 
     /* Motion */
     --ease-elegant: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* Sidebar (unused but kept for shadcn) */
-    --sidebar-background: 24 14% 6%;
-    --sidebar-foreground: 38 35% 92%;
-    --sidebar-primary: 40 55% 58%;
-    --sidebar-primary-foreground: 24 30% 8%;
-    --sidebar-accent: 24 12% 14%;
-    --sidebar-accent-foreground: 38 30% 88%;
-    --sidebar-border: 30 15% 18%;
-    --sidebar-ring: 40 55% 58%;
+    --sidebar-background: 210 40% 94%;
+    --sidebar-foreground: 200 35% 28%;
+    --sidebar-primary: 203 50% 54%;
+    --sidebar-primary-foreground: 210 60% 97%;
+    --sidebar-accent: 205 20% 90%;
+    --sidebar-accent-foreground: 200 35% 28%;
+    --sidebar-border: 205 30% 86%;
+    --sidebar-ring: 203 50% 54%;
   }
 }
 
@@ -99,14 +100,14 @@
     letter-spacing: -0.01em;
   }
 
-  /* Subtle floral / botanical pattern overlay */
+  /* Subtle wave / botanical pattern overlay in blue tones */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'><g fill='none' stroke='%23c9a961' stroke-width='0.4' opacity='0.18'><path d='M140 40 C 150 70, 170 80, 190 70 C 175 95, 175 115, 195 130 C 170 130, 155 145, 155 170 C 145 145, 130 140, 110 145 C 125 125, 125 105, 105 95 C 130 95, 145 75, 140 40 Z'/><circle cx='140' cy='130' r='2'/><path d='M40 200 C 55 195, 70 205, 70 220 C 60 215, 50 220, 45 230 C 50 215, 45 205, 40 200 Z'/><path d='M230 60 C 245 55, 260 65, 258 80 C 248 75, 240 80, 235 90 C 238 75, 235 65, 230 60 Z'/></g></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'><g fill='none' stroke='%236ba3c8' stroke-width='0.4' opacity='0.12'><path d='M140 40 C 150 70, 170 80, 190 70 C 175 95, 175 115, 195 130 C 170 130, 155 145, 155 170 C 145 145, 130 140, 110 145 C 125 125, 125 105, 105 95 C 130 95, 145 75, 140 40 Z'/><circle cx='140' cy='130' r='2'/><path d='M40 200 C 55 195, 70 205, 70 220 C 60 215, 50 220, 45 230 C 50 215, 45 205, 40 200 Z'/><path d='M230 60 C 245 55, 260 65, 258 80 C 248 75, 240 80, 235 90 C 238 75, 235 65, 230 60 Z'/></g></svg>");
     background-size: 420px 420px;
     background-position: center;
     opacity: 0.7;
@@ -143,6 +144,9 @@
   }
   .border-gold\/40 {
     border-color: hsl(var(--gold) / 0.4);
+  }
+  .border-gold\/15 {
+    border-color: hsl(var(--gold) / 0.15);
   }
   .font-display {
     font-family: 'Cormorant Garamond', serif;
