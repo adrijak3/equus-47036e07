@@ -110,7 +110,7 @@ function ScheduleTab() {
   const [open, setOpen] = useState(false);
   const [newDay, setNewDay] = useState(1);
   const [newTime, setNewTime] = useState("17:00");
-  const [newCap, setNewCap] = useState(5);
+  const [newCap, setNewCap] = useState<string>("5");
   const [newOneOff, setNewOneOff] = useState(false);
   const [newOneOffDate, setNewOneOffDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
@@ -132,8 +132,12 @@ function ScheduleTab() {
       const js = d.getDay(); // 0=Sun..6=Sat
       dayToUse = js === 0 ? 7 : js;
     }
+    const capNum = parseInt(newCap, 10);
+    if (!Number.isFinite(capNum) || capNum < 1 || capNum > 50) {
+      toast.error("Talpa turi būti 1–50"); return;
+    }
     const { error } = await supabase.from("time_slots").insert({
-      day_of_week: dayToUse, slot_time: newTime, max_capacity: newCap, one_off_date: oneOff,
+      day_of_week: dayToUse, slot_time: newTime, max_capacity: capNum, one_off_date: oneOff,
     } as any);
     if (error) { toast.error(error.code === "23505" ? "Toks slot jau egzistuoja" : error.message); return; }
     toast.success(oneOff ? `Pridėta tik ${oneOff}` : "Pridėta (kas savaitę)");
@@ -240,7 +244,13 @@ function ScheduleTab() {
             </div>
             <div>
               <Label>Talpa</Label>
-              <Input type="number" min={1} max={50} value={newCap} onChange={(e) => setNewCap(parseInt(e.target.value) || 5)} />
+              <Input
+                type="number"
+                min={1}
+                max={50}
+                value={newCap}
+                onChange={(e) => setNewCap(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
