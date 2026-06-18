@@ -1591,7 +1591,7 @@ function PermanentSlotsAdminTab() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
-            <Button variant="gold" onClick={add} disabled={saving || !selUser || !selTime}>
+            <Button variant="gold" onClick={add} disabled={saving || !selUser || (!customTime && !selTime) || (customTime && !customTimeValue)}>
               {saving ? "Pridedama…" : "Pridėti"}
             </Button>
           </DialogFooter>
