@@ -110,7 +110,7 @@ function ScheduleTab() {
   const [open, setOpen] = useState(false);
   const [newDay, setNewDay] = useState(1);
   const [newTime, setNewTime] = useState("17:00");
-  const [newCap, setNewCap] = useState(5);
+  const [newCap, setNewCap] = useState<string>("5");
   const [newOneOff, setNewOneOff] = useState(false);
   const [newOneOffDate, setNewOneOffDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
@@ -132,8 +132,12 @@ function ScheduleTab() {
       const js = d.getDay(); // 0=Sun..6=Sat
       dayToUse = js === 0 ? 7 : js;
     }
+    const capNum = parseInt(newCap, 10);
+    if (!Number.isFinite(capNum) || capNum < 1 || capNum > 50) {
+      toast.error("Talpa turi būti 1–50"); return;
+    }
     const { error } = await supabase.from("time_slots").insert({
-      day_of_week: dayToUse, slot_time: newTime, max_capacity: newCap, one_off_date: oneOff,
+      day_of_week: dayToUse, slot_time: newTime, max_capacity: capNum, one_off_date: oneOff,
     } as any);
     if (error) { toast.error(error.code === "23505" ? "Toks slot jau egzistuoja" : error.message); return; }
     toast.success(oneOff ? `Pridėta tik ${oneOff}` : "Pridėta (kas savaitę)");
@@ -148,8 +152,8 @@ function ScheduleTab() {
   };
 
   const updateCapacity = async (id: string, newCap: number) => {
-    if (!Number.isFinite(newCap) || newCap < 1 || newCap > 50) {
-      toast.error("Talpa turi būti 1–50"); return;
+    if (!Number.isFinite(newCap) || newCap < 1 || newCap > 999) {
+      toast.error("Talpa turi būti 1–999"); return;
     }
     const { error } = await supabase.from("time_slots").update({ max_capacity: newCap }).eq("id", id);
     if (error) { toast.error(error.message); return; }
@@ -240,7 +244,13 @@ function ScheduleTab() {
             </div>
             <div>
               <Label>Talpa</Label>
-              <Input type="number" min={1} max={50} value={newCap} onChange={(e) => setNewCap(parseInt(e.target.value) || 5)} />
+              <Input
+                type="number"
+                min={1}
+                max={50}
+                value={newCap}
+                onChange={(e) => setNewCap(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -265,13 +275,18 @@ function SlotRow({
   const [editTime, setEditTime] = useState(false);
   const [editCap, setEditCap] = useState(false);
   const [t, setT] = useState(slot.slot_time.slice(0, 5));
-  const [c, setC] = useState(slot.max_capacity);
+  const [c, setC] = useState<string>(String(slot.max_capacity));
 
   useEffect(() => { setT(slot.slot_time.slice(0, 5)); }, [slot.slot_time]);
-  useEffect(() => { setC(slot.max_capacity); }, [slot.max_capacity]);
+  useEffect(() => { setC(String(slot.max_capacity)); }, [slot.max_capacity]);
 
   const saveTime = async () => { await onTime(t); setEditTime(false); };
-  const saveCap = async () => { await onCapacity(c); setEditCap(false); };
+  const saveCap = async () => {
+    const n = parseInt(c, 10);
+    if (!Number.isFinite(n)) { return; }
+    await onCapacity(n);
+    setEditCap(false);
+  };
 
   return (
     <li className="flex items-center justify-between gap-2 text-sm px-2 py-1.5 rounded hover:bg-gold/5">
@@ -298,15 +313,15 @@ function SlotRow({
       {editCap ? (
         <div className="flex items-center gap-1">
           <Input
-            type="number" min={1} max={50}
+            type="number" min={1} max={999}
             value={c}
-            onChange={(e) => setC(parseInt(e.target.value) || 0)}
+            onChange={(e) => setC(e.target.value)}
             className="h-7 w-14 text-xs tabular-nums"
           />
           <button onClick={saveCap} className="text-gold hover:text-gold/80" title="Išsaugoti">
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => { setC(slot.max_capacity); setEditCap(false); }} className="text-muted-foreground hover:text-destructive" title="Atšaukti">
+          <button onClick={() => { setC(String(slot.max_capacity)); setEditCap(false); }} className="text-muted-foreground hover:text-destructive" title="Atšaukti">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -760,7 +775,7 @@ function SubsTab() {
             {lessonType !== "vienkartine" && (
               <div>
                 <Label>Pamokų sk.</Label>
-                <Input type="number" min={1} max={50} value={lessons}
+                <Input type="number" min={1} max={999} value={lessons}
                   onChange={(e) => setLessons(parseInt(e.target.value) || 0)} />
               </div>
             )}
@@ -1393,6 +1408,8 @@ function PermanentSlotsAdminTab() {
   const [selUser, setSelUser] = useState("");
   const [selDay, setSelDay] = useState(1);
   const [selTime, setSelTime] = useState("");
+  const [customTime, setCustomTime] = useState(false);
+  const [customTimeValue, setCustomTimeValue] = useState("17:00");
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -1442,12 +1459,16 @@ function PermanentSlotsAdminTab() {
 
   const add = async () => {
     if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
-    if (!selTime) { toast.error("Pasirinkite laiką"); return; }
+    const finalTime = customTime ? customTimeValue : selTime;
+    if (!finalTime) { toast.error("Pasirinkite laiką"); return; }
+    if (customTime && !isValidTime(customTimeValue)) {
+      toast.error("Įveskite laiką formatu HH:MM"); return;
+    }
     setSaving(true);
     const { error } = await supabase.from("permanent_slots").insert({
       user_id: selUser,
       day_of_week: selDay,
-      slot_time: selTime,
+      slot_time: finalTime,
     });
     setSaving(false);
     if (error) {
@@ -1456,7 +1477,7 @@ function PermanentSlotsAdminTab() {
     }
     toast.success("Pridėta. Vartotojas užregistruotas 12-os savaičių į priekį.");
     setOpen(false);
-    setSelUser(""); setSelTime(""); setSelDay(1);
+    setSelUser(""); setSelTime(""); setSelDay(1); setCustomTime(false);
     load();
   };
 
@@ -1545,24 +1566,32 @@ function PermanentSlotsAdminTab() {
             </div>
             <div>
               <Label>Laikas</Label>
-              <select
-                value={selTime}
-                onChange={(e) => setSelTime(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— pasirinkite —</option>
-                {slotsForSelDay.map((s) => (
-                  <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
-                ))}
-              </select>
-              {slotsForSelDay.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra pamokų</p>
+              {customTime ? (
+                <TimeInput value={customTimeValue} onChange={setCustomTimeValue} />
+              ) : (
+                <select
+                  value={selTime}
+                  onChange={(e) => setSelTime(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">— pasirinkite —</option>
+                  {slotsForSelDay.map((s) => (
+                    <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
+                  ))}
+                </select>
+              )}
+              <label className="flex items-center gap-2 text-xs mt-2 cursor-pointer text-muted-foreground">
+                <input type="checkbox" checked={customTime} onChange={(e) => setCustomTime(e.target.checked)} className="accent-gold" />
+                Įvesti laiką rankiniu būdu (individuali pamoka)
+              </label>
+              {!customTime && slotsForSelDay.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra pamokų — pažymėk „rankiniu būdu“.</p>
               )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
-            <Button variant="gold" onClick={add} disabled={saving || !selUser || !selTime}>
+            <Button variant="gold" onClick={add} disabled={saving || !selUser || (!customTime && !selTime) || (customTime && !customTimeValue)}>
               {saving ? "Pridedama…" : "Pridėti"}
             </Button>
           </DialogFooter>
