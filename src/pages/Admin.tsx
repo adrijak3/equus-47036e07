@@ -1566,6 +1566,22 @@ function PermanentSlotsAdminTab() {
             </div>
             <div>
               <Label>Laikas</Label>
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomTime(false)}
+                  className={`flex-1 h-9 rounded-md border text-xs ${!customTime ? "border-gold bg-gold/10 text-gold" : "border-input text-muted-foreground"}`}
+                >
+                  Grupinė (iš tvarkaraščio)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomTime(true)}
+                  className={`flex-1 h-9 rounded-md border text-xs ${customTime ? "border-gold bg-gold/10 text-gold" : "border-input text-muted-foreground"}`}
+                >
+                  Individuali (savas laikas)
+                </button>
+              </div>
               {customTime ? (
                 <TimeInput value={customTimeValue} onChange={setCustomTimeValue} />
               ) : (
@@ -1580,12 +1596,8 @@ function PermanentSlotsAdminTab() {
                   ))}
                 </select>
               )}
-              <label className="flex items-center gap-2 text-xs mt-2 cursor-pointer text-muted-foreground">
-                <input type="checkbox" checked={customTime} onChange={(e) => setCustomTime(e.target.checked)} className="accent-gold" />
-                Įvesti laiką rankiniu būdu (individuali pamoka)
-              </label>
               {!customTime && slotsForSelDay.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra pamokų — pažymėk „rankiniu būdu“.</p>
+                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra grupinių pamokų — pasirink „Individuali".</p>
               )}
             </div>
           </div>
