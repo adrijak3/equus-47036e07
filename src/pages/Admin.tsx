@@ -152,8 +152,8 @@ function ScheduleTab() {
   };
 
   const updateCapacity = async (id: string, newCap: number) => {
-    if (!Number.isFinite(newCap) || newCap < 1 || newCap > 50) {
-      toast.error("Talpa turi būti 1–50"); return;
+    if (!Number.isFinite(newCap) || newCap < 1 || newCap > 999) {
+      toast.error("Talpa turi būti 1–999"); return;
     }
     const { error } = await supabase.from("time_slots").update({ max_capacity: newCap }).eq("id", id);
     if (error) { toast.error(error.message); return; }
