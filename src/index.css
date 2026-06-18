@@ -3,81 +3,124 @@
 @tailwind utilities;
 
 /* ============================================
-   EQUUS — Arctic Frost summer design system
-   Icy blues, silver whites, crisp ocean breeze.
-   All colors HSL. Never hardcode in components.
+   EQUUS — Luxury Arctic Design System
+   Elegant icy whites, deep arctic blues,
+   soft silver glow and premium readability.
    ============================================ */
 
 @layer base {
   :root {
-    /* Core surfaces — icy white */
-    --background: 210 45% 96%;
-    --foreground: 200 50% 28%;
 
-    --card: 210 40% 94%;
-    --card-foreground: 200 50% 26%;
+    /* Backgrounds */
+    --background: 210 35% 98%;
+    --foreground: 215 30% 16%;
 
-    --popover: 210 45% 97%;
-    --popover-foreground: 200 50% 26%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 30% 18%;
 
-    /* Brand: ocean blue */
-    --primary: 203 50% 58%;
-    --primary-foreground: 210 60% 97%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 30% 18%;
 
-    --gold: 203 50% 58%;
-    --gold-soft: 200 48% 48%;
-    --gold-glow: 195 65% 82%;
-    --gold-foreground: 200 55% 22%;
+    /* Main Brand Color */
+    --primary: 205 68% 42%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Warm sand accent — for subtle contrast */
-    --blush: 15 55% 76%;
+    /* Luxury accent */
+    --gold: 205 68% 42%;
+    --gold-soft: 210 35% 56%;
+    --gold-glow: 200 85% 88%;
+    --gold-foreground: 215 40% 18%;
 
-    /* Neutrals on light */
-    --secondary: 205 25% 88%;
-    --secondary-foreground: 200 35% 28%;
+    /* Champagne accent */
+    --blush: 34 45% 82%;
 
-    --muted: 205 20% 90%;
-    --muted-foreground: 200 18% 52%;
+    /* Neutrals */
+    --secondary: 210 25% 94%;
+    --secondary-foreground: 215 20% 24%;
 
-    --accent: 195 42% 76%;
-    --accent-foreground: 200 50% 24%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 12% 46%;
 
-    --destructive: 0 65% 56%;
-    --destructive-foreground: 0 0% 98%;
+    --accent: 205 40% 92%;
+    --accent-foreground: 215 25% 22%;
 
-    --border: 205 30% 86%;
-    --input: 205 30% 86%;
-    --ring: 203 50% 58%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --border: 210 18% 88%;
+    --input: 210 18% 88%;
+    --ring: 205 68% 42%;
+
+    --radius: 0.7rem;
 
     /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(195 65% 82%) 0%, hsl(203 50% 58%) 50%, hsl(200 55% 40%) 100%);
-    --gradient-ink: radial-gradient(ellipse at top, hsl(210 45% 97%) 0%, hsl(210 45% 95%) 60%, hsl(200 30% 90%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(210 45% 97%) 0%, hsl(210 40% 93%) 100%);
-    --gradient-text-gold: linear-gradient(180deg, hsl(195 65% 82%) 0%, hsl(203 50% 52%) 100%);
 
-    /* Shadows — softer on light bg */
-    --shadow-elegant: 0 24px 70px -20px hsl(200 50% 25% / 0.12), 0 8px 26px -10px hsl(200 50% 25% / 0.08);
-    --shadow-gold: 0 10px 40px -10px hsl(203 50% 58% / 0.3);
-    --shadow-soft: 0 1px 0 0 hsl(203 50% 58% / 0.06) inset, 0 12px 36px -12px hsl(200 50% 25% / 0.1);
+    --gradient-gold:
+      linear-gradient(
+      135deg,
+      hsl(200 85% 88%) 0%,
+      hsl(205 68% 42%) 55%,
+      hsl(215 55% 28%) 100%
+    );
+
+    --gradient-ink:
+      radial-gradient(
+      ellipse at top,
+      hsl(205 100% 99%) 0%,
+      hsl(210 45% 97%) 50%,
+      hsl(215 35% 94%) 100%
+    );
+
+    --gradient-card:
+      linear-gradient(
+      180deg,
+      hsl(0 0% 100%) 0%,
+      hsl(210 30% 96%) 100%
+    );
+
+    --gradient-text-gold:
+      linear-gradient(
+      180deg,
+      hsl(200 85% 88%) 0%,
+      hsl(205 68% 42%) 100%
+    );
+
+    /* Shadows */
+
+    --shadow-elegant:
+      0 24px 70px -20px hsl(215 35% 20% / 0.12),
+      0 8px 26px -10px hsl(215 35% 20% / 0.08);
+
+    --shadow-gold:
+      0 12px 40px -10px hsl(205 68% 42% / 0.25);
+
+    --shadow-soft:
+      0 1px 0 0 hsl(205 68% 42% / 0.05) inset,
+      0 10px 30px -12px hsl(215 35% 20% / 0.08);
 
     /* Motion */
+
     --ease-elegant: cubic-bezier(0.22, 1, 0.36, 1);
 
-    /* Sidebar (unused but kept for shadcn) */
-    --sidebar-background: 210 40% 94%;
-    --sidebar-foreground: 200 35% 28%;
-    --sidebar-primary: 203 50% 54%;
-    --sidebar-primary-foreground: 210 60% 97%;
-    --sidebar-accent: 205 20% 90%;
-    --sidebar-accent-foreground: 200 35% 28%;
-    --sidebar-border: 205 30% 86%;
-    --sidebar-ring: 203 50% 54%;
+    /* Sidebar */
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 20% 22%;
+
+    --sidebar-primary: 205 68% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+
+    --sidebar-accent: 210 25% 95%;
+    --sidebar-accent-foreground: 215 20% 22%;
+
+    --sidebar-border: 210 18% 88%;
+    --sidebar-ring: 205 68% 42%;
   }
 }
 
+
 @layer base {
+
   * {
     @apply border-border;
   }
@@ -88,96 +131,211 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+
     font-family: 'Inter', system-ui, sans-serif;
+
     background-image: var(--gradient-ink);
     background-attachment: fixed;
+
     min-height: 100vh;
   }
 
-  h1, h2, h3, h4, h5 {
-    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
-    font-weight: 500;
-    letter-spacing: -0.01em;
+  h1,h2,h3,h4,h5 {
+
+    font-family:
+      'Cormorant Garamond',
+      'Times New Roman',
+      serif;
+
+    font-weight: 600;
+
+    letter-spacing: -0.02em;
+
+    color: hsl(var(--foreground));
   }
 
-  /* Subtle wave / botanical pattern overlay in blue tones */
+
+  /* Elegant luxury pattern */
+
   body::before {
+
     content: '';
+
     position: fixed;
+
     inset: 0;
+
     pointer-events: none;
+
     z-index: 0;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'><g fill='none' stroke='%236ba3c8' stroke-width='0.4' opacity='0.12'><path d='M140 40 C 150 70, 170 80, 190 70 C 175 95, 175 115, 195 130 C 170 130, 155 145, 155 170 C 145 145, 130 140, 110 145 C 125 125, 125 105, 105 95 C 130 95, 145 75, 140 40 Z'/><circle cx='140' cy='130' r='2'/><path d='M40 200 C 55 195, 70 205, 70 220 C 60 215, 50 220, 45 230 C 50 215, 45 205, 40 200 Z'/><path d='M230 60 C 245 55, 260 65, 258 80 C 248 75, 240 80, 235 90 C 238 75, 235 65, 230 60 Z'/></g></svg>");
-    background-size: 420px 420px;
+
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'><g fill='none' stroke='%23628eb0' stroke-width='0.35' opacity='0.12'><path d='M140 40 C 150 70,170 80,190 70 C 175 95,175 115,195 130 C 170 130,155 145,155 170 C 145 145,130 140,110 145 C 125 125,125 105,105 95 C 130 95,145 75,140 40 Z'/><circle cx='140' cy='130' r='2'/></g></svg>");
+
+    background-size: 450px 450px;
+
     background-position: center;
-    opacity: 0.7;
+
+    opacity: 0.18;
   }
+
 
   #root {
+
     position: relative;
+
     z-index: 1;
+
     min-height: 100vh;
   }
 }
 
+
 @layer utilities {
+
   .text-gold {
     color: hsl(var(--gold));
   }
+
   .bg-gradient-gold {
     background-image: var(--gradient-gold);
   }
+
   .text-gradient-gold {
+
     background-image: var(--gradient-text-gold);
+
     -webkit-background-clip: text;
+
     background-clip: text;
+
     color: transparent;
   }
+
   .shadow-elegant {
     box-shadow: var(--shadow-elegant);
   }
+
   .shadow-gold {
     box-shadow: var(--shadow-gold);
   }
+
   .border-gold\/20 {
     border-color: hsl(var(--gold) / 0.2);
   }
+
   .border-gold\/40 {
     border-color: hsl(var(--gold) / 0.4);
   }
+
   .border-gold\/15 {
     border-color: hsl(var(--gold) / 0.15);
   }
+
   .font-display {
-    font-family: 'Cormorant Garamond', serif;
+
+    font-family:
+      'Cormorant Garamond',
+      serif;
   }
+
   .font-body {
-    font-family: 'Inter', sans-serif;
+
+    font-family:
+      'Inter',
+      sans-serif;
   }
+
   .gold-divider {
+
     height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(var(--gold) / 0.5), transparent);
+
+    background:
+
+    linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--gold) / 0.45),
+      transparent
+    );
   }
 }
 
+
 /* Animations */
+
 @layer utilities {
+
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+
+    from {
+
+      opacity: 0;
+
+      transform: translateY(12px);
+    }
+
+    to {
+
+      opacity: 1;
+
+      transform: translateY(0);
+    }
   }
+
+
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+
+    from {
+
+      opacity: 0;
+    }
+
+    to {
+
+      opacity: 1;
+    }
   }
+
+
   @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+
+    0% {
+
+      background-position: -200% 0;
+    }
+
+    100% {
+
+      background-position: 200% 0;
+    }
   }
+
+
   .animate-fade-up {
-    animation: fade-up 0.6s var(--ease-elegant) both;
+
+    animation:
+
+    fade-up
+
+    0.6s
+
+    var(--ease-elegant)
+
+    both;
   }
+
+
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out both;
+
+    animation:
+
+    fade-in
+
+    0.5s
+
+    ease-out
+
+    both;
   }
+
 }
