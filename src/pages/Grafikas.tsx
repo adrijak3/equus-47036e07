@@ -850,7 +850,16 @@ export default function Grafikas() {
 
                       
                         {/* Booked names */}
-{slotBookings.length > 0 && (
+{slotBookings.length > 0 && (() => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const currentDate = new Date(date);
+  currentDate.setHours(0, 0, 0, 0);
+
+  return currentDate >= sevenDaysAgo;
+})() && (
                           <ul className="px-3 py-2 space-y-1">
                             {slotBookings.map((b) => {
                               const perm = isPermanentBooking(b);
