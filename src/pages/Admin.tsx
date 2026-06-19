@@ -696,6 +696,14 @@ function SubsTab() {
                   {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</span>}
                   <button
                     type="button"
+                    onClick={(e) => { e.preventDefault(); setUncoveredFor(p); }}
+                    className="text-xs px-2 py-1 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1"
+                    title="Įvykusios pamokos, neįskaičiuotos į apmokėtą abonementą"
+                  >
+                    <AlertCircle className="w-3 h-3" /> Neapmokėtos įvykusios
+                  </button>
+                  <button
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       setSelUser(p.id); setOpen(true);
@@ -806,6 +814,12 @@ function SubsTab() {
           userName={profiles.find((p) => p.id === detailSub.user_id)?.full_name ?? "—"}
           onClose={() => setDetailSub(null)}
           onChanged={load}
+        />
+      )}
+      {uncoveredFor && (
+        <UncoveredLessonsDialog
+          user={uncoveredFor}
+          onClose={() => setUncoveredFor(null)}
         />
       )}
     </div>
