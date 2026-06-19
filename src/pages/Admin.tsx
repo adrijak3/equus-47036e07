@@ -263,6 +263,99 @@ function ScheduleTab() {
   );
 }
 
+// =============== Uncovered lessons dialog ===============
+function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () => void }) {
+  const [rows, setRows] = useState<{ id: string; slot_date: string; slot_time: string; subscription_id: string | null; sub_paid: boolean | null }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const today = formatDateISO(new Date());
+      const { data: bks } = await supabase
+        .from("bookings")
+        .select("id, slot_date, slot_time, subscription_id, counts_in_subscription, status")
+        .eq("user_id", user.id)
+        .lte("slot_date", today)
+        .neq("status", "cancelled")
+        .order("slot_date", { ascending: false });
+      const list = (bks ?? []).filter((b: any) => b.counts_in_subscription !== false);
+      const subIds = Array.from(new Set(list.map((b: any) => b.subscription_id).filter(Boolean))) as string[];
+      let paidMap: Record<string, boolean> = {};
+      if (subIds.length) {
+        const { data: ss } = await supabase.from("subscriptions").select("id, paid").in("id", subIds);
+        (ss ?? []).forEach((s: any) => { paidMap[s.id] = !!s.paid; });
+      }
+      const uncovered = list
+        .filter((b: any) => !b.subscription_id || paidMap[b.subscription_id] === false)
+        .map((b: any) => ({
+          id: b.id, slot_date: b.slot_date, slot_time: b.slot_time,
+          subscription_id: b.subscription_id,
+          sub_paid: b.subscription_id ? (paidMap[b.subscription_id] ?? null) : null,
+        }));
+      setRows(uncovered);
+      setLoading(false);
+    })();
+  }, [user.id]);
+
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const viewKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
+  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
+
+  const byMonth: Record<string, typeof rows> = {};
+  rows.forEach((r) => {
+    const k = r.slot_date.slice(0, 7);
+    (byMonth[k] ??= []).push(r);
+  });
+  const monthRows = byMonth[viewKey] ?? [];
+  const total = rows.length;
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="bg-gradient-card border-gold/20 max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl text-gradient-gold">
+            {user.full_name} · neapmokėtos įvykusios pamokos
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Įvykusios pamokos, kurios <b>neįskaičiuotos į apmokėtą abonementą</b> (be abonemento arba abonementas neapmokėtas). Iš viso: <b>{total}</b>.
+          </div>
+          <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-gold/5 border border-gold/15">
+            <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o - 1)}>← Ankstesnis</Button>
+            <div className="font-display text-base text-gold capitalize">{monthLabel}</div>
+            <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o + 1)} disabled={monthOffset >= 0}>Kitas →</Button>
+          </div>
+          {loading ? (
+            <p className="text-sm text-muted-foreground italic">Kraunama…</p>
+          ) : monthRows.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį neapmokėtų įvykusių pamokų nėra.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
+              {monthRows.map((r) => (
+                <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded border border-gold/15 bg-background/40 text-sm">
+                  <div className="tabular-nums">
+                    {r.slot_date} · <span className="text-gold">{r.slot_time.slice(0, 5)}</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${r.subscription_id ? "border-blush/40 text-blush bg-blush/10" : "border-muted-foreground/30 text-muted-foreground bg-muted/20"}`}>
+                    {r.subscription_id ? "Neapmokėtas abonementas" : "Be abonemento"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Uždaryti</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* ---------- SLOT ROW (inline-editable time + capacity) ---------- */
 function SlotRow({
   slot, onCapacity, onTime, onRemove,
@@ -566,6 +659,7 @@ function SubsTab() {
   const [saving, setSaving] = useState(false);
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, number>>({});
+  const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
 
   // Compute actual usage = count of bookings attributed to each sub (active/completed and counts_in_subscription)
   useEffect(() => {
@@ -695,6 +789,14 @@ function SubsTab() {
                   {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</span>}
                   <button
                     type="button"
+                    onClick={(e) => { e.preventDefault(); setUncoveredFor(p); }}
+                    className="text-xs px-2 py-1 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1"
+                    title="Įvykusios pamokos, neįskaičiuotos į apmokėtą abonementą"
+                  >
+                    <AlertCircle className="w-3 h-3" /> Neapmokėtos įvykusios
+                  </button>
+                  <button
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       setSelUser(p.id); setOpen(true);
@@ -805,6 +907,12 @@ function SubsTab() {
           userName={profiles.find((p) => p.id === detailSub.user_id)?.full_name ?? "—"}
           onClose={() => setDetailSub(null)}
           onChanged={load}
+        />
+      )}
+      {uncoveredFor && (
+        <UncoveredLessonsDialog
+          user={uncoveredFor}
+          onClose={() => setUncoveredFor(null)}
         />
       )}
     </div>
