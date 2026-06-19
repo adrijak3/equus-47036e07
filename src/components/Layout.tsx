@@ -221,7 +221,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className="inline-flex items-center justify-center gap-1.5 text-foreground/85 hover:text-gold transition-colors"
             >
               <MapPin className="w-3.5 h-3.5 text-gold" />
-              Daučionys, 14245 Vilniaus r. sav.
+              Pakamšės g. 7, Daučionys, 14245 Vilniaus r. sav.
             </a>
           </div>
 
