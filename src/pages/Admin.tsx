@@ -566,6 +566,7 @@ function SubsTab() {
   const [saving, setSaving] = useState(false);
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, number>>({});
+  const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
 
   // Compute actual usage = count of bookings attributed to each sub (active/completed and counts_in_subscription)
   useEffect(() => {
