@@ -526,6 +526,58 @@ export default function Grafikas() {
   const getDayNotes = (date: Date) =>
     dayNotes.filter((n) => n.note_date === formatDateISO(date));
 
+  /** Slot/day notes: get the note for a given date+slot_time (null = whole day). */
+  const getSlotNote = (date: Date, time: string | null): SlotNote | null => {
+    const iso = formatDateISO(date);
+    const t = time ? time.slice(0, 8) : null;
+    return slotNotes.find((n) => n.note_date === iso && (n.slot_time ?? null) === t) ?? null;
+  };
+
+  const openSlotNoteDialog = (date: Date, time: string | null) => {
+    const existing = getSlotNote(date, time);
+    setSlotNoteDialog({ date, time });
+    setSlotNoteText(existing?.note ?? "");
+  };
+
+  const saveSlotNote = async () => {
+    if (!slotNoteDialog || !user) return;
+    const text = slotNoteText.trim();
+    if (!text) { toast.error("Įveskite žinutę"); return; }
+    setSlotNoteBusy(true);
+    const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from("slot_notes" as any).update({ note: text }).eq("id", existing.id));
+    } else {
+      ({ error } = await supabase.from("slot_notes" as any).insert({
+        note_date: formatDateISO(slotNoteDialog.date),
+        slot_time: slotNoteDialog.time ? slotNoteDialog.time.slice(0, 8) : null,
+        note: text,
+        created_by: user.id,
+      } as any));
+    }
+    setSlotNoteBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Žinutė išsaugota");
+    setSlotNoteDialog(null);
+    setSlotNoteText("");
+    loadData();
+  };
+
+  const deleteSlotNote = async () => {
+    if (!slotNoteDialog) return;
+    const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
+    if (!existing) { setSlotNoteDialog(null); return; }
+    setSlotNoteBusy(true);
+    const { error } = await supabase.from("slot_notes" as any).delete().eq("id", existing.id);
+    setSlotNoteBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Žinutė pašalinta");
+    setSlotNoteDialog(null);
+    setSlotNoteText("");
+    loadData();
+  };
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
