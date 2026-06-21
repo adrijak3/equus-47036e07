@@ -207,6 +207,18 @@ export default function Grafikas() {
       .order("created_at", { ascending: true });
     setDayNotes((notes ?? []) as DayNote[]);
 
+    // Slot notes for this week (per-slot announcements)
+    const { data: snotes } = await supabase
+      .from("slot_notes" as any)
+      .select("id, note_date, slot_time, note")
+      .gte("note_date", startISO)
+      .lte("note_date", endISO);
+    setSlotNotes(((snotes ?? []) as any[]).map((n) => ({
+      id: n.id, note_date: n.note_date,
+      slot_time: n.slot_time ? String(n.slot_time).slice(0, 8) : null,
+      note: n.note,
+    })));
+
     setLoading(false);
   };
 
