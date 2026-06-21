@@ -835,6 +835,17 @@ export default function Grafikas() {
                     </div>
                   )}
 
+                  {/* Admin whole-day note banner */}
+                  {(() => {
+                    const dn = getSlotNote(date, null);
+                    if (!dn) return null;
+                    return (
+                      <div className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs italic text-foreground/85 leading-snug whitespace-pre-wrap">
+                        {dn.note}
+                      </div>
+                    );
+                  })()}
+
                   {daySlots.length === 0 && (
                     <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
                       {dow === 7 ? "Individualus" : "Treniruočių nėra"}
