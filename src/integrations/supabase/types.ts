@@ -353,6 +353,36 @@ export type Database = {
         }
         Relationships: []
       }
+      slot_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          note: string
+          note_date: string
+          slot_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          note: string
+          note_date: string
+          slot_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string
+          note_date?: string
+          slot_time?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       slot_overrides: {
         Row: {
           created_at: string
