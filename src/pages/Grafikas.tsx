@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +77,12 @@ interface DayNote {
   label: string | null;
   added_by: string;
 }
+interface SlotNote {
+  id: string;
+  note_date: string;
+  slot_time: string | null;
+  note: string;
+}
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
@@ -116,6 +122,12 @@ export default function Grafikas() {
   const [newNoteLink, setNewNoteLink] = useState("");
   const [newNoteLabel, setNewNoteLabel] = useState("");
   const [noteBusy, setNoteBusy] = useState(false);
+
+  // Slot notes (admin announcements per day or per slot)
+  const [slotNotes, setSlotNotes] = useState<SlotNote[]>([]);
+  const [slotNoteDialog, setSlotNoteDialog] = useState<{ date: Date; time: string | null } | null>(null);
+  const [slotNoteText, setSlotNoteText] = useState("");
+  const [slotNoteBusy, setSlotNoteBusy] = useState(false);
 
   // Admin: custom one-off time slot
   const [customSlotDialog, setCustomSlotDialog] = useState<{ date: Date } | null>(null);
