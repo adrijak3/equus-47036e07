@@ -1160,6 +1160,40 @@ export default function Grafikas() {
         </DialogContent>
       </Dialog>
 
+      {/* Slot/day note dialog (admin) */}
+      <Dialog open={!!slotNoteDialog} onOpenChange={(o) => { if (!o) { setSlotNoteDialog(null); setSlotNoteText(""); } }}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">
+              {slotNoteDialog?.time ? `Žinutė — ${formatTime(slotNoteDialog.time)}` : "Dienos žinutė"}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {slotNoteDialog ? `${formatDateISO(slotNoteDialog.date)} — matoma visiems, galioja tik šiai dienai.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={slotNoteText}
+            onChange={(e) => setSlotNoteText(e.target.value)}
+            rows={4}
+            maxLength={500}
+            placeholder="Pvz. Treniruotė vyks lauke, atsineškite šalmus."
+          />
+          <DialogFooter className="flex-row justify-between sm:justify-between">
+            <div>
+              {slotNoteDialog && getSlotNote(slotNoteDialog.date, slotNoteDialog.time) && (
+                <Button variant="ghost" onClick={deleteSlotNote} disabled={slotNoteBusy} className="text-destructive hover:text-destructive">
+                  <Trash2 className="w-4 h-4 mr-1" /> Pašalinti
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => { setSlotNoteDialog(null); setSlotNoteText(""); }}>Atgal</Button>
+              <Button variant="gold" onClick={saveSlotNote} disabled={slotNoteBusy}>Išsaugoti</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Late cancel dialog */}
       <Dialog open={!!cancelDialog} onOpenChange={(o) => !o && setCancelDialog(null)}>
         <DialogContent className="bg-gradient-card border-gold/20">
