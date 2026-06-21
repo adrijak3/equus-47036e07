@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +77,12 @@ interface DayNote {
   label: string | null;
   added_by: string;
 }
+interface SlotNote {
+  id: string;
+  note_date: string;
+  slot_time: string | null;
+  note: string;
+}
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
@@ -116,6 +122,12 @@ export default function Grafikas() {
   const [newNoteLink, setNewNoteLink] = useState("");
   const [newNoteLabel, setNewNoteLabel] = useState("");
   const [noteBusy, setNoteBusy] = useState(false);
+
+  // Slot notes (admin announcements per day or per slot)
+  const [slotNotes, setSlotNotes] = useState<SlotNote[]>([]);
+  const [slotNoteDialog, setSlotNoteDialog] = useState<{ date: Date; time: string | null } | null>(null);
+  const [slotNoteText, setSlotNoteText] = useState("");
+  const [slotNoteBusy, setSlotNoteBusy] = useState(false);
 
   // Admin: custom one-off time slot
   const [customSlotDialog, setCustomSlotDialog] = useState<{ date: Date } | null>(null);
@@ -194,6 +206,18 @@ export default function Grafikas() {
       .lte("note_date", endISO)
       .order("created_at", { ascending: true });
     setDayNotes((notes ?? []) as DayNote[]);
+
+    // Slot notes for this week (per-slot announcements)
+    const { data: snotes } = await supabase
+      .from("slot_notes" as any)
+      .select("id, note_date, slot_time, note")
+      .gte("note_date", startISO)
+      .lte("note_date", endISO);
+    setSlotNotes(((snotes ?? []) as any[]).map((n) => ({
+      id: n.id, note_date: n.note_date,
+      slot_time: n.slot_time ? String(n.slot_time).slice(0, 8) : null,
+      note: n.note,
+    })));
 
     setLoading(false);
   };
@@ -502,6 +526,58 @@ export default function Grafikas() {
   const getDayNotes = (date: Date) =>
     dayNotes.filter((n) => n.note_date === formatDateISO(date));
 
+  /** Slot/day notes: get the note for a given date+slot_time (null = whole day). */
+  const getSlotNote = (date: Date, time: string | null): SlotNote | null => {
+    const iso = formatDateISO(date);
+    const t = time ? time.slice(0, 8) : null;
+    return slotNotes.find((n) => n.note_date === iso && (n.slot_time ?? null) === t) ?? null;
+  };
+
+  const openSlotNoteDialog = (date: Date, time: string | null) => {
+    const existing = getSlotNote(date, time);
+    setSlotNoteDialog({ date, time });
+    setSlotNoteText(existing?.note ?? "");
+  };
+
+  const saveSlotNote = async () => {
+    if (!slotNoteDialog || !user) return;
+    const text = slotNoteText.trim();
+    if (!text) { toast.error("Įveskite žinutę"); return; }
+    setSlotNoteBusy(true);
+    const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from("slot_notes" as any).update({ note: text }).eq("id", existing.id));
+    } else {
+      ({ error } = await supabase.from("slot_notes" as any).insert({
+        note_date: formatDateISO(slotNoteDialog.date),
+        slot_time: slotNoteDialog.time ? slotNoteDialog.time.slice(0, 8) : null,
+        note: text,
+        created_by: user.id,
+      } as any));
+    }
+    setSlotNoteBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Žinutė išsaugota");
+    setSlotNoteDialog(null);
+    setSlotNoteText("");
+    loadData();
+  };
+
+  const deleteSlotNote = async () => {
+    if (!slotNoteDialog) return;
+    const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
+    if (!existing) { setSlotNoteDialog(null); return; }
+    setSlotNoteBusy(true);
+    const { error } = await supabase.from("slot_notes" as any).delete().eq("id", existing.id);
+    setSlotNoteBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Žinutė pašalinta");
+    setSlotNoteDialog(null);
+    setSlotNoteText("");
+    loadData();
+  };
+
   const handleCancelClick = async (booking: Booking) => {
     const perm = isPermanentBooking(booking);
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
@@ -727,6 +803,16 @@ export default function Grafikas() {
                         <Plus className="w-3 h-3" /> Naujas laikas
                       </button>
                     )}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => openSlotNoteDialog(date, null)}
+                        className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
+                        title="Pridėti / redaguoti dienos žinutę"
+                      >
+                        <MessageSquare className="w-3 h-3" /> {getSlotNote(date, null) ? "Redaguoti žinutę" : "Dienos žinutė"}
+                      </button>
+                    )}
                   </div>
 
 
@@ -748,6 +834,17 @@ export default function Grafikas() {
                       Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
                     </div>
                   )}
+
+                  {/* Admin whole-day note banner */}
+                  {(() => {
+                    const dn = getSlotNote(date, null);
+                    if (!dn) return null;
+                    return (
+                      <div className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs italic text-foreground/85 leading-snug whitespace-pre-wrap">
+                        {dn.note}
+                      </div>
+                    );
+                  })()}
 
                   {daySlots.length === 0 && (
                     <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
@@ -845,8 +942,35 @@ export default function Grafikas() {
                                 ⚙
                               </button>
                             )}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => openSlotNoteDialog(date, slot.slot_time)}
+                              className={cn(
+                                "ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border transition-colors",
+                                getSlotNote(date, slot.slot_time)
+                                  ? "border-gold bg-gold/15 text-gold"
+                                  : "border-gold/30 text-gold hover:bg-gold/10",
+                              )}
+                              title={getSlotNote(date, slot.slot_time) ? "Redaguoti žinutę" : "Pridėti žinutę"}
+                              aria-label="Žinutė"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                            </button>
+                          )}
                           </div>
                         </div>
+
+                        {/* Per-slot admin note (visible to everyone) */}
+                        {(() => {
+                          const sn = getSlotNote(date, slot.slot_time);
+                          if (!sn) return null;
+                          return (
+                            <div className="mx-3 mt-2 rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs italic text-foreground/85 leading-snug whitespace-pre-wrap">
+                              {sn.note}
+                            </div>
+                          );
+                        })()}
 
                       
                         {/* Booked names */}
@@ -1032,6 +1156,40 @@ export default function Grafikas() {
             <Button variant="gold" onClick={() => { confirmDialog?.onConfirm(); setConfirmDialog(null); }}>
               Patvirtinti
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Slot/day note dialog (admin) */}
+      <Dialog open={!!slotNoteDialog} onOpenChange={(o) => { if (!o) { setSlotNoteDialog(null); setSlotNoteText(""); } }}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">
+              {slotNoteDialog?.time ? `Žinutė — ${formatTime(slotNoteDialog.time)}` : "Dienos žinutė"}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {slotNoteDialog ? `${formatDateISO(slotNoteDialog.date)} — matoma visiems, galioja tik šiai dienai.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={slotNoteText}
+            onChange={(e) => setSlotNoteText(e.target.value)}
+            rows={4}
+            maxLength={500}
+            placeholder="Pvz. Treniruotė vyks lauke, atsineškite šalmus."
+          />
+          <DialogFooter className="flex-row justify-between sm:justify-between">
+            <div>
+              {slotNoteDialog && getSlotNote(slotNoteDialog.date, slotNoteDialog.time) && (
+                <Button variant="ghost" onClick={deleteSlotNote} disabled={slotNoteBusy} className="text-destructive hover:text-destructive">
+                  <Trash2 className="w-4 h-4 mr-1" /> Pašalinti
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => { setSlotNoteDialog(null); setSlotNoteText(""); }}>Atgal</Button>
+              <Button variant="gold" onClick={saveSlotNote} disabled={slotNoteBusy}>Išsaugoti</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
