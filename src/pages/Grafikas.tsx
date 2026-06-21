@@ -942,8 +942,35 @@ export default function Grafikas() {
                                 ⚙
                               </button>
                             )}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => openSlotNoteDialog(date, slot.slot_time)}
+                              className={cn(
+                                "ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border transition-colors",
+                                getSlotNote(date, slot.slot_time)
+                                  ? "border-gold bg-gold/15 text-gold"
+                                  : "border-gold/30 text-gold hover:bg-gold/10",
+                              )}
+                              title={getSlotNote(date, slot.slot_time) ? "Redaguoti žinutę" : "Pridėti žinutę"}
+                              aria-label="Žinutė"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                            </button>
+                          )}
                           </div>
                         </div>
+
+                        {/* Per-slot admin note (visible to everyone) */}
+                        {(() => {
+                          const sn = getSlotNote(date, slot.slot_time);
+                          if (!sn) return null;
+                          return (
+                            <div className="mx-3 mt-2 rounded-md border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs italic text-foreground/85 leading-snug whitespace-pre-wrap">
+                              {sn.note}
+                            </div>
+                          );
+                        })()}
 
                       
                         {/* Booked names */}
