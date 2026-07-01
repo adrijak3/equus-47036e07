@@ -114,6 +114,113 @@ function ScheduleTab() {
   const [newOneOff, setNewOneOff] = useState(false);
   const [newOneOffDate, setNewOneOffDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
+  // Scope picker state for time/cap edits
+  const [scopeDialog, setScopeDialog] = useState<null | {
+    kind: "cap" | "time";
+    slot: TimeSlot;
+    value: number | string;
+  }>(null);
+  const [scopeChoice, setScopeChoice] = useState<"week" | "always">("week");
+  const [scopeWeekDate, setScopeWeekDate] = useState<string>(() => {
+    // upcoming date in current week matching some slot — default today; overridden when dialog opens
+    return new Date().toISOString().slice(0, 10);
+  });
+
+  const upcomingDateForDay = (dow: number): string => {
+    // Return the date (YYYY-MM-DD) in the CURRENT ISO week (Mon..Sun) that matches day_of_week (1=Mon..7=Sun)
+    const now = new Date();
+    const js = now.getDay(); // 0=Sun..6=Sat
+    const isoToday = js === 0 ? 7 : js;
+    const diff = dow - isoToday;
+    const d = new Date(now);
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const openCapScope = (slot: TimeSlot, n: number) => {
+    if (!Number.isFinite(n) || n < 1 || n > 999) { toast.error("Talpa turi būti 1–999"); return; }
+    setScopeChoice("week");
+    setScopeWeekDate(slot.one_off_date || upcomingDateForDay(slot.day_of_week));
+    setScopeDialog({ kind: "cap", slot, value: n });
+  };
+
+  const openTimeScope = (slot: TimeSlot, t: string) => {
+    if (!isValidTime(t)) { toast.error("Įveskite laiką formatu HH:MM"); return; }
+    setScopeChoice("week");
+    setScopeWeekDate(slot.one_off_date || upcomingDateForDay(slot.day_of_week));
+    setScopeDialog({ kind: "time", slot, value: t });
+  };
+
+  const applyScope = async () => {
+    if (!scopeDialog) return;
+    const { kind, slot, value } = scopeDialog;
+
+    if (kind === "cap") {
+      const n = Number(value);
+      if (scopeChoice === "always") {
+        const { error } = await supabase.from("time_slots").update({ max_capacity: n }).eq("id", slot.id);
+        if (error) { toast.error(error.message); return; }
+        toast.success("Talpa atnaujinta (visoms savaitėms)");
+      } else {
+        // per-week (specific date) via slot_overrides
+        const timeStr = slot.slot_time;
+        const { data: existing } = await supabase.from("slot_overrides")
+          .select("id").eq("slot_date", scopeWeekDate).eq("slot_time", timeStr).maybeSingle();
+        if (existing?.id) {
+          const { error } = await supabase.from("slot_overrides")
+            .update({ max_capacity: n }).eq("id", existing.id);
+          if (error) { toast.error(error.message); return; }
+        } else {
+          const { error } = await supabase.from("slot_overrides")
+            .insert({ slot_date: scopeWeekDate, slot_time: timeStr, max_capacity: n });
+          if (error) { toast.error(error.message); return; }
+        }
+        toast.success(`Talpa nustatyta ${scopeWeekDate} · ${slot.slot_time.slice(0,5)}`);
+      }
+    } else {
+      // TIME
+      const newT = String(value);
+      if (scopeChoice === "always") {
+        const { error } = await supabase.from("time_slots")
+          .update({ slot_time: newT }).eq("id", slot.id);
+        if (error) { toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message); return; }
+        // also move future bookings on this recurring day to the new time
+        await supabase.from("bookings")
+          .update({ slot_time: newT })
+          .gte("slot_date", new Date().toISOString().slice(0,10))
+          .eq("slot_time", slot.slot_time)
+          .eq("status", "active");
+        toast.success("Laikas atnaujintas (visoms savaitėms)");
+      } else {
+        // Per-week: create one-off slot at new time for chosen date, hide original with cap=0 override, move bookings
+        const dateISO = scopeWeekDate;
+        const d = new Date(dateISO + "T00:00:00");
+        const js = d.getDay();
+        const dow = js === 0 ? 7 : js;
+        // 1) create one-off slot at new time
+        const { error: e1 } = await supabase.from("time_slots").insert({
+          day_of_week: dow, slot_time: `${newT}:00`.slice(0,8), max_capacity: slot.max_capacity,
+          active: true, one_off_date: dateISO,
+        } as any);
+        if (e1 && e1.code !== "23505") { toast.error(e1.message); return; }
+        // 2) move bookings on that date/time
+        await supabase.from("bookings").update({ slot_time: `${newT}:00` })
+          .eq("slot_date", dateISO).eq("slot_time", slot.slot_time);
+        // 3) hide original by overriding cap to 0 for that date
+        const { data: existing } = await supabase.from("slot_overrides")
+          .select("id").eq("slot_date", dateISO).eq("slot_time", slot.slot_time).maybeSingle();
+        if (existing?.id) {
+          await supabase.from("slot_overrides").update({ max_capacity: 0 }).eq("id", existing.id);
+        } else {
+          await supabase.from("slot_overrides").insert({ slot_date: dateISO, slot_time: slot.slot_time, max_capacity: 0 });
+        }
+        toast.success(`Laikas pakeistas tik ${dateISO}`);
+      }
+    }
+    setScopeDialog(null);
+    load();
+  };
+
   const load = async () => {
     const { data } = await supabase.from("time_slots").select("*").eq("active", true)
       .order("day_of_week").order("slot_time");
@@ -151,24 +258,9 @@ function ScheduleTab() {
     toast.success("Pašalinta"); load();
   };
 
-  const updateCapacity = async (id: string, newCap: number) => {
-    if (!Number.isFinite(newCap) || newCap < 1 || newCap > 999) {
-      toast.error("Talpa turi būti 1–999"); return;
-    }
-    const { error } = await supabase.from("time_slots").update({ max_capacity: newCap }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Talpa atnaujinta"); load();
-  };
-
-  const updateSlotTime = async (id: string, newT: string) => {
-    if (!isValidTime(newT)) { toast.error("Įveskite laiką formatu HH:MM"); return; }
-    const { error } = await supabase.from("time_slots").update({ slot_time: newT }).eq("id", id);
-    if (error) {
-      toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message);
-      return;
-    }
-    toast.success("Laikas atnaujintas"); load();
-  };
+  // Legacy no-op — SlotRow now goes through the scope dialog.
+  const updateCapacity = async (_id: string, _n: number) => {};
+  const updateSlotTime = async (_id: string, _t: string) => {};
 
   return (
     <div>
@@ -202,8 +294,8 @@ function ScheduleTab() {
                 <SlotRow
                   key={s.id}
                   slot={s}
-                  onCapacity={(n) => updateCapacity(s.id, n)}
-                  onTime={(t) => updateSlotTime(s.id, t)}
+                  onCapacity={(n) => openCapScope(s, n)}
+                  onTime={(t) => openTimeScope(s, t)}
                   onRemove={() => remove(s.id)}
                 />
               ))}
