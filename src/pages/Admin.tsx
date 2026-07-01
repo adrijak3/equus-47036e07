@@ -114,6 +114,113 @@ function ScheduleTab() {
   const [newOneOff, setNewOneOff] = useState(false);
   const [newOneOffDate, setNewOneOffDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
+  // Scope picker state for time/cap edits
+  const [scopeDialog, setScopeDialog] = useState<null | {
+    kind: "cap" | "time";
+    slot: TimeSlot;
+    value: number | string;
+  }>(null);
+  const [scopeChoice, setScopeChoice] = useState<"week" | "always">("week");
+  const [scopeWeekDate, setScopeWeekDate] = useState<string>(() => {
+    // upcoming date in current week matching some slot — default today; overridden when dialog opens
+    return new Date().toISOString().slice(0, 10);
+  });
+
+  const upcomingDateForDay = (dow: number): string => {
+    // Return the date (YYYY-MM-DD) in the CURRENT ISO week (Mon..Sun) that matches day_of_week (1=Mon..7=Sun)
+    const now = new Date();
+    const js = now.getDay(); // 0=Sun..6=Sat
+    const isoToday = js === 0 ? 7 : js;
+    const diff = dow - isoToday;
+    const d = new Date(now);
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const openCapScope = (slot: TimeSlot, n: number) => {
+    if (!Number.isFinite(n) || n < 1 || n > 999) { toast.error("Talpa turi būti 1–999"); return; }
+    setScopeChoice("week");
+    setScopeWeekDate(slot.one_off_date || upcomingDateForDay(slot.day_of_week));
+    setScopeDialog({ kind: "cap", slot, value: n });
+  };
+
+  const openTimeScope = (slot: TimeSlot, t: string) => {
+    if (!isValidTime(t)) { toast.error("Įveskite laiką formatu HH:MM"); return; }
+    setScopeChoice("week");
+    setScopeWeekDate(slot.one_off_date || upcomingDateForDay(slot.day_of_week));
+    setScopeDialog({ kind: "time", slot, value: t });
+  };
+
+  const applyScope = async () => {
+    if (!scopeDialog) return;
+    const { kind, slot, value } = scopeDialog;
+
+    if (kind === "cap") {
+      const n = Number(value);
+      if (scopeChoice === "always") {
+        const { error } = await supabase.from("time_slots").update({ max_capacity: n }).eq("id", slot.id);
+        if (error) { toast.error(error.message); return; }
+        toast.success("Talpa atnaujinta (visoms savaitėms)");
+      } else {
+        // per-week (specific date) via slot_overrides
+        const timeStr = slot.slot_time;
+        const { data: existing } = await supabase.from("slot_overrides")
+          .select("id").eq("slot_date", scopeWeekDate).eq("slot_time", timeStr).maybeSingle();
+        if (existing?.id) {
+          const { error } = await supabase.from("slot_overrides")
+            .update({ max_capacity: n }).eq("id", existing.id);
+          if (error) { toast.error(error.message); return; }
+        } else {
+          const { error } = await supabase.from("slot_overrides")
+            .insert({ slot_date: scopeWeekDate, slot_time: timeStr, max_capacity: n });
+          if (error) { toast.error(error.message); return; }
+        }
+        toast.success(`Talpa nustatyta ${scopeWeekDate} · ${slot.slot_time.slice(0,5)}`);
+      }
+    } else {
+      // TIME
+      const newT = String(value);
+      if (scopeChoice === "always") {
+        const { error } = await supabase.from("time_slots")
+          .update({ slot_time: newT }).eq("id", slot.id);
+        if (error) { toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message); return; }
+        // also move future bookings on this recurring day to the new time
+        await supabase.from("bookings")
+          .update({ slot_time: newT })
+          .gte("slot_date", new Date().toISOString().slice(0,10))
+          .eq("slot_time", slot.slot_time)
+          .eq("status", "active");
+        toast.success("Laikas atnaujintas (visoms savaitėms)");
+      } else {
+        // Per-week: create one-off slot at new time for chosen date, hide original with cap=0 override, move bookings
+        const dateISO = scopeWeekDate;
+        const d = new Date(dateISO + "T00:00:00");
+        const js = d.getDay();
+        const dow = js === 0 ? 7 : js;
+        // 1) create one-off slot at new time
+        const { error: e1 } = await supabase.from("time_slots").insert({
+          day_of_week: dow, slot_time: `${newT}:00`.slice(0,8), max_capacity: slot.max_capacity,
+          active: true, one_off_date: dateISO,
+        } as any);
+        if (e1 && e1.code !== "23505") { toast.error(e1.message); return; }
+        // 2) move bookings on that date/time
+        await supabase.from("bookings").update({ slot_time: `${newT}:00` })
+          .eq("slot_date", dateISO).eq("slot_time", slot.slot_time);
+        // 3) hide original by overriding cap to 0 for that date
+        const { data: existing } = await supabase.from("slot_overrides")
+          .select("id").eq("slot_date", dateISO).eq("slot_time", slot.slot_time).maybeSingle();
+        if (existing?.id) {
+          await supabase.from("slot_overrides").update({ max_capacity: 0 }).eq("id", existing.id);
+        } else {
+          await supabase.from("slot_overrides").insert({ slot_date: dateISO, slot_time: slot.slot_time, max_capacity: 0 });
+        }
+        toast.success(`Laikas pakeistas tik ${dateISO}`);
+      }
+    }
+    setScopeDialog(null);
+    load();
+  };
+
   const load = async () => {
     const { data } = await supabase.from("time_slots").select("*").eq("active", true)
       .order("day_of_week").order("slot_time");
@@ -151,24 +258,9 @@ function ScheduleTab() {
     toast.success("Pašalinta"); load();
   };
 
-  const updateCapacity = async (id: string, newCap: number) => {
-    if (!Number.isFinite(newCap) || newCap < 1 || newCap > 999) {
-      toast.error("Talpa turi būti 1–999"); return;
-    }
-    const { error } = await supabase.from("time_slots").update({ max_capacity: newCap }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Talpa atnaujinta"); load();
-  };
-
-  const updateSlotTime = async (id: string, newT: string) => {
-    if (!isValidTime(newT)) { toast.error("Įveskite laiką formatu HH:MM"); return; }
-    const { error } = await supabase.from("time_slots").update({ slot_time: newT }).eq("id", id);
-    if (error) {
-      toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message);
-      return;
-    }
-    toast.success("Laikas atnaujintas"); load();
-  };
+  // Legacy no-op — SlotRow now goes through the scope dialog.
+  const updateCapacity = async (_id: string, _n: number) => {};
+  const updateSlotTime = async (_id: string, _t: string) => {};
 
   return (
     <div>
@@ -202,8 +294,8 @@ function ScheduleTab() {
                 <SlotRow
                   key={s.id}
                   slot={s}
-                  onCapacity={(n) => updateCapacity(s.id, n)}
-                  onTime={(t) => updateSlotTime(s.id, t)}
+                  onCapacity={(n) => openCapScope(s, n)}
+                  onTime={(t) => openTimeScope(s, t)}
                   onRemove={() => remove(s.id)}
                 />
               ))}
@@ -259,70 +351,127 @@ function ScheduleTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Scope picker dialog for time/cap edits */}
+      <Dialog open={!!scopeDialog} onOpenChange={(o) => !o && setScopeDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-gradient-gold text-xl">
+              {scopeDialog?.kind === "cap" ? "Talpos keitimas" : "Laiko keitimas"}
+            </DialogTitle>
+          </DialogHeader>
+          {scopeDialog && (
+            <div className="space-y-3 text-sm">
+              <div className="p-2 rounded bg-gold/5 border border-gold/15">
+                <b>{WEEKDAYS_LT[scopeDialog.slot.day_of_week - 1]}</b>
+                {" · "}
+                {scopeDialog.slot.slot_time.slice(0,5)}
+                {" → "}
+                <span className="text-gold">
+                  {scopeDialog.kind === "cap" ? `talpa ${scopeDialog.value}` : `laikas ${scopeDialog.value}`}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gold/5">
+                  <input type="radio" name="scope" checked={scopeChoice === "week"} onChange={() => setScopeChoice("week")} className="mt-1 accent-gold" />
+                  <div>
+                    <div className="font-medium">Tik pasirinktai datai</div>
+                    <div className="text-xs text-muted-foreground">Kitos savaitės nebus paveiktos.</div>
+                    {scopeChoice === "week" && (
+                      <Input type="date" value={scopeWeekDate} onChange={(e) => setScopeWeekDate(e.target.value)} className="mt-2 h-8 w-40" />
+                    )}
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gold/5">
+                  <input type="radio" name="scope" checked={scopeChoice === "always"} onChange={() => setScopeChoice("always")} className="mt-1 accent-gold" />
+                  <div>
+                    <div className="font-medium">Visoms savaitėms (visada)</div>
+                    <div className="text-xs text-muted-foreground">Pakeis nuolatinį šabloną — nuo dabar visos savaitės.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setScopeDialog(null)}>Atšaukti</Button>
+            <Button variant="gold" onClick={applyScope}>Patvirtinti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 // =============== Uncovered lessons dialog ===============
 function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () => void }) {
-  const [rows, setRows] = useState<{ id: string; slot_date: string; slot_time: string; subscription_id: string | null; sub_paid: boolean | null }[]>([]);
+  type Row = {
+    id: string; slot_date: string; slot_time: string;
+    status: string; subscription_id: string | null;
+    counts_in_subscription: boolean; sub_paid: boolean | null;
+    sickness: boolean; cancel_reason: string | null;
+  };
+  const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, negative = past
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const viewMonthStart = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-01`;
+  const nextMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+  const viewMonthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
+  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const today = formatDateISO(new Date());
       const { data: bks } = await supabase
         .from("bookings")
         .select("id, slot_date, slot_time, subscription_id, counts_in_subscription, status")
         .eq("user_id", user.id)
-        .lte("slot_date", today)
-        .neq("status", "cancelled")
-        .order("slot_date", { ascending: false });
-      const list = (bks ?? []).filter((b: any) => b.counts_in_subscription !== false);
-      const subIds = Array.from(new Set(list.map((b: any) => b.subscription_id).filter(Boolean))) as string[];
+        .gte("slot_date", viewMonthStart)
+        .lt("slot_date", viewMonthEnd)
+        .order("slot_date", { ascending: true });
+      const list = (bks ?? []) as any[];
+      const bIds = list.map((b) => b.id);
+      const subIds = Array.from(new Set(list.map((b) => b.subscription_id).filter(Boolean))) as string[];
       let paidMap: Record<string, boolean> = {};
+      let sickMap: Record<string, { sickness: boolean; reason: string | null }> = {};
       if (subIds.length) {
         const { data: ss } = await supabase.from("subscriptions").select("id, paid").in("id", subIds);
         (ss ?? []).forEach((s: any) => { paidMap[s.id] = !!s.paid; });
       }
-      const uncovered = list
-        .filter((b: any) => !b.subscription_id || paidMap[b.subscription_id] === false)
-        .map((b: any) => ({
-          id: b.id, slot_date: b.slot_date, slot_time: b.slot_time,
-          subscription_id: b.subscription_id,
-          sub_paid: b.subscription_id ? (paidMap[b.subscription_id] ?? null) : null,
-        }));
-      setRows(uncovered);
+      if (bIds.length) {
+        const { data: cr } = await supabase.from("cancellation_requests")
+          .select("booking_id, sickness, reason").in("booking_id", bIds);
+        (cr ?? []).forEach((r: any) => { sickMap[r.booking_id] = { sickness: !!r.sickness, reason: r.reason ?? null }; });
+      }
+      setRows(list.map((b) => ({
+        id: b.id, slot_date: b.slot_date, slot_time: b.slot_time,
+        status: b.status, subscription_id: b.subscription_id,
+        counts_in_subscription: b.counts_in_subscription !== false,
+        sub_paid: b.subscription_id ? (paidMap[b.subscription_id] ?? null) : null,
+        sickness: sickMap[b.id]?.sickness ?? false,
+        cancel_reason: sickMap[b.id]?.reason ?? null,
+      })));
       setLoading(false);
     })();
-  }, [user.id]);
+  }, [user.id, viewMonthStart, viewMonthEnd]);
 
-  const now = new Date();
-  const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const viewKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
-
-  const byMonth: Record<string, typeof rows> = {};
-  rows.forEach((r) => {
-    const k = r.slot_date.slice(0, 7);
-    (byMonth[k] ??= []).push(r);
-  });
-  const monthRows = byMonth[viewKey] ?? [];
-  const total = rows.length;
+  const uncoveredCount = rows.filter((r) =>
+    r.status !== "cancelled" && r.counts_in_subscription &&
+    (!r.subscription_id || r.sub_paid === false)
+  ).length;
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="bg-gradient-card border-gold/20 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-xl text-gradient-gold">
-            {user.full_name} · neapmokėtos įvykusios pamokos
+            {user.full_name} · pamokų istorija
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            Įvykusios pamokos, kurios <b>neįskaičiuotos į apmokėtą abonementą</b> (be abonemento arba abonementas neapmokėtas). Iš viso: <b>{total}</b>.
+            Visos šio mėnesio pamokos (įvykusios, atšauktos, liga) su statusu. Neapmokėtų / neįskaičiuotų šiame mėn.: <b>{uncoveredCount}</b>.
           </div>
           <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-gold/5 border border-gold/15">
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o - 1)}>← Ankstesnis</Button>
@@ -331,20 +480,31 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
           </div>
           {loading ? (
             <p className="text-sm text-muted-foreground italic">Kraunama…</p>
-          ) : monthRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį neapmokėtų įvykusių pamokų nėra.</p>
+          ) : rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį pamokų nėra.</p>
           ) : (
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-              {monthRows.map((r) => (
-                <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded border border-gold/15 bg-background/40 text-sm">
-                  <div className="tabular-nums">
-                    {r.slot_date} · <span className="text-gold">{r.slot_time.slice(0, 5)}</span>
+              {rows.map((r) => {
+                const cancelled = r.status === "cancelled";
+                const counted = !cancelled && r.counts_in_subscription && r.subscription_id && r.sub_paid;
+                let statusChip: { label: string; cls: string };
+                if (cancelled && r.sickness) statusChip = { label: "Atšaukta · liga", cls: "border-amber-400/50 text-amber-500 bg-amber-500/10" };
+                else if (cancelled) statusChip = { label: "Atšaukta", cls: "border-muted-foreground/30 text-muted-foreground bg-muted/20" };
+                else if (counted) statusChip = { label: "Įskaičiuota", cls: "border-green-500/40 text-green-600 bg-green-500/10" };
+                else if (r.subscription_id && !r.sub_paid) statusChip = { label: "Neįskaičiuota · neapmokėtas abonementas", cls: "border-blush/40 text-blush bg-blush/10" };
+                else if (!r.subscription_id) statusChip = { label: "Neįskaičiuota · be abonemento", cls: "border-blush/40 text-blush bg-blush/10" };
+                else statusChip = { label: "Neįskaičiuota", cls: "border-blush/40 text-blush bg-blush/10" };
+                return (
+                  <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded border border-gold/15 bg-background/40 text-sm">
+                    <div className="tabular-nums shrink-0">
+                      {r.slot_date} · <span className="text-gold">{r.slot_time.slice(0, 5)}</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusChip.cls}`}>
+                      {statusChip.label}
+                    </span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${r.subscription_id ? "border-blush/40 text-blush bg-blush/10" : "border-muted-foreground/30 text-muted-foreground bg-muted/20"}`}>
-                    {r.subscription_id ? "Neapmokėtas abonementas" : "Be abonemento"}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
