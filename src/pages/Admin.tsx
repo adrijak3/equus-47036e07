@@ -351,6 +351,53 @@ function ScheduleTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Scope picker dialog for time/cap edits */}
+      <Dialog open={!!scopeDialog} onOpenChange={(o) => !o && setScopeDialog(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20">
+          <DialogHeader>
+            <DialogTitle className="font-display text-gradient-gold text-xl">
+              {scopeDialog?.kind === "cap" ? "Talpos keitimas" : "Laiko keitimas"}
+            </DialogTitle>
+          </DialogHeader>
+          {scopeDialog && (
+            <div className="space-y-3 text-sm">
+              <div className="p-2 rounded bg-gold/5 border border-gold/15">
+                <b>{WEEKDAYS_LT[scopeDialog.slot.day_of_week - 1]}</b>
+                {" · "}
+                {scopeDialog.slot.slot_time.slice(0,5)}
+                {" → "}
+                <span className="text-gold">
+                  {scopeDialog.kind === "cap" ? `talpa ${scopeDialog.value}` : `laikas ${scopeDialog.value}`}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gold/5">
+                  <input type="radio" name="scope" checked={scopeChoice === "week"} onChange={() => setScopeChoice("week")} className="mt-1 accent-gold" />
+                  <div>
+                    <div className="font-medium">Tik pasirinktai datai</div>
+                    <div className="text-xs text-muted-foreground">Kitos savaitės nebus paveiktos.</div>
+                    {scopeChoice === "week" && (
+                      <Input type="date" value={scopeWeekDate} onChange={(e) => setScopeWeekDate(e.target.value)} className="mt-2 h-8 w-40" />
+                    )}
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gold/5">
+                  <input type="radio" name="scope" checked={scopeChoice === "always"} onChange={() => setScopeChoice("always")} className="mt-1 accent-gold" />
+                  <div>
+                    <div className="font-medium">Visoms savaitėms (visada)</div>
+                    <div className="text-xs text-muted-foreground">Pakeis nuolatinį šabloną — nuo dabar visos savaitės.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setScopeDialog(null)}>Atšaukti</Button>
+            <Button variant="gold" onClick={applyScope}>Patvirtinti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
