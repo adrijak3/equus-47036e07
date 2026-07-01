@@ -404,64 +404,74 @@ function ScheduleTab() {
 
 // =============== Uncovered lessons dialog ===============
 function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () => void }) {
-  const [rows, setRows] = useState<{ id: string; slot_date: string; slot_time: string; subscription_id: string | null; sub_paid: boolean | null }[]>([]);
+  type Row = {
+    id: string; slot_date: string; slot_time: string;
+    status: string; subscription_id: string | null;
+    counts_in_subscription: boolean; sub_paid: boolean | null;
+    sickness: boolean; cancel_reason: string | null;
+  };
+  const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, negative = past
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const viewMonthStart = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-01`;
+  const nextMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+  const viewMonthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
+  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const today = formatDateISO(new Date());
       const { data: bks } = await supabase
         .from("bookings")
         .select("id, slot_date, slot_time, subscription_id, counts_in_subscription, status")
         .eq("user_id", user.id)
-        .lte("slot_date", today)
-        .neq("status", "cancelled")
-        .order("slot_date", { ascending: false });
-      const list = (bks ?? []).filter((b: any) => b.counts_in_subscription !== false);
-      const subIds = Array.from(new Set(list.map((b: any) => b.subscription_id).filter(Boolean))) as string[];
+        .gte("slot_date", viewMonthStart)
+        .lt("slot_date", viewMonthEnd)
+        .order("slot_date", { ascending: true });
+      const list = (bks ?? []) as any[];
+      const bIds = list.map((b) => b.id);
+      const subIds = Array.from(new Set(list.map((b) => b.subscription_id).filter(Boolean))) as string[];
       let paidMap: Record<string, boolean> = {};
+      let sickMap: Record<string, { sickness: boolean; reason: string | null }> = {};
       if (subIds.length) {
         const { data: ss } = await supabase.from("subscriptions").select("id, paid").in("id", subIds);
         (ss ?? []).forEach((s: any) => { paidMap[s.id] = !!s.paid; });
       }
-      const uncovered = list
-        .filter((b: any) => !b.subscription_id || paidMap[b.subscription_id] === false)
-        .map((b: any) => ({
-          id: b.id, slot_date: b.slot_date, slot_time: b.slot_time,
-          subscription_id: b.subscription_id,
-          sub_paid: b.subscription_id ? (paidMap[b.subscription_id] ?? null) : null,
-        }));
-      setRows(uncovered);
+      if (bIds.length) {
+        const { data: cr } = await supabase.from("cancellation_requests")
+          .select("booking_id, sickness, reason").in("booking_id", bIds);
+        (cr ?? []).forEach((r: any) => { sickMap[r.booking_id] = { sickness: !!r.sickness, reason: r.reason ?? null }; });
+      }
+      setRows(list.map((b) => ({
+        id: b.id, slot_date: b.slot_date, slot_time: b.slot_time,
+        status: b.status, subscription_id: b.subscription_id,
+        counts_in_subscription: b.counts_in_subscription !== false,
+        sub_paid: b.subscription_id ? (paidMap[b.subscription_id] ?? null) : null,
+        sickness: sickMap[b.id]?.sickness ?? false,
+        cancel_reason: sickMap[b.id]?.reason ?? null,
+      })));
       setLoading(false);
     })();
-  }, [user.id]);
+  }, [user.id, viewMonthStart, viewMonthEnd]);
 
-  const now = new Date();
-  const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const viewKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
-
-  const byMonth: Record<string, typeof rows> = {};
-  rows.forEach((r) => {
-    const k = r.slot_date.slice(0, 7);
-    (byMonth[k] ??= []).push(r);
-  });
-  const monthRows = byMonth[viewKey] ?? [];
-  const total = rows.length;
+  const uncoveredCount = rows.filter((r) =>
+    r.status !== "cancelled" && r.counts_in_subscription &&
+    (!r.subscription_id || r.sub_paid === false)
+  ).length;
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="bg-gradient-card border-gold/20 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-xl text-gradient-gold">
-            {user.full_name} · neapmokėtos įvykusios pamokos
+            {user.full_name} · pamokų istorija
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            Įvykusios pamokos, kurios <b>neįskaičiuotos į apmokėtą abonementą</b> (be abonemento arba abonementas neapmokėtas). Iš viso: <b>{total}</b>.
+            Visos šio mėnesio pamokos (įvykusios, atšauktos, liga) su statusu. Neapmokėtų / neįskaičiuotų šiame mėn.: <b>{uncoveredCount}</b>.
           </div>
           <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-gold/5 border border-gold/15">
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o - 1)}>← Ankstesnis</Button>
@@ -470,20 +480,31 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
           </div>
           {loading ? (
             <p className="text-sm text-muted-foreground italic">Kraunama…</p>
-          ) : monthRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį neapmokėtų įvykusių pamokų nėra.</p>
+          ) : rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį pamokų nėra.</p>
           ) : (
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-              {monthRows.map((r) => (
-                <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded border border-gold/15 bg-background/40 text-sm">
-                  <div className="tabular-nums">
-                    {r.slot_date} · <span className="text-gold">{r.slot_time.slice(0, 5)}</span>
+              {rows.map((r) => {
+                const cancelled = r.status === "cancelled";
+                const counted = !cancelled && r.counts_in_subscription && r.subscription_id && r.sub_paid;
+                let statusChip: { label: string; cls: string };
+                if (cancelled && r.sickness) statusChip = { label: "Atšaukta · liga", cls: "border-amber-400/50 text-amber-500 bg-amber-500/10" };
+                else if (cancelled) statusChip = { label: "Atšaukta", cls: "border-muted-foreground/30 text-muted-foreground bg-muted/20" };
+                else if (counted) statusChip = { label: "Įskaičiuota", cls: "border-green-500/40 text-green-600 bg-green-500/10" };
+                else if (r.subscription_id && !r.sub_paid) statusChip = { label: "Neįskaičiuota · neapmokėtas abonementas", cls: "border-blush/40 text-blush bg-blush/10" };
+                else if (!r.subscription_id) statusChip = { label: "Neįskaičiuota · be abonemento", cls: "border-blush/40 text-blush bg-blush/10" };
+                else statusChip = { label: "Neįskaičiuota", cls: "border-blush/40 text-blush bg-blush/10" };
+                return (
+                  <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded border border-gold/15 bg-background/40 text-sm">
+                    <div className="tabular-nums shrink-0">
+                      {r.slot_date} · <span className="text-gold">{r.slot_time.slice(0, 5)}</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusChip.cls}`}>
+                      {statusChip.label}
+                    </span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${r.subscription_id ? "border-blush/40 text-blush bg-blush/10" : "border-muted-foreground/30 text-muted-foreground bg-muted/20"}`}>
-                    {r.subscription_id ? "Neapmokėtas abonementas" : "Be abonemento"}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
