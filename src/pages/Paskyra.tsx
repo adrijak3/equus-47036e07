@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FloralAccent } from "@/components/Decorations";
+import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 
 interface Booking {
   id: string;
@@ -348,6 +349,8 @@ export default function Paskyra() {
         <div className="gold-divider mt-4 max-w-[120px]" />
       </motion.header>
 
+      <VacationBanner userId={acting} />
+
       <Tabs defaultValue="lessons">
         <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="lessons" aria-label="Treniruotės" title="Treniruotės" className="py-2">
@@ -569,6 +572,9 @@ export default function Paskyra() {
           <ProfileSettings onSaved={refreshProfile} />
           <PasswordChange />
           <VacationMode userId={acting} onChanged={load} />
+          <Section title="Mano atostogos" icon={<CalendarDays className="w-4 h-4" />}>
+            <VacationsPanel userId={acting} />
+          </Section>
         </TabsContent>
       </Tabs>
 
