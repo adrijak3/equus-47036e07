@@ -12,7 +12,6 @@ import { LayoutDashboard, Palmtree, Menu } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { cn } from "@/lib/utils";
-import { formatDateISO } from "@/lib/equus";
 import { VacationsPanel } from "@/components/VacationsPanel";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
