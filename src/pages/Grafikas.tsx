@@ -858,24 +858,12 @@ export default function Grafikas() {
                   </div>
 
 
-                  {/* Weekend banners — Saturday only */}
-                  {dow === 6 && (
-                    <>
-                      <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                        Treniruotės pas Jolitą 10–13 val., pas Jovitą 15 val.
-                      </div>
-                      <div className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs italic text-foreground/85 leading-snug">
-                        Treniruotės pas Vytautą
-                      </div>
-                    </>
-                  )}
-
-                  {/* Sunday banner */}
-                  {dow === 7 && (
-                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                      Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
+                  {/* Weekly (permanent) day-level notes */}
+                  {getWeeklyNotes(date).map((wn) => (
+                    <div key={wn.id} className="rounded-md border border-gold/25 bg-gold/8 px-3 py-2 text-xs italic text-foreground/80 leading-snug whitespace-pre-wrap">
+                      {wn.note}
                     </div>
-                  )}
+                  ))}
 
                   {/* Admin whole-day note banner */}
                   {(() => {
