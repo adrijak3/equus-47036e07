@@ -609,6 +609,7 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, negative = past
+  const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const viewMonthStart = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-01`;
@@ -657,6 +658,27 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
     (!r.subscription_id || r.sub_paid === false)
   ).length;
 
+  const classify = (r: Row): "counted" | "uncovered" | "cancelled" | "sick" => {
+    if (r.status === "cancelled" && r.sickness) return "sick";
+    if (r.status === "cancelled") return "cancelled";
+    if (r.counts_in_subscription && r.subscription_id && r.sub_paid) return "counted";
+    return "uncovered";
+  };
+  const groups = {
+    counted: rows.filter((r) => classify(r) === "counted").length,
+    uncovered: rows.filter((r) => classify(r) === "uncovered").length,
+    cancelled: rows.filter((r) => classify(r) === "cancelled").length,
+    sick: rows.filter((r) => classify(r) === "sick").length,
+  };
+  const chips: { key: typeof filter; label: string; count: number; cls: string }[] = [
+    { key: "all", label: "Visos", count: rows.length, cls: "border-gold/30 text-gold" },
+    { key: "counted", label: "Įskaičiuota", count: groups.counted, cls: "border-green-500/40 text-green-500" },
+    { key: "uncovered", label: "Neįskaičiuota", count: groups.uncovered, cls: "border-blush/40 text-blush" },
+    { key: "cancelled", label: "Atšaukta", count: groups.cancelled, cls: "border-muted-foreground/30 text-muted-foreground" },
+    { key: "sick", label: "Liga", count: groups.sick, cls: "border-amber-400/50 text-amber-500" },
+  ];
+  const visibleRows = filter === "all" ? rows : rows.filter((r) => classify(r) === filter);
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="bg-gradient-card border-gold/20 max-w-2xl">
@@ -666,21 +688,37 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="text-xs text-muted-foreground">
-            Visos šio mėnesio pamokos (įvykusios, atšauktos, liga) su statusu. Neapmokėtų / neįskaičiuotų šiame mėn.: <b>{uncoveredCount}</b>.
-          </div>
           <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-gold/5 border border-gold/15">
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o - 1)}>← Ankstesnis</Button>
             <div className="font-display text-base text-gold capitalize">{monthLabel}</div>
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o + 1)} disabled={monthOffset >= 0}>Kitas →</Button>
           </div>
+
+          {!loading && rows.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => setFilter(c.key)}
+                  className={cn(
+                    "text-[11px] px-2.5 py-1 rounded-full border transition-all inline-flex items-center gap-1",
+                    filter === c.key ? `${c.cls} bg-gold/5 ring-1 ring-current/40` : "border-muted-foreground/20 text-muted-foreground hover:border-gold/30",
+                  )}
+                >
+                  {c.label}
+                  <span className="opacity-70 tabular-nums">{c.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <p className="text-sm text-muted-foreground italic">Kraunama…</p>
-          ) : rows.length === 0 ? (
+          ) : visibleRows.length === 0 ? (
             <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį pamokų nėra.</p>
           ) : (
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-              {rows.map((r) => {
+              {visibleRows.map((r) => {
                 const cancelled = r.status === "cancelled";
                 const counted = !cancelled && r.counts_in_subscription && r.subscription_id && r.sub_paid;
                 let statusChip: { label: string; cls: string };
@@ -701,6 +739,11 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
                   </div>
                 );
               })}
+            </div>
+          )}
+          {!loading && uncoveredCount > 0 && (
+            <div className="text-[11px] text-blush/80 text-center">
+              Neapmokėtų / neįskaičiuotų šiame mėnesį: <b>{uncoveredCount}</b>
             </div>
           )}
         </div>
