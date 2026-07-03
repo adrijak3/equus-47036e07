@@ -886,6 +886,10 @@ function VacationMode({ userId, onChanged }: { userId: string | null; onChanged:
         await supabase.from("subscriptions").update({ lessons_used: newUsed }).eq("id", subId);
       }
     }
+    // Record the vacation range so it shows as a reminder for the user & admin
+    await (supabase as any).from("vacations").insert({
+      user_id: userId, starts_on: from, ends_on: to, note: null,
+    });
     toast.success(`Atostogos pažymėtos — atšaukta ${ids.length} treniruočių`);
     setBusy(false);
     await onChanged();
