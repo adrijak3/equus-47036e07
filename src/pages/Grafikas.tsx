@@ -549,10 +549,17 @@ export default function Grafikas() {
     return slotNotes.find((n) => n.note_date === iso && (n.slot_time ?? null) === t) ?? null;
   };
 
+  /** All weekly notes matching this date's weekday (day-level only). */
+  const getWeeklyNotes = (date: Date): SlotNote[] => {
+    const dow = dbDayOfWeek(date);
+    return weeklyNotes.filter((n) => n.day_of_week === dow);
+  };
+
   const openSlotNoteDialog = (date: Date, time: string | null) => {
     const existing = getSlotNote(date, time);
     setSlotNoteDialog({ date, time });
     setSlotNoteText(existing?.note ?? "");
+    setSlotNoteRecurrence("once");
   };
 
   const saveSlotNote = async () => {
@@ -560,9 +567,20 @@ export default function Grafikas() {
     const text = slotNoteText.trim();
     if (!text) { toast.error("Įveskite žinutę"); return; }
     setSlotNoteBusy(true);
+    const isDayLevel = slotNoteDialog.time == null;
     const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
     let error;
-    if (existing) {
+    if (isDayLevel && slotNoteRecurrence === "weekly") {
+      // Insert a new weekly note (don't overwrite once-notes)
+      ({ error } = await supabase.from("slot_notes" as any).insert({
+        note_date: formatDateISO(slotNoteDialog.date),
+        slot_time: null,
+        note: text,
+        created_by: user.id,
+        recurrence: "weekly",
+        day_of_week: dbDayOfWeek(slotNoteDialog.date),
+      } as any));
+    } else if (existing) {
       ({ error } = await supabase.from("slot_notes" as any).update({ note: text }).eq("id", existing.id));
     } else {
       ({ error } = await supabase.from("slot_notes" as any).insert({
@@ -570,6 +588,7 @@ export default function Grafikas() {
         slot_time: slotNoteDialog.time ? slotNoteDialog.time.slice(0, 8) : null,
         note: text,
         created_by: user.id,
+        recurrence: "once",
       } as any));
     }
     setSlotNoteBusy(false);
@@ -577,6 +596,13 @@ export default function Grafikas() {
     toast.success("Žinutė išsaugota");
     setSlotNoteDialog(null);
     setSlotNoteText("");
+    loadData();
+  };
+
+  const deleteWeeklyNote = async (id: string) => {
+    const { error } = await supabase.from("slot_notes" as any).delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Nuolatinė žinutė pašalinta");
     loadData();
   };
 
