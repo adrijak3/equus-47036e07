@@ -20,6 +20,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
+import { VacationBanner } from "@/components/VacationsPanel";
 
 interface TimeSlot {
   id: string;
@@ -82,6 +83,8 @@ interface SlotNote {
   note_date: string;
   slot_time: string | null;
   note: string;
+  recurrence?: "once" | "weekly";
+  day_of_week?: number | null;
 }
 
 export default function Grafikas() {
@@ -125,8 +128,10 @@ export default function Grafikas() {
 
   // Slot notes (admin announcements per day or per slot)
   const [slotNotes, setSlotNotes] = useState<SlotNote[]>([]);
+  const [weeklyNotes, setWeeklyNotes] = useState<SlotNote[]>([]);
   const [slotNoteDialog, setSlotNoteDialog] = useState<{ date: Date; time: string | null } | null>(null);
   const [slotNoteText, setSlotNoteText] = useState("");
+  const [slotNoteRecurrence, setSlotNoteRecurrence] = useState<"once" | "weekly">("once");
   const [slotNoteBusy, setSlotNoteBusy] = useState(false);
 
   // Admin: custom one-off time slot
