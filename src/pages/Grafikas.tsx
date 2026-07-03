@@ -729,6 +729,8 @@ export default function Grafikas() {
         <div className="gold-divider max-w-[140px] mx-auto" />
       </motion.header>
 
+      <VacationBanner userId={user?.id ?? null} />
+
       {/* Week navigation */}
       <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
         <div className="flex items-center gap-2 rounded-md border border-gold/20 bg-card/40 px-2 py-1.5">
