@@ -20,6 +20,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
+import { VacationBanner } from "@/components/VacationsPanel";
 
 interface TimeSlot {
   id: string;
@@ -82,6 +83,8 @@ interface SlotNote {
   note_date: string;
   slot_time: string | null;
   note: string;
+  recurrence?: "once" | "weekly";
+  day_of_week?: number | null;
 }
 
 export default function Grafikas() {
@@ -125,8 +128,10 @@ export default function Grafikas() {
 
   // Slot notes (admin announcements per day or per slot)
   const [slotNotes, setSlotNotes] = useState<SlotNote[]>([]);
+  const [weeklyNotes, setWeeklyNotes] = useState<SlotNote[]>([]);
   const [slotNoteDialog, setSlotNoteDialog] = useState<{ date: Date; time: string | null } | null>(null);
   const [slotNoteText, setSlotNoteText] = useState("");
+  const [slotNoteRecurrence, setSlotNoteRecurrence] = useState<"once" | "weekly">("once");
   const [slotNoteBusy, setSlotNoteBusy] = useState(false);
 
   // Admin: custom one-off time slot
@@ -210,13 +215,24 @@ export default function Grafikas() {
     // Slot notes for this week (per-slot announcements)
     const { data: snotes } = await supabase
       .from("slot_notes" as any)
-      .select("id, note_date, slot_time, note")
+      .select("id, note_date, slot_time, note, recurrence, day_of_week")
       .gte("note_date", startISO)
-      .lte("note_date", endISO);
+      .lte("note_date", endISO)
+      .eq("recurrence", "once");
     setSlotNotes(((snotes ?? []) as any[]).map((n) => ({
       id: n.id, note_date: n.note_date,
       slot_time: n.slot_time ? String(n.slot_time).slice(0, 8) : null,
-      note: n.note,
+      note: n.note, recurrence: "once",
+    })));
+
+    // Weekly (permanent) day-level notes
+    const { data: wnotes } = await supabase
+      .from("slot_notes" as any)
+      .select("id, note, recurrence, day_of_week")
+      .eq("recurrence", "weekly");
+    setWeeklyNotes(((wnotes ?? []) as any[]).map((n) => ({
+      id: n.id, note_date: "", slot_time: null, note: n.note,
+      recurrence: "weekly" as const, day_of_week: n.day_of_week,
     })));
 
     setLoading(false);
@@ -533,10 +549,17 @@ export default function Grafikas() {
     return slotNotes.find((n) => n.note_date === iso && (n.slot_time ?? null) === t) ?? null;
   };
 
+  /** All weekly notes matching this date's weekday (day-level only). */
+  const getWeeklyNotes = (date: Date): SlotNote[] => {
+    const dow = dbDayOfWeek(date);
+    return weeklyNotes.filter((n) => n.day_of_week === dow);
+  };
+
   const openSlotNoteDialog = (date: Date, time: string | null) => {
     const existing = getSlotNote(date, time);
     setSlotNoteDialog({ date, time });
     setSlotNoteText(existing?.note ?? "");
+    setSlotNoteRecurrence("once");
   };
 
   const saveSlotNote = async () => {
@@ -544,9 +567,20 @@ export default function Grafikas() {
     const text = slotNoteText.trim();
     if (!text) { toast.error("Įveskite žinutę"); return; }
     setSlotNoteBusy(true);
+    const isDayLevel = slotNoteDialog.time == null;
     const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
     let error;
-    if (existing) {
+    if (isDayLevel && slotNoteRecurrence === "weekly") {
+      // Insert a new weekly note (don't overwrite once-notes)
+      ({ error } = await supabase.from("slot_notes" as any).insert({
+        note_date: formatDateISO(slotNoteDialog.date),
+        slot_time: null,
+        note: text,
+        created_by: user.id,
+        recurrence: "weekly",
+        day_of_week: dbDayOfWeek(slotNoteDialog.date),
+      } as any));
+    } else if (existing) {
       ({ error } = await supabase.from("slot_notes" as any).update({ note: text }).eq("id", existing.id));
     } else {
       ({ error } = await supabase.from("slot_notes" as any).insert({
@@ -554,6 +588,7 @@ export default function Grafikas() {
         slot_time: slotNoteDialog.time ? slotNoteDialog.time.slice(0, 8) : null,
         note: text,
         created_by: user.id,
+        recurrence: "once",
       } as any));
     }
     setSlotNoteBusy(false);
@@ -561,6 +596,13 @@ export default function Grafikas() {
     toast.success("Žinutė išsaugota");
     setSlotNoteDialog(null);
     setSlotNoteText("");
+    loadData();
+  };
+
+  const deleteWeeklyNote = async (id: string) => {
+    const { error } = await supabase.from("slot_notes" as any).delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Nuolatinė žinutė pašalinta");
     loadData();
   };
 
@@ -686,6 +728,8 @@ export default function Grafikas() {
         </h1>
         <div className="gold-divider max-w-[140px] mx-auto" />
       </motion.header>
+
+      <VacationBanner userId={user?.id ?? null} />
 
       {/* Week navigation */}
       <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
@@ -816,24 +860,12 @@ export default function Grafikas() {
                   </div>
 
 
-                  {/* Weekend banners — Saturday only */}
-                  {dow === 6 && (
-                    <>
-                      <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                        Treniruotės pas Jolitą 10–13 val., pas Jovitą 15 val.
-                      </div>
-                      <div className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs italic text-foreground/85 leading-snug">
-                        Treniruotės pas Vytautą
-                      </div>
-                    </>
-                  )}
-
-                  {/* Sunday banner */}
-                  {dow === 7 && (
-                    <div className="rounded-md border border-gold/15 bg-gold/5 px-3 py-2 text-xs italic text-foreground/75 leading-snug">
-                      Treniruotės pas Jolitą 12–15 val., pas Jovitą 16:30 val.
+                  {/* Weekly (permanent) day-level notes */}
+                  {getWeeklyNotes(date).map((wn) => (
+                    <div key={wn.id} className="rounded-md border border-gold/25 bg-gold/8 px-3 py-2 text-xs italic text-foreground/80 leading-snug whitespace-pre-wrap">
+                      {wn.note}
                     </div>
-                  )}
+                  ))}
 
                   {/* Admin whole-day note banner */}
                   {(() => {
@@ -1168,9 +1200,55 @@ export default function Grafikas() {
               {slotNoteDialog?.time ? `Žinutė — ${formatTime(slotNoteDialog.time)}` : "Dienos žinutė"}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {slotNoteDialog ? `${formatDateISO(slotNoteDialog.date)} — matoma visiems, galioja tik šiai dienai.` : ""}
+              {slotNoteDialog ? `${formatDateISO(slotNoteDialog.date)} — matoma visiems.` : ""}
             </DialogDescription>
           </DialogHeader>
+
+          {slotNoteDialog && slotNoteDialog.time == null && (
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase tracking-wider text-gold/70">Kartojimas</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSlotNoteRecurrence("once")}
+                  className={cn(
+                    "text-left rounded-md border px-3 py-2 text-xs transition-colors",
+                    slotNoteRecurrence === "once" ? "border-gold bg-gold/10 text-gold" : "border-gold/20 text-muted-foreground hover:border-gold/40",
+                  )}
+                >
+                  <div className="font-medium">Tik šiai dienai</div>
+                  <div className="text-[10px] opacity-80">Rodoma tik {formatDateISO(slotNoteDialog.date)}</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSlotNoteRecurrence("weekly")}
+                  className={cn(
+                    "text-left rounded-md border px-3 py-2 text-xs transition-colors",
+                    slotNoteRecurrence === "weekly" ? "border-gold bg-gold/10 text-gold" : "border-gold/20 text-muted-foreground hover:border-gold/40",
+                  )}
+                >
+                  <div className="font-medium">Kas savaitę</div>
+                  <div className="text-[10px] opacity-80">Kartosis kiekvieną {WEEKDAYS_LT[(dbDayOfWeek(slotNoteDialog.date) + 6) % 7]?.toLowerCase()}</div>
+                </button>
+              </div>
+
+              {getWeeklyNotes(slotNoteDialog.date).length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  <div className="text-[11px] uppercase tracking-wider text-gold/70">Šios dienos nuolatinės žinutės</div>
+                  {getWeeklyNotes(slotNoteDialog.date).map((wn) => (
+                    <div key={wn.id} className="flex items-start gap-2 rounded border border-gold/15 bg-background/40 px-2 py-1.5 text-xs">
+                      <div className="flex-1 whitespace-pre-wrap italic text-foreground/80">{wn.note}</div>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={() => deleteWeeklyNote(wn.id)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <Textarea
             value={slotNoteText}
             onChange={(e) => setSlotNoteText(e.target.value)}

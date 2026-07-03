@@ -357,27 +357,33 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          day_of_week: number | null
           id: string
           note: string
           note_date: string
+          recurrence: string
           slot_time: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          day_of_week?: number | null
           id?: string
           note: string
           note_date: string
+          recurrence?: string
           slot_time?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          day_of_week?: number | null
           id?: string
           note?: string
           note_date?: string
+          recurrence?: string
           slot_time?: string | null
           updated_at?: string
         }
@@ -505,6 +511,36 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vacations: {
+        Row: {
+          created_at: string
+          ends_on: string
+          id: string
+          note: string | null
+          starts_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on: string
+          id?: string
+          note?: string | null
+          starts_on: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string
+          id?: string
+          note?: string | null
+          starts_on?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

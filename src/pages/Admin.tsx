@@ -8,8 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree } from "lucide-react";
+import { LayoutDashboard, Palmtree, Menu } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
+import { cn } from "@/lib/utils";
+import { VacationsPanel } from "@/components/VacationsPanel";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -28,6 +31,7 @@ interface Msg { id: string; user_id: string; body: string; created_at: string; r
 
 export default function Admin() {
   const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0 });
+  const [section, setSection] = useState<string>("overview");
   useEffect(() => {
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
@@ -45,61 +49,253 @@ export default function Admin() {
   }, []);
 
   const totalAlerts = alerts.sickness + alerts.missingDoc + alerts.unread;
+  const cancelAlerts = alerts.sickness + alerts.missingDoc;
+
+  const navItems: { value: string; label: string; icon: any; badge?: number; badgeCls?: string }[] = [
+    { value: "overview", label: "Apžvalga", icon: LayoutDashboard },
+    { value: "schedule", label: "Tvarkaraštis", icon: CalendarCog },
+    { value: "permanent", label: "Nuolatiniai", icon: Star },
+    { value: "cancels", label: "Atšaukimai", icon: Inbox, badge: cancelAlerts, badgeCls: "bg-blush text-white" },
+    { value: "users", label: "Vartotojai", icon: Users },
+    { value: "subs", label: "Abonimentai", icon: Wallet },
+    { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
+    { value: "vacations", label: "Atostogos", icon: Palmtree },
+  ];
+  const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
 
   return (
-    <div className="container max-w-6xl py-8 sm:py-14">
-      <header className="mb-8 animate-fade-up">
+    <div className="container max-w-7xl py-8 sm:py-14">
+      <header className="mb-6 animate-fade-up">
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
         <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">Valdymas</h1>
-        {totalAlerts > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {alerts.unread > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gold/15 text-gold border border-gold/40">
-                <MessageSquare className="w-3 h-3" /> {alerts.unread} nauj. žinučių
-              </span>
-            )}
-            {alerts.sickness > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-blush/15 text-blush border border-blush/40 animate-pulse">
-                <AlertCircle className="w-3 h-3" /> {alerts.sickness} ligos atšaukimų
-              </span>
-            )}
-            {alerts.missingDoc > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-destructive/15 text-destructive border border-destructive/40 animate-pulse">
-                <AlertCircle className="w-3 h-3" /> {alerts.missingDoc} be pažymos (terminas baigtas)
-              </span>
-            )}
-          </div>
-        )}
         <div className="gold-divider mt-4 max-w-[120px]" />
       </header>
 
-      <Tabs defaultValue="schedule">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full bg-background/50 mb-6 h-auto">
-          <TabsTrigger value="schedule" className="gap-1.5 text-xs sm:text-sm"><CalendarCog className="w-4 h-4" /> <span className="hidden sm:inline">Tvarkaraštis</span></TabsTrigger>
-          <TabsTrigger value="permanent" className="gap-1.5 text-xs sm:text-sm"><Star className="w-4 h-4" /> <span className="hidden sm:inline">Nuolatiniai</span></TabsTrigger>
-          <TabsTrigger value="cancels" className="gap-1.5 text-xs sm:text-sm relative">
-            <Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Atšaukimai</span>
-            {(alerts.sickness + alerts.missingDoc) > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-blush text-[9px] text-white flex items-center justify-center font-bold">{alerts.sickness + alerts.missingDoc}</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="w-4 h-4" /> <span className="hidden sm:inline">Vartotojai</span></TabsTrigger>
-          <TabsTrigger value="subs" className="gap-1.5 text-xs sm:text-sm"><Wallet className="w-4 h-4" /> <span className="hidden sm:inline">Abonimentas</span></TabsTrigger>
-          <TabsTrigger value="messages" className="gap-1.5 text-xs sm:text-sm relative">
-            <MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Žinutės</span>
-            {alerts.unread > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gold text-[9px] text-background flex items-center justify-center font-bold">{alerts.unread}</span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
+        {/* Sidebar (desktop) */}
+        <aside className="hidden lg:block sticky top-6 self-start">
+          <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant space-y-0.5">
+            {navItems.map((n) => {
+              const Icon = n.icon;
+              const active = section === n.value;
+              return (
+                <button
+                  key={n.value}
+                  type="button"
+                  onClick={() => setSection(n.value)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
+                    active
+                      ? "bg-gold/15 text-gold border border-gold/30"
+                      : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
+                  )}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">{n.label}</span>
+                  {!!n.badge && n.badge > 0 && (
+                    <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center", n.badgeCls)}>
+                      {n.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-        <TabsContent value="schedule"><ScheduleTab /></TabsContent>
-        <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
-        <TabsContent value="cancels"><CancellationsTab /></TabsContent>
-        <TabsContent value="users"><UsersTab /></TabsContent>
-        <TabsContent value="subs"><SubsTab /></TabsContent>
-        <TabsContent value="messages"><MessagesTab /></TabsContent>
-      </Tabs>
+        {/* Mobile nav */}
+        <div className="lg:hidden -mt-2 mb-2 overflow-x-auto">
+          <div className="flex gap-1.5 pb-2 min-w-max">
+            {navItems.map((n) => {
+              const Icon = n.icon;
+              const active = section === n.value;
+              return (
+                <button
+                  key={n.value}
+                  onClick={() => setSection(n.value)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-md text-xs whitespace-nowrap transition-colors relative border",
+                    active ? "bg-gold/15 text-gold border-gold/40" : "bg-background/40 text-foreground/70 border-gold/15",
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {n.label}
+                  {!!n.badge && n.badge > 0 && (
+                    <span className={cn("ml-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center", n.badgeCls)}>{n.badge}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <div className="mb-4 flex items-center gap-2">
+            <activeItem.icon className="w-5 h-5 text-gold" />
+            <h2 className="font-display text-2xl text-gradient-gold">{activeItem.label}</h2>
+          </div>
+
+          <Tabs value={section} onValueChange={setSection}>
+            <TabsList className="sr-only"><TabsTrigger value={section}>{section}</TabsTrigger></TabsList>
+            <TabsContent value="overview"><OverviewTab alerts={alerts} onGo={setSection} /></TabsContent>
+            <TabsContent value="schedule"><ScheduleTab /></TabsContent>
+            <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
+            <TabsContent value="cancels"><CancellationsTab /></TabsContent>
+            <TabsContent value="users"><UsersTab /></TabsContent>
+            <TabsContent value="subs"><SubsTab /></TabsContent>
+            <TabsContent value="messages"><MessagesTab /></TabsContent>
+            <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- OVERVIEW ---------- */
+function OverviewTab({ alerts, onGo }: { alerts: { sickness: number; missingDoc: number; unread: number }; onGo: (s: string) => void }) {
+  const [stats, setStats] = useState({ users: 0, activeSubs: 0, unpaidSubs: 0, weekBookings: 0, onVacation: 0 });
+  useEffect(() => {
+    (async () => {
+      const today = formatDateISO(new Date());
+      const in7 = formatDateISO(new Date(Date.now() + 7 * 86400000));
+      const [p, s, b, v] = await Promise.all([
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("subscriptions").select("id, paid, expires_at").gte("expires_at", today),
+        supabase.from("bookings").select("id", { count: "exact", head: true }).gte("slot_date", today).lte("slot_date", in7).eq("status", "active"),
+        (supabase as any).from("vacations").select("id", { count: "exact", head: true }).gte("ends_on", today),
+      ]);
+      const subs = (s.data ?? []) as any[];
+      setStats({
+        users: p.count ?? 0,
+        activeSubs: subs.length,
+        unpaidSubs: subs.filter((x) => !x.paid).length,
+        weekBookings: b.count ?? 0,
+        onVacation: v.count ?? 0,
+      });
+    })();
+  }, []);
+
+  const cards = [
+    { label: "Vartotojai", value: stats.users, icon: Users, go: "users", cls: "" },
+    { label: "Aktyvūs abonementai", value: stats.activeSubs, icon: Wallet, go: "subs", cls: "" },
+    { label: "Neapmokėti abonementai", value: stats.unpaidSubs, icon: AlertCircle, go: "subs", cls: stats.unpaidSubs > 0 ? "border-blush/40 bg-blush/5" : "" },
+    { label: "Šios sav. treniruotės", value: stats.weekBookings, icon: CalendarCog, go: "schedule", cls: "" },
+    { label: "Atostogose / greitai", value: stats.onVacation, icon: Palmtree, go: "vacations", cls: stats.onVacation > 0 ? "border-gold/40 bg-gold/5" : "" },
+    { label: "Nauj. žinutės", value: alerts.unread, icon: MessageSquare, go: "messages", cls: alerts.unread > 0 ? "border-gold/40 bg-gold/5" : "" },
+    { label: "Laukiantys atšaukimai", value: alerts.sickness + alerts.missingDoc, icon: Inbox, go: "cancels", cls: (alerts.sickness + alerts.missingDoc) > 0 ? "border-blush/40 bg-blush/5" : "" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {cards.map((c) => {
+        const Icon = c.icon;
+        return (
+          <button
+            key={c.label}
+            onClick={() => onGo(c.go)}
+            className={cn(
+              "text-left p-4 rounded-lg border transition-all hover:border-gold/50 hover:shadow-gold group",
+              c.cls || "border-gold/15 bg-gradient-card",
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Icon className="w-4 h-4 text-gold/70 group-hover:text-gold" />
+            </div>
+            <div className="font-display text-3xl text-gradient-gold tabular-nums">{c.value}</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{c.label}</div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------- ATOSTOGOS (all users) ---------- */
+function VacationsAdminTab() {
+  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showPast, setShowPast] = useState(false);
+  const today = formatDateISO(new Date());
+
+  const load = async () => {
+    setLoading(true);
+    const [v, p] = await Promise.all([
+      (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").order("starts_on", { ascending: true }),
+      supabase.from("profiles").select("id, full_name"),
+    ]);
+    const nameMap = new Map<string, string>();
+    (p.data ?? []).forEach((x: any) => nameMap.set(x.id, x.full_name));
+    setRows(((v.data ?? []) as any[]).map((r) => ({ ...r, name: nameMap.get(r.user_id) ?? "—" })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const upcoming = rows.filter((r) => r.ends_on >= today);
+  const past = rows.filter((r) => r.ends_on < today).reverse();
+
+  const remove = async (id: string) => {
+    if (!confirm("Ištrinti atostogų įrašą?")) return;
+    const { error } = await (supabase as any).from("vacations").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Ištrinta"); load();
+  };
+
+  if (loading) return <p className="text-sm text-muted-foreground italic">Kraunama…</p>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="text-xs uppercase tracking-wider text-gold/70 mb-2">Aktyvios ir būsimos ({upcoming.length})</div>
+        {upcoming.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">Šiuo metu niekas nėra atostogose.</p>
+        ) : (
+          <div className="space-y-2">
+            {upcoming.map((r) => {
+              const active = r.starts_on <= today && r.ends_on >= today;
+              return (
+                <div key={r.id} className={cn(
+                  "flex items-center justify-between gap-3 p-3 rounded-lg border",
+                  active ? "border-gold/50 bg-gold/10 shadow-gold" : "border-gold/20 bg-gradient-card",
+                )}>
+                  <div className="flex items-start gap-3">
+                    <Palmtree className={cn("w-4 h-4 mt-0.5", active ? "text-gold" : "text-gold/60")} />
+                    <div>
+                      <div className="font-display text-base text-gold">{r.name}</div>
+                      <div className="text-xs tabular-nums text-foreground/85">{r.starts_on} → {r.ends_on}</div>
+                      {r.note && <div className="text-xs text-muted-foreground mt-0.5 italic">{r.note}</div>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {active && <span className="text-[10px] uppercase tracking-wider text-gold px-2 py-0.5 rounded-full border border-gold/40 bg-gold/10">Vyksta</span>}
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => remove(r.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <button onClick={() => setShowPast((v) => !v)} className="text-xs uppercase tracking-wider text-muted-foreground hover:text-gold">
+          {showPast ? "Slėpti" : "Rodyti"} praeities atostogas ({past.length})
+        </button>
+        {showPast && (
+          <div className="mt-2 space-y-1">
+            {past.map((r) => (
+              <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-1.5 rounded border border-muted/20 bg-background/20 text-xs">
+                <div><span className="text-foreground/80 mr-2">{r.name}</span><span className="tabular-nums text-muted-foreground">{r.starts_on} → {r.ends_on}</span></div>
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => remove(r.id)}>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -413,6 +609,7 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, negative = past
+  const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const viewMonthStart = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-01`;
@@ -461,6 +658,27 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
     (!r.subscription_id || r.sub_paid === false)
   ).length;
 
+  const classify = (r: Row): "counted" | "uncovered" | "cancelled" | "sick" => {
+    if (r.status === "cancelled" && r.sickness) return "sick";
+    if (r.status === "cancelled") return "cancelled";
+    if (r.counts_in_subscription && r.subscription_id && r.sub_paid) return "counted";
+    return "uncovered";
+  };
+  const groups = {
+    counted: rows.filter((r) => classify(r) === "counted").length,
+    uncovered: rows.filter((r) => classify(r) === "uncovered").length,
+    cancelled: rows.filter((r) => classify(r) === "cancelled").length,
+    sick: rows.filter((r) => classify(r) === "sick").length,
+  };
+  const chips: { key: typeof filter; label: string; count: number; cls: string }[] = [
+    { key: "all", label: "Visos", count: rows.length, cls: "border-gold/30 text-gold" },
+    { key: "counted", label: "Įskaičiuota", count: groups.counted, cls: "border-green-500/40 text-green-500" },
+    { key: "uncovered", label: "Neįskaičiuota", count: groups.uncovered, cls: "border-blush/40 text-blush" },
+    { key: "cancelled", label: "Atšaukta", count: groups.cancelled, cls: "border-muted-foreground/30 text-muted-foreground" },
+    { key: "sick", label: "Liga", count: groups.sick, cls: "border-amber-400/50 text-amber-500" },
+  ];
+  const visibleRows = filter === "all" ? rows : rows.filter((r) => classify(r) === filter);
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="bg-gradient-card border-gold/20 max-w-2xl">
@@ -470,21 +688,37 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="text-xs text-muted-foreground">
-            Visos šio mėnesio pamokos (įvykusios, atšauktos, liga) su statusu. Neapmokėtų / neįskaičiuotų šiame mėn.: <b>{uncoveredCount}</b>.
-          </div>
           <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-gold/5 border border-gold/15">
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o - 1)}>← Ankstesnis</Button>
             <div className="font-display text-base text-gold capitalize">{monthLabel}</div>
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o + 1)} disabled={monthOffset >= 0}>Kitas →</Button>
           </div>
+
+          {!loading && rows.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => setFilter(c.key)}
+                  className={cn(
+                    "text-[11px] px-2.5 py-1 rounded-full border transition-all inline-flex items-center gap-1",
+                    filter === c.key ? `${c.cls} bg-gold/5 ring-1 ring-current/40` : "border-muted-foreground/20 text-muted-foreground hover:border-gold/30",
+                  )}
+                >
+                  {c.label}
+                  <span className="opacity-70 tabular-nums">{c.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <p className="text-sm text-muted-foreground italic">Kraunama…</p>
-          ) : rows.length === 0 ? (
+          ) : visibleRows.length === 0 ? (
             <p className="text-sm text-muted-foreground italic py-6 text-center">Šį mėnesį pamokų nėra.</p>
           ) : (
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-              {rows.map((r) => {
+              {visibleRows.map((r) => {
                 const cancelled = r.status === "cancelled";
                 const counted = !cancelled && r.counts_in_subscription && r.subscription_id && r.sub_paid;
                 let statusChip: { label: string; cls: string };
@@ -505,6 +739,11 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
                   </div>
                 );
               })}
+            </div>
+          )}
+          {!loading && uncoveredCount > 0 && (
+            <div className="text-[11px] text-blush/80 text-center">
+              Neapmokėtų / neįskaičiuotų šiame mėnesį: <b>{uncoveredCount}</b>
             </div>
           )}
         </div>
