@@ -1198,9 +1198,55 @@ export default function Grafikas() {
               {slotNoteDialog?.time ? `Žinutė — ${formatTime(slotNoteDialog.time)}` : "Dienos žinutė"}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {slotNoteDialog ? `${formatDateISO(slotNoteDialog.date)} — matoma visiems, galioja tik šiai dienai.` : ""}
+              {slotNoteDialog ? `${formatDateISO(slotNoteDialog.date)} — matoma visiems.` : ""}
             </DialogDescription>
           </DialogHeader>
+
+          {slotNoteDialog && slotNoteDialog.time == null && (
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase tracking-wider text-gold/70">Kartojimas</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSlotNoteRecurrence("once")}
+                  className={cn(
+                    "text-left rounded-md border px-3 py-2 text-xs transition-colors",
+                    slotNoteRecurrence === "once" ? "border-gold bg-gold/10 text-gold" : "border-gold/20 text-muted-foreground hover:border-gold/40",
+                  )}
+                >
+                  <div className="font-medium">Tik šiai dienai</div>
+                  <div className="text-[10px] opacity-80">Rodoma tik {formatDateISO(slotNoteDialog.date)}</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSlotNoteRecurrence("weekly")}
+                  className={cn(
+                    "text-left rounded-md border px-3 py-2 text-xs transition-colors",
+                    slotNoteRecurrence === "weekly" ? "border-gold bg-gold/10 text-gold" : "border-gold/20 text-muted-foreground hover:border-gold/40",
+                  )}
+                >
+                  <div className="font-medium">Kas savaitę</div>
+                  <div className="text-[10px] opacity-80">Kartosis kiekvieną {WEEKDAYS_LT[(dbDayOfWeek(slotNoteDialog.date) + 6) % 7]?.toLowerCase()}</div>
+                </button>
+              </div>
+
+              {getWeeklyNotes(slotNoteDialog.date).length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  <div className="text-[11px] uppercase tracking-wider text-gold/70">Šios dienos nuolatinės žinutės</div>
+                  {getWeeklyNotes(slotNoteDialog.date).map((wn) => (
+                    <div key={wn.id} className="flex items-start gap-2 rounded border border-gold/15 bg-background/40 px-2 py-1.5 text-xs">
+                      <div className="flex-1 whitespace-pre-wrap italic text-foreground/80">{wn.note}</div>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={() => deleteWeeklyNote(wn.id)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <Textarea
             value={slotNoteText}
             onChange={(e) => setSlotNoteText(e.target.value)}
