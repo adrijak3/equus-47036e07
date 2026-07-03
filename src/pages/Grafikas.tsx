@@ -215,13 +215,24 @@ export default function Grafikas() {
     // Slot notes for this week (per-slot announcements)
     const { data: snotes } = await supabase
       .from("slot_notes" as any)
-      .select("id, note_date, slot_time, note")
+      .select("id, note_date, slot_time, note, recurrence, day_of_week")
       .gte("note_date", startISO)
-      .lte("note_date", endISO);
+      .lte("note_date", endISO)
+      .eq("recurrence", "once");
     setSlotNotes(((snotes ?? []) as any[]).map((n) => ({
       id: n.id, note_date: n.note_date,
       slot_time: n.slot_time ? String(n.slot_time).slice(0, 8) : null,
-      note: n.note,
+      note: n.note, recurrence: "once",
+    })));
+
+    // Weekly (permanent) day-level notes
+    const { data: wnotes } = await supabase
+      .from("slot_notes" as any)
+      .select("id, note, recurrence, day_of_week")
+      .eq("recurrence", "weekly");
+    setWeeklyNotes(((wnotes ?? []) as any[]).map((n) => ({
+      id: n.id, note_date: "", slot_time: null, note: n.note,
+      recurrence: "weekly" as const, day_of_week: n.day_of_week,
     })));
 
     setLoading(false);
