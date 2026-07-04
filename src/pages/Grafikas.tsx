@@ -228,10 +228,12 @@ export default function Grafikas() {
     // Weekly (permanent) day-level notes
     const { data: wnotes } = await supabase
       .from("slot_notes" as any)
-      .select("id, note, recurrence, day_of_week")
+      .select("id, note, recurrence, day_of_week, slot_time")
       .eq("recurrence", "weekly");
     setWeeklyNotes(((wnotes ?? []) as any[]).map((n) => ({
-      id: n.id, note_date: "", slot_time: null, note: n.note,
+      id: n.id, note_date: "",
+      slot_time: n.slot_time ? String(n.slot_time).slice(0, 8) : null,
+      note: n.note,
       recurrence: "weekly" as const, day_of_week: n.day_of_week,
     })));
 
