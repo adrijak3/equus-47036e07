@@ -226,7 +226,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <p className="text-xs text-muted-foreground tracking-wide">
-            Mylintiems žirgus ir laisvę · © {new Date().getFullYear()}
+            © 2026 Equus Jojimo Mokykla. Visos teisės saugomos. Svetainės visos autoriaus teisės priklauso Adrijai Kalikaitei.
           </p>
         </div>
       </footer>

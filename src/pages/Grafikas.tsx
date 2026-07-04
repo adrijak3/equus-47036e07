@@ -228,10 +228,12 @@ export default function Grafikas() {
     // Weekly (permanent) day-level notes
     const { data: wnotes } = await supabase
       .from("slot_notes" as any)
-      .select("id, note, recurrence, day_of_week")
+      .select("id, note, recurrence, day_of_week, slot_time")
       .eq("recurrence", "weekly");
     setWeeklyNotes(((wnotes ?? []) as any[]).map((n) => ({
-      id: n.id, note_date: "", slot_time: null, note: n.note,
+      id: n.id, note_date: "",
+      slot_time: n.slot_time ? String(n.slot_time).slice(0, 8) : null,
+      note: n.note,
       recurrence: "weekly" as const, day_of_week: n.day_of_week,
     })));
 
@@ -549,10 +551,11 @@ export default function Grafikas() {
     return slotNotes.find((n) => n.note_date === iso && (n.slot_time ?? null) === t) ?? null;
   };
 
-  /** All weekly notes matching this date's weekday (day-level only). */
-  const getWeeklyNotes = (date: Date): SlotNote[] => {
+  /** All weekly notes matching this date's weekday. Pass time=null for day-level, or a slot_time string for per-slot. */
+  const getWeeklyNotes = (date: Date, time: string | null = null): SlotNote[] => {
     const dow = dbDayOfWeek(date);
-    return weeklyNotes.filter((n) => n.day_of_week === dow);
+    const t = time ? time.slice(0, 8) : null;
+    return weeklyNotes.filter((n) => n.day_of_week === dow && (n.slot_time ?? null) === t);
   };
 
   const openSlotNoteDialog = (date: Date, time: string | null) => {
@@ -570,11 +573,11 @@ export default function Grafikas() {
     const isDayLevel = slotNoteDialog.time == null;
     const existing = getSlotNote(slotNoteDialog.date, slotNoteDialog.time);
     let error;
-    if (isDayLevel && slotNoteRecurrence === "weekly") {
+    if (slotNoteRecurrence === "weekly") {
       // Insert a new weekly note (don't overwrite once-notes)
       ({ error } = await supabase.from("slot_notes" as any).insert({
         note_date: formatDateISO(slotNoteDialog.date),
-        slot_time: null,
+        slot_time: slotNoteDialog.time ? slotNoteDialog.time.slice(0, 8) : null,
         note: text,
         created_by: user.id,
         recurrence: "weekly",
@@ -1003,6 +1006,12 @@ export default function Grafikas() {
                             </div>
                           );
                         })()}
+                        {/* Per-slot weekly admin notes */}
+                        {getWeeklyNotes(date, slot.slot_time).map((wn) => (
+                          <div key={wn.id} className="mx-3 mt-2 rounded-md border border-gold/25 bg-gold/8 px-3 py-1.5 text-xs italic text-foreground/80 leading-snug whitespace-pre-wrap">
+                            {wn.note}
+                          </div>
+                        ))}
 
                       
                         {/* Booked names */}
@@ -1204,7 +1213,7 @@ export default function Grafikas() {
             </DialogDescription>
           </DialogHeader>
 
-          {slotNoteDialog && slotNoteDialog.time == null && (
+          {slotNoteDialog && (
             <div className="space-y-2">
               <div className="text-[11px] uppercase tracking-wider text-gold/70">Kartojimas</div>
               <div className="grid grid-cols-2 gap-2">
@@ -1228,14 +1237,17 @@ export default function Grafikas() {
                   )}
                 >
                   <div className="font-medium">Kas savaitę</div>
-                  <div className="text-[10px] opacity-80">Kartosis kiekvieną {WEEKDAYS_LT[(dbDayOfWeek(slotNoteDialog.date) + 6) % 7]?.toLowerCase()}</div>
+                  <div className="text-[10px] opacity-80">
+                    Kartosis kiekvieną {WEEKDAYS_LT[(dbDayOfWeek(slotNoteDialog.date) + 6) % 7]?.toLowerCase()}
+                    {slotNoteDialog.time ? ` · ${formatTime(slotNoteDialog.time)}` : ""}
+                  </div>
                 </button>
               </div>
 
-              {getWeeklyNotes(slotNoteDialog.date).length > 0 && (
+              {getWeeklyNotes(slotNoteDialog.date, slotNoteDialog.time).length > 0 && (
                 <div className="mt-2 space-y-1.5">
                   <div className="text-[11px] uppercase tracking-wider text-gold/70">Šios dienos nuolatinės žinutės</div>
-                  {getWeeklyNotes(slotNoteDialog.date).map((wn) => (
+                  {getWeeklyNotes(slotNoteDialog.date, slotNoteDialog.time).map((wn) => (
                     <div key={wn.id} className="flex items-start gap-2 rounded border border-gold/15 bg-background/40 px-2 py-1.5 text-xs">
                       <div className="flex-1 whitespace-pre-wrap italic text-foreground/80">{wn.note}</div>
                       <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive"

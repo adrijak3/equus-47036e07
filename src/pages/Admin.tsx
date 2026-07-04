@@ -1185,24 +1185,28 @@ function SubsTab() {
                   <div className="text-xs text-muted-foreground">{p.phone ?? "—"} · {us.length} ab.</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</span>}
+                  {unpaid && (
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-blush/15 text-blush border border-blush/30 font-medium">
+                      Neapmokėta
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => { e.preventDefault(); setUncoveredFor(p); }}
-                    className="text-xs px-2 py-1 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1"
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-gold/25 bg-background/40 text-xs text-foreground/80 hover:text-gold hover:border-gold/50 hover:bg-gold/5 transition-colors"
                     title="Įvykusios pamokos, neįskaičiuotos į apmokėtą abonementą"
                   >
-                    <AlertCircle className="w-3 h-3" /> Neapmokėtos įvykusios
+                    <AlertCircle className="w-3.5 h-3.5 text-blush" />
+                    <span className="hidden sm:inline">Pamokų istorija</span>
+                    <span className="sm:hidden">Istorija</span>
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setSelUser(p.id); setOpen(true);
-                    }}
-                    className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
+                    onClick={(e) => { e.preventDefault(); setSelUser(p.id); setOpen(true); }}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-gradient-gold text-gold-foreground text-xs font-medium shadow-gold hover:brightness-110 transition-all"
+                    title="Pridėti abonementą"
                   >
-                    + Pridėti
+                    <Plus className="w-3.5 h-3.5" /> Abonementas
                   </button>
                 </div>
               </summary>
