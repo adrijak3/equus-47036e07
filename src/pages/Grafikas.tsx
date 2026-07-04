@@ -1207,7 +1207,7 @@ export default function Grafikas() {
             </DialogDescription>
           </DialogHeader>
 
-          {slotNoteDialog && slotNoteDialog.time == null && (
+          {slotNoteDialog && (
             <div className="space-y-2">
               <div className="text-[11px] uppercase tracking-wider text-gold/70">Kartojimas</div>
               <div className="grid grid-cols-2 gap-2">
@@ -1231,14 +1231,17 @@ export default function Grafikas() {
                   )}
                 >
                   <div className="font-medium">Kas savaitę</div>
-                  <div className="text-[10px] opacity-80">Kartosis kiekvieną {WEEKDAYS_LT[(dbDayOfWeek(slotNoteDialog.date) + 6) % 7]?.toLowerCase()}</div>
+                  <div className="text-[10px] opacity-80">
+                    Kartosis kiekvieną {WEEKDAYS_LT[(dbDayOfWeek(slotNoteDialog.date) + 6) % 7]?.toLowerCase()}
+                    {slotNoteDialog.time ? ` · ${formatTime(slotNoteDialog.time)}` : ""}
+                  </div>
                 </button>
               </div>
 
-              {getWeeklyNotes(slotNoteDialog.date).length > 0 && (
+              {getWeeklyNotes(slotNoteDialog.date, slotNoteDialog.time).length > 0 && (
                 <div className="mt-2 space-y-1.5">
                   <div className="text-[11px] uppercase tracking-wider text-gold/70">Šios dienos nuolatinės žinutės</div>
-                  {getWeeklyNotes(slotNoteDialog.date).map((wn) => (
+                  {getWeeklyNotes(slotNoteDialog.date, slotNoteDialog.time).map((wn) => (
                     <div key={wn.id} className="flex items-start gap-2 rounded border border-gold/15 bg-background/40 px-2 py-1.5 text-xs">
                       <div className="flex-1 whitespace-pre-wrap italic text-foreground/80">{wn.note}</div>
                       <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive"
