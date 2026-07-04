@@ -1006,6 +1006,12 @@ export default function Grafikas() {
                             </div>
                           );
                         })()}
+                        {/* Per-slot weekly admin notes */}
+                        {getWeeklyNotes(date, slot.slot_time).map((wn) => (
+                          <div key={wn.id} className="mx-3 mt-2 rounded-md border border-gold/25 bg-gold/8 px-3 py-1.5 text-xs italic text-foreground/80 leading-snug whitespace-pre-wrap">
+                            {wn.note}
+                          </div>
+                        ))}
 
                       
                         {/* Booked names */}
