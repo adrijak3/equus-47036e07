@@ -373,15 +373,22 @@ export default function Grafikas() {
 
   const removePermanentForever = async (booking: Booking) => {
     if (!user) return;
+    const targetUserId = booking.user_id;
     const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
-    const { data: ps } = await supabase
+    const { data: psRows, error: psSelErr } = await supabase
       .from("permanent_slots").select("id")
-      .eq("user_id", user.id).eq("day_of_week", dow).eq("slot_time", booking.slot_time)
-      .maybeSingle();
-    if (ps?.id) await supabase.from("permanent_slots").delete().eq("id", ps.id);
-    await supabase.from("bookings").update({ status: "cancelled" })
-      .eq("user_id", user.id).eq("slot_time", booking.slot_time)
+      .eq("user_id", targetUserId).eq("day_of_week", dow).eq("slot_time", booking.slot_time);
+    if (psSelErr) { toast.error(psSelErr.message); return; }
+    if (psRows && psRows.length > 0) {
+      const { error: delErr } = await supabase
+        .from("permanent_slots").delete()
+        .in("id", psRows.map((r) => r.id));
+      if (delErr) { toast.error(delErr.message); return; }
+    }
+    const { error: bErr } = await supabase.from("bookings").update({ status: "cancelled" })
+      .eq("user_id", targetUserId).eq("slot_time", booking.slot_time)
       .gte("slot_date", booking.slot_date).eq("status", "active");
+    if (bErr) { toast.error(bErr.message); return; }
     toast.success("Nuolatinis laikas pašalintas. Visos būsimos pamokos atšauktos.");
     loadData();
   };
