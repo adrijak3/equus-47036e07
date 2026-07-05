@@ -592,6 +592,15 @@ export type Database = {
         Returns: number
       }
       owns_profile: { Args: { _pid: string; _uid: string }; Returns: boolean }
+      remove_permanent_slot: {
+        Args: {
+          _day_of_week: number
+          _from_date: string
+          _slot_time: string
+          _user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "trainer"

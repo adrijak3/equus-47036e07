@@ -373,23 +373,20 @@ export default function Grafikas() {
 
   const removePermanentForever = async (booking: Booking) => {
     if (!user) return;
-    const targetUserId = booking.user_id;
     const dow = dbDayOfWeek(new Date(`${booking.slot_date}T${booking.slot_time}`));
-    const { data: psRows, error: psSelErr } = await supabase
-      .from("permanent_slots").select("id")
-      .eq("user_id", targetUserId).eq("day_of_week", dow).eq("slot_time", booking.slot_time);
-    if (psSelErr) { toast.error(psSelErr.message); return; }
-    if (psRows && psRows.length > 0) {
-      const { error: delErr } = await supabase
-        .from("permanent_slots").delete()
-        .in("id", psRows.map((r) => r.id));
-      if (delErr) { toast.error(delErr.message); return; }
+    const { data, error } = await supabase.rpc("remove_permanent_slot" as any, {
+      _user_id: booking.user_id,
+      _day_of_week: dow,
+      _slot_time: booking.slot_time,
+      _from_date: booking.slot_date,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    const res = (data ?? {}) as { deleted_slots?: number; cancelled_bookings?: number };
+    if (!res.deleted_slots) {
+      toast.error("Nuolatinio laiko įrašas nerastas");
+      return;
     }
-    const { error: bErr } = await supabase.from("bookings").update({ status: "cancelled" })
-      .eq("user_id", targetUserId).eq("slot_time", booking.slot_time)
-      .gte("slot_date", booking.slot_date).eq("status", "active");
-    if (bErr) { toast.error(bErr.message); return; }
-    toast.success("Nuolatinis laikas pašalintas. Visos būsimos pamokos atšauktos.");
+    toast.success(`Nuolatinis laikas pašalintas. Atšaukta būsimų pamokų: ${res.cancelled_bookings ?? 0}.`);
     loadData();
   };
 
