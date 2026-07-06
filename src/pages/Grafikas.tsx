@@ -367,8 +367,9 @@ export default function Grafikas() {
   const cancelSingleBooking = async (booking: Booking) => {
     const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
     if (error) { toast.error(error.message); return; }
+    setBookings((current) => current.filter((b) => b.id !== booking.id));
     toast.success("Pamoka atšaukta");
-    loadData();
+    await loadData();
   };
 
   const removePermanentForever = async (booking: Booking) => {
@@ -386,8 +387,19 @@ export default function Grafikas() {
       toast.error("Nuolatinio laiko įrašas nerastas");
       return;
     }
+    setBookings((current) => current.filter((b) => !(
+      b.user_id === booking.user_id &&
+      b.slot_time === booking.slot_time &&
+      b.slot_date >= booking.slot_date &&
+      dbDayOfWeek(new Date(`${b.slot_date}T${b.slot_time}`)) === dow
+    )));
+    setPermanents((current) => current.filter((p) => !(
+      p.user_id === booking.user_id &&
+      p.day_of_week === dow &&
+      p.slot_time.slice(0, 5) === booking.slot_time.slice(0, 5)
+    )));
     toast.success(`Nuolatinis laikas pašalintas. Atšaukta būsimų pamokų: ${res.cancelled_bookings ?? 0}.`);
-    loadData();
+    await loadData();
   };
 
   /** Admin: bump capacity by +1 for this specific date+time */
@@ -510,8 +522,9 @@ export default function Grafikas() {
       .update({ status: "cancelled" }).eq("id", bookingId);
     setAdminBusy(false);
     if (error) { toast.error(error.message); return; }
+    setBookings((current) => current.filter((b) => b.id !== bookingId));
     toast.success("Pašalinta");
-    loadData();
+    await loadData();
   };
 
   /** Day notes: add */
@@ -661,6 +674,7 @@ export default function Grafikas() {
     const { error: e1 } = await supabase.from("bookings")
       .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id);
     if (e1) { toast.error(e1.message); return; }
+    setBookings((current) => current.filter((b) => b.id !== cancelDialog.booking.id));
 
     // For sickness: 7-day window to upload doctor's note
     let documentUrl: string | null = null;
@@ -700,7 +714,7 @@ export default function Grafikas() {
     );
     setCancelDialog(null);
     setCancelFile(null);
-    loadData();
+    await loadData();
   };
 
   const today = new Date();
