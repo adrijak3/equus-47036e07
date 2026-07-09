@@ -685,9 +685,14 @@ export default function Grafikas() {
       return;
     }
     // Free slot immediately, mark booking cancelled, log request for admin decision
-    const { error: e1 } = await supabase.from("bookings")
-      .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id);
-    if (e1) { toast.error(e1.message); return; }
+    const { data: upd, error: e1 } = await supabase.from("bookings")
+      .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id).select("id");
+    if (e1) { toast.error(`Nepavyko atšaukti: ${e1.message}`); await loadData(); return; }
+    if (!upd || upd.length === 0) {
+      toast.error("Nepavyko atšaukti — neturite teisių arba pamoka jau pakeista.");
+      await loadData();
+      return;
+    }
     setBookings((current) => current.filter((b) => b.id !== cancelDialog.booking.id));
 
     // For sickness: 7-day window to upload doctor's note
