@@ -49,13 +49,22 @@ export function VacationsPanel({ userId, compact }: Props) {
   const add = async () => {
     if (!userId) return;
     if (to < from) { toast.error("Pabaigos data turi būti po pradžios"); return; }
+    if (!confirm(`Užregistruoti atostogas ${from} – ${to}? Visos aktyvios treniruotės šiame laikotarpyje bus atšauktos ir, jei priskirtos abonementui, grąžintos.`)) return;
     setBusy(true);
-    const { error } = await (supabase as any).from("vacations").insert({
-      user_id: userId, starts_on: from, ends_on: to, note: note.trim() || null,
+    const { data, error } = await (supabase as any).rpc("add_vacation_and_cancel", {
+      _user_id: userId,
+      _starts_on: from,
+      _ends_on: to,
+      _note: note.trim() || null,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Atostogos pridėtos");
+    const cancelled = (data as any)?.cancelled_bookings ?? 0;
+    toast.success(
+      cancelled > 0
+        ? `Atostogos pridėtos — atšaukta ${cancelled} treniruočių`
+        : "Atostogos pridėtos",
+    );
     setAdding(false); setNote("");
     load();
   };
