@@ -365,8 +365,17 @@ export default function Grafikas() {
   };
 
   const cancelSingleBooking = async (booking: Booking) => {
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-    if (error) { toast.error(error.message); return; }
+    const { data, error } = await supabase
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("id", booking.id)
+      .select("id");
+    if (error) { toast.error(`Nepavyko atšaukti: ${error.message}`); await loadData(); return; }
+    if (!data || data.length === 0) {
+      toast.error("Nepavyko atšaukti — neturite teisių arba pamoka jau pakeista.");
+      await loadData();
+      return;
+    }
     setBookings((current) => current.filter((b) => b.id !== booking.id));
     toast.success("Pamoka atšaukta");
     await loadData();
@@ -518,10 +527,15 @@ export default function Grafikas() {
   /** Admin: force-remove a booking */
   const adminRemoveBooking = async (bookingId: string) => {
     setAdminBusy(true);
-    const { error } = await supabase.from("bookings")
-      .update({ status: "cancelled" }).eq("id", bookingId);
+    const { data, error } = await supabase.from("bookings")
+      .update({ status: "cancelled" }).eq("id", bookingId).select("id");
     setAdminBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(`Nepavyko pašalinti: ${error.message}`); await loadData(); return; }
+    if (!data || data.length === 0) {
+      toast.error("Nepavyko pašalinti — neturite teisių arba pamoka jau pakeista.");
+      await loadData();
+      return;
+    }
     setBookings((current) => current.filter((b) => b.id !== bookingId));
     toast.success("Pašalinta");
     await loadData();
@@ -671,9 +685,14 @@ export default function Grafikas() {
       return;
     }
     // Free slot immediately, mark booking cancelled, log request for admin decision
-    const { error: e1 } = await supabase.from("bookings")
-      .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id);
-    if (e1) { toast.error(e1.message); return; }
+    const { data: upd, error: e1 } = await supabase.from("bookings")
+      .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id).select("id");
+    if (e1) { toast.error(`Nepavyko atšaukti: ${e1.message}`); await loadData(); return; }
+    if (!upd || upd.length === 0) {
+      toast.error("Nepavyko atšaukti — neturite teisių arba pamoka jau pakeista.");
+      await loadData();
+      return;
+    }
     setBookings((current) => current.filter((b) => b.id !== cancelDialog.booking.id));
 
     // For sickness: 7-day window to upload doctor's note

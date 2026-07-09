@@ -574,6 +574,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_vacation_and_cancel: {
+        Args: {
+          _ends_on: string
+          _note?: string
+          _starts_on: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       cleanup_old_bookings: { Args: never; Returns: number }
       cleanup_old_conversations: { Args: never; Returns: number }
       cleanup_old_day_notes: { Args: never; Returns: number }
