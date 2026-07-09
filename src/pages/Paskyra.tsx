@@ -571,7 +571,6 @@ export default function Paskyra() {
         <TabsContent value="settings" className="space-y-6">
           <ProfileSettings onSaved={refreshProfile} />
           <PasswordChange />
-          <VacationMode userId={acting} onChanged={load} />
           <Section title="Mano atostogos" icon={<CalendarDays className="w-4 h-4" />}>
             <VacationsPanel userId={acting} />
           </Section>
