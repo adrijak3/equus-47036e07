@@ -97,6 +97,10 @@ export default function Grafikas() {
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
   const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
+  const [dayCancellations, setDayCancellations] = useState<{
+  note_date: string;
+  note: string | null;
+}[]>([]);
   const [assignments, setAssignments] = useState<HorseAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -164,14 +168,22 @@ export default function Grafikas() {
     // Materialise any missing permanent bookings for this week (idempotent, server-side)
     await supabase.rpc("materialize_permanent_bookings", { _start: startISO, _end: endISO });
 
-    const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes] = await Promise.all([
-      supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
-      supabase.from("bookings").select("id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual")
-        .gte("slot_date", startISO).lte("slot_date", endISO).in("status", ["active", "completed"]),
-      supabase.from("slot_overrides").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
-      supabase.from("waiting_list").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
-      supabase.from("permanent_slots").select("user_id, day_of_week, slot_time"),
-    ]);
+    const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes, cancelsRes] = await Promise.all([
+  supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
+  supabase.from("bookings")
+    .select("id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual")
+    .gte("slot_date", startISO)
+    .lte("slot_date", endISO)
+    .in("status", ["active", "completed"]),
+  supabase.from("slot_overrides").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
+  supabase.from("waiting_list").select("*").gte("slot_date", startISO).lte("slot_date", endISO),
+  supabase.from("permanent_slots").select("user_id, day_of_week, slot_time"),
+  supabase
+    .from("day_cancellations" as any)
+    .select("note_date, note")
+    .gte("note_date", startISO)
+    .lte("note_date", endISO),
+]);
 
     const userIds = new Set<string>();
     (bookingsRes.data ?? []).forEach((b) => userIds.add(b.user_id));
@@ -190,6 +202,7 @@ export default function Grafikas() {
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
+    setDayCancellations((cancelsRes.data as any[] | null) ?? []);
 
     // Load horse assignments + horse names for this week
     const { data: assignsRaw } = await supabase
@@ -311,15 +324,22 @@ export default function Grafikas() {
     user ? getWaitingFor(date, time).some((w) => w.user_id === user.id) : false;
 
   const handleBook = async (date: Date, time: string) => {
-    if (!user) {
-      toast.error("Pirma prisijunkite");
-      return;
-    }
-    if (date.getTime() < new Date().setHours(0, 0, 0, 0)) {
-      toast.error("Negalima registruotis į praeities pamokas");
-      return;
-    }
-    const key = `book-${formatDateISO(date)}-${time}`;
+   if (!user) {
+  toast.error("Prisijunkite, kad užsiregistruotumėte");
+  return;
+}
+
+if (date.getTime() < new Date().setHours(0, 0, 0, 0)) {
+  toast.error("Negalima registruotis į praeities pamokas");
+  return;
+}
+
+if (getDayCancellation(date)) {
+  toast.error("Šią dieną treniruotės nevyksta");
+  return;
+}
+
+const key = `book-${formatDateISO(date)}-${time}`;
     setBusy(key);
     const { error } = await supabase.from("bookings").insert({
       user_id: user.id,
@@ -574,6 +594,8 @@ export default function Grafikas() {
 
   const getDayNotes = (date: Date) =>
     dayNotes.filter((n) => n.note_date === formatDateISO(date));
+  const getDayCancellation = (date: Date) =>
+  dayCancellations.find((c) => c.note_date === formatDateISO(date)) ?? null;
 
   /** Slot/day notes: get the note for a given date+slot_time (null = whole day). */
   const getSlotNote = (date: Date, time: string | null): SlotNote | null => {
@@ -897,6 +919,33 @@ export default function Grafikas() {
                         <MessageSquare className="w-3 h-3" /> {getSlotNote(date, null) ? "Redaguoti žinutę" : "Dienos žinutė"}
                       </button>
                     )}
+                    {isAdmin && !isPast && !getDayCancellation(date) && (
+  <button
+    type="button"
+    onClick={async () => {
+      const note = window.prompt("Priežastis (nebūtina):", "") ?? "";
+
+      const { error } = await supabase
+        .from("day_cancellations" as any)
+        .insert({
+          note_date: formatDateISO(date),
+          note: note.trim() || null,
+        });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Diena atšaukta. Visi tos dienos rezervavimai atšaukti.");
+      loadData();
+    }}
+    className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-blush/80 hover:text-blush border border-dashed border-blush/30 hover:border-blush/60 rounded px-1.5 py-1 transition-colors"
+    title="Atšaukti visą dieną"
+  >
+    <MessageSquare className="w-3 h-3" /> Atšaukti dieną
+  </button>
+)}
                   </div>
 
 
@@ -918,14 +967,59 @@ export default function Grafikas() {
                     );
                   })()}
 
-                  {daySlots.length === 0 && (
-                    <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
-                      {dow === 7 ? "Individualus" : "Treniruočių nėra"}
-                    </div>
-                  )}
+                 {(() => {
+  const cancelled = getDayCancellation(date);
+
+  if (cancelled) {
+    return (
+      <>
+        <div className="rounded-md border border-blush/40 bg-blush/10 px-3 py-6 text-xs text-blush text-center italic font-semibold">
+          Treniruotės nevyksta
+
+          {cancelled.note ? (
+            <div className="mt-1 text-foreground/70 not-italic font-normal">
+              {cancelled.note}
+            </div>
+          ) : null}
+        </div>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={async () => {
+              const { error } = await supabase
+                .from("day_cancellations" as any)
+                .delete()
+                .eq("note_date", formatDateISO(date));
+
+              if (error) {
+                toast.error(error.message);
+                return;
+              }
+
+              toast.success("Diena grąžinta į tvarkaraštį");
+              loadData();
+            }}
+            className="mt-1 w-full text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1"
+          >
+            Grąžinti dieną
+          </button>
+        )}
+      </>
+    );
+  }
+
+  return null;
+})()}
+
+{!getDayCancellation(date) && daySlots.length === 0 && (
+  <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
+    {dow === 7 ? "Individualus" : "Treniruočių nėra"}
+  </div>
+)}
 
                   {/* Slot cards stacked vertically */}
-                  {daySlots.map((slot) => {
+                  {!getDayCancellation(date) && daySlots.map((slot) => {
                     const slotBookings = getSlotBookings(date, slot.slot_time);
                     const cap = getCapacity(date, slot.slot_time, slot.max_capacity);
                     const isFull = slotBookings.length >= cap;
