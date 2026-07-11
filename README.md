@@ -1,3 +1,1 @@
-# Welcome to your Lovable project
-
-TODO: Document your project here
+Equus jojimo mokykla projektas by Adrija Kalikaitė
