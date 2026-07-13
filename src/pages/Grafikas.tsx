@@ -292,8 +292,24 @@ export default function Grafikas() {
   };
 
   const getSlotBookings = (date: Date, time: string) => {
-    const dateISO = formatDateISO(date);
-    const list = bookings.filter((b) => b.slot_date === dateISO && b.slot_time === time);
+  const dateISO = formatDateISO(date);
+
+  const matching = bookings.filter(
+    (b) => b.slot_date === dateISO && b.slot_time === time,
+  );
+
+  const seen = new Set<string>();
+
+  const list = matching.filter((b) => {
+    const key = b.is_guest
+      ? `guest:${b.guest_name ?? b.id}`
+      : `user:${b.user_id}`;
+
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
     // Permanent slot users first, then everyone else, alphabetical within each group
     return list.sort((a, b) => {
       const pa = isPermanentBooking(a) ? 0 : 1;
