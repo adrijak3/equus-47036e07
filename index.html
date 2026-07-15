@@ -32,7 +32,23 @@
   <meta name="twitter:title" content="Equus – jojimo mokykla">
   <meta property="og:description" content="Equus jojimo mokykla – mylintiems žirgus ir laisvę. Tvarkaraštis, kainos, abonementai.">
   <meta name="twitter:description" content="Equus jojimo mokykla – mylintiems žirgus ir laisvę. Tvarkaraštis, kainos, abonementai.">
-</head>
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem("equus_theme");
+          const map = { blue: "ocean", dark: "midnight", light: "pearl" };
+          const theme = map[saved] || (
+            saved === "ocean" || saved === "midnight" || saved === "pearl" || saved === "stable"
+              ? saved
+              : "ocean"
+          );
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.classList.toggle("dark", theme !== "pearl");
+          document.documentElement.style.colorScheme = theme === "pearl" ? "light" : "dark";
+        } catch {}
+      })();
+    </script>
+  </head>
 
   <body>
     <div id="root"></div>
