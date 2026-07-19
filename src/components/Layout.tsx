@@ -46,6 +46,7 @@ const NAV_ADMIN = [
 const NAV_TRAINER = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/grafikas", label: "Grafikas", icon: Calendar },
+  { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/informacija", label: "Informacija", icon: Info },
 ];
