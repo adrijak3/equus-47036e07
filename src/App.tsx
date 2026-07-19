@@ -4,9 +4,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
 import Grafikas from "./pages/Grafikas";
+import Pradzia from "./pages/Pradzia";
 import Kainos from "./pages/Kainos";
 import Paskyra from "./pages/Paskyra";
 import Auth from "./pages/Auth";
@@ -17,11 +19,21 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-/** Admins don't have user-facing pages — redirect them to /admin. */
+const HomeRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+
+  return user ? <Pradzia /> : <Grafikas />;
+};
+
+/** Administratoriai neturi įprasto vartotojo paskyros puslapio. */
 const PaskyraRoute = () => {
   const { isAdmin, loading } = useAuth();
+
   if (loading) return null;
   if (isAdmin) return <Navigate to="/admin" replace />;
+
   return <Paskyra />;
 };
 
@@ -30,22 +42,51 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Grafikas />} />
-              <Route path="/kainos" element={<Kainos />} />
-              <Route path="/informacija" element={<Informacija />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/paskyra" element={<RequireAuth><PaskyraRoute /></RequireAuth>} />
-              <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
-              <Route path="/trener" element={<RequireAuth><Trener /></RequireAuth>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </AuthProvider>
-      </BrowserRouter>
+
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<HomeRoute />} />
+                <Route path="/grafikas" element={<Grafikas />} />
+                <Route path="/kainos" element={<Kainos />} />
+                <Route path="/informacija" element={<Informacija />} />
+                <Route path="/auth" element={<Auth />} />
+
+                <Route
+                  path="/paskyra"
+                  element={
+                    <RequireAuth>
+                      <PaskyraRoute />
+                    </RequireAuth>
+                  }
+                />
+
+                <Route
+                  path="/admin"
+                  element={
+                    <RequireAuth adminOnly>
+                      <Admin />
+                    </RequireAuth>
+                  }
+                />
+
+                <Route
+                  path="/trener"
+                  element={
+                    <RequireAuth>
+                      <Trener />
+                    </RequireAuth>
+                  }
+                />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

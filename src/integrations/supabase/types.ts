@@ -218,6 +218,7 @@ export type Database = {
           active: boolean
           created_at: string
           id: string
+          max_daily_rides: number
           name: string
           notes: string | null
         }
@@ -225,6 +226,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          max_daily_rides?: number
           name: string
           notes?: string | null
         }
@@ -232,6 +234,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          max_daily_rides?: number
           name?: string
           notes?: string | null
         }

@@ -1,25 +1,51 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, User as UserIcon, Calendar, Tag, ShieldCheck, Phone, MapPin, Sparkles, Users as UsersIcon, Check, Info } from "lucide-react";
+import {
+  Menu,
+  X,
+  LogOut,
+  User as UserIcon,
+  Calendar,
+  Tag,
+  ShieldCheck,
+  Phone,
+  MapPin,
+  Sparkles,
+  Users as UsersIcon,
+  Check,
+  Info,
+  Home,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const NAV_PUBLIC = [
+const NAV_GUEST = [
   { to: "/", label: "Grafikas", icon: Calendar },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/informacija", label: "Informacija", icon: Info },
   { to: "/paskyra", label: "Paskyra", icon: UserIcon },
 ];
 
+const NAV_USER = [
+  { to: "/", label: "Pradžia", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: Calendar },
+  { to: "/kainos", label: "Kainos", icon: Tag },
+  { to: "/informacija", label: "Informacija", icon: Info },
+  { to: "/paskyra", label: "Paskyra", icon: UserIcon },
+];
+
 const NAV_ADMIN = [
-  { to: "/", label: "Grafikas", icon: Calendar },
+  { to: "/", label: "Pradžia", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: Calendar },
+  { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/informacija", label: "Informacija", icon: Info },
 ];
 
 const NAV_TRAINER = [
-  { to: "/", label: "Grafikas", icon: Calendar },
+  { to: "/", label: "Pradžia", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: Calendar },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/informacija", label: "Informacija", icon: Info },
 ];
@@ -87,7 +113,15 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-1">
-            {(isAdmin ? NAV_ADMIN : isTrainer ? NAV_TRAINER : NAV_PUBLIC).map(({ to, label, icon: Icon }) => {
+            {(
+  isAdmin
+    ? NAV_ADMIN
+    : isTrainer
+      ? NAV_TRAINER
+      : user
+        ? NAV_USER
+        : NAV_GUEST
+).map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
                 <Link
