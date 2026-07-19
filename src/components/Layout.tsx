@@ -38,6 +38,7 @@ const NAV_USER = [
 const NAV_ADMIN = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/grafikas", label: "Grafikas", icon: Calendar },
+  { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/informacija", label: "Informacija", icon: Info },
 ];
