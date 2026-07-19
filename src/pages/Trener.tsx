@@ -5,10 +5,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Horse } from "@/components/icons/Horse";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, Sparkles, Pencil, RotateCcw, Save, Horse as HorseIcon,
-  CalendarDays, Search, AlertTriangle
+  Plus,
+  Trash2,
+  Sparkles,
+  Pencil,
+  RotateCcw,
+  Save,
+  CalendarDays,
+  Search,
+  AlertTriangle,
 } from "lucide-react";
 import { formatDateISO, formatTime } from "@/lib/equus";
 
@@ -271,7 +279,7 @@ function HorsesTab() {
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <HorseIcon className="h-4 w-4 text-gold" />
+                    <Horse size={16} />
                     <h3 className="font-display text-xl text-gold">{horse.name}</h3>
                     {!horse.active && (
                       <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
