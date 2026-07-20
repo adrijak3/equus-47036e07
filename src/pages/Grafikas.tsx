@@ -868,15 +868,40 @@ const key = `book-${formatDateISO(date)}-${time}`;
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-gold/60">
-          <Loader2 className="w-6 h-6 animate-spin" />
+        <div className="space-y-5" aria-label={language === "lt" ? "Kraunamas tvarkaraštis" : "Loading schedule"}>
+          <div className="flex gap-3 overflow-hidden sm:grid sm:grid-cols-2 lg:grid-cols-7">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <div key={index} className="min-w-[84vw] space-y-3 sm:min-w-0">
+                <div className="h-20 animate-pulse rounded-2xl border border-gold/10 bg-card/55" />
+                {Array.from({ length: index % 3 === 0 ? 3 : 2 }).map((__, cardIndex) => (
+                  <div key={cardIndex} className="overflow-hidden rounded-2xl border border-gold/10 bg-card/45 p-4">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="h-7 w-20 animate-pulse rounded-md bg-muted/70" />
+                      <div className="h-5 w-12 animate-pulse rounded-full bg-muted/60" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
+                      <div className="h-3 w-2/3 animate-pulse rounded bg-muted/50" />
+                    </div>
+                    <div className="mt-5 h-9 w-full animate-pulse rounded-xl bg-muted/60" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-gold" />
+            {language === "lt" ? "Ruošiamas savaitės tvarkaraštis…" : "Preparing the weekly schedule…"}
+          </div>
         </div>
       ) : (
         <>
           {/* Horizontal weekly grid: 7 day columns */}
           <div className={cn(
-            "grid grid-cols-1 gap-3 sm:gap-3",
-            calendarView === "week" ? "sm:grid-cols-2 lg:grid-cols-7" : "mx-auto w-full max-w-5xl lg:grid-cols-2",
+            "gap-4 sm:gap-3",
+            calendarView === "week"
+              ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-7"
+              : "mx-auto grid w-full max-w-5xl grid-cols-1 lg:grid-cols-2",
           )}>
             {days.map((date, idx) => {
               const daySlots = getDaySlots(date);
@@ -885,11 +910,16 @@ const key = `book-${formatDateISO(date)}-${time}`;
               const dow = dbDayOfWeek(date);
 
               return (
-                <div
+                <motion.div
                   key={idx}
                   ref={(el) => { dayRefs.current[idx] = el; }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: Math.min(idx * 0.045, 0.2) }}
                   className={cn(
-                    "flex flex-col gap-2 relative",
+                    "relative flex flex-col gap-2",
+                    calendarView === "week" && "min-w-[86vw] snap-center sm:min-w-0",
+                    calendarView === "list" && "rounded-3xl border border-gold/10 bg-card/25 p-3 shadow-sm sm:p-4",
                     isPast && "opacity-60",
                     // Mobile: make today visually pop with gold-tinted card + ring
                     isToday && "sm:p-0 p-3 -mx-1 rounded-xl bg-gold/[0.06] ring-2 ring-gold/40 shadow-gold sm:bg-transparent sm:ring-0 sm:shadow-none sm:m-0",
@@ -909,7 +939,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   {/* Day header */}
                   <div
                     className={cn(
-                      "rounded-md border px-3 py-2.5 bg-gradient-card relative",
+                      "relative rounded-2xl border px-4 py-3.5 bg-gradient-card shadow-sm",
                       isToday ? "border-gold/60 shadow-gold sm:shadow-none" : "border-gold/15",
                     )}
                   >
@@ -1061,7 +1091,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 })()}
 
 {!getDayCancellation(date) && daySlots.length === 0 && (
-  <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
+  <div className="rounded-2xl border border-dashed border-gold/15 bg-card/30 px-4 py-10 text-center text-sm text-muted-foreground">
     {dow === 7 ? t("individual") : t("noLessons")}
   </div>
 )}
@@ -1080,7 +1110,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                       <div
                         key={slot.id}
                         className={cn(
-                          "rounded-md border bg-gradient-card overflow-hidden transition-colors",
+                          "group overflow-hidden rounded-2xl border bg-gradient-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
                           myBooking ? "border-gold/50" : "border-gold/15 hover:border-gold/30",
                         )}
                       >
@@ -1291,7 +1321,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                       </div>
                     );
                   })}
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -1308,7 +1338,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
       {/* Permanent cancel choice dialog */}
       <Dialog open={!!permCancelDialog} onOpenChange={(o) => !o && setPermCancelDialog(null)}>
-        <DialogContent className="bg-gradient-card border-gold/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-3xl border-gold/20 bg-gradient-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
               <Star className="w-5 h-5 fill-gold text-gold" /> Nuolatinis laikas
@@ -1364,7 +1394,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
       {/* Generic confirm dialog */}
       <Dialog open={!!confirmDialog} onOpenChange={(o) => !o && setConfirmDialog(null)}>
-        <DialogContent className="bg-gradient-card border-gold/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-3xl border-gold/20 bg-gradient-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-xl text-gradient-gold">{confirmDialog?.title}</DialogTitle>
             {confirmDialog?.description && (
@@ -1382,7 +1412,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
       {/* Slot/day note dialog (admin) */}
       <Dialog open={!!slotNoteDialog} onOpenChange={(o) => { if (!o) { setSlotNoteDialog(null); setSlotNoteText(""); } }}>
-        <DialogContent className="bg-gradient-card border-gold/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-3xl border-gold/20 bg-gradient-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-xl text-gradient-gold">
               {slotNoteDialog?.time ? `Žinutė — ${formatTime(slotNoteDialog.time)}` : "Dienos žinutė"}
@@ -1465,7 +1495,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
       {/* Late cancel dialog */}
       <Dialog open={!!cancelDialog} onOpenChange={(o) => !o && setCancelDialog(null)}>
-        <DialogContent className="bg-gradient-card border-gold/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-3xl border-gold/20 bg-gradient-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold">Atšaukimas <span className="text-base text-blush">&lt; 24 val.</span></DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -1527,7 +1557,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
       {/* Admin: manage slot participants */}
       <Dialog open={!!adminSlotDialog} onOpenChange={(o) => !o && setAdminSlotDialog(null)}>
-        <DialogContent className="bg-gradient-card border-gold/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-3xl border-gold/20 bg-gradient-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold">
               Valdyti dalyvius
@@ -1741,7 +1771,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
       {/* Admin: custom one-off time slot */}
       <Dialog open={!!customSlotDialog} onOpenChange={(o) => !o && setCustomSlotDialog(null)}>
-        <DialogContent className="bg-gradient-card border-gold/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-3xl border-gold/20 bg-gradient-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
               <Plus className="w-5 h-5 text-gold" /> Naujas laikas
