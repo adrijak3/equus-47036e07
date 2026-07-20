@@ -1,62 +1,131 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Menu,
-  X,
-  LogOut,
-  User as UserIcon,
   Calendar,
-  Tag,
-  ShieldCheck,
-  Phone,
-  MapPin,
-  Sparkles,
-  Users as UsersIcon,
   Check,
-  Info,
+  ChevronDown,
   Home,
+  Info,
+  LogOut,
+  MapPin,
+  Menu,
   Palette,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  User as UserIcon,
+  Users as UsersIcon,
+  X,
 } from "lucide-react";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const NAV_GUEST = [
-  { to: "/", label: "Grafikas", icon: Calendar },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/informacija", label: "Informacija", icon: Info },
-  { to: "/paskyra", label: "Paskyra", icon: UserIcon },
+  {
+    to: "/",
+    label: "Grafikas",
+    icon: Calendar,
+  },
+  {
+    to: "/kainos",
+    label: "Kainos",
+    icon: Tag,
+  },
+  {
+    to: "/informacija",
+    label: "Informacija",
+    icon: Info,
+  },
+  {
+    to: "/paskyra",
+    label: "Paskyra",
+    icon: UserIcon,
+  },
 ];
 
 const NAV_USER = [
-  { to: "/", label: "Pradžia", icon: Home },
-  { to: "/grafikas", label: "Grafikas", icon: Calendar },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/informacija", label: "Informacija", icon: Info },
-  { to: "/paskyra", label: "Paskyra", icon: UserIcon },
+  {
+    to: "/",
+    label: "Pradžia",
+    icon: Home,
+  },
+  {
+    to: "/grafikas",
+    label: "Grafikas",
+    icon: Calendar,
+  },
+  {
+    to: "/kainos",
+    label: "Kainos",
+    icon: Tag,
+  },
+  {
+    to: "/informacija",
+    label: "Informacija",
+    icon: Info,
+  },
+  {
+    to: "/paskyra",
+    label: "Paskyra",
+    icon: UserIcon,
+  },
 ];
 
-/*
-  Trenerio sritis sąmoningai nėra šiame sąraše.
-  Ji rodoma kaip atskiras blizgantis mygtukas žemiau.
-*/
 const NAV_ADMIN = [
-  { to: "/", label: "Pradžia", icon: Home },
-  { to: "/grafikas", label: "Grafikas", icon: Calendar },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/informacija", label: "Informacija", icon: Info },
+  {
+    to: "/",
+    label: "Pradžia",
+    icon: Home,
+  },
+  {
+    to: "/grafikas",
+    label: "Grafikas",
+    icon: Calendar,
+  },
+  {
+    to: "/kainos",
+    label: "Kainos",
+    icon: Tag,
+  },
+  {
+    to: "/informacija",
+    label: "Informacija",
+    icon: Info,
+  },
 ];
 
 const NAV_TRAINER = [
-  { to: "/", label: "Pradžia", icon: Home },
-  { to: "/grafikas", label: "Grafikas", icon: Calendar },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/informacija", label: "Informacija", icon: Info },
+  {
+    to: "/",
+    label: "Pradžia",
+    icon: Home,
+  },
+  {
+    to: "/grafikas",
+    label: "Grafikas",
+    icon: Calendar,
+  },
+  {
+    to: "/kainos",
+    label: "Kainos",
+    icon: Tag,
+  },
+  {
+    to: "/informacija",
+    label: "Informacija",
+    icon: Info,
+  },
 ];
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [themesOpen, setThemesOpen] = useState(false);
 
@@ -93,21 +162,29 @@ export default function Layout({ children }: { children: ReactNode }) {
         ? NAV_USER
         : NAV_GUEST;
 
+  const isLinkActive = (to: string) => {
+    if (to === "/") {
+      return location.pathname === "/";
+    }
+
+    return location.pathname.startsWith(to);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Viršutinė juosta */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-gold/10">
-        <div className="container flex items-center justify-between h-16">
+      <header className="sticky top-0 z-40 border-b border-gold/10 bg-background/80 backdrop-blur-md">
+        <div className="container flex h-16 items-center justify-between">
           <Link
             to="/"
-            className="flex items-center gap-2.5 group"
             onClick={close}
+            className="group flex items-center gap-2.5"
           >
-            <span className="text-2xl font-display tracking-wide text-gradient-gold">
+            <span className="text-gradient-gold font-display text-2xl tracking-wide">
               Equus
             </span>
 
-            <span className="hidden sm:inline text-xs uppercase tracking-[0.25em] text-muted-foreground/70 font-body">
+            <span className="font-body hidden text-xs uppercase tracking-[0.25em] text-muted-foreground/70 sm:inline">
               jojimo mokykla
             </span>
           </Link>
@@ -116,61 +193,61 @@ export default function Layout({ children }: { children: ReactNode }) {
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
             onClick={() => setOpen((current) => !current)}
-            className="relative w-10 h-10 flex items-center justify-center rounded-md border border-gold/20 hover:border-gold/50 transition-colors"
+            className="relative flex h-10 w-10 items-center justify-center rounded-md border border-gold/20 transition-colors hover:border-gold/50"
           >
             {open ? (
-              <X className="w-5 h-5 text-gold" />
+              <X className="h-5 w-5 text-gold" />
             ) : (
-              <Menu className="w-5 h-5 text-gold" />
+              <Menu className="h-5 w-5 text-gold" />
             )}
           </button>
         </div>
       </header>
 
-      {/* Išvažiuojantis meniu */}
+      {/* Meniu fonas ir šoninė juosta */}
       <div
         className={cn(
           "fixed inset-0 z-50 transition-opacity duration-300",
           open
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none",
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0",
         )}
       >
-        <div
-          className="absolute inset-0 bg-background/85 backdrop-blur-md"
+        <button
+          type="button"
+          aria-label="Uždaryti meniu"
           onClick={close}
+          className="absolute inset-0 bg-background/85 backdrop-blur-md"
         />
 
         <aside
           className={cn(
-            "absolute right-0 top-0 h-full w-full sm:w-96",
-            "bg-gradient-card border-l border-gold/20 shadow-elegant",
-            "transition-transform duration-500 ease-out flex flex-col",
+            "bg-gradient-card absolute right-0 top-0 flex h-full w-full flex-col border-l border-gold/20 shadow-elegant sm:w-96",
+            "transition-transform duration-500 ease-out",
             open ? "translate-x-0" : "translate-x-full",
           )}
         >
-          <div className="flex items-center justify-between px-6 h-16 border-b border-gold/10">
-            <span className="text-xl font-display text-gradient-gold">
+          {/* Meniu antraštė */}
+          <div className="flex h-16 items-center justify-between border-b border-gold/10 px-6">
+            <span className="text-gradient-gold font-display text-xl">
               Meniu
             </span>
 
             <button
               type="button"
               onClick={close}
-              className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-gold/10 transition-colors"
               aria-label="Uždaryti"
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-gold/10"
             >
-              <X className="w-5 h-5 text-gold" />
+              <X className="h-5 w-5 text-gold" />
             </button>
           </div>
 
+          {/* Slenkama meniu dalis */}
           <div className="flex-1 overflow-y-auto">
-            <nav className="px-4 py-6 space-y-1">
+            <nav className="space-y-1 px-4 py-6">
               {navigationItems.map(({ to, label, icon: Icon }) => {
-                const active =
-                  to === "/"
-                    ? location.pathname === "/"
-                    : location.pathname.startsWith(to);
+                const active = isLinkActive(to);
 
                 return (
                   <Link
@@ -178,16 +255,15 @@ export default function Layout({ children }: { children: ReactNode }) {
                     to={to}
                     onClick={close}
                     className={cn(
-                      "flex items-center gap-4 px-4 py-3.5 rounded-md",
-                      "transition-all group border-l-2",
+                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
                       active
-                        ? "bg-gold/10 text-gold border-gold"
-                        : "text-foreground/80 hover:text-gold hover:bg-gold/5 border-transparent",
+                        ? "border-gold bg-gold/10 text-gold"
+                        : "border-transparent text-foreground/80 hover:border-gold/30 hover:bg-gold/5 hover:text-gold",
                     )}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="h-4 w-4" />
 
-                    <span className="text-base font-display tracking-wide">
+                    <span className="font-display text-base tracking-wide">
                       {label}
                     </span>
                   </Link>
@@ -200,16 +276,15 @@ export default function Layout({ children }: { children: ReactNode }) {
                   to="/admin"
                   onClick={close}
                   className={cn(
-                    "flex items-center gap-4 px-4 py-3.5 rounded-md",
-                    "transition-all border-l-2",
+                    "flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
                     location.pathname.startsWith("/admin")
-                      ? "bg-gold/10 text-gold border-gold"
-                      : "text-blush hover:bg-gold/5 border-transparent",
+                      ? "border-gold bg-gold/10 text-gold"
+                      : "border-transparent text-blush hover:bg-gold/5",
                   )}
                 >
-                  <ShieldCheck className="w-4 h-4" />
+                  <ShieldCheck className="h-4 w-4" />
 
-                  <span className="text-base font-display tracking-wide">
+                  <span className="font-display text-base tracking-wide">
                     Admin
                   </span>
                 </Link>
@@ -221,85 +296,84 @@ export default function Layout({ children }: { children: ReactNode }) {
                   to="/trener"
                   onClick={close}
                   className={cn(
-                    "relative overflow-hidden",
-                    "flex items-center gap-4 px-4 py-3.5 rounded-md",
-                    "transition-all border border-gold/30",
-                    "bg-gradient-to-r from-gold/5 via-gold/15 to-gold/5",
+                    "relative flex items-center gap-4 overflow-hidden rounded-md border px-4 py-3.5 transition-all",
+                    "border-gold/30 bg-gradient-to-r from-gold/5 via-gold/15 to-gold/5",
                     "hover:border-gold/60 hover:shadow-gold",
                     location.pathname.startsWith("/trener")
-                      ? "text-gold border-gold/70 shadow-gold"
+                      ? "border-gold/70 text-gold shadow-gold"
                       : "text-gold/90",
                   )}
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
+                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
 
-                  <Sparkles className="relative z-10 w-4 h-4" />
+                  <Sparkles className="relative z-10 h-4 w-4" />
 
-                  <span className="relative z-10 text-base font-display tracking-wide">
+                  <span className="relative z-10 font-display text-base tracking-wide">
                     Trenerio sritis
                   </span>
                 </Link>
               )}
             </nav>
 
-        {/* Temų pasirinkimas */}
-{user && (
-  <div className="mx-4 mb-5 rounded-2xl border border-gold/20 bg-card/70 overflow-hidden">
-    <button
-      type="button"
-      onClick={() => setThemesOpen((current) => !current)}
-      className="w-full flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-gold/5 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gold/10 flex items-center justify-center">
-          <Palette className="w-4 h-4 text-gold" />
-        </div>
+            {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
+            {user && (
+              <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-gold/20 bg-card/70">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setThemesOpen((current) => !current)
+                  }
+                  className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-gold/5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10">
+                      <Palette className="h-4 w-4 text-gold" />
+                    </div>
 
-        <div>
-          <div className="font-display text-sm tracking-wide text-foreground">
-            Keisti svetainės temą
+                    <div>
+                      <div className="font-display text-sm tracking-wide text-foreground">
+                        Keisti svetainės temą
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Automatinė arba pasirinktas sezonas
+                      </div>
+                    </div>
+                  </div>
+
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-gold transition-transform duration-300",
+                      themesOpen && "rotate-180",
+                    )}
+                  />
+                </button>
+
+                {themesOpen && (
+                  <div className="border-t border-gold/10 bg-background/30 p-4">
+                    <ThemeSwitcher compact />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="text-xs text-muted-foreground">
-            Pasirinkite mėgstamiausią sezoną
-          </div>
-        </div>
-      </div>
-
-      <span
-        className={cn(
-          "text-gold text-lg transition-transform duration-300",
-          themesOpen && "rotate-180",
-        )}
-      >
-        ⌄
-      </span>
-    </button>
-
-    {themesOpen && (
-      <div className="border-t border-gold/10 p-4 bg-background/30">
-        <ThemeSwitcher compact />
-      </div>
-    )}
-  </div>
-)}
-
-          {/* Apatinė paskyros dalis */}
-          <div className="p-6 border-t border-gold/10 space-y-3">
+          {/* Paskyros dalis apačioje */}
+          <div className="space-y-3 border-t border-gold/10 p-6">
             {user ? (
               <>
                 <div className="text-sm text-muted-foreground">
                   Prisijungta kaip
 
-                  <div className="text-foreground font-medium mt-0.5">
+                  <div className="mt-0.5 font-medium text-foreground">
                     {profile?.full_name ?? user.email}
                   </div>
                 </div>
 
                 {linkedProfiles.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    <div className="text-[11px] uppercase tracking-wider text-gold/70 flex items-center gap-1.5">
-                      <UsersIcon className="w-3 h-3" />
+                    <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-gold/70">
+                      <UsersIcon className="h-3 w-3" />
                       Aktyvus profilis
                     </div>
 
@@ -320,7 +394,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                         <span>{profile?.full_name ?? "Aš"}</span>
 
                         {activeProfileId === user.id && (
-                          <Check className="w-3.5 h-3.5" />
+                          <Check className="h-3.5 w-3.5" />
                         )}
                       </button>
 
@@ -329,20 +403,24 @@ export default function Layout({ children }: { children: ReactNode }) {
                           type="button"
                           key={linkedProfile.id}
                           onClick={() => {
-                            setActiveProfileId(linkedProfile.profile_id);
+                            setActiveProfileId(
+                              linkedProfile.profile_id,
+                            );
                             close();
                           }}
                           className={cn(
                             "flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors",
-                            activeProfileId === linkedProfile.profile_id
+                            activeProfileId ===
+                              linkedProfile.profile_id
                               ? "border-gold/50 bg-gold/10 text-gold"
                               : "border-gold/15 text-foreground/80 hover:bg-gold/5",
                           )}
                         >
                           <span>{linkedProfile.display_name}</span>
 
-                          {activeProfileId === linkedProfile.profile_id && (
-                            <Check className="w-3.5 h-3.5" />
+                          {activeProfileId ===
+                            linkedProfile.profile_id && (
+                            <Check className="h-3.5 w-3.5" />
                           )}
                         </button>
                       ))}
@@ -355,7 +433,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   className="w-full"
                   onClick={handleSignOut}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="h-4 w-4" />
                   Atsijungti
                 </Button>
               </>
@@ -388,20 +466,22 @@ export default function Layout({ children }: { children: ReactNode }) {
         </aside>
       </div>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        {children}
+      </main>
 
-      <footer className="border-t border-gold/10 mt-16">
-        <div className="container py-10 text-center space-y-4">
-          <div className="font-display text-lg text-gradient-gold">
+      <footer className="mt-16 border-t border-gold/10">
+        <div className="container space-y-4 py-10 text-center">
+          <div className="text-gradient-gold font-display text-lg">
             Equus jojimo mokykla
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-6 text-sm">
+          <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-center sm:gap-6">
             <a
               href="tel:+37065822872"
-              className="inline-flex items-center justify-center gap-1.5 text-foreground/85 hover:text-gold transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 text-foreground/85 transition-colors hover:text-gold"
             >
-              <Phone className="w-3.5 h-3.5 text-gold" />
+              <Phone className="h-3.5 w-3.5 text-gold" />
               Laura · +370 658 22872
             </a>
 
@@ -409,16 +489,17 @@ export default function Layout({ children }: { children: ReactNode }) {
               href="https://maps.app.goo.gl/Tjd1rUUVSabq52ip6"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 text-foreground/85 hover:text-gold transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 text-foreground/85 transition-colors hover:text-gold"
             >
-              <MapPin className="w-3.5 h-3.5 text-gold" />
+              <MapPin className="h-3.5 w-3.5 text-gold" />
               Pakamšės g. 7, Daučionys, 14245 Vilniaus r. sav.
             </a>
           </div>
 
-          <p className="text-xs text-muted-foreground tracking-wide">
+          <p className="text-xs tracking-wide text-muted-foreground">
             © 2026 Equus Jojimo Mokykla. Visos teisės saugomos.
-            Svetainės visos autoriaus teisės priklauso Adrijai Kalikaitei.
+            Svetainės visos autoriaus teisės priklauso Adrijai
+            Kalikaitei.
           </p>
         </div>
       </footer>
