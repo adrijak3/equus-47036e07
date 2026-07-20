@@ -1,88 +1,64 @@
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-export type EquusTheme =
-  | "ocean"
-  | "midnight"
-  | "pearl"
-  | "stable";
+export type EquusTheme = "automatic" | "spring" | "summer" | "autumn" | "winter";
+export type ResolvedTheme = Exclude<EquusTheme, "automatic">;
 
 interface ThemeContextValue {
   theme: EquusTheme;
+  resolvedTheme: ResolvedTheme;
+  saving: boolean;
   setTheme: (theme: EquusTheme) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(
-  undefined,
-);
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const STORAGE_KEY = "equus_seasonal_theme";
 
-const STORAGE_KEY = "equus_theme";
+const validThemes: EquusTheme[] = ["automatic", "spring", "summer", "autumn", "winter"];
 
-const isTheme = (value: string | null): value is EquusTheme =>
-  value === "ocean" ||
-  value === "midnight" ||
-  value === "pearl" ||
-  value === "stable";
+function seasonalTheme(month = new Date().getMonth()): ResolvedTheme {
+  if ([2, 3, 4].includes(month)) return "spring";
+  if ([5, 6, 7].includes(month)) return "summer";
+  if ([8, 9, 10].includes(month)) return "autumn";
+  return "winter";
+}
 
-const getInitialTheme = (): EquusTheme => {
-  const saved = localStorage.getItem(STORAGE_KEY);
+function initialTheme(): EquusTheme {
+  const saved = localStorage.getItem(STORAGE_KEY) as EquusTheme | null;
+  return saved && validThemes.includes(saved) ? saved : "automatic";
+}
 
-  if (saved === "blue") return "ocean";
-  if (saved === "dark") return "midnight";
-  if (saved === "light") return "pearl";
-
-  return isTheme(saved) ? saved : "ocean";
-};
-
-const applyTheme = (theme: EquusTheme) => {
+function applyTheme(theme: ResolvedTheme) {
   document.documentElement.dataset.theme = theme;
-  document.documentElement.classList.toggle(
-    "dark",
-    theme !== "pearl",
-  );
-  document.documentElement.style.colorScheme =
-    theme === "pearl" ? "light" : "dark";
-};
+  document.documentElement.classList.toggle("dark", theme === "winter" || theme === "autumn");
+  document.documentElement.style.colorScheme = theme === "spring" || theme === "summer" ? "light" : "dark";
+}
 
-export function ThemeProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const [theme, setThemeState] =
-    useState<EquusTheme>(getInitialTheme);
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<EquusTheme>(initialTheme);
+  const [saving, setSaving] = useState(false);
+  const resolvedTheme = useMemo<ResolvedTheme>(() => theme === "automatic" ? seasonalTheme() : theme, [theme]);
 
-  const setTheme = (newTheme: EquusTheme) => {
-    setThemeState(newTheme);
-    localStorage.setItem(STORAGE_KEY, newTheme);
-    applyTheme(newTheme);
+  const setTheme = (next: EquusTheme) => {
+    setSaving(true);
+    setThemeState(next);
+    localStorage.setItem(STORAGE_KEY, next);
+    window.setTimeout(() => setSaving(false), 250);
   };
 
   useEffect(() => {
-    applyTheme(theme);
+    applyTheme(resolvedTheme);
     localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme]);
+  }, [theme, resolvedTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, saving, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useEquusTheme() {
-  const context = useContext(ThemeContext);
-
-  if (!context) {
-    throw new Error(
-      "useEquusTheme turi būti naudojamas ThemeProvider viduje",
-    );
-  }
-
-  return context;
+  const value = useContext(ThemeContext);
+  if (!value) throw new Error("useEquusTheme turi būti naudojamas ThemeProvider viduje");
+  return value;
 }
