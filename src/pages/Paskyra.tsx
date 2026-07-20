@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FloralAccent } from "@/components/Decorations";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
+import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 
 interface Booking {
   id: string;
@@ -54,7 +55,9 @@ interface AvailableSlot {
   id: string;
   day_of_week: number;
   slot_time: string;
+  max_capacity: number;
 }
+interface PermanentRequest { id: string; day_of_week: number; slot_time: string; status: string; admin_note: string | null; }
 interface AccountProfile {
   id: string;
   full_name: string | null;
@@ -71,6 +74,7 @@ export default function Paskyra() {
   const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [permanentRequests, setPermanentRequests] = useState<PermanentRequest[]>([]);
   const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
@@ -97,13 +101,14 @@ export default function Paskyra() {
     setLoading(true);
     // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
     try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
-    const [b, s, m, p, ts, ap] = await Promise.all([
+    const [b, s, m, p, ts, ap, pr] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", acting).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", acting).order("purchase_date", { ascending: false }),
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
       supabase.from("permanent_slots").select("*").eq("user_id", acting).order("day_of_week").order("slot_time"),
-      supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
+      supabase.from("time_slots").select("id, day_of_week, slot_time, max_capacity").eq("active", true).is("one_off_date", null).order("day_of_week").order("slot_time"),
       supabase.from("profiles").select("id, full_name, phone, display_name").eq("id", acting).maybeSingle(),
+      (supabase as any).from("permanent_slot_requests").select("id,day_of_week,slot_time,status,admin_note").eq("user_id", acting).order("created_at", { ascending: false }),
     ]);
     // attach horse names from horse_assignments
     const bs = (b.data ?? []) as any[];
@@ -130,6 +135,7 @@ export default function Paskyra() {
     setPermanents(p.data ?? []);
     setAvailableSlots(ts.data ?? []);
     setAccountProfile((ap.data as AccountProfile | null) ?? null);
+    setPermanentRequests((pr.data ?? []) as PermanentRequest[]);
 
     // Load pending sickness cancellations awaiting / with documents
     const { data: sr } = await supabase
@@ -279,6 +285,14 @@ export default function Paskyra() {
 
   // Permanent slots — users can only view & remove (admin adds them)
 
+  const addPermanent = async (slot: AvailableSlot) => {
+    const { data, error } = await (supabase as any).rpc("request_or_create_permanent_slot", { _day: slot.day_of_week, _time: slot.slot_time });
+    if (error) { toast.error(error.message); return; }
+    if (!data?.ok) { toast.error(data?.message ?? "Nepavyko pridėti"); return; }
+    data?.requested ? toast.success("Prašymas išsiųstas administracijai") : toast.success("Nuolatinis laikas pridėtas");
+    load();
+  };
+
   const removePermanent = async (id: string) => {
     const slot = permanents.find((p) => p.id === id);
     if (!slot) return;
@@ -397,6 +411,7 @@ export default function Paskyra() {
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-6">
+          <UnpaidLessonsOverview userId={acting} />
           {sickReqs.filter((r) => !r.document_url && r.document_deadline).length > 0 && (
             <Section title="Ligos pažymos" icon={<XCircle className="w-4 h-4" />}>
               <ul className="divide-y divide-gold/5">
@@ -588,6 +603,9 @@ export default function Paskyra() {
         <TabsContent value="permanent" className="space-y-4">
           <PermanentSlotsSection
             permanents={permanents}
+            availableSlots={availableSlots}
+            requests={permanentRequests}
+            onAdd={addPermanent}
             onRemove={removePermanent}
           />
         </TabsContent>
@@ -939,40 +957,43 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
 
 function PermanentSlotsSection({
   permanents,
+  availableSlots,
+  requests,
+  onAdd,
   onRemove,
 }: {
   permanents: PermanentSlot[];
+  availableSlots: AvailableSlot[];
+  requests: PermanentRequest[];
+  onAdd: (slot: AvailableSlot) => void;
   onRemove: (id: string) => void;
 }) {
+  const [selected, setSelected] = useState("");
+  const options = availableSlots.filter((slot) => !permanents.some((p) => p.day_of_week === slot.day_of_week && p.slot_time === slot.slot_time));
+  const chosen = options.find((x) => x.id === selected);
   return (
-    <Section title="Nuolatiniai laikai" icon={<Star className="w-4 h-4" />}>
-      <div className="p-5">
-        <p className="text-sm text-muted-foreground mb-4">
-          Nuolatiniai laikai – tai jūsų savaitiniai treniruočių laikai, į kuriuos esate automatiškai užregistruojama kiekvieną savaitę.
-        </p>
-        {permanents.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground py-3">Šiuo metu neturite nuolatinių laikų</p>
-        ) : (
-          <ul className="space-y-2">
-            {permanents.map((p) => (
-              <li key={p.id} className="flex items-center justify-between bg-gold/5 border border-gold/15 rounded-md px-4 py-2.5">
-                <span className="flex items-center gap-2">
-                  <Star className="w-3.5 h-3.5 fill-gold text-gold" />
-                  <span className="font-medium">{WEEKDAYS_LT[p.day_of_week - 1]}</span>
-                  <span className="text-muted-foreground tabular-nums">{formatTime(p.slot_time)}</span>
-                </span>
-                <button
-                  onClick={() => onRemove(p.id)}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                  aria-label="Pašalinti"
-                  title="Pašalinti nuolatinį laiką"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+    <Section title="Mano savaitinis grafikas" icon={<Star className="w-4 h-4" />}>
+      <div className="p-5 space-y-5">
+        <div>
+          <p className="text-sm text-muted-foreground mb-3">Pasirinkite laiką, į kurį norite būti automatiškai registruojama kiekvieną savaitę.</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">— pasirinkite laiką —</option>
+              {options.map((slot) => <option key={slot.id} value={slot.id}>{WEEKDAYS_LT[slot.day_of_week - 1]} · {formatTime(slot.slot_time)} · talpa {slot.max_capacity}</option>)}
+            </select>
+            <Button variant="gold" disabled={!chosen} onClick={() => chosen && onAdd(chosen)}>
+              <Plus className="w-4 h-4" /> {chosen && chosen.max_capacity <= 2 ? "Siųsti prašymą" : "Pridėti laiką"}
+            </Button>
+          </div>
+          {chosen && <p className="text-xs text-muted-foreground mt-2">{chosen.max_capacity <= 2 ? "Kadangi šios treniruotės talpa yra 1–2, laiką turi patvirtinti administratorius." : "Šis laikas bus patikrintas pagal būsimas savaites. Viena treniruotė gali turėti daugiausia 5 nuolatines vietas."}</p>}
+        </div>
+
+        {requests.filter((r) => r.status === "pending").length > 0 && <div className="space-y-2"><div className="text-xs uppercase tracking-wider text-muted-foreground">Laukiantys prašymai</div>{requests.filter((r) => r.status === "pending").map((r) => <div key={r.id} className="flex items-center justify-between rounded-md border border-gold/20 bg-gold/5 px-4 py-2.5"><span>{WEEKDAYS_LT[r.day_of_week - 1]} · {formatTime(r.slot_time)}</span><span className="text-xs text-gold">Laukia patvirtinimo</span></div>)}</div>}
+
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Aktyvūs nuolatiniai laikai</div>
+          {permanents.length === 0 ? <p className="text-sm italic text-muted-foreground py-3">Šiuo metu neturite nuolatinių laikų</p> : <ul className="space-y-2">{permanents.map((p) => <li key={p.id} className="flex items-center justify-between bg-gold/5 border border-gold/15 rounded-md px-4 py-3"><span className="flex items-center gap-2"><Star className="w-3.5 h-3.5 fill-gold text-gold"/><span className="font-medium">{WEEKDAYS_LT[p.day_of_week - 1]}</span><span className="text-muted-foreground tabular-nums">{formatTime(p.slot_time)}</span></span><button onClick={() => onRemove(p.id)} className="text-muted-foreground hover:text-destructive" title="Pašalinti"><Trash2 className="w-4 h-4"/></button></li>)}</ul>}
+        </div>
       </div>
     </Section>
   );
