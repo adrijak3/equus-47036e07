@@ -572,3 +572,86 @@
     display: none;
   }
 }
+
+/* ============================================
+   DARK SEASON VARIANTS
+   ============================================ */
+
+:root[data-theme="spring"][data-mode="dark"] {
+  --background: 327 30% 10%;
+  --foreground: 338 38% 94%;
+  --card: 329 27% 15%;
+  --card-foreground: 338 38% 94%;
+  --popover: 329 27% 15%;
+  --popover-foreground: 338 38% 94%;
+  --primary: 337 62% 67%;
+  --primary-foreground: 330 35% 10%;
+  --gold: 337 62% 67%;
+  --gold-soft: 334 45% 54%;
+  --gold-glow: 343 76% 80%;
+  --gold-foreground: 330 35% 10%;
+  --secondary: 326 22% 22%;
+  --secondary-foreground: 338 38% 94%;
+  --muted: 327 20% 18%;
+  --muted-foreground: 336 18% 70%;
+  --accent: 316 31% 27%;
+  --accent-foreground: 338 38% 94%;
+  --border: 330 24% 28%;
+  --input: 330 24% 28%;
+  --ring: 337 62% 67%;
+  --gradient-ink:
+    radial-gradient(circle at 18% 4%, hsl(337 58% 31%) 0%, transparent 38%),
+    radial-gradient(circle at 88% 18%, hsl(305 42% 28%) 0%, transparent 42%),
+    linear-gradient(145deg, hsl(330 34% 13%) 0%, hsl(322 28% 10%) 55%, hsl(311 24% 9%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(332 30% 19%) 0%, hsl(322 25% 14%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(347 82% 79%), hsl(337 62% 67%), hsl(310 46% 54%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(347 82% 82%), hsl(332 61% 66%));
+  --sidebar-background: 329 29% 12%;
+  --sidebar-foreground: 338 38% 94%;
+  --sidebar-primary: 337 62% 67%;
+  --sidebar-primary-foreground: 330 35% 10%;
+  --sidebar-accent: 316 31% 27%;
+  --sidebar-accent-foreground: 338 38% 94%;
+  --sidebar-border: 330 24% 28%;
+  --sidebar-ring: 337 62% 67%;
+}
+
+:root[data-theme="summer"][data-mode="dark"] {
+  --background: 244 42% 8%;
+  --foreground: 197 45% 95%;
+  --card: 245 34% 14%;
+  --card-foreground: 197 45% 95%;
+  --popover: 245 34% 14%;
+  --popover-foreground: 197 45% 95%;
+  --primary: 187 71% 53%;
+  --primary-foreground: 244 45% 8%;
+  --gold: 45 94% 63%;
+  --gold-soft: 37 74% 56%;
+  --gold-glow: 53 100% 76%;
+  --gold-foreground: 244 45% 8%;
+  --secondary: 226 38% 22%;
+  --secondary-foreground: 197 45% 95%;
+  --muted: 249 27% 18%;
+  --muted-foreground: 219 24% 72%;
+  --accent: 282 44% 32%;
+  --accent-foreground: 197 45% 95%;
+  --border: 248 31% 29%;
+  --input: 248 31% 29%;
+  --ring: 187 71% 53%;
+  --gradient-ink:
+    radial-gradient(circle at 12% 0%, hsl(45 93% 45% / .30) 0%, transparent 34%),
+    radial-gradient(circle at 88% 12%, hsl(285 70% 48% / .38) 0%, transparent 43%),
+    radial-gradient(circle at 50% 92%, hsl(188 76% 39% / .40) 0%, transparent 48%),
+    linear-gradient(150deg, hsl(249 48% 12%) 0%, hsl(265 45% 10%) 48%, hsl(213 52% 9%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(253 40% 19%) 0%, hsl(277 33% 17%) 48%, hsl(204 37% 16%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(51 98% 69%), hsl(36 93% 59%), hsl(286 66% 62%), hsl(185 76% 50%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(51 98% 73%), hsl(188 78% 61%));
+  --sidebar-background: 249 42% 11%;
+  --sidebar-foreground: 197 45% 95%;
+  --sidebar-primary: 187 71% 53%;
+  --sidebar-primary-foreground: 244 45% 8%;
+  --sidebar-accent: 282 44% 32%;
+  --sidebar-accent-foreground: 197 45% 95%;
+  --sidebar-border: 248 31% 29%;
+  --sidebar-ring: 187 71% 53%;
+}
