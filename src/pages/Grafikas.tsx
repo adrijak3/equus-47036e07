@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload, MessageSquare } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload, MessageSquare, Grid2X2, List } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
 import { VacationBanner } from "@/components/VacationsPanel";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TimeSlot {
   id: string;
@@ -89,6 +90,16 @@ interface SlotNote {
 
 export default function Grafikas() {
   const { user, profile, isAdmin } = useAuth();
+  const { language, t } = useLanguage();
+  const [calendarView, setCalendarView] = useState<"week" | "list">(() => {
+    const saved = localStorage.getItem("equus_calendar_view");
+    return saved === "list" ? "list" : "week";
+  });
+
+  const changeCalendarView = (view: "week" | "list") => {
+    setCalendarView(view);
+    localStorage.setItem("equus_calendar_view", view);
+  };
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
@@ -780,11 +791,19 @@ const key = `book-${formatDateISO(date)}-${time}`;
   const vilniusTodayISO = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Vilnius", year: "numeric", month: "2-digit", day: "2-digit",
   }).format(new Date());
-  const monthLabel = `${MONTHS_LT[weekStart.getMonth()]} ${weekStart.getFullYear()}`;
+  const monthNames = language === "lt"
+    ? MONTHS_LT
+    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const weekdayNames = language === "lt"
+    ? WEEKDAYS_LT
+    : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const weekdayShort = language === "lt"
+    ? WEEKDAYS_LT_SHORT
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
   const rangeLabel = sameMonth
-    ? `${weekStart.getDate()}–${weekEnd.getDate()} ${MONTHS_LT[weekStart.getMonth()].toLowerCase()} ${weekStart.getFullYear()}`
-    : `${weekStart.getDate()} ${MONTHS_LT[weekStart.getMonth()].toLowerCase()} – ${weekEnd.getDate()} ${MONTHS_LT[weekEnd.getMonth()].toLowerCase()} ${weekEnd.getFullYear()}`;
+    ? `${weekStart.getDate()}–${weekEnd.getDate()} ${monthNames[weekStart.getMonth()]} ${weekStart.getFullYear()}`
+    : `${weekStart.getDate()} ${monthNames[weekStart.getMonth()]} – ${weekEnd.getDate()} ${monthNames[weekEnd.getMonth()]} ${weekEnd.getFullYear()}`;
 
   return (
     <div className="container max-w-[1400px] py-8 sm:py-14 relative">
@@ -800,9 +819,9 @@ const key = `book-${formatDateISO(date)}-${time}`;
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="text-center mb-10 relative"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">Equus jojimo mokykla</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">{t("school")}</p>
         <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
-          Mylintiems žirgus<br className="sm:hidden" /> ir laisvę
+          {t("horseFreedom")}
         </h1>
         <div className="gold-divider max-w-[140px] mx-auto" />
       </motion.header>
@@ -812,29 +831,39 @@ const key = `book-${formatDateISO(date)}-${time}`;
       {/* Week navigation */}
       <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
         <div className="flex items-center gap-2 rounded-md border border-gold/20 bg-card/40 px-2 py-1.5">
-          <Button variant="ghost" size="icon" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Praėjusi savaitė">
+          <Button variant="ghost" size="icon" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label={t("previousWeek")}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <div className="font-display text-base sm:text-lg text-gradient-gold capitalize px-2 min-w-[180px] text-center">
             {rangeLabel}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Kita savaitė">
+          <Button variant="ghost" size="icon" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label={t("nextWeek")}>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
-        <Button variant="outlineGold" size="sm" onClick={() => {
-          setWeekStart(startOfWeek(new Date()));
-          setPendingScrollToToday(true);
-        }}>
-          📅 Šiandien
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-xl border border-gold/20 bg-card/50 p-1">
+            <button type="button" onClick={() => changeCalendarView("week")} className={cn("inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors", calendarView === "week" ? "bg-gold text-background" : "text-muted-foreground hover:text-foreground")}>
+              <Grid2X2 className="h-3.5 w-3.5" /> {t("weekView")}
+            </button>
+            <button type="button" onClick={() => changeCalendarView("list")} className={cn("inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors", calendarView === "list" ? "bg-gold text-background" : "text-muted-foreground hover:text-foreground")}>
+              <List className="h-3.5 w-3.5" /> {t("listView")}
+            </button>
+          </div>
+          <Button variant="outlineGold" size="sm" onClick={() => {
+            setWeekStart(startOfWeek(new Date()));
+            setPendingScrollToToday(true);
+          }}>
+            📅 {t("today")}
+          </Button>
+        </div>
       </div>
 
       {!user && (
         <div className="mb-6 p-4 bg-gold/5 border border-gold/20 rounded-md text-sm text-center">
-          <Link to="/auth" className="text-gold hover:underline font-medium">Prisijunkite</Link>{" "}
-          arba <Link to="/auth?tab=signup" className="text-gold hover:underline font-medium">susikurkite paskyrą</Link>{" "}
-          norėdami registruotis į pamokas.
+          <Link to="/auth" className="text-gold hover:underline font-medium">{t("signInPromptA")}</Link>{" "}
+          {t("signInPromptB")} <Link to="/auth?tab=signup" className="text-gold hover:underline font-medium">{t("signInPromptC")}</Link>{" "}
+          {t("signInPromptD")}
         </div>
       )}
 
@@ -845,7 +874,10 @@ const key = `book-${formatDateISO(date)}-${time}`;
       ) : (
         <>
           {/* Horizontal weekly grid: 7 day columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-3">
+          <div className={cn(
+            "grid grid-cols-1 gap-3 sm:gap-3",
+            calendarView === "week" ? "sm:grid-cols-2 lg:grid-cols-7" : "mx-auto w-full max-w-5xl lg:grid-cols-2",
+          )}>
             {days.map((date, idx) => {
               const daySlots = getDaySlots(date);
               const isToday = date.getTime() === today.getTime();
@@ -886,12 +918,12 @@ const key = `book-${formatDateISO(date)}-${time}`;
                         "uppercase tracking-[0.18em] text-gold font-bold",
                         isToday ? "text-base sm:text-[11px]" : "text-sm sm:text-[11px]",
                       )}>
-                        <span className="sm:hidden xl:inline">{WEEKDAYS_LT[idx]}</span>
-                        <span className="hidden sm:inline xl:hidden">{WEEKDAYS_LT_SHORT[idx]}</span>
+                        <span className="sm:hidden xl:inline">{weekdayNames[idx]}</span>
+                        <span className="hidden sm:inline xl:hidden">{weekdayShort[idx]}</span>
                       </div>
                       {isToday && (
                         <span className="text-[10px] sm:text-[9px] uppercase tracking-[0.15em] font-bold text-background bg-gold px-2 py-0.5 rounded-sm">
-                          Šiandien
+                          {t("today")}
                         </span>
                       )}
                     </div>
@@ -907,7 +939,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                         title="Dienos video"
                       >
                         <FileText className="w-3 h-3" />
-                        <span>Video</span>
+                        <span>{t("video")}</span>
                         {getDayNotes(date).length > 0 && (
                           <span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-gold text-background text-[9px] font-bold px-1">
                             {getDayNotes(date).length}
@@ -922,7 +954,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                         className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
                         title="Pridėti naują laiką šiai dienai"
                       >
-                        <Plus className="w-3 h-3" /> Naujas laikas
+                        <Plus className="w-3 h-3" /> {t("newTime")}
                       </button>
                     )}
                     {isAdmin && (
@@ -932,7 +964,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                         className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
                         title="Pridėti / redaguoti dienos žinutę"
                       >
-                        <MessageSquare className="w-3 h-3" /> {getSlotNote(date, null) ? "Redaguoti žinutę" : "Dienos žinutė"}
+                        <MessageSquare className="w-3 h-3" /> {getSlotNote(date, null) ? t("editMessage") : t("dayMessage")}
                       </button>
                     )}
                     {isAdmin && !isPast && !getDayCancellation(date) && (
@@ -959,7 +991,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
     className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-blush/80 hover:text-blush border border-dashed border-blush/30 hover:border-blush/60 rounded px-1.5 py-1 transition-colors"
     title="Atšaukti visą dieną"
   >
-    <MessageSquare className="w-3 h-3" /> Atšaukti dieną
+    <MessageSquare className="w-3 h-3" /> {t("cancelDay")}
   </button>
 )}
                   </div>
@@ -990,7 +1022,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
     return (
       <>
         <div className="rounded-md border border-blush/40 bg-blush/10 px-3 py-6 text-xs text-blush text-center italic font-semibold">
-          Treniruotės nevyksta
+          {t("lessonsCancelled")}
 
           {cancelled.note ? (
             <div className="mt-1 text-foreground/70 not-italic font-normal">
@@ -1030,7 +1062,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
 {!getDayCancellation(date) && daySlots.length === 0 && (
   <div className="rounded-md border border-gold/10 bg-card/30 px-3 py-6 text-xs text-muted-foreground text-center italic">
-    {dow === 7 ? "Individualus" : "Treniruočių nėra"}
+    {dow === 7 ? t("individual") : t("noLessons")}
   </div>
 )}
 
