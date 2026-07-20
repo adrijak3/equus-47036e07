@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
 import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
@@ -54,50 +55,51 @@ const App = () => (
       <LanguageProvider>
         <ThemeProvider>
           <AutoTranslate />
+
           <BrowserRouter>
-          <AuthProvider>
-            <Layout>
-              <SeasonalParticles />
-              <WelcomeOnboarding />
+            <AuthProvider>
+              <Layout>
+                <SeasonalParticles />
+                <WelcomeOnboarding />
 
-              <Routes>
-                <Route path="/" element={<HomeRoute />} />
-                <Route path="/grafikas" element={<Grafikas />} />
-                <Route path="/kainos" element={<Kainos />} />
-                <Route path="/informacija" element={<Informacija />} />
-                <Route path="/auth" element={<Auth />} />
+                <Routes>
+                  <Route path="/" element={<HomeRoute />} />
+                  <Route path="/grafikas" element={<Grafikas />} />
+                  <Route path="/kainos" element={<Kainos />} />
+                  <Route path="/informacija" element={<Informacija />} />
+                  <Route path="/auth" element={<Auth />} />
 
-                <Route
-                  path="/paskyra"
-                  element={
-                    <RequireAuth>
-                      <PaskyraRoute />
-                    </RequireAuth>
-                  }
-                />
+                  <Route
+                    path="/paskyra"
+                    element={
+                      <RequireAuth>
+                        <PaskyraRoute />
+                      </RequireAuth>
+                    }
+                  />
 
-                <Route
-                  path="/admin"
-                  element={
-                    <RequireAuth adminOnly>
-                      <Admin />
-                    </RequireAuth>
-                  }
-                />
+                  <Route
+                    path="/admin"
+                    element={
+                      <RequireAuth adminOnly>
+                        <Admin />
+                      </RequireAuth>
+                    }
+                  />
 
-                <Route
-                  path="/trener"
-                  element={
-                    <RequireAuth>
-                      <Trener />
-                    </RequireAuth>
-                  }
-                />
+                  <Route
+                    path="/trener"
+                    element={
+                      <RequireAuth>
+                        <Trener />
+                      </RequireAuth>
+                    }
+                  />
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
-          </AuthProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+            </AuthProvider>
           </BrowserRouter>
         </ThemeProvider>
       </LanguageProvider>
