@@ -7,6 +7,9 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
+import WelcomeOnboarding from "@/components/WelcomeOnboarding";
+import SeasonalParticles from "@/components/SeasonalParticles";
+
 import Grafikas from "./pages/Grafikas";
 import Pradzia from "./pages/Pradzia";
 import Kainos from "./pages/Kainos";
@@ -32,7 +35,10 @@ const PaskyraRoute = () => {
   const { isAdmin, loading } = useAuth();
 
   if (loading) return null;
-  if (isAdmin) return <Navigate to="/admin" replace />;
+
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
 
   return <Paskyra />;
 };
@@ -47,6 +53,9 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <Layout>
+              <SeasonalParticles />
+              <WelcomeOnboarding />
+
               <Routes>
                 <Route path="/" element={<HomeRoute />} />
                 <Route path="/grafikas" element={<Grafikas />} />
