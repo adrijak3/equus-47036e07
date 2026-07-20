@@ -55,8 +55,11 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
 function initialLanguage(): EquusLanguage {
+  if (typeof window === "undefined") return "lt";
+
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === "lt" || saved === "en") return saved;
+
   return navigator.language.toLowerCase().startsWith("lt") ? "lt" : "en";
 }
 
