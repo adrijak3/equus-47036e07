@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon, Wallet, Inbox } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -55,6 +55,12 @@ interface AvailableSlot {
   day_of_week: number;
   slot_time: string;
 }
+interface AccountProfile {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  display_name: string | null;
+}
 
 export default function Paskyra() {
   const { user, profile, refreshProfile, activeProfileId, activeProfileName, linkedProfiles } = useAuth();
@@ -67,6 +73,7 @@ export default function Paskyra() {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
 
   // Add subscription dialog
   const [subDialog, setSubDialog] = useState(false);
@@ -90,12 +97,13 @@ export default function Paskyra() {
     setLoading(true);
     // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
     try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
-    const [b, s, m, p, ts] = await Promise.all([
+    const [b, s, m, p, ts, ap] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", acting).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", acting).order("purchase_date", { ascending: false }),
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
       supabase.from("permanent_slots").select("*").eq("user_id", acting).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
+      supabase.from("profiles").select("id, full_name, phone, display_name").eq("id", acting).maybeSingle(),
     ]);
     // attach horse names from horse_assignments
     const bs = (b.data ?? []) as any[];
@@ -121,6 +129,7 @@ export default function Paskyra() {
     setMessages(m.data ?? []);
     setPermanents(p.data ?? []);
     setAvailableSlots(ts.data ?? []);
+    setAccountProfile((ap.data as AccountProfile | null) ?? null);
 
     // Load pending sickness cancellations awaiting / with documents
     const { data: sr } = await supabase
@@ -351,8 +360,11 @@ export default function Paskyra() {
 
       <VacationBanner userId={acting} />
 
-      <Tabs defaultValue="lessons">
-        <TabsList className="grid grid-cols-5 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+      <Tabs defaultValue="profile">
+        <TabsList className="grid grid-cols-6 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+          <TabsTrigger value="profile" aria-label="Profilis" title="Profilis" className="py-2">
+            <UserIcon className="w-[18px] h-[18px]" />
+          </TabsTrigger>
           <TabsTrigger value="lessons" aria-label="Treniruotės" title="Treniruotės" className="py-2">
             <Horse size={18} />
           </TabsTrigger>
@@ -369,6 +381,19 @@ export default function Paskyra() {
             <Settings className="w-[18px] h-[18px]" />
           </TabsTrigger>
         </TabsList>
+
+        {/* PROFILE OVERVIEW */}
+        <TabsContent value="profile" className="space-y-6">
+          <ProfileOverview
+            profile={accountProfile}
+            email={user?.email ?? null}
+            isLinked={isLinked}
+            activeProfileName={activeProfileName}
+            futureLessons={future.length}
+            totalAttended={totalAttended}
+            subscriptions={subs}
+          />
+        </TabsContent>
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-6">
@@ -674,6 +699,170 @@ export default function Paskyra() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/* ───────────── Profile overview ───────────── */
+
+function ProfileOverview({
+  profile,
+  email,
+  isLinked,
+  activeProfileName,
+  futureLessons,
+  totalAttended,
+  subscriptions,
+}: {
+  profile: AccountProfile | null;
+  email: string | null;
+  isLinked: boolean;
+  activeProfileName: string;
+  futureLessons: number;
+  totalAttended: number;
+  subscriptions: Subscription[];
+}) {
+  const fullName = profile?.full_name?.trim() || activeProfileName || "—";
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "—";
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "—";
+  const defaultScheduleName =
+    nameParts.length > 1
+      ? `${firstName} ${nameParts[nameParts.length - 1].slice(0, 2)}`
+      : firstName;
+  const scheduleName = profile?.display_name?.trim() || defaultScheduleName || "—";
+  const activeSubscription = subscriptions.find(
+    (subscription) =>
+      new Date(`${subscription.expires_at}T23:59:59`) >= new Date() &&
+      subscription.lessons_used < subscription.lessons_total,
+  );
+  const lessonsLeft = activeSubscription
+    ? Math.max(0, activeSubscription.lessons_total - activeSubscription.lessons_used)
+    : 0;
+
+  const details = [
+    {
+      label: "Vardas",
+      value: firstName,
+      icon: UserIcon,
+    },
+    {
+      label: "Pavardė",
+      value: lastName,
+      icon: IdCard,
+    },
+    {
+      label: "El. paštas",
+      value: email || "Nenurodytas",
+      icon: Mail,
+      hint: isLinked ? "Valdančios paskyros el. paštas" : undefined,
+    },
+    {
+      label: "Telefonas",
+      value: profile?.phone || "Nenurodytas",
+      icon: Phone,
+    },
+    {
+      label: "Grafike rodomas vardas",
+      value: scheduleName,
+      icon: CalendarDays,
+      hint: profile?.display_name
+        ? "Jūsų pasirinktas vardas"
+        : "Sugeneruota automatiškai iš vardo ir pavardės",
+    },
+    {
+      label: "Aktyvus profilis",
+      value: activeProfileName || fullName,
+      icon: Sparkles,
+      hint: isLinked ? "Valdomas susietas profilis" : "Jūsų pagrindinis profilis",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <motion.section
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-7"
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold shadow-inner sm:h-20 sm:w-20">
+              <span className="font-display text-3xl uppercase sm:text-4xl">
+                {firstName.charAt(0)}{lastName !== "—" ? lastName.charAt(0) : ""}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-gold/70">
+                Mano paskyra
+              </p>
+              <h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">
+                {fullName}
+              </h2>
+              <p className="mt-1 truncate text-sm text-muted-foreground">
+                Grafike: <span className="font-medium text-foreground">{scheduleName}</span>
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="outlineGold"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => {
+              document.querySelector<HTMLButtonElement>('[data-state][value="settings"]')?.click();
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+            Redaguoti informaciją
+          </Button>
+        </div>
+      </motion.section>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <ProfileStat label="Artimiausios treniruotės" value={futureLessons} icon={<CalendarDays className="h-4 w-4" />} />
+        <ProfileStat label="Iš viso lankyta" value={totalAttended} icon={<CheckCircle2 className="h-4 w-4" />} />
+        <ProfileStat label="Liko abonemente" value={lessonsLeft} icon={<Wallet className="h-4 w-4" />} />
+      </div>
+
+      <Section title="Asmeninė informacija" icon={<IdCard className="h-4 w-4" />}>
+        <div className="grid grid-cols-1 gap-px bg-gold/10 sm:grid-cols-2">
+          {details.map(({ label, value, icon: Icon, hint }) => (
+            <div key={label} className="bg-card/95 p-4 sm:p-5">
+              <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <Icon className="h-3.5 w-3.5 text-gold" />
+                {label}
+              </div>
+              <div className="break-words text-sm font-medium text-foreground sm:text-base">
+                {value}
+              </div>
+              {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <div className="rounded-2xl border border-gold/15 bg-gold/5 p-4 text-sm text-muted-foreground sm:p-5">
+        <span className="font-medium text-foreground">Pastaba:</span> grafike kiti lankytojai matys tik laukelyje „Grafike rodomas vardas“ nurodytą vardą, o ne jūsų el. paštą ar telefono numerį.
+      </div>
+    </div>
+  );
+}
+
+function ProfileStat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="rounded-2xl border border-gold/15 bg-gradient-card p-4 shadow-elegant"
+    >
+      <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        <span className="text-gold">{icon}</span>
+        {label}
+      </div>
+      <div className="font-display text-3xl text-gradient-gold tabular-nums">{value}</div>
+    </motion.div>
   );
 }
 
