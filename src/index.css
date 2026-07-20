@@ -439,3 +439,56 @@
   }
 
 }
+
+/* ===== Equus seasonal luxury themes ===== */
+:root[data-theme="spring"] {
+  --background: 38 45% 97%; --foreground: 334 25% 22%;
+  --card: 35 55% 99%; --card-foreground: 334 25% 22%;
+  --popover: 35 55% 99%; --popover-foreground: 334 25% 22%;
+  --primary: 339 42% 55%; --primary-foreground: 0 0% 100%;
+  --gold: 339 42% 55%; --gold-soft: 340 35% 68%; --gold-glow: 337 70% 88%;
+  --secondary: 340 34% 92%; --secondary-foreground: 334 25% 25%;
+  --muted: 35 35% 93%; --muted-foreground: 332 12% 45%;
+  --accent: 338 45% 91%; --accent-foreground: 334 30% 25%;
+  --border: 338 25% 84%; --input: 338 25% 84%; --ring: 339 42% 55%;
+  --gradient-ink: radial-gradient(ellipse at top, hsl(338 62% 95%) 0%, hsl(38 55% 97%) 48%, hsl(35 45% 94%) 100%);
+  --gradient-card: linear-gradient(180deg, hsl(35 60% 99%) 0%, hsl(338 45% 96%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(345 65% 78%), hsl(339 42% 55%), hsl(326 38% 46%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(337 52% 45%), hsl(326 42% 34%));
+}
+:root[data-theme="summer"] {
+  --background: 44 62% 96%; --foreground: 210 32% 19%;
+  --card: 45 65% 99%; --card-foreground: 210 32% 19%;
+  --popover: 45 65% 99%; --popover-foreground: 210 32% 19%;
+  --primary: 202 55% 48%; --primary-foreground: 0 0% 100%;
+  --gold: 38 57% 54%; --gold-soft: 39 52% 68%; --gold-glow: 43 90% 84%;
+  --secondary: 200 52% 91%; --secondary-foreground: 210 32% 22%;
+  --muted: 44 35% 91%; --muted-foreground: 210 12% 43%;
+  --accent: 199 55% 89%; --accent-foreground: 210 32% 22%;
+  --border: 39 30% 80%; --input: 39 30% 80%; --ring: 202 55% 48%;
+  --gradient-ink: radial-gradient(ellipse at top, hsl(199 70% 94%) 0%, hsl(45 70% 97%) 52%, hsl(42 55% 93%) 100%);
+  --gradient-card: linear-gradient(180deg, hsl(45 75% 99%) 0%, hsl(199 55% 96%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(45 82% 72%), hsl(38 57% 54%), hsl(202 55% 48%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(202 60% 39%), hsl(38 57% 42%));
+}
+:root[data-theme="autumn"] {
+  --background: 18 34% 10%; --foreground: 36 42% 93%;
+  --card: 20 30% 15%; --card-foreground: 36 42% 93%;
+  --popover: 20 30% 15%; --popover-foreground: 36 42% 93%;
+  --primary: 27 58% 58%; --primary-foreground: 18 38% 10%;
+  --gold: 27 58% 58%; --gold-soft: 28 46% 48%; --gold-glow: 34 75% 72%;
+  --secondary: 19 24% 20%; --secondary-foreground: 36 42% 93%;
+  --muted: 18 22% 18%; --muted-foreground: 30 18% 70%;
+  --accent: 24 35% 25%; --accent-foreground: 36 42% 93%;
+  --border: 24 28% 27%; --input: 24 28% 27%; --ring: 27 58% 58%;
+  --gradient-ink: radial-gradient(ellipse at top, hsl(24 43% 22%) 0%, hsl(20 35% 13%) 48%, hsl(17 40% 8%) 100%);
+  --gradient-card: linear-gradient(180deg, hsl(24 31% 19%) 0%, hsl(18 31% 13%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(39 74% 72%), hsl(27 58% 58%), hsl(12 55% 44%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(39 74% 72%), hsl(27 58% 58%));
+}
+:root[data-theme="winter"] { color-scheme: dark; }
+
+.seasonal-particles { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
+.seasonal-particles span { position: absolute; top: -8vh; opacity: .55; animation: equus-season-fall linear infinite; filter: drop-shadow(0 2px 3px hsl(var(--background) / .25)); }
+@keyframes equus-season-fall { 0% { transform: translate3d(0,-10vh,0) rotate(0deg); opacity: 0; } 10% { opacity: .55; } 100% { transform: translate3d(70px,115vh,0) rotate(420deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .seasonal-particles { display:none; } }
