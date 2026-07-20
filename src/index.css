@@ -337,107 +337,48 @@
    Yellow • Aqua • Blue • Purple
    ============================================ */
 
-:root[data-theme="summer"] {
+ :root[data-theme="summer"] {
   color-scheme: light;
-
-  --background: 242 44% 88%;
-  --foreground: 248 44% 19%;
-
-  --card: 44 58% 93%;
-  --card-foreground: 248 44% 19%;
-
-  --popover: 45 62% 95%;
-  --popover-foreground: 248 44% 19%;
-
-  --primary: 191 62% 38%;
-  --primary-foreground: 0 0% 100%;
-
-  --gold: 43 88% 54%;
-  --gold-soft: 42 78% 65%;
-  --gold-glow: 48 95% 73%;
-  --gold-foreground: 248 44% 18%;
-
-  --secondary: 225 50% 84%;
-  --secondary-foreground: 248 44% 20%;
-
-  --muted: 255 28% 84%;
-  --muted-foreground: 249 22% 39%;
-
-  --accent: 279 45% 77%;
-  --accent-foreground: 252 48% 20%;
-
-  --border: 245 34% 68%;
-  --input: 245 34% 68%;
-  --ring: 191 62% 38%;
-
+  --background: 35 100% 92%;
+  --foreground: 42 29% 25%;
+  --card: 35 100% 96%;
+  --card-foreground: 42 29% 25%;
+  --popover: 35 100% 97%;
+  --popover-foreground: 42 29% 25%;
+  --primary: 71 25% 58%;
+  --primary-foreground: 35 100% 97%;
+  --gold: 42 29% 40%;
+  --gold-soft: 71 25% 58%;
+  --gold-glow: 20 70% 70%;
+  --gold-foreground: 35 100% 97%;
+  --secondary: 71 25% 83%;
+  --secondary-foreground: 42 29% 28%;
+  --muted: 35 55% 88%;
+  --muted-foreground: 42 18% 43%;
+  --accent: 20 70% 70%;
+  --accent-foreground: 42 29% 24%;
+  --border: 42 22% 72%;
+  --input: 42 22% 72%;
+  --ring: 71 25% 58%;
   --gradient-ink:
-    radial-gradient(
-      circle at 8% 0%,
-      hsl(48 96% 71%) 0%,
-      hsl(43 91% 76%) 22%,
-      transparent 49%
-    ),
-    radial-gradient(
-      circle at 87% 12%,
-      hsl(285 65% 73%) 0%,
-      hsl(262 59% 76%) 27%,
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 50% 90%,
-      hsl(188 61% 65%) 0%,
-      hsl(210 58% 74%) 32%,
-      transparent 65%
-    ),
-    linear-gradient(
-      145deg,
-      hsl(45 79% 82%) 0%,
-      hsl(279 52% 78%) 48%,
-      hsl(207 60% 73%) 100%
-    );
-
-  --gradient-card:
-    linear-gradient(
-      145deg,
-      hsl(47 73% 94%) 0%,
-      hsl(278 42% 88%) 48%,
-      hsl(201 51% 87%) 100%
-    );
-
-  --gradient-gold:
-    linear-gradient(
-      135deg,
-      hsl(49 96% 68%),
-      hsl(35 91% 58%),
-      hsl(286 55% 59%),
-      hsl(190 66% 43%)
-    );
-
-  --gradient-text-gold:
-    linear-gradient(
-      180deg,
-      hsl(274 55% 43%),
-      hsl(211 62% 32%)
-    );
-
-  --shadow-elegant:
-    0 30px 80px -22px hsl(250 42% 24% / 0.28),
-    0 10px 35px -12px hsl(285 58% 58% / 0.19);
-
-  --shadow-gold:
-    0 0 38px hsl(46 94% 58% / 0.27);
-
-  --shadow-soft:
-    0 5px 25px hsl(242 38% 30% / 0.19);
-
-  --sidebar-background: 263 41% 88%;
-  --sidebar-foreground: 248 44% 19%;
-  --sidebar-primary: 191 62% 38%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 279 45% 77%;
-  --sidebar-accent-foreground: 252 48% 20%;
-  --sidebar-border: 245 34% 68%;
-  --sidebar-ring: 191 62% 38%;
+    radial-gradient(circle at 8% 0%, hsl(35 100% 92%) 0%, transparent 48%),
+    radial-gradient(circle at 88% 12%, hsl(20 70% 78%) 0%, transparent 54%),
+    radial-gradient(circle at 50% 92%, hsl(71 25% 72%) 0%, transparent 62%),
+    linear-gradient(145deg, hsl(35 100% 92%) 0%, hsl(20 70% 84%) 48%, hsl(71 25% 76%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(35 100% 97%) 0%, hsl(35 70% 94%) 52%, hsl(71 25% 89%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(42 29% 40%), hsl(71 25% 58%), hsl(20 70% 70%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(42 29% 34%), hsl(71 28% 38%));
+  --shadow-elegant: 0 30px 80px -22px hsl(42 29% 28% / 0.22), 0 10px 35px -12px hsl(20 70% 60% / 0.18);
+  --shadow-gold: 0 0 38px hsl(20 70% 70% / 0.25);
+  --shadow-soft: 0 5px 25px hsl(42 29% 30% / 0.14);
+  --sidebar-background: 35 72% 94%;
+  --sidebar-foreground: 42 29% 25%;
+  --sidebar-primary: 71 25% 58%;
+  --sidebar-primary-foreground: 35 100% 97%;
+  --sidebar-accent: 20 70% 78%;
+  --sidebar-accent-foreground: 42 29% 25%;
+  --sidebar-border: 42 22% 72%;
+  --sidebar-ring: 71 25% 58%;
 }
 /* ============================================
    AUTUMN — Copper Maple
