@@ -60,7 +60,8 @@ function initialLanguage(): EquusLanguage {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === "lt" || saved === "en") return saved;
 
-  return navigator.language.toLowerCase().startsWith("lt") ? "lt" : "en";
+  // Always default to Lithuanian
+  return "lt";
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
