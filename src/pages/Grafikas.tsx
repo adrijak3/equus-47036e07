@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload, MessageSquare, Grid2X2, List } from "lucide-react";
-import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Star, Clock, Users, X, Loader2, AlertCircle, FileText, Plus, ExternalLink, Trash2, Upload, MessageSquare, Grid2X2, List, CircleCheckBig } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -115,6 +115,7 @@ export default function Grafikas() {
   const [assignments, setAssignments] = useState<HorseAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
 
   // Cancel dialog state
   const [cancelDialog, setCancelDialog] = useState<{ booking: Booking } | null>(null);
@@ -379,7 +380,8 @@ const key = `book-${formatDateISO(date)}-${time}`;
       toast.error(error.code === "23505" ? "Jūs jau užregistruoti į šią pamoką" : "Klaida: " + error.message);
       return;
     }
-    toast.success("Užregistruota!");
+    setBookingSuccess({ date, time });
+    toast.success(language === "lt" ? "Pamoka sėkmingai užregistruota!" : "Your lesson is booked!");
     loadData();
   };
 
@@ -895,7 +897,14 @@ const key = `book-${formatDateISO(date)}-${time}`;
           </div>
         </div>
       ) : (
-        <>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={`${calendarView}-${formatDateISO(weekStart)}`}
+            initial={{ opacity: 0, x: calendarView === "week" ? 18 : -12, scale: 0.995 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: calendarView === "week" ? -12 : 12, scale: 0.995 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          >
           {/* Horizontal weekly grid: 7 day columns */}
           <div className={cn(
             "gap-4 sm:gap-3",
@@ -1333,7 +1342,8 @@ const key = `book-${formatDateISO(date)}-${time}`;
             <span className="flex items-center gap-1.5"><Star className="w-3 h-3 fill-gold text-gold" /> Pastovi vieta (paryškintas vardas)</span>
             <span className="flex items-center gap-1.5"><span className="text-blush">●</span> Pilnas / Laukimų sąrašas</span>
           </div>
-        </>
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {/* Permanent cancel choice dialog */}
@@ -1766,6 +1776,49 @@ const key = `book-${formatDateISO(date)}-${time}`;
           <DialogFooter>
             <Button variant="ghost" onClick={() => setNotesDialog(null)}>Uždaryti</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!bookingSuccess} onOpenChange={(open) => !open && setBookingSuccess(null)}>
+        <DialogContent className="max-w-sm overflow-hidden rounded-3xl border-gold/30 bg-gradient-card p-0 shadow-2xl">
+          <div className="relative px-6 pb-6 pt-9 text-center">
+            <motion.div
+              initial={{ scale: 0.4, opacity: 0, rotate: -18 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 280, damping: 18 }}
+              className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-gold/35 bg-gold/12 shadow-gold"
+            >
+              <CircleCheckBig className="h-10 w-10 text-gold" />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12, duration: 0.28 }}
+            >
+              <DialogTitle className="font-display text-2xl text-gradient-gold">
+                {language === "lt" ? "Pamoka užregistruota!" : "Lesson booked!"}
+              </DialogTitle>
+              <DialogDescription className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {bookingSuccess && (
+                  <>
+                    {language === "lt" ? "Laukiame jūsų" : "We’ll see you on"}{" "}
+                    <span className="font-semibold text-foreground">
+                      {bookingSuccess.date.toLocaleDateString(language === "lt" ? "lt-LT" : "en-GB", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </span>{" "}
+                    {language === "lt" ? "d.," : "at"}{" "}
+                    <span className="font-semibold text-gold">{formatTime(bookingSuccess.time)}</span>.
+                  </>
+                )}
+              </DialogDescription>
+              <Button variant="gold" className="mt-6 w-full" onClick={() => setBookingSuccess(null)}>
+                {language === "lt" ? "Puiku" : "Great"}
+              </Button>
+            </motion.div>
+          </div>
         </DialogContent>
       </Dialog>
 
