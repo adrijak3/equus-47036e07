@@ -4,128 +4,134 @@ import {
   Flower2,
   Leaf,
   Loader2,
+  Monitor,
+  Moon,
   Snowflake,
   Sun,
 } from "lucide-react";
 
 import {
   useEquusTheme,
+  type AppearanceMode,
   type EquusTheme,
 } from "@/contexts/ThemeContext";
-
+import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
 const THEMES: Array<{
   value: EquusTheme;
-  label: string;
+  label: { lt: string; en: string };
   icon: typeof Sun;
-  description: string;
+  description: { lt: string; en: string };
   preview: string;
 }> = [
   {
     value: "automatic",
-    label: "Automatinė",
+    label: { lt: "Automatinė", en: "Automatic" },
     icon: CalendarHeart,
-    description: "Tema keičiasi pagal metų laiką.",
-    preview: "from-rose-100 via-amber-100 to-slate-800",
+    description: { lt: "Tema keičiasi pagal metų laiką.", en: "Changes with the season." },
+    preview: "from-rose-200 via-amber-200 to-slate-800",
   },
   {
     value: "spring",
-    label: "Pavasaris",
+    label: { lt: "Pavasaris", en: "Spring" },
     icon: Flower2,
-    description: "Ivory, švelni sakura ir aiškus tamsus tekstas.",
-    preview: "from-[#fffaf3] via-[#f9dce6] to-[#b85f7d]",
+    description: { lt: "Rožinė sakurų tema.", en: "Pink sakura theme." },
+    preview: "from-[#f6c4d9] via-[#dc87ae] to-[#9f4674]",
   },
   {
     value: "summer",
-    label: "Vasara",
+    label: { lt: "Vasara", en: "Summer" },
     icon: Sun,
-    description:
-      "Prabangi paplūdimio tema su aqua, saule ir šilto smėlio tonais.",
-    preview: "from-[#ffe27a] via-[#7ddfd8] to-[#1f7f8a]",
+    description: { lt: "Geltonas, violetinis ir aqua saulėlydis.", en: "Yellow, violet and aqua sunset." },
+    preview: "from-[#f9d75e] via-[#bd83da] to-[#58bfd0]",
   },
   {
     value: "autumn",
-    label: "Ruduo",
+    label: { lt: "Ruduo", en: "Autumn" },
     icon: Leaf,
-    description: "Karamelė, varis ir klevo lapų atspalviai.",
+    description: { lt: "Karamelė, varis ir klevo lapai.", en: "Caramel, copper and maple leaves." },
     preview: "from-[#2a1712] via-[#72412a] to-[#d08a4c]",
   },
   {
     value: "winter",
-    label: "Žiema",
+    label: { lt: "Žiema", en: "Winter" },
     icon: Snowflake,
-    description: "Dabartinė prabangi tamsiai mėlyna Equus tema.",
+    description: { lt: "Tamsi arktinė Equus tema.", en: "Midnight arctic Equus theme." },
     preview: "from-[#07111f] via-[#102b49] to-[#7cbcff]",
   },
 ];
 
-export function ThemeSwitcher({
-  compact = false,
-}: {
-  compact?: boolean;
-}) {
-  const { theme, setTheme, saving } = useEquusTheme();
+const MODES: Array<{
+  value: AppearanceMode;
+  label: { lt: string; en: string };
+  icon: typeof Sun;
+}> = [
+  { value: "automatic", label: { lt: "Pagal sezoną", en: "Season default" }, icon: Monitor },
+  { value: "light", label: { lt: "Šviesi", en: "Light" }, icon: Sun },
+  { value: "dark", label: { lt: "Tamsi", en: "Dark" }, icon: Moon },
+];
+
+export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
+  const { theme, setTheme, appearanceMode, setAppearanceMode, saving } = useEquusTheme();
+  const { language } = useLanguage();
 
   return (
-    <div
-      className={cn(
-        "grid gap-3",
-        compact
-          ? "grid-cols-1 sm:grid-cols-2"
-          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-      )}
-    >
-      {THEMES.map(
-        ({ value, label, icon: Icon, description, preview }) => {
+    <div className="space-y-4">
+      <div className={cn("grid gap-3", compact ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
+        {THEMES.map(({ value, label, icon: Icon, description, preview }) => {
           const active = theme === value;
-
           return (
             <button
               key={value}
               type="button"
               onClick={() => setTheme(value)}
               className={cn(
-                "rounded-xl border p-3 text-left transition-all",
-                "hover:-translate-y-0.5",
-                active
-                  ? "border-gold bg-gold/15 shadow-gold"
-                  : "border-border bg-card hover:border-gold/50",
+                "rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5",
+                active ? "border-gold bg-gold/15 shadow-gold" : "border-border bg-card hover:border-gold/50",
               )}
             >
-              {!compact && (
-                <div
-                  className={cn(
-                    "mb-3 h-14 rounded-lg bg-gradient-to-br",
-                    preview,
-                  )}
-                />
-              )}
-
+              {!compact && <div className={cn("mb-3 h-14 rounded-lg bg-gradient-to-br", preview)} />}
               <div className="flex items-center gap-2">
                 <Icon className="h-4 w-4 text-gold" />
-
-                <span className="font-semibold">
-                  {label}
-                </span>
-
-                {active &&
-                  (saving ? (
-                    <Loader2 className="ml-auto h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="ml-auto h-4 w-4 text-gold" />
-                  ))}
+                <span className="font-semibold">{label[language]}</span>
+                {active && (saving ? <Loader2 className="ml-auto h-4 w-4 animate-spin" /> : <Check className="ml-auto h-4 w-4 text-gold" />)}
               </div>
-
-              {!compact && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {description}
-                </p>
-              )}
+              {!compact && <p className="mt-2 text-xs text-muted-foreground">{description[language]}</p>}
             </button>
           );
-        },
-      )}
+        })}
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {language === "lt" ? "Šviesumas" : "Brightness"}
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {MODES.map(({ value, label, icon: Icon }) => {
+            const active = appearanceMode === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setAppearanceMode(value)}
+                className={cn(
+                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-xs transition-all",
+                  active ? "border-gold bg-gold/15 text-gold shadow-gold" : "border-border bg-card text-muted-foreground hover:border-gold/50 hover:text-foreground",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label[language]}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          {language === "lt"
+            ? "Tamsus pavasaris tampa rožiniu vakaru, o tamsi vasara – tropine naktimi."
+            : "Dark Spring becomes a pink evening, while Dark Summer becomes a tropical night."}
+        </p>
+      </div>
     </div>
   );
 }
