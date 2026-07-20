@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, Settings, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -78,6 +78,7 @@ export default function Paskyra() {
   const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [activeTab, setActiveTab] = useState("profile");
 
   // Add subscription dialog
   const [subDialog, setSubDialog] = useState(false);
@@ -374,7 +375,7 @@ export default function Paskyra() {
 
       <VacationBanner userId={acting} />
 
-      <Tabs defaultValue="profile">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-6 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="profile" aria-label="Profilis" title="Profilis" className="py-2">
             <UserIcon className="w-[18px] h-[18px]" />
@@ -391,8 +392,8 @@ export default function Paskyra() {
           <TabsTrigger value="messages" aria-label="Žinutės" title="Žinutės" className="py-2">
             <Inbox className="w-[18px] h-[18px]" />
           </TabsTrigger>
-          <TabsTrigger value="settings" aria-label="Nuostatos" title="Nuostatos" className="py-2">
-            <Settings className="w-[18px] h-[18px]" />
+          <TabsTrigger value="vacations" aria-label="Atostogos" title="Atostogos" className="py-2">
+            <CalendarDays className="w-[18px] h-[18px]" />
           </TabsTrigger>
         </TabsList>
 
@@ -406,7 +407,15 @@ export default function Paskyra() {
             futureLessons={future.length}
             totalAttended={totalAttended}
             subscriptions={subs}
+            onEdit={() => document.getElementById("profile-edit")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onPassword={() => document.getElementById("password-change")?.scrollIntoView({ behavior: "smooth", block: "start" })}
           />
+          <div id="profile-edit" className="scroll-mt-24">
+            <ProfileSettings onSaved={async () => { await refreshProfile(); await load(); }} />
+          </div>
+          <div id="password-change" className="scroll-mt-24">
+            <PasswordChange />
+          </div>
         </TabsContent>
 
         {/* LESSONS */}
@@ -610,10 +619,8 @@ export default function Paskyra() {
           />
         </TabsContent>
 
-        {/* SETTINGS */}
-        <TabsContent value="settings" className="space-y-6">
-          <ProfileSettings onSaved={refreshProfile} />
-          <PasswordChange />
+        {/* VACATIONS */}
+        <TabsContent value="vacations" className="space-y-6">
           <Section title="Mano atostogos" icon={<CalendarDays className="w-4 h-4" />}>
             <VacationsPanel userId={acting} />
           </Section>
@@ -730,6 +737,8 @@ function ProfileOverview({
   futureLessons,
   totalAttended,
   subscriptions,
+  onEdit,
+  onPassword,
 }: {
   profile: AccountProfile | null;
   email: string | null;
@@ -738,6 +747,8 @@ function ProfileOverview({
   futureLessons: number;
   totalAttended: number;
   subscriptions: Subscription[];
+  onEdit: () => void;
+  onPassword: () => void;
 }) {
   const fullName = profile?.full_name?.trim() || activeProfileName || "—";
   const nameParts = fullName.split(/\s+/).filter(Boolean);
@@ -824,16 +835,16 @@ function ProfileOverview({
             </div>
           </div>
 
-          <Button
-            variant="outlineGold"
-            className="w-full shrink-0 sm:w-auto"
-            onClick={() => {
-              document.querySelector<HTMLButtonElement>('[data-state][value="settings"]')?.click();
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-            Redaguoti informaciją
-          </Button>
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button variant="outlineGold" className="w-full sm:w-auto" onClick={onEdit}>
+              <Pencil className="h-4 w-4" />
+              Redaguoti informaciją
+            </Button>
+            <Button variant="outlineGold" className="w-full sm:w-auto" onClick={onPassword}>
+              <KeyRound className="h-4 w-4" />
+              Keisti slaptažodį
+            </Button>
+          </div>
         </div>
       </motion.section>
 
@@ -860,9 +871,6 @@ function ProfileOverview({
         </div>
       </Section>
 
-      <div className="rounded-2xl border border-gold/15 bg-gold/5 p-4 text-sm text-muted-foreground sm:p-5">
-        <span className="font-medium text-foreground">Pastaba:</span> grafike kiti lankytojai matys tik laukelyje „Grafike rodomas vardas“ nurodytą vardą, o ne jūsų el. paštą ar telefono numerį.
-      </div>
     </div>
   );
 }
@@ -938,9 +946,6 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
             maxLength={40}
             placeholder="Palikite tuščią — naudosis numatytas"
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Numatytas vaizdas: vardas + pirmos 2 pavardės raidės (pvz. „Vardas Pa“). Įrašykite, jei norite kitokio.
-          </p>
         </div>
         <div>
           <Label htmlFor="pf-phone">Telefonas</Label>
