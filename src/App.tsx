@@ -7,8 +7,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
-import WelcomeOnboarding from "@/components/WelcomeOnboarding";
-import SeasonalParticles from "@/components/SeasonalParticles";
+import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
+import { SeasonalParticles } from "@/components/SeasonalParticles";
 
 import Grafikas from "./pages/Grafikas";
 import Pradzia from "./pages/Pradzia";
