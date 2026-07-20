@@ -1,5 +1,6 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Calendar,
   Check,
@@ -144,6 +145,13 @@ export default function Layout({
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   const close = () => {
     setOpen(false);
     setThemesOpen(false);
@@ -221,11 +229,13 @@ export default function Layout({
           className="absolute inset-0 bg-background/85 backdrop-blur-md"
         />
 
-        <aside
+        <motion.aside
+          initial={false}
+          animate={{ x: open ? 0 : "100%" }}
+          transition={{ type: "spring", stiffness: 320, damping: 32 }}
           className={cn(
             "bg-gradient-card absolute right-0 top-0 flex h-full w-full flex-col border-l border-gold/20 shadow-elegant sm:w-96",
-            "transition-transform duration-500 ease-out",
-            open ? "translate-x-0" : "translate-x-full",
+            "will-change-transform",
           )}
         >
           {/* Meniu antraštė */}
@@ -245,7 +255,7 @@ export default function Layout({
           </div>
 
           {/* Slenkama meniu dalis */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overscroll-contain pb-4">
             <nav className="space-y-1 px-4 py-6">
               {navigationItems.map(({ to, label, icon: Icon }) => {
                 const active = isLinkActive(to);
@@ -315,12 +325,11 @@ export default function Layout({
                 </Link>
               )}
             </nav>
-{/* Kalbos pasirinkimas */}
-<div className="mx-4 mb-5">
-  <LanguageSwitcher />
-</div>
-            {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
-            {user && (
+{/* Kalbos ir išvaizdos valdikliai */}
+            <div className="sticky bottom-0 z-10 space-y-3 border-t border-gold/10 bg-background/90 px-4 py-4 backdrop-blur-xl">
+              <LanguageSwitcher />
+              {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
+              {user && (
               <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-gold/20 bg-card/70">
                 <button
                   type="button"
@@ -359,7 +368,8 @@ export default function Layout({
                   </div>
                 )}
               </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Paskyros dalis apačioje */}
@@ -467,11 +477,21 @@ export default function Layout({
               </>
             )}
           </div>
-        </aside>
+        </motion.aside>
       </div>
 
-      <main className="flex-1">
-        {children}
+      <main className="flex-1 overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10, filter: "blur(3px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -6, filter: "blur(2px)" }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <footer className="mt-16 border-t border-gold/10">
