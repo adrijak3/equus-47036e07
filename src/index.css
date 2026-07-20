@@ -457,7 +457,6 @@
   --gradient-text-gold: linear-gradient(180deg, hsl(337 52% 45%), hsl(326 42% 34%));
 }
 :root[data-theme="summer"] {
- :root[data-theme="summer"] {
   color-scheme: light;
 
   --background: 46 54% 94%;
