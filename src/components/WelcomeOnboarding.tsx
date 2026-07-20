@@ -41,13 +41,21 @@ export function WelcomeOnboarding() {
 
   return (
     <Dialog open={open} onOpenChange={() => undefined}>
-      <DialogContent className="max-w-3xl overflow-hidden border-gold/30 bg-card p-0" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
-        <DialogHeader className="border-b border-border bg-gradient-card px-6 py-5">
-          <DialogTitle className="text-3xl font-display text-gradient-gold">Sveiki atvykę į Equus jojimo mokyklą!</DialogTitle>
-          <p className="text-sm text-muted-foreground">Džiaugiamės, kad prisijungėte. Prieš registruojantis į treniruotes, susipažinkite su mūsų žirgyno taisyklėmis.</p>
+      <DialogContent
+        className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-gold/30 bg-card p-0 sm:h-auto sm:max-h-[92dvh] sm:w-[calc(100%-2rem)] sm:max-w-3xl sm:rounded-2xl"
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="shrink-0 border-b border-border bg-gradient-card px-4 py-4 pr-10 sm:px-6 sm:py-5">
+          <DialogTitle className="text-2xl font-display leading-tight text-gradient-gold sm:text-3xl">
+            Sveiki atvykę į Equus jojimo mokyklą!
+          </DialogTitle>
+          <p className="text-xs leading-5 text-muted-foreground sm:text-sm">
+            Džiaugiamės, kad prisijungėte. Prieš registruojantis į treniruotes, susipažinkite su mūsų žirgyno taisyklėmis.
+          </p>
         </DialogHeader>
 
-        <div ref={scrollRef} onScroll={onScroll} className="max-h-[62vh] space-y-5 overflow-y-auto px-6 py-5">
+        <div ref={scrollRef} onScroll={onScroll} className="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:space-y-5 sm:px-6 sm:py-5">
           <section className="grid gap-3 sm:grid-cols-2">
             <InfoCard icon={ShieldCheck} title="Atšaukimo tvarka">Atšakimas galimas 24 val. prieš treniruotę. Pavėluotai atšaukta treniruotė yra skaičiuojama kaip panaudota, jei priežastis nėra vieną iš šių - liga, force majeure atvejis.</InfoCard>
             <InfoCard icon={Tag} title="Kainos">Aktualios individualių, grupinių ir abonementinių treniruočių kainos visada pateikiamos skiltyje „Kainos“.</InfoCard>
@@ -60,7 +68,7 @@ export function WelcomeOnboarding() {
               <div><h3 className="font-display text-xl">Sutarties ir taisyklių peržiūra</h3><p className="text-xs text-muted-foreground">Perskaitykite dokumentą iki apačios.</p></div>
               <a href="/equus-sutartis-ir-taisykles.pdf" target="_blank" rel="noreferrer" className="text-sm text-gold underline">Atidaryti PDF</a>
             </div>
-            <iframe title="Equus sutarties peržiūra" src="/equus-sutartis-ir-taisykles.pdf#toolbar=0" className="h-[360px] w-full rounded-lg border bg-white" />
+            <iframe title="Equus sutarties peržiūra" src="/equus-sutartis-ir-taisykles.pdf#toolbar=0" className="h-[260px] w-full rounded-lg border bg-white sm:h-[360px]" />
           </section>
 
           <section className="rounded-xl border border-border bg-background/30 p-4 text-sm leading-7">
@@ -70,17 +78,17 @@ export function WelcomeOnboarding() {
             <Link to="/informacija" target="_blank" className="mt-3 inline-flex text-gold underline">Peržiūrėti visą informaciją →</Link>
           </section>
 
-          <div className="flex min-h-24 items-end justify-center text-center text-xs text-muted-foreground">
+          <div className="flex min-h-16 items-end justify-center text-center text-xs text-muted-foreground sm:min-h-24">
             {readToEnd ? <span className="flex items-center gap-1 text-emerald-500"><CheckCircle2 className="h-4 w-4"/> Perskaitėte iki galo</span> : "Slinkite žemyn iki pat pabaigos, kad galėtumėte sutikti."}
           </div>
         </div>
 
-        <div className="border-t border-border bg-card px-6 py-4">
-          <label className={`flex items-start gap-3 rounded-lg border p-3 ${readToEnd ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
-            <Checkbox checked={accepted} disabled={!readToEnd} onCheckedChange={(v) => setAccepted(v === true)} />
-            <span className="text-sm">Susipažinau su taisyklėmis, kainomis, atšaukimo tvarka ir sutarties pasirašymo priminimu.</span>
+        <div className="shrink-0 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
+          <label className={`flex items-start gap-2.5 rounded-lg border p-2.5 sm:gap-3 sm:p-3 ${readToEnd ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
+            <Checkbox className="mt-0.5 shrink-0" checked={accepted} disabled={!readToEnd} onCheckedChange={(v) => setAccepted(v === true)} />
+            <span className="text-xs leading-5 sm:text-sm">Susipažinau su taisyklėmis, kainomis, atšaukimo tvarka ir sutarties pasirašymo priminimu.</span>
           </label>
-          <Button variant="gold" className="mt-3 w-full" disabled={!readToEnd || !accepted || saving} onClick={finish}>{saving ? "Išsaugoma…" : "Sutinku ir tęsti"}</Button>
+          <Button variant="gold" className="mt-2.5 h-11 w-full sm:mt-3" disabled={!readToEnd || !accepted || saving} onClick={finish}>{saving ? "Išsaugoma…" : "Sutinku ir tęsti"}</Button>
         </div>
       </DialogContent>
     </Dialog>
