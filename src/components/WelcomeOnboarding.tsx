@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export function WelcomeOnboarding() {
   const { user, isAdmin } = useAuth();
@@ -56,27 +57,27 @@ export function WelcomeOnboarding() {
         </DialogHeader>
 
         <div ref={scrollRef} onScroll={onScroll} className="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:space-y-5 sm:px-6 sm:py-5">
-          <section className="grid gap-3 sm:grid-cols-2">
-            <InfoCard icon={ShieldCheck} title="Atšaukimo tvarka">Atšakimas galimas 24 val. prieš treniruotę. Pavėluotai atšaukta treniruotė yra skaičiuojama kaip panaudota, jei priežastis nėra vieną iš šių - liga, force majeure atvejis.</InfoCard>
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="grid gap-3 sm:grid-cols-2">
+            <InfoCard icon={ShieldCheck} title="Atšaukimo tvarka">Atšaukimas galimas 24 val. prieš treniruotę. Pavėluotai atšaukta treniruotė yra skaičiuojama kaip panaudota, jei priežastis nėra viena iš šių - liga, force majeure atvejis.</InfoCard>
             <InfoCard icon={Tag} title="Kainos">Aktualios individualių, grupinių ir abonementinių treniruočių kainos visada pateikiamos skiltyje „Kainos“.</InfoCard>
             <InfoCard icon={FileText} title="Sutarties pasirašymas">Prieš pirmąją treniruotę nepamirškite pasirašyti jojimo sutarties.</InfoCard>
             <InfoCard icon={BookOpen} title="Žirgyno taisyklės">Atvykite ~30 min. prieš treniruotės laiką, dėvėkite tinkamą avalynę.</InfoCard>
-          </section>
+          </motion.section>
 
-          <section className="rounded-xl border border-gold/20 bg-background/40 p-4">
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.08 }} className="rounded-2xl border border-gold/20 bg-background/40 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div><h3 className="font-display text-xl">Sutarties ir taisyklių peržiūra</h3><p className="text-xs text-muted-foreground">Perskaitykite dokumentą iki apačios.</p></div>
               <a href="/equus-sutartis-ir-taisykles.pdf" target="_blank" rel="noreferrer" className="text-sm text-gold underline">Atidaryti PDF</a>
             </div>
             <iframe title="Equus sutarties peržiūra" src="/equus-sutartis-ir-taisykles.pdf#toolbar=0" className="h-[260px] w-full rounded-lg border bg-white sm:h-[360px]" />
-          </section>
+          </motion.section>
 
-          <section className="rounded-xl border border-border bg-background/30 p-4 text-sm leading-7">
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.14 }} className="rounded-2xl border border-border bg-background/30 p-4 text-sm leading-7">
             <h3 className="mb-2 font-display text-xl">Svarbu prieš pirmą treniruotę</h3>
             <p>Registruodamiesi pateikite teisingą telefono numerį ir el. paštą. Į treniruotę atvykite sutartu laiku. Už nepilnamečius atsako jų atstovai. Apie sveikatos būklę ar kitą svarbią informaciją praneškite treneriui iš anksto.</p>
             <p className="mt-3">Daugiau informacijos rasite čia.</p>
             <Link to="/informacija" target="_blank" className="mt-3 inline-flex text-gold underline">Peržiūrėti visą informaciją →</Link>
-          </section>
+          </motion.section>
 
           <div className="flex min-h-16 items-end justify-center text-center text-xs text-muted-foreground sm:min-h-24">
             {readToEnd ? <span className="flex items-center gap-1 text-emerald-500"><CheckCircle2 className="h-4 w-4"/> Perskaitėte iki galo</span> : "Slinkite žemyn iki pat pabaigos, kad galėtumėte sutikti."}
@@ -88,7 +89,7 @@ export function WelcomeOnboarding() {
             <Checkbox className="mt-0.5 shrink-0" checked={accepted} disabled={!readToEnd} onCheckedChange={(v) => setAccepted(v === true)} />
             <span className="text-xs leading-5 sm:text-sm">Susipažinau su taisyklėmis, kainomis, atšaukimo tvarka ir sutarties pasirašymo priminimu.</span>
           </label>
-          <Button variant="gold" className="mt-2.5 h-11 w-full sm:mt-3" disabled={!readToEnd || !accepted || saving} onClick={finish}>{saving ? "Išsaugoma…" : "Sutinku ir tęsti"}</Button>
+          <Button variant="gold" className="mt-2.5 h-11 w-full sm:mt-3" disabled={!readToEnd || !accepted || saving} onClick={finish}>{saving ? "Išsaugoma…" : "Sutinku ir tęsiu"}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -96,5 +97,5 @@ export function WelcomeOnboarding() {
 }
 
 function InfoCard({ icon: Icon, title, children }: { icon: typeof ShieldCheck; title: string; children: ReactNode }) {
-  return <div className="rounded-xl border border-border bg-background/35 p-4"><Icon className="mb-2 h-5 w-5 text-gold"/><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm leading-6 text-muted-foreground">{children}</p></div>;
+  return <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }} className="rounded-2xl border border-border bg-background/35 p-4 shadow-sm"><Icon className="mb-2 h-5 w-5 text-gold"/><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm leading-6 text-muted-foreground">{children}</p></motion.div>;
 }
