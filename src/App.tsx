@@ -5,10 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
 import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { SeasonalParticles } from "@/components/SeasonalParticles";
+import { AutoTranslate } from "@/components/AutoTranslate";
 
 import Grafikas from "./pages/Grafikas";
 import Pradzia from "./pages/Pradzia";
@@ -49,8 +51,10 @@ const App = () => (
       <Toaster />
       <Sonner />
 
-      <ThemeProvider>
-        <BrowserRouter>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AutoTranslate />
+          <BrowserRouter>
           <AuthProvider>
             <Layout>
               <SeasonalParticles />
@@ -94,8 +98,9 @@ const App = () => (
               </Routes>
             </Layout>
           </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
