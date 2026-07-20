@@ -13,6 +13,7 @@ import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { cn } from "@/lib/utils";
 import { VacationsPanel } from "@/components/VacationsPanel";
+import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -141,7 +142,7 @@ export default function Admin() {
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
-            <TabsContent value="users"><UsersTab /></TabsContent>
+            <TabsContent value="users" className="space-y-6"><UnpaidLessonsOverview staff /><UsersTab /></TabsContent>
             <TabsContent value="subs"><SubsTab /></TabsContent>
             <TabsContent value="messages"><MessagesTab /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
@@ -1913,6 +1914,7 @@ function PermanentSlotsAdminTab() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlotLite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<any[]>([]);
 
   // Add dialog
   const [open, setOpen] = useState(false);
@@ -1925,16 +1927,18 @@ function PermanentSlotsAdminTab() {
 
   const load = async () => {
     setLoading(true);
-    const [r, p, t] = await Promise.all([
+    const [r, p, t, rq] = await Promise.all([
       supabase.from("permanent_slots").select("*").order("day_of_week").order("slot_time"),
       supabase.from("profiles").select("id, full_name, phone").order("full_name"),
       supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
+      (supabase as any).from("permanent_slot_requests").select("*").eq("status", "pending").order("created_at"),
     ]);
     const profs = p.data ?? [];
     const nameMap = Object.fromEntries(profs.map((x) => [x.id, x.full_name]));
     setRows((r.data ?? []).map((x) => ({ ...x, profile_name: nameMap[x.user_id] ?? "—" })));
     setProfiles(profs);
     setTimeSlots(t.data ?? []);
+    setRequests((rq.data ?? []).map((x: any) => ({ ...x, profile_name: nameMap[x.user_id] ?? "—" })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -1992,6 +1996,14 @@ function PermanentSlotsAdminTab() {
     load();
   };
 
+  const decideRequest = async (id: string, approve: boolean) => {
+    const note = approve ? null : (prompt("Atmetimo priežastis (nebūtina):") || null);
+    const { data, error } = await (supabase as any).rpc("decide_permanent_slot_request", { _request_id: id, _approve: approve, _note: note });
+    if (error || !data?.ok) { toast.error(data?.message ?? error?.message ?? "Nepavyko"); return; }
+    toast.success(approve ? "Prašymas patvirtintas" : "Prašymas atmestas");
+    load();
+  };
+
   const slotsForSelDay = timeSlots.filter((s) => s.day_of_week === selDay);
 
   const byDay: Record<number, Record<string, PermSlotRow[]>> = {};
@@ -2002,6 +2014,17 @@ function PermanentSlotsAdminTab() {
 
   return (
     <div>
+      {requests.length > 0 && (
+        <div className="mb-5 rounded-lg border border-gold/25 bg-gold/5 p-4">
+          <h3 className="font-display text-xl text-gradient-gold mb-3">Laukiantys prašymai</h3>
+          <div className="space-y-2">{requests.map((r) => (
+            <div key={r.id} className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-md border border-gold/15 bg-background/35 px-3 py-3">
+              <div className="flex-1"><div className="font-medium">{r.profile_name}</div><div className="text-sm text-muted-foreground">{WEEKDAYS_LT[r.day_of_week - 1]} · {formatTime(r.slot_time)}</div></div>
+              <div className="flex gap-2"><Button size="sm" variant="gold" onClick={() => decideRequest(r.id, true)}><Check className="w-4 h-4"/> Patvirtinti</Button><Button size="sm" variant="ghost" onClick={() => decideRequest(r.id, false)}><X className="w-4 h-4"/> Atmesti</Button></div>
+            </div>
+          ))}</div>
+        </div>
+      )}
       <div className="flex justify-end mb-4">
         <Button variant="gold" onClick={() => setOpen(true)}>
           <Plus className="w-4 h-4" /> Pridėti nuolatinį laiką
