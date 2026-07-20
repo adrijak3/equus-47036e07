@@ -19,6 +19,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { formatDateISO, formatTime } from "@/lib/equus";
+import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 
 interface Horse {
   id: string;
@@ -83,14 +84,16 @@ export default function Trener() {
       </header>
 
       <Tabs defaultValue="today">
-        <TabsList className="mb-6 grid h-auto w-full grid-cols-3 bg-background/50">
+        <TabsList className="mb-6 grid h-auto w-full grid-cols-4 bg-background/50">
           <TabsTrigger value="today">Paskirti žirgus</TabsTrigger>
           <TabsTrigger value="horses">Žirgų sąrašas</TabsTrigger>
           <TabsTrigger value="subs">Abonementai</TabsTrigger>
+          <TabsTrigger value="unpaid">Nepriskirtos</TabsTrigger>
         </TabsList>
         <TabsContent value="today"><TodayAssignments /></TabsContent>
         <TabsContent value="horses"><HorsesTab /></TabsContent>
         <TabsContent value="subs"><SubsOverview /></TabsContent>
+        <TabsContent value="unpaid"><UnpaidLessonsOverview staff /></TabsContent>
       </Tabs>
     </div>
   );
