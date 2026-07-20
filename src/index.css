@@ -233,161 +233,212 @@
 }
 
 /* ============================================
-   SPRING — Ivory Sakura
+   SPRING — Pink Sakura
    ============================================ */
 
 :root[data-theme="spring"] {
   color-scheme: light;
 
-  --background: 38 45% 97%;
-  --foreground: 334 25% 22%;
+  --background: 338 42% 93%;
+  --foreground: 332 32% 20%;
 
-  --card: 35 55% 99%;
-  --card-foreground: 334 25% 22%;
+  --card: 340 48% 96%;
+  --card-foreground: 332 32% 20%;
 
-  --popover: 35 55% 99%;
-  --popover-foreground: 334 25% 22%;
+  --popover: 340 48% 97%;
+  --popover-foreground: 332 32% 20%;
 
-  --primary: 339 42% 55%;
+  --primary: 337 50% 52%;
   --primary-foreground: 0 0% 100%;
 
-  --gold: 339 42% 55%;
-  --gold-soft: 340 35% 68%;
-  --gold-glow: 337 70% 88%;
+  --gold: 337 50% 52%;
+  --gold-soft: 338 42% 66%;
+  --gold-glow: 340 76% 82%;
   --gold-foreground: 0 0% 100%;
 
-  --secondary: 340 34% 92%;
-  --secondary-foreground: 334 25% 25%;
+  --secondary: 336 40% 87%;
+  --secondary-foreground: 332 32% 22%;
 
-  --muted: 35 35% 93%;
-  --muted-foreground: 332 12% 45%;
+  --muted: 342 28% 89%;
+  --muted-foreground: 332 16% 40%;
 
-  --accent: 338 45% 91%;
-  --accent-foreground: 334 30% 25%;
+  --accent: 326 44% 84%;
+  --accent-foreground: 332 34% 22%;
 
-  --border: 338 25% 84%;
-  --input: 338 25% 84%;
-  --ring: 339 42% 55%;
-
-  --gradient-ink:
-    radial-gradient(
-      ellipse at top,
-      hsl(338 62% 95%) 0%,
-      hsl(38 55% 97%) 48%,
-      hsl(35 45% 94%) 100%
-    );
-
-  --gradient-card:
-    linear-gradient(
-      180deg,
-      hsl(35 60% 99%) 0%,
-      hsl(338 45% 96%) 100%
-    );
-
-  --gradient-gold:
-    linear-gradient(
-      135deg,
-      hsl(345 65% 78%),
-      hsl(339 42% 55%),
-      hsl(326 38% 46%)
-    );
-
-  --gradient-text-gold:
-    linear-gradient(
-      180deg,
-      hsl(337 52% 45%),
-      hsl(326 42% 34%)
-    );
-
-  --sidebar-background: 35 55% 98%;
-  --sidebar-foreground: 334 25% 22%;
-  --sidebar-primary: 339 42% 55%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 338 45% 91%;
-  --sidebar-accent-foreground: 334 30% 25%;
-  --sidebar-border: 338 25% 84%;
-  --sidebar-ring: 339 42% 55%;
-}
-
-/* ============================================
-   SUMMER — Aqua Beach
-   ============================================ */
-
-:root[data-theme="summer"] {
-  color-scheme: light;
-
-  --background: 46 54% 94%;
-  --foreground: 205 42% 18%;
-
-  --card: 45 62% 98%;
-  --card-foreground: 205 42% 18%;
-
-  --popover: 45 62% 98%;
-  --popover-foreground: 205 42% 18%;
-
-  --primary: 185 58% 38%;
-  --primary-foreground: 0 0% 100%;
-
-  --gold: 43 78% 54%;
-  --gold-soft: 42 68% 68%;
-  --gold-glow: 47 88% 78%;
-  --gold-foreground: 205 42% 18%;
-
-  --secondary: 182 42% 86%;
-  --secondary-foreground: 205 42% 20%;
-
-  --muted: 45 30% 88%;
-  --muted-foreground: 205 16% 40%;
-
-  --accent: 185 46% 80%;
-  --accent-foreground: 205 42% 18%;
-
-  --border: 188 24% 72%;
-  --input: 188 24% 72%;
-  --ring: 185 58% 38%;
+  --border: 337 30% 76%;
+  --input: 337 30% 76%;
+  --ring: 337 50% 52%;
 
   --gradient-ink:
     radial-gradient(
-      circle at top left,
-      hsl(44 88% 82%) 0%,
-      hsl(45 62% 94%) 30%,
-      hsl(185 45% 88%) 68%,
-      hsl(190 48% 82%) 100%
+      circle at 15% 5%,
+      hsl(326 72% 86%) 0%,
+      hsl(338 56% 91%) 27%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      hsl(350 76% 84%) 0%,
+      hsl(338 52% 90%) 30%,
+      transparent 57%
+    ),
+    linear-gradient(
+      145deg,
+      hsl(342 48% 92%) 0%,
+      hsl(330 45% 89%) 52%,
+      hsl(320 35% 87%) 100%
     );
 
   --gradient-card:
     linear-gradient(
       145deg,
-      hsl(46 70% 98%) 0%,
-      hsl(43 76% 95%) 45%,
-      hsl(184 42% 91%) 100%
+      hsl(344 58% 97%) 0%,
+      hsl(337 50% 93%) 48%,
+      hsl(326 42% 90%) 100%
     );
 
   --gradient-gold:
     linear-gradient(
       135deg,
-      hsl(45 90% 65%),
-      hsl(40 82% 54%),
-      hsl(184 58% 42%)
+      hsl(349 76% 76%),
+      hsl(337 56% 56%),
+      hsl(318 42% 44%)
     );
 
   --gradient-text-gold:
     linear-gradient(
       180deg,
-      hsl(184 68% 30%),
-      hsl(205 55% 23%)
+      hsl(339 56% 48%),
+      hsl(318 45% 34%)
     );
 
-  --sidebar-background: 45 62% 97%;
-  --sidebar-foreground: 205 42% 18%;
-  --sidebar-primary: 185 58% 38%;
+  --shadow-elegant:
+    0 30px 80px -22px hsl(329 38% 30% / 0.24),
+    0 10px 35px -12px hsl(337 60% 55% / 0.18);
+
+  --shadow-gold:
+    0 0 35px hsl(337 56% 52% / 0.24);
+
+  --shadow-soft:
+    0 5px 25px hsl(330 35% 38% / 0.16);
+
+  --sidebar-background: 340 48% 94%;
+  --sidebar-foreground: 332 32% 20%;
+  --sidebar-primary: 337 50% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 182 42% 86%;
-  --sidebar-accent-foreground: 205 42% 18%;
-  --sidebar-border: 188 24% 72%;
-  --sidebar-ring: 185 58% 38%;
+  --sidebar-accent: 326 44% 84%;
+  --sidebar-accent-foreground: 332 34% 22%;
+  --sidebar-border: 337 30% 76%;
+  --sidebar-ring: 337 50% 52%;
 }
 
+/* ============================================
+   SUMMER — Sunset Beach
+   Yellow • Aqua • Blue • Purple
+   ============================================ */
+
+:root[data-theme="summer"] {
+  color-scheme: light;
+
+  --background: 242 44% 88%;
+  --foreground: 248 44% 19%;
+
+  --card: 44 58% 93%;
+  --card-foreground: 248 44% 19%;
+
+  --popover: 45 62% 95%;
+  --popover-foreground: 248 44% 19%;
+
+  --primary: 191 62% 38%;
+  --primary-foreground: 0 0% 100%;
+
+  --gold: 43 88% 54%;
+  --gold-soft: 42 78% 65%;
+  --gold-glow: 48 95% 73%;
+  --gold-foreground: 248 44% 18%;
+
+  --secondary: 225 50% 84%;
+  --secondary-foreground: 248 44% 20%;
+
+  --muted: 255 28% 84%;
+  --muted-foreground: 249 22% 39%;
+
+  --accent: 279 45% 77%;
+  --accent-foreground: 252 48% 20%;
+
+  --border: 245 34% 68%;
+  --input: 245 34% 68%;
+  --ring: 191 62% 38%;
+
+  --gradient-ink:
+    radial-gradient(
+      circle at 8% 0%,
+      hsl(48 96% 71%) 0%,
+      hsl(43 91% 76%) 22%,
+      transparent 49%
+    ),
+    radial-gradient(
+      circle at 87% 12%,
+      hsl(285 65% 73%) 0%,
+      hsl(262 59% 76%) 27%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 50% 90%,
+      hsl(188 61% 65%) 0%,
+      hsl(210 58% 74%) 32%,
+      transparent 65%
+    ),
+    linear-gradient(
+      145deg,
+      hsl(45 79% 82%) 0%,
+      hsl(279 52% 78%) 48%,
+      hsl(207 60% 73%) 100%
+    );
+
+  --gradient-card:
+    linear-gradient(
+      145deg,
+      hsl(47 73% 94%) 0%,
+      hsl(278 42% 88%) 48%,
+      hsl(201 51% 87%) 100%
+    );
+
+  --gradient-gold:
+    linear-gradient(
+      135deg,
+      hsl(49 96% 68%),
+      hsl(35 91% 58%),
+      hsl(286 55% 59%),
+      hsl(190 66% 43%)
+    );
+
+  --gradient-text-gold:
+    linear-gradient(
+      180deg,
+      hsl(274 55% 43%),
+      hsl(211 62% 32%)
+    );
+
+  --shadow-elegant:
+    0 30px 80px -22px hsl(250 42% 24% / 0.28),
+    0 10px 35px -12px hsl(285 58% 58% / 0.19);
+
+  --shadow-gold:
+    0 0 38px hsl(46 94% 58% / 0.27);
+
+  --shadow-soft:
+    0 5px 25px hsl(242 38% 30% / 0.19);
+
+  --sidebar-background: 263 41% 88%;
+  --sidebar-foreground: 248 44% 19%;
+  --sidebar-primary: 191 62% 38%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 279 45% 77%;
+  --sidebar-accent-foreground: 252 48% 20%;
+  --sidebar-border: 245 34% 68%;
+  --sidebar-ring: 191 62% 38%;
+}
 /* ============================================
    AUTUMN — Copper Maple
    ============================================ */
