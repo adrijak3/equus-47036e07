@@ -242,44 +242,47 @@ export default function Layout({ children }: { children: ReactNode }) {
               )}
             </nav>
 
-            {/* Temų pasirinkimas */}
-            <div className="mx-4 mb-5 rounded-xl border border-gold/15 bg-background/30">
-              <button
-                type="button"
-                onClick={() => setThemesOpen((current) => !current)}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <Palette className="w-4 h-4 text-gold" />
+        {/* Temų pasirinkimas */}
+{user && (
+  <div className="mx-4 mb-5 rounded-2xl border border-gold/20 bg-card/70 overflow-hidden">
+    <button
+      type="button"
+      onClick={() => setThemesOpen((current) => !current)}
+      className="w-full flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-gold/5 transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-gold/10 flex items-center justify-center">
+          <Palette className="w-4 h-4 text-gold" />
+        </div>
 
-                  <div>
-                    <div className="font-display text-sm tracking-wide">
-                      Išvaizdos tema
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      Automatinė arba pasirinktas sezonas
-                    </div>
-                  </div>
-                </div>
-
-                <span
-                  className={cn(
-                    "text-gold transition-transform",
-                    themesOpen && "rotate-180",
-                  )}
-                >
-                 ⌄
-                </span>
-              </button>
-
-              {themesOpen && (
-                <div className="border-t border-gold/10 p-3">
-                  <ThemeSwitcher compact />
-                </div>
-              )}
-            </div>
+        <div>
+          <div className="font-display text-sm tracking-wide text-foreground">
+            Keisti svetainės temą
           </div>
+
+          <div className="text-xs text-muted-foreground">
+            Pasirinkite mėgstamiausią sezoną
+          </div>
+        </div>
+      </div>
+
+      <span
+        className={cn(
+          "text-gold text-lg transition-transform duration-300",
+          themesOpen && "rotate-180",
+        )}
+      >
+        ⌄
+      </span>
+    </button>
+
+    {themesOpen && (
+      <div className="border-t border-gold/10 p-4 bg-background/30">
+        <ThemeSwitcher compact />
+      </div>
+    )}
+  </div>
+)}
 
           {/* Apatinė paskyros dalis */}
           <div className="p-6 border-t border-gold/10 space-y-3">
