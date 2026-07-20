@@ -3,15 +3,12 @@
 @tailwind utilities;
 
 /* ============================================
-   EQUUS — Midnight Arctic Luxury
-   Deep navy • Ice blue • Crisp white
-   Luxury equestrian aesthetic
+   EQUUS — Seasonal Luxury Themes
    ============================================ */
 
 @layer base {
   :root {
-
-    /* Main backgrounds */
+    color-scheme: dark;
 
     --background: 223 38% 9%;
     --foreground: 210 35% 96%;
@@ -22,9 +19,6 @@
     --popover: 221 28% 14%;
     --popover-foreground: 210 35% 95%;
 
-
-    /* Brand */
-
     --primary: 208 85% 70%;
     --primary-foreground: 223 40% 8%;
 
@@ -32,9 +26,6 @@
     --gold-soft: 208 55% 58%;
     --gold-glow: 199 100% 85%;
     --gold-foreground: 210 35% 98%;
-
-
-    /* Secondary */
 
     --secondary: 220 18% 18%;
     --secondary-foreground: 210 25% 95%;
@@ -45,9 +36,6 @@
     --accent: 215 32% 22%;
     --accent-foreground: 210 35% 95%;
 
-
-    /* Other */
-
     --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 100%;
 
@@ -57,126 +45,58 @@
 
     --radius: 0.75rem;
 
-
-    /* GRADIENTS */
-
     --gradient-ink:
       radial-gradient(
-      ellipse at top,
-
-      hsl(215 55% 17%) 0%,
-
-      hsl(221 38% 11%) 45%,
-
-      hsl(223 42% 7%) 100%
+        ellipse at top,
+        hsl(215 55% 17%) 0%,
+        hsl(221 38% 11%) 45%,
+        hsl(223 42% 7%) 100%
       );
-
 
     --gradient-card:
       linear-gradient(
-
-      180deg,
-
-      hsl(220 25% 16%) 0%,
-
-      hsl(223 28% 12%) 100%
+        180deg,
+        hsl(220 25% 16%) 0%,
+        hsl(223 28% 12%) 100%
       );
-
 
     --gradient-gold:
-
       linear-gradient(
-
-      135deg,
-
-      hsl(198 100% 88%) 0%,
-
-      hsl(208 85% 70%) 45%,
-
-      hsl(220 85% 58%) 100%
-
+        135deg,
+        hsl(198 100% 88%) 0%,
+        hsl(208 85% 70%) 45%,
+        hsl(220 85% 58%) 100%
       );
-
 
     --gradient-text-gold:
-
       linear-gradient(
-
-      180deg,
-
-      hsl(198 100% 88%) 0%,
-
-      hsl(208 85% 70%) 100%
-
+        180deg,
+        hsl(198 100% 88%) 0%,
+        hsl(208 85% 70%) 100%
       );
-
-
-
-    /* SHADOWS */
 
     --shadow-elegant:
-
-      0 30px 80px -20px
-
-      hsl(220 80% 2% / .55),
-
-      0 10px 35px -10px
-
-      hsl(208 85% 70% / .12);
-
+      0 30px 80px -20px hsl(220 80% 2% / 0.55),
+      0 10px 35px -10px hsl(208 85% 70% / 0.12);
 
     --shadow-gold:
-
-      0 0 35px
-
-      hsl(208 85% 70% / .25);
-
+      0 0 35px hsl(208 85% 70% / 0.25);
 
     --shadow-soft:
-
-      0 5px 25px
-
-      hsl(220 90% 5% / .35);
-
-
+      0 5px 25px hsl(220 90% 5% / 0.35);
 
     --ease-elegant:
-
-      cubic-bezier(
-
-      0.22,
-
-      1,
-
-      0.36,
-
-      1
-
-      );
-
-
-    /* Sidebar */
+      cubic-bezier(0.22, 1, 0.36, 1);
 
     --sidebar-background: 223 38% 10%;
-
     --sidebar-foreground: 210 35% 95%;
-
     --sidebar-primary: 208 85% 70%;
-
     --sidebar-primary-foreground: 223 40% 8%;
-
     --sidebar-accent: 220 18% 18%;
-
     --sidebar-accent-foreground: 210 35% 95%;
-
     --sidebar-border: 220 18% 22%;
-
     --sidebar-ring: 208 85% 70%;
   }
-}
-
-
-@layer base {
 
   * {
     @apply border-border;
@@ -187,275 +107,212 @@
   }
 
   body {
-
     @apply bg-background text-foreground antialiased;
 
-    font-family:
-
-    'Inter',
-
-    system-ui,
-
-    sans-serif;
-
-
-    background-image:
-
-    var(--gradient-ink);
-
+    min-height: 100vh;
+    font-family: "Inter", system-ui, sans-serif;
+    background-image: var(--gradient-ink);
     background-attachment: fixed;
+  }
 
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    color: hsl(var(--foreground));
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 30px hsl(var(--gold) / 0.12);
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background:
+      radial-gradient(
+        circle at 20% 20%,
+        hsl(var(--gold) / 0.06),
+        transparent 30%
+      ),
+      radial-gradient(
+        circle at 80% 30%,
+        hsl(var(--gold-glow) / 0.04),
+        transparent 25%
+      );
+
+    opacity: 0.8;
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
     min-height: 100vh;
   }
-
-
-  h1,h2,h3,h4,h5{
-
-    font-family:
-
-    'Cormorant Garamond',
-
-    serif;
-
-    font-weight:700;
-
-    letter-spacing:-0.02em;
-
-    color:white;
-
-    text-shadow:
-
-    0 0 30px
-
-    hsl(208 85% 70% / .12);
-
-  }
-
-
-  body::before{
-
-    content:'';
-
-    position:fixed;
-
-    inset:0;
-
-    pointer-events:none;
-
-    z-index:0;
-
-
-    background:
-
-    radial-gradient(
-
-      circle at 20% 20%,
-
-      hsl(208 85% 70% / .06),
-
-      transparent 30%
-
-    ),
-
-    radial-gradient(
-
-      circle at 80% 30%,
-
-      hsl(199 100% 85% / .04),
-
-      transparent 25%
-
-    );
-
-
-    opacity:.8;
-
-  }
-
-
-  #root{
-
-    position:relative;
-
-    z-index:1;
-
-    min-height:100vh;
-
-  }
-
 }
-
-
-@layer utilities{
-
-  .text-gold{
-
-    color:hsl(var(--gold));
-
-  }
-
-
-  .bg-gradient-gold{
-
-    background-image:
-
-    var(--gradient-gold);
-
-  }
-
-
-  .text-gradient-gold{
-
-    background-image:
-
-    var(--gradient-text-gold);
-
-    -webkit-background-clip:text;
-
-    background-clip:text;
-
-    color:transparent;
-
-  }
-
-
-  .shadow-elegant{
-
-    box-shadow:
-
-    var(--shadow-elegant);
-
-  }
-
-
-  .shadow-gold{
-
-    box-shadow:
-
-    var(--shadow-gold);
-
-  }
-
-
-  .border-gold\/20{
-
-    border-color:
-
-    hsl(var(--gold)/0.2);
-
-  }
-
-
-  .border-gold\/40{
-
-    border-color:
-
-    hsl(var(--gold)/0.4);
-
-  }
-
-
-  .font-display{
-
-    font-family:
-
-    'Cormorant Garamond',
-
-    serif;
-
-  }
-
-
-  .font-body{
-
-    font-family:
-
-    'Inter',
-
-    sans-serif;
-
-  }
-
-
-  .gold-divider{
-
-    height:1px;
-
-    background:
-
-    linear-gradient(
-
-    90deg,
-
-    transparent,
-
-    hsl(var(--gold)/0.55),
-
-    transparent
-
-    );
-
-  }
-
-}
-
-
-/* ANIMATIONS */
 
 @layer utilities {
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  .bg-gradient-gold {
+    background-image: var(--gradient-gold);
+  }
+
+  .bg-gradient-card {
+    background-image: var(--gradient-card);
+  }
+
+  .text-gradient-gold {
+    color: transparent;
+    background-image: var(--gradient-text-gold);
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .border-gold\/20 {
+    border-color: hsl(var(--gold) / 0.2);
+  }
+
+  .border-gold\/40 {
+    border-color: hsl(var(--gold) / 0.4);
+  }
+
+  .font-display {
+    font-family: "Cormorant Garamond", serif;
+  }
+
+  .font-body {
+    font-family: "Inter", sans-serif;
+  }
+
+  .gold-divider {
+    height: 1px;
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        hsl(var(--gold) / 0.55),
+        transparent
+      );
+  }
 
   @keyframes fade-up {
-
     from {
-
-      opacity:0;
-
-      transform:translateY(12px);
-
+      opacity: 0;
+      transform: translateY(12px);
     }
 
     to {
-
-      opacity:1;
-
-      transform:translateY(0);
-
+      opacity: 1;
+      transform: translateY(0);
     }
-
   }
 
   .animate-fade-up {
-
     animation:
-
-    fade-up
-
-    .6s
-
-    var(--ease-elegant)
-
-    both;
-
+      fade-up
+      0.6s
+      var(--ease-elegant)
+      both;
   }
-
 }
 
-/* ===== Equus seasonal luxury themes ===== */
+/* ============================================
+   SPRING — Ivory Sakura
+   ============================================ */
+
 :root[data-theme="spring"] {
-  --background: 38 45% 97%; --foreground: 334 25% 22%;
-  --card: 35 55% 99%; --card-foreground: 334 25% 22%;
-  --popover: 35 55% 99%; --popover-foreground: 334 25% 22%;
-  --primary: 339 42% 55%; --primary-foreground: 0 0% 100%;
-  --gold: 339 42% 55%; --gold-soft: 340 35% 68%; --gold-glow: 337 70% 88%;
-  --secondary: 340 34% 92%; --secondary-foreground: 334 25% 25%;
-  --muted: 35 35% 93%; --muted-foreground: 332 12% 45%;
-  --accent: 338 45% 91%; --accent-foreground: 334 30% 25%;
-  --border: 338 25% 84%; --input: 338 25% 84%; --ring: 339 42% 55%;
-  --gradient-ink: radial-gradient(ellipse at top, hsl(338 62% 95%) 0%, hsl(38 55% 97%) 48%, hsl(35 45% 94%) 100%);
-  --gradient-card: linear-gradient(180deg, hsl(35 60% 99%) 0%, hsl(338 45% 96%) 100%);
-  --gradient-gold: linear-gradient(135deg, hsl(345 65% 78%), hsl(339 42% 55%), hsl(326 38% 46%));
-  --gradient-text-gold: linear-gradient(180deg, hsl(337 52% 45%), hsl(326 42% 34%));
+  color-scheme: light;
+
+  --background: 38 45% 97%;
+  --foreground: 334 25% 22%;
+
+  --card: 35 55% 99%;
+  --card-foreground: 334 25% 22%;
+
+  --popover: 35 55% 99%;
+  --popover-foreground: 334 25% 22%;
+
+  --primary: 339 42% 55%;
+  --primary-foreground: 0 0% 100%;
+
+  --gold: 339 42% 55%;
+  --gold-soft: 340 35% 68%;
+  --gold-glow: 337 70% 88%;
+  --gold-foreground: 0 0% 100%;
+
+  --secondary: 340 34% 92%;
+  --secondary-foreground: 334 25% 25%;
+
+  --muted: 35 35% 93%;
+  --muted-foreground: 332 12% 45%;
+
+  --accent: 338 45% 91%;
+  --accent-foreground: 334 30% 25%;
+
+  --border: 338 25% 84%;
+  --input: 338 25% 84%;
+  --ring: 339 42% 55%;
+
+  --gradient-ink:
+    radial-gradient(
+      ellipse at top,
+      hsl(338 62% 95%) 0%,
+      hsl(38 55% 97%) 48%,
+      hsl(35 45% 94%) 100%
+    );
+
+  --gradient-card:
+    linear-gradient(
+      180deg,
+      hsl(35 60% 99%) 0%,
+      hsl(338 45% 96%) 100%
+    );
+
+  --gradient-gold:
+    linear-gradient(
+      135deg,
+      hsl(345 65% 78%),
+      hsl(339 42% 55%),
+      hsl(326 38% 46%)
+    );
+
+  --gradient-text-gold:
+    linear-gradient(
+      180deg,
+      hsl(337 52% 45%),
+      hsl(326 42% 34%)
+    );
+
+  --sidebar-background: 35 55% 98%;
+  --sidebar-foreground: 334 25% 22%;
+  --sidebar-primary: 339 42% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 338 45% 91%;
+  --sidebar-accent-foreground: 334 30% 25%;
+  --sidebar-border: 338 25% 84%;
+  --sidebar-ring: 339 42% 55%;
 }
+
+/* ============================================
+   SUMMER — Aqua Beach
+   ============================================ */
+
 :root[data-theme="summer"] {
   color-scheme: light;
 
@@ -474,6 +331,7 @@
   --gold: 43 78% 54%;
   --gold-soft: 42 68% 68%;
   --gold-glow: 47 88% 78%;
+  --gold-foreground: 205 42% 18%;
 
   --secondary: 182 42% 86%;
   --secondary-foreground: 205 42% 20%;
@@ -519,25 +377,147 @@
       hsl(184 68% 30%),
       hsl(205 55% 23%)
     );
-}
-:root[data-theme="autumn"] {
-  --background: 18 34% 10%; --foreground: 36 42% 93%;
-  --card: 20 30% 15%; --card-foreground: 36 42% 93%;
-  --popover: 20 30% 15%; --popover-foreground: 36 42% 93%;
-  --primary: 27 58% 58%; --primary-foreground: 18 38% 10%;
-  --gold: 27 58% 58%; --gold-soft: 28 46% 48%; --gold-glow: 34 75% 72%;
-  --secondary: 19 24% 20%; --secondary-foreground: 36 42% 93%;
-  --muted: 18 22% 18%; --muted-foreground: 30 18% 70%;
-  --accent: 24 35% 25%; --accent-foreground: 36 42% 93%;
-  --border: 24 28% 27%; --input: 24 28% 27%; --ring: 27 58% 58%;
-  --gradient-ink: radial-gradient(ellipse at top, hsl(24 43% 22%) 0%, hsl(20 35% 13%) 48%, hsl(17 40% 8%) 100%);
-  --gradient-card: linear-gradient(180deg, hsl(24 31% 19%) 0%, hsl(18 31% 13%) 100%);
-  --gradient-gold: linear-gradient(135deg, hsl(39 74% 72%), hsl(27 58% 58%), hsl(12 55% 44%));
-  --gradient-text-gold: linear-gradient(180deg, hsl(39 74% 72%), hsl(27 58% 58%));
-}
-:root[data-theme="winter"] { color-scheme: dark; }
 
-.seasonal-particles { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
-.seasonal-particles span { position: absolute; top: -8vh; opacity: .55; animation: equus-season-fall linear infinite; filter: drop-shadow(0 2px 3px hsl(var(--background) / .25)); }
-@keyframes equus-season-fall { 0% { transform: translate3d(0,-10vh,0) rotate(0deg); opacity: 0; } 10% { opacity: .55; } 100% { transform: translate3d(70px,115vh,0) rotate(420deg); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .seasonal-particles { display:none; } }
+  --sidebar-background: 45 62% 97%;
+  --sidebar-foreground: 205 42% 18%;
+  --sidebar-primary: 185 58% 38%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 182 42% 86%;
+  --sidebar-accent-foreground: 205 42% 18%;
+  --sidebar-border: 188 24% 72%;
+  --sidebar-ring: 185 58% 38%;
+}
+
+/* ============================================
+   AUTUMN — Copper Maple
+   ============================================ */
+
+:root[data-theme="autumn"] {
+  color-scheme: dark;
+
+  --background: 18 34% 10%;
+  --foreground: 36 42% 93%;
+
+  --card: 20 30% 15%;
+  --card-foreground: 36 42% 93%;
+
+  --popover: 20 30% 15%;
+  --popover-foreground: 36 42% 93%;
+
+  --primary: 27 58% 58%;
+  --primary-foreground: 18 38% 10%;
+
+  --gold: 27 58% 58%;
+  --gold-soft: 28 46% 48%;
+  --gold-glow: 34 75% 72%;
+  --gold-foreground: 18 38% 10%;
+
+  --secondary: 19 24% 20%;
+  --secondary-foreground: 36 42% 93%;
+
+  --muted: 18 22% 18%;
+  --muted-foreground: 30 18% 70%;
+
+  --accent: 24 35% 25%;
+  --accent-foreground: 36 42% 93%;
+
+  --border: 24 28% 27%;
+  --input: 24 28% 27%;
+  --ring: 27 58% 58%;
+
+  --gradient-ink:
+    radial-gradient(
+      ellipse at top,
+      hsl(24 43% 22%) 0%,
+      hsl(20 35% 13%) 48%,
+      hsl(17 40% 8%) 100%
+    );
+
+  --gradient-card:
+    linear-gradient(
+      180deg,
+      hsl(24 31% 19%) 0%,
+      hsl(18 31% 13%) 100%
+    );
+
+  --gradient-gold:
+    linear-gradient(
+      135deg,
+      hsl(39 74% 72%),
+      hsl(27 58% 58%),
+      hsl(12 55% 44%)
+    );
+
+  --gradient-text-gold:
+    linear-gradient(
+      180deg,
+      hsl(39 74% 72%),
+      hsl(27 58% 58%)
+    );
+
+  --sidebar-background: 18 34% 11%;
+  --sidebar-foreground: 36 42% 93%;
+  --sidebar-primary: 27 58% 58%;
+  --sidebar-primary-foreground: 18 38% 10%;
+  --sidebar-accent: 24 35% 25%;
+  --sidebar-accent-foreground: 36 42% 93%;
+  --sidebar-border: 24 28% 27%;
+  --sidebar-ring: 27 58% 58%;
+}
+
+/* ============================================
+   WINTER — Original Midnight Arctic
+   ============================================ */
+
+:root[data-theme="winter"] {
+  color-scheme: dark;
+}
+
+/* ============================================
+   SEASONAL PARTICLES
+   ============================================ */
+
+.seasonal-particles {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.seasonal-particles span {
+  position: absolute;
+  top: -8vh;
+  opacity: 0.55;
+  animation: equus-season-fall linear infinite;
+  filter:
+    drop-shadow(
+      0 2px 3px hsl(var(--background) / 0.25)
+    );
+}
+
+@keyframes equus-season-fall {
+  0% {
+    opacity: 0;
+    transform:
+      translate3d(0, -10vh, 0)
+      rotate(0deg);
+  }
+
+  10% {
+    opacity: 0.55;
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translate3d(70px, 115vh, 0)
+      rotate(420deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seasonal-particles {
+    display: none;
+  }
+}
