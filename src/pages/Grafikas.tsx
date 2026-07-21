@@ -414,14 +414,17 @@ const key = `book-${formatDateISO(date)}-${time}`;
   };
 
   const cancelSingleBooking = async (booking: Booking) => {
-    const { data, error } = await supabase
-      .from("bookings")
-      .update({ status: "cancelled" })
-      .eq("id", booking.id)
-      .select("id");
-    if (error) { toast.error(`Nepavyko atšaukti: ${error.message}`); await loadData(); return; }
-    if (!data || data.length === 0) {
-      toast.error("Nepavyko atšaukti — neturite teisių arba pamoka jau pakeista.");
+    const { data, error } = await supabase.rpc("cancel_booking_occurrence" as any, {
+      _booking_id: booking.id,
+    } as any);
+    if (error) {
+      toast.error(`Nepavyko atšaukti: ${error.message}`);
+      await loadData();
+      return;
+    }
+    const result = (data ?? {}) as { ok?: boolean; message?: string };
+    if (!result.ok) {
+      toast.error(result.message ?? "Nepavyko atšaukti treniruotės.");
       await loadData();
       return;
     }
@@ -736,11 +739,13 @@ const key = `book-${formatDateISO(date)}-${time}`;
       return;
     }
     // Free slot immediately, mark booking cancelled, log request for admin decision
-    const { data: upd, error: e1 } = await supabase.from("bookings")
-      .update({ status: "cancelled" }).eq("id", cancelDialog.booking.id).select("id");
+    const { data: cancelResultRaw, error: e1 } = await supabase.rpc("cancel_booking_occurrence" as any, {
+      _booking_id: cancelDialog.booking.id,
+    } as any);
     if (e1) { toast.error(`Nepavyko atšaukti: ${e1.message}`); await loadData(); return; }
-    if (!upd || upd.length === 0) {
-      toast.error("Nepavyko atšaukti — neturite teisių arba pamoka jau pakeista.");
+    const cancelResult = (cancelResultRaw ?? {}) as { ok?: boolean; message?: string };
+    if (!cancelResult.ok) {
+      toast.error(cancelResult.message ?? "Nepavyko atšaukti treniruotės.");
       await loadData();
       return;
     }
