@@ -1,0 +1,17 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+
+export function AdminPublicRequests(){
+ const [rows,setRows]=useState<any[]>([]);const [selected,setSelected]=useState<any|null>(null);const [date,setDate]=useState("");const [time,setTime]=useState("");const [note,setNote]=useState("");
+ const load=async()=>{const {data}=await (supabase as any).from("public_registration_requests").select("*").order("created_at",{ascending:false});setRows(data??[])};useEffect(()=>{load()},[]);
+ const propose=async()=>{if(!selected||!date||!time)return;const {error}=await (supabase as any).rpc("admin_propose_public_registration_time",{_request_id:selected.id,_date:date,_time:time,_note:note||null});if(error)toast.error(error.message);else{toast.success("Pasiūlymas išsaugotas");setSelected(null);load()}};
+ const decide=async(status:string)=>{const {error}=await (supabase as any).rpc("admin_set_public_registration_status",{_request_id:selected.id,_status:status,_note:note||null});if(error)toast.error(error.message);else{toast.success("Būsena atnaujinta");setSelected(null);load()}};
+ return <div className="space-y-3">{rows.length===0?<p className="text-muted-foreground">Registracijos prašymų nėra.</p>:rows.map(r=><button key={r.id} onClick={()=>{setSelected(r);setDate(r.proposed_date||r.requested_date||"");setTime((r.proposed_time||r.requested_time||"").slice(0,5));setNote(r.admin_note||"")}} className="w-full rounded-xl border border-gold/15 bg-gradient-card p-4 text-left"><div className="flex justify-between gap-3"><div><div className="font-semibold">{r.first_name} {r.last_name}</div><div className="mt-1 text-sm text-muted-foreground">{r.experience_level} · {r.phone} · {r.email}</div></div><span className="text-xs text-gold">{r.status}</span></div></button>)}
+ <Dialog open={!!selected} onOpenChange={o=>!o&&setSelected(null)}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Registracijos prašymas</DialogTitle></DialogHeader>{selected&&<div className="space-y-4"><div className="rounded-xl bg-muted/30 p-4 text-sm space-y-1"><p><b>{selected.first_name} {selected.last_name}</b>, {selected.age} m.</p><p>{selected.phone} · {selected.email}</p><p><b>Patirtis:</b> {selected.experience_level}</p><p>{selected.experience_notes||"Papildomų pastabų nėra"}</p><p><b>Skubus kontaktas:</b> {selected.emergency_contact}</p><p><b>Facebook:</b> {selected.facebook_name||"—"}</p><p><b>Pageidavimai:</b> {selected.preferred_times||"—"}</p></div><div className="grid gap-3 sm:grid-cols-2"><Input type="date" value={date} onChange={e=>setDate(e.target.value)}/><Input type="time" value={time} onChange={e=>setTime(e.target.value)}/></div><Textarea placeholder="Žinutė klientui" value={note} onChange={e=>setNote(e.target.value)}/><div className="grid gap-2 sm:grid-cols-3"><Button variant="gold" onClick={propose}>Pasiūlyti laiką</Button><Button variant="outline" onClick={()=>decide("approved")}>Patvirtinti</Button><Button variant="destructive" onClick={()=>decide("rejected")}>Atmesti</Button></div>{selected.public_token&&<p className="break-all text-xs text-muted-foreground">Kliento nuoroda: {location.origin}/registracija/{selected.public_token}</p>}</div>}</DialogContent></Dialog>
+ </div>
+}
