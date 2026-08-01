@@ -22,6 +22,8 @@ import Admin from "./pages/Admin";
 import Trener from "./pages/Trener";
 import Informacija from "./pages/Informacija";
 import NotFound from "./pages/NotFound";
+import PublicRegistration from "./pages/PublicRegistration";
+import Reviews from "./pages/Reviews";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,9 @@ const App = () => (
                   <Route path="/kainos" element={<Kainos />} />
                   <Route path="/informacija" element={<Informacija />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/registracija" element={<PublicRegistration />} />
+                  <Route path="/registracija/:token" element={<PublicRegistration />} />
+                  <Route path="/atsiliepimai" element={<Reviews />} />
 
                   <Route
                     path="/paskyra"
