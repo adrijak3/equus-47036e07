@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import EffectsToggle from "@/components/EffectsToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -338,6 +339,7 @@ export default function Layout({
 {/* Kalbos ir išvaizdos valdikliai */}
             <div className="sticky bottom-0 z-10 space-y-3 border-t border-gold/10 bg-background/90 px-4 py-4 backdrop-blur-xl">
               <LanguageSwitcher />
+              <EffectsToggle />
               {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
               {user && (
               <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-gold/20 bg-card/70">
