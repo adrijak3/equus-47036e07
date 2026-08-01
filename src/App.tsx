@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { EffectsProvider } from "@/contexts/EffectsContext";
 
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
@@ -55,7 +56,8 @@ const App = () => (
       <Sonner />
 
       <LanguageProvider>
-        <ThemeProvider>
+        <EffectsProvider>
+          <ThemeProvider>
           <AutoTranslate />
 
           <BrowserRouter>
@@ -106,7 +108,8 @@ const App = () => (
               </Layout>
             </AuthProvider>
           </BrowserRouter>
-        </ThemeProvider>
+          </ThemeProvider>
+        </EffectsProvider>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
