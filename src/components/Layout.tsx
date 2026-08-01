@@ -17,6 +17,8 @@ import {
   Tag,
   User as UserIcon,
   Users as UsersIcon,
+  ClipboardPenLine,
+  MessageCircleHeart,
   X,
 } from "lucide-react";
 
@@ -37,6 +39,8 @@ const NAV_GUEST = [
     label: "Kainos",
     icon: Tag,
   },
+  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
+  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
   {
     to: "/informacija",
     label: "Informacija",
@@ -65,6 +69,8 @@ const NAV_USER = [
     label: "Kainos",
     icon: Tag,
   },
+  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
+  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
   {
     to: "/informacija",
     label: "Informacija",
@@ -93,6 +99,8 @@ const NAV_ADMIN = [
     label: "Kainos",
     icon: Tag,
   },
+  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
+  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
   {
     to: "/informacija",
     label: "Informacija",
@@ -116,6 +124,8 @@ const NAV_TRAINER = [
     label: "Kainos",
     icon: Tag,
   },
+  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
+  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
   {
     to: "/informacija",
     label: "Informacija",
