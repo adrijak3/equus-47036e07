@@ -7,13 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { cn } from "@/lib/utils";
 import { VacationsPanel } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
+import { AdminPublicRequests } from "@/components/AdminPublicRequests";
+import { AdminReviews } from "@/components/AdminReviews";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -60,6 +62,8 @@ export default function Admin() {
     { value: "users", label: "Vartotojai", icon: Users },
     { value: "subs", label: "Abonimentai", icon: Wallet },
     { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
+    { value: "registrations", label: "Registracijos", icon: ClipboardPenLine },
+    { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
   ];
   const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
@@ -145,6 +149,8 @@ export default function Admin() {
             <TabsContent value="users" className="space-y-6"><UnpaidLessonsOverview staff /><UsersTab /></TabsContent>
             <TabsContent value="subs"><SubsTab /></TabsContent>
             <TabsContent value="messages"><MessagesTab /></TabsContent>
+            <TabsContent value="registrations"><AdminPublicRequests /></TabsContent>
+            <TabsContent value="reviews"><AdminReviews /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
           </Tabs>
         </div>
