@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 import { FloralAccent } from "@/components/Decorations";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
+import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
 
 interface Booking {
   id: string;
@@ -610,6 +611,7 @@ export default function Paskyra() {
 
         {/* PERMANENT SLOTS */}
         <TabsContent value="permanent" className="space-y-4">
+          <UserDuplicateBookings userId={acting} />
           <PermanentSlotsSection
             permanents={permanents}
             availableSlots={availableSlots}
