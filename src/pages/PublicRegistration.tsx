@@ -26,6 +26,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sendReservationReceived } from "@/lib/emailjs";
 
 const LEVELS = [
   {
@@ -108,6 +109,7 @@ export default function PublicRegistration() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [emailFailed, setEmailFailed] = useState(false);
   const [existing, setExisting] = useState<any>(null);
 
   const selectedService = useMemo(
@@ -237,6 +239,7 @@ export default function PublicRegistration() {
     }
 
     const result = Array.isArray(data) ? data[0] : data;
+    const publicToken = result?.public_token;
     if (result?.public_token) {
       history.replaceState(
         null,
@@ -244,6 +247,28 @@ export default function PublicRegistration() {
         `/registracija/${result.public_token}`,
       );
     }
+
+    // Email delivery must never fail or undo the saved registration.
+    try {
+      await sendReservationReceived({
+        customer_email: form.email.trim(),
+        customer_name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+        reservation_date: selected?.slot_date ?? "",
+        reservation_time: selected?.slot_time
+          ? String(selected.slot_time).slice(0, 5)
+          : "",
+        service_name: selectedService?.title ?? "",
+        customer_link: publicToken
+          ? `${location.origin}/registracija/${publicToken}`
+          : location.origin,
+        status_message: "Gavome Jūsų registracijos užklausą.",
+      });
+      setEmailFailed(false);
+    } catch (error) {
+      console.error("EmailJS send failed:", error);
+      setEmailFailed(true);
+    }
+
     setDone(true);
   };
 
