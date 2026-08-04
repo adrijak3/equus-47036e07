@@ -53,6 +53,8 @@ export function AdminPublicRequests() {
   const propose = async () => {
     if (!selected || !date || !time) return;
 
+    if (!selected || !date || !time) return;
+
     const { error } = await (supabase as any).rpc(
       "admin_propose_public_registration_time",
       {
