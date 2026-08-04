@@ -353,6 +353,47 @@ export default function PublicRegistration() {
         >
           Peržiūrėti atsiliepimus
         </Link>
+
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <DialogContent className="max-w-md text-left">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl text-gradient-gold">
+                Registracija gauta!
+              </DialogTitle>
+            </DialogHeader>
+
+            {emailFailed ? (
+              <div className="space-y-3 text-sm leading-6 text-muted-foreground">
+                <p>Jūsų registracija sėkmingai išsaugota.</p>
+                <p>
+                  Nepavyko išsiųsti patvirtinimo el. laiško.
+                  <br />
+                  Administracija vis tiek gavo Jūsų registraciją.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm leading-6 text-muted-foreground">
+                <p>Dėkojame! Gavome Jūsų registracijos užklausą.</p>
+                <p>Į Jūsų el. paštą išsiuntėme patvirtinimo laišką.</p>
+                <p>Jame rasite nuorodą, kurioje galėsite:</p>
+                <ul className="list-none space-y-1 pl-1">
+                  <li>• stebėti registracijos būseną;</li>
+                  <li>• patvirtinti administracijos pasiūlytą laiką;</li>
+                  <li>• peržiūrėti savo registracijos informaciją.</li>
+                </ul>
+                <p>Paprastai atsakome per 24 valandas.</p>
+              </div>
+            )}
+
+            <Button
+              variant="gold"
+              className="mt-2 w-full"
+              onClick={() => setModalOpen(false)}
+            >
+              Uždaryti
+            </Button>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
