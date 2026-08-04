@@ -115,6 +115,27 @@ export type Database = {
           },
         ]
       }
+      day_cancellations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          note: string | null
+          note_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          note?: string | null
+          note_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          note?: string | null
+          note_date?: string
+        }
+        Relationships: []
+      }
       day_notes: {
         Row: {
           added_by: string
@@ -281,6 +302,27 @@ export type Database = {
           },
         ]
       }
+      permanent_booking_exceptions: {
+        Row: {
+          created_at: string
+          slot_date: string
+          slot_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          slot_date: string
+          slot_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          slot_date?: string
+          slot_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       permanent_slots: {
         Row: {
           created_at: string
@@ -335,7 +377,14 @@ export type Database = {
           display_name: string | null
           full_name: string
           id: string
+          notify_lesson_reminders: boolean
+          notify_schedule_changes: boolean
+          notify_school_news: boolean
+          onboarding_accepted_at: string | null
+          onboarding_version: number | null
           phone: string | null
+          rules_version: string | null
+          theme: string | null
           updated_at: string
         }
         Insert: {
@@ -343,7 +392,14 @@ export type Database = {
           display_name?: string | null
           full_name: string
           id: string
+          notify_lesson_reminders?: boolean
+          notify_schedule_changes?: boolean
+          notify_school_news?: boolean
+          onboarding_accepted_at?: string | null
+          onboarding_version?: number | null
           phone?: string | null
+          rules_version?: string | null
+          theme?: string | null
           updated_at?: string
         }
         Update: {
@@ -351,8 +407,123 @@ export type Database = {
           display_name?: string | null
           full_name?: string
           id?: string
+          notify_lesson_reminders?: boolean
+          notify_schedule_changes?: boolean
+          notify_school_news?: boolean
+          onboarding_accepted_at?: string | null
+          onboarding_version?: number | null
           phone?: string | null
+          rules_version?: string | null
+          theme?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      public_registration_requests: {
+        Row: {
+          admin_note: string | null
+          age: number
+          created_at: string
+          duration_minutes: number
+          email: string
+          emergency_contact: string
+          experience_level: string
+          experience_notes: string | null
+          facebook_name: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string
+          preferred_times: string | null
+          price_eur: number
+          proposed_date: string | null
+          proposed_time: string | null
+          public_token: string
+          requested_date: string | null
+          requested_time: string | null
+          service_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          age: number
+          created_at?: string
+          duration_minutes?: number
+          email: string
+          emergency_contact: string
+          experience_level: string
+          experience_notes?: string | null
+          facebook_name?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone: string
+          preferred_times?: string | null
+          price_eur?: number
+          proposed_date?: string | null
+          proposed_time?: string | null
+          public_token?: string
+          requested_date?: string | null
+          requested_time?: string | null
+          service_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          age?: number
+          created_at?: string
+          duration_minutes?: number
+          email?: string
+          emergency_contact?: string
+          experience_level?: string
+          experience_notes?: string | null
+          facebook_name?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string
+          preferred_times?: string | null
+          price_eur?: number
+          proposed_date?: string | null
+          proposed_time?: string | null
+          public_token?: string
+          requested_date?: string | null
+          requested_time?: string | null
+          service_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      public_reviews: {
+        Row: {
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          rating: number
+          show_name: boolean
+          status: string
+        }
+        Insert: {
+          author_name?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          rating: number
+          show_name?: boolean
+          status?: string
+        }
+        Update: {
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          show_name?: boolean
+          status?: string
         }
         Relationships: []
       }
@@ -586,12 +757,130 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_propose_public_registration_time: {
+        Args: {
+          _date: string
+          _note?: string
+          _request_id: string
+          _time: string
+        }
+        Returns: undefined
+      }
+      admin_set_public_registration_status: {
+        Args: { _note?: string; _request_id: string; _status: string }
+        Returns: undefined
+      }
+      cancel_all_nonpermanent_duplicate_candidates: {
+        Args: { _user_id?: string }
+        Returns: Json
+      }
+      cancel_all_possible_duplicate_bookings: {
+        Args: { _user_id?: string }
+        Returns: Json
+      }
+      cancel_booking_occurrence: {
+        Args: { _booking_id: string }
+        Returns: Json
+      }
+      cancel_duplicate_booking_candidate: {
+        Args: { _booking_id: string }
+        Returns: Json
+      }
+      cancel_possible_duplicate_booking: {
+        Args: { _booking_id: string }
+        Returns: Json
+      }
       cleanup_old_bookings: { Args: never; Returns: number }
       cleanup_old_conversations: { Args: never; Returns: number }
       cleanup_old_day_notes: { Args: never; Returns: number }
       cleanup_old_subscriptions: { Args: never; Returns: number }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       expire_makeup_cancellations: { Args: never; Returns: number }
+      get_approved_reviews: {
+        Args: never
+        Returns: {
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          rating: number
+          show_name: boolean
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "public_reviews"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_duplicate_booking_candidates: {
+        Args: { _user_id?: string }
+        Returns: {
+          booking_id: string
+          is_current_permanent: boolean
+          permanent_times: string[]
+          profile_name: string
+          slot_date: string
+          slot_time: string
+          total_bookings: number
+          user_id: string
+        }[]
+      }
+      get_possible_duplicate_bookings: {
+        Args: { _user_id?: string }
+        Returns: {
+          permanent_time: string
+          proper_booking_id: string
+          slot_date: string
+          suspect_booking_id: string
+          suspect_time: string
+        }[]
+      }
+      get_public_registration_request: {
+        Args: { _token: string }
+        Returns: {
+          admin_note: string | null
+          age: number
+          created_at: string
+          duration_minutes: number
+          email: string
+          emergency_contact: string
+          experience_level: string
+          experience_notes: string | null
+          facebook_name: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string
+          preferred_times: string | null
+          price_eur: number
+          proposed_date: string | null
+          proposed_time: string | null
+          public_token: string
+          requested_date: string | null
+          requested_time: string | null
+          service_type: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "public_registration_requests"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_public_registration_slots: {
+        Args: { _days?: number }
+        Returns: {
+          active_count: number
+          lesson_type: string
+          max_capacity: number
+          slot_date: string
+          slot_time: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -612,6 +901,60 @@ export type Database = {
           _user_id: string
         }
         Returns: Json
+      }
+      respond_to_public_registration_proposal: {
+        Args: { _accept: boolean; _token: string }
+        Returns: undefined
+      }
+      submit_public_registration: {
+        Args: {
+          _age: number
+          _email: string
+          _emergency_contact: string
+          _experience_level: string
+          _experience_notes?: string
+          _facebook_name?: string
+          _first_name: string
+          _last_name: string
+          _phone: string
+          _preferred_times?: string
+          _requested_date?: string
+          _requested_time?: string
+        }
+        Returns: {
+          id: string
+          public_token: string
+        }[]
+      }
+      submit_public_registration_v2: {
+        Args: {
+          _age: number
+          _email: string
+          _emergency_contact: string
+          _experience_level: string
+          _experience_notes?: string
+          _facebook_name?: string
+          _first_name: string
+          _last_name: string
+          _phone: string
+          _preferred_times?: string
+          _requested_date?: string
+          _requested_time?: string
+          _service_type: string
+        }
+        Returns: {
+          id: string
+          public_token: string
+        }[]
+      }
+      submit_public_review: {
+        Args: {
+          _author_name?: string
+          _body: string
+          _rating: number
+          _show_name?: boolean
+        }
+        Returns: string
       }
     }
     Enums: {
