@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, ExternalLink, Mail, MessageSquareText } from "lucide-react";
+import { sendReservationStatus } from "@/lib/emailjs";
 
 const SERVICE_NAMES: Record<string, string> = {
   mazylio_30: "Mažylio svajonė · 30 min.",
@@ -49,6 +50,32 @@ export function AdminPublicRequests() {
     void load();
   }, []);
 
+  const notifyStatus = async (
+    statusMessage: string,
+    reservationDate?: string,
+    reservationTime?: string,
+  ) => {
+    if (!selected) return;
+    try {
+      await sendReservationStatus({
+        customer_email: selected.email,
+        customer_name: `${selected.first_name} ${selected.last_name}`.trim(),
+        reservation_date: reservationDate ?? selected.proposed_date ?? selected.requested_date ?? "",
+        reservation_time: String(
+          reservationTime ?? selected.proposed_time ?? selected.requested_time ?? "",
+        ).slice(0, 5),
+        service_name: SERVICE_NAMES[selected.service_type] ?? "Sportinė jojimo treniruotė",
+        customer_link: selected.public_token
+          ? `${location.origin}/registracija/${selected.public_token}`
+          : location.origin,
+        status_message: statusMessage,
+      });
+    } catch (error) {
+      console.error("EmailJS status send failed:", error);
+      toast.error("Būsena atnaujinta, bet el. laiško išsiųsti nepavyko.");
+    }
+  };
+
   const propose = async () => {
     if (!selected || !date || !time) return;
 
@@ -65,6 +92,11 @@ export function AdminPublicRequests() {
     if (error) {
       toast.error(error.message);
     } else {
+      await notifyStatus(
+        `Administracija pasiūlė laiką: ${date} ${time}.${note ? ` ${note}` : ""}`,
+        date,
+        time,
+      );
       toast.success("Pasiūlymas išsaugotas");
       setSelected(null);
       void load();
@@ -103,6 +135,11 @@ export function AdminPublicRequests() {
     if (error) {
       toast.error(error.message);
     } else {
+      await notifyStatus(
+        status === "approved"
+          ? `Jūsų registracija patvirtinta.${note ? ` ${note}` : ""}`
+          : `Jūsų registracija atšaukta.${note ? ` ${note}` : ""}`,
+      );
       toast.success("Būsena atnaujinta");
       setSelected(null);
       void load();
