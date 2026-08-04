@@ -103,6 +103,7 @@ export default function PublicRegistration() {
   });
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selected, setSelected] = useState<Slot | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
   const [rules, setRules] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -127,6 +128,7 @@ export default function PublicRegistration() {
 
   useEffect(() => {
     setSelected(null);
+    setSelectedDate("");
 
     if (service !== "sportine" || !level || level === "beginner") {
       setSlots([]);
@@ -152,6 +154,25 @@ export default function PublicRegistration() {
       );
     })();
   }, [service, level]);
+
+
+  const slotsByDate = useMemo(() => {
+    const map = new Map<string, Slot[]>();
+    for (const slot of slots) {
+      const list = map.get(slot.slot_date) ?? [];
+      list.push(slot);
+      map.set(slot.slot_date, list);
+    }
+    return Array.from(map.entries()).map(([date, dateSlots]) => ({
+      date,
+      slots: dateSlots.sort((a, b) => a.slot_time.localeCompare(b.slot_time)),
+    }));
+  }, [slots]);
+
+  const selectedDateSlots = useMemo(
+    () => slotsByDate.find((item) => item.date === selectedDate)?.slots ?? [],
+    [slotsByDate, selectedDate],
+  );
 
   const age = Number(form.age);
   const minAge = selectedService?.minAge ?? 3;
@@ -524,68 +545,106 @@ export default function PublicRegistration() {
                   treniruočių laikai. Individualios treniruotės čia
                   nesiūlomos.
                 </p>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  {slots.map((slot) => {
-                    const left = remaining(slot);
-                    const isSelected =
-                      selected?.slot_date === slot.slot_date &&
-                      selected?.slot_time === slot.slot_time;
+                <div className="mt-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    1. Pasirinkite dieną
+                  </h3>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                    {slotsByDate.map(({ date, slots: dateSlots }) => {
+                      const dateValue = new Date(`${date}T12:00:00`);
+                      const hasSpace = dateSlots.some((slot) => remaining(slot) > 0);
+                      return (
+                        <button
+                          key={date}
+                          type="button"
+                          disabled={!hasSpace}
+                          onClick={() => {
+                            setSelectedDate(date);
+                            setSelected(null);
+                          }}
+                          className={cn(
+                            "rounded-xl border px-3 py-3 text-center transition-colors",
+                            selectedDate === date
+                              ? "border-gold bg-gold/10"
+                              : "border-border bg-background/30 hover:border-gold/40",
+                            !hasSpace && "cursor-not-allowed opacity-45",
+                          )}
+                        >
+                          <div className="text-xs uppercase text-muted-foreground">
+                            {dateValue.toLocaleDateString("lt-LT", { weekday: "short" })}
+                          </div>
+                          <div className="mt-1 font-display text-2xl">
+                            {dateValue.getDate()}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {dateValue.toLocaleDateString("lt-LT", { month: "short" })}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                    return (
-                      <button
-                        key={`${slot.slot_date}-${slot.slot_time}`}
-                        type="button"
-                        disabled={left <= 0}
-                        onClick={() => setSelected(slot)}
-                        className={cn(
-                          "rounded-2xl border p-4 text-left transition-colors",
-                          isSelected
-                            ? "border-gold bg-gold/10"
-                            : "border-border bg-background/30 hover:border-gold/40",
-                          left <= 0 && "opacity-50",
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold">
-                            {new Date(`${slot.slot_date}T12:00:00`).toLocaleDateString(
-                              "lt-LT",
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )}
-                          </span>
-                          <span
-                            className={cn(
-                              "rounded-full px-2 py-1 text-xs",
-                              left === 0
-                                ? "bg-red-500/15 text-red-500"
-                                : left === 1
-                                  ? "bg-amber-500/15 text-amber-500"
-                                  : "bg-emerald-500/15 text-emerald-500",
-                            )}
-                          >
-                            {left === 0
-                              ? "Pilna"
-                              : left === 1
-                                ? "Liko 1 vieta"
-                                : `Liko ${left} vietos`}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {slot.slot_time.slice(0, 5)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {lessonType(slot)}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {selectedDate && (
+                    <div className="mt-6">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        2. Pasirinkite laiką
+                      </h3>
+                      <p className="mt-2 font-display text-2xl">
+                        {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("lt-LT", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        {selectedDateSlots.map((slot) => {
+                          const left = remaining(slot);
+                          const isSelected = selected?.slot_time === slot.slot_time;
+                          return (
+                            <button
+                              key={`${slot.slot_date}-${slot.slot_time}`}
+                              type="button"
+                              disabled={left <= 0}
+                              onClick={() => setSelected(slot)}
+                              className={cn(
+                                "rounded-2xl border p-4 text-left transition-colors",
+                                isSelected
+                                  ? "border-gold bg-gold/10"
+                                  : "border-border bg-background/30 hover:border-gold/40",
+                                left <= 0 && "cursor-not-allowed opacity-50",
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="flex items-center gap-2 font-display text-2xl">
+                                  <Clock className="h-4 w-4 text-gold" />
+                                  {slot.slot_time.slice(0, 5)}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2 py-1 text-xs",
+                                    left === 0
+                                      ? "bg-red-500/15 text-red-500"
+                                      : left === 1
+                                        ? "bg-amber-500/15 text-amber-500"
+                                        : "bg-emerald-500/15 text-emerald-500",
+                                  )}
+                                >
+                                  {left === 0 ? "Pilna" : left === 1 ? "Liko 1 vieta" : `Liko ${left} vietos`}
+                                </span>
+                              </div>
+                              <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" />
+                                  {lessonType(slot)}
+                                </span>
+                                <span>{slot.active_count}/{slot.max_capacity} vietos</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {slots.length === 0 && (
                   <div className="mt-5 rounded-2xl border border-dashed border-gold/20 p-6 text-center text-sm text-muted-foreground">
