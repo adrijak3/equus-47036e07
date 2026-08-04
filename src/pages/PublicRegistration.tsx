@@ -110,6 +110,7 @@ export default function PublicRegistration() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [emailFailed, setEmailFailed] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [existing, setExisting] = useState<any>(null);
 
   const selectedService = useMemo(
@@ -270,6 +271,7 @@ export default function PublicRegistration() {
     }
 
     setDone(true);
+    setModalOpen(true);
   };
 
   if (token && existing) {
