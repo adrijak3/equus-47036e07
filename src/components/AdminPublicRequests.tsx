@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, ExternalLink, Mail, MessageSquareText } from "lucide-react";
+import { sendReservationStatus } from "@/lib/emailjs";
 
 const SERVICE_NAMES: Record<string, string> = {
   mazylio_30: "Mažylio svajonė · 30 min.",
@@ -65,6 +66,11 @@ export function AdminPublicRequests() {
     if (error) {
       toast.error(error.message);
     } else {
+      await notifyStatus(
+        `Administracija pasiūlė laiką: ${date} ${time}.${note ? ` ${note}` : ""}`,
+        date,
+        time,
+      );
       toast.success("Pasiūlymas išsaugotas");
       setSelected(null);
       void load();
@@ -103,6 +109,11 @@ export function AdminPublicRequests() {
     if (error) {
       toast.error(error.message);
     } else {
+      await notifyStatus(
+        status === "approved"
+          ? `Jūsų registracija patvirtinta.${note ? ` ${note}` : ""}`
+          : `Jūsų registracija atšaukta.${note ? ` ${note}` : ""}`,
+      );
       toast.success("Būsena atnaujinta");
       setSelected(null);
       void load();
