@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Copy, ExternalLink, Mail, MessageSquareText } from "lucide-react";
 
 const SERVICE_NAMES: Record<string, string> = {
   mazylio_30: "Mažylio svajonė · 30 min.",
@@ -67,6 +68,23 @@ export function AdminPublicRequests() {
       toast.success("Pasiūlymas išsaugotas");
       setSelected(null);
       void load();
+    }
+  };
+
+  const clientUrl = selected?.public_token
+    ? `${location.origin}/registracija/${selected.public_token}`
+    : "";
+
+  const clientMessage = selected
+    ? `Sveiki, ${selected.first_name}!\n\nGavome Jūsų registracijos užklausą į Equus Jojimo Mokyklą.\n\nRegistracijos būseną ir administracijos siūlomą laiką galite peržiūrėti čia:\n${clientUrl}\n\n${selected.service_type === "mazylio_30" ? "Mažylio svajonė 30 min. kaina – 20 €." : "Vienos treniruotės kaina – 35 €."}\n\nPatvirtinus laiką taikomos Equus treniruočių atšaukimo taisyklės.\n\nJeigu turite klausimų, parašykite mums.\n\nSu pagarba,\nEquus Jojimo Mokykla`
+    : "";
+
+  const copyText = async (value: string, success: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(success);
+    } catch {
+      toast.error("Nepavyko nukopijuoti");
     }
   };
 
@@ -219,10 +237,76 @@ export function AdminPublicRequests() {
               </div>
 
               {selected.public_token && (
-                <p className="break-all text-xs text-muted-foreground">
-                  Kliento nuoroda: {location.origin}/registracija/
-                  {selected.public_token}
-                </p>
+                <div className="space-y-3 rounded-2xl border border-gold/15 bg-background/35 p-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Kliento nuoroda
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input value={clientUrl} readOnly className="min-w-0" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Kopijuoti nuorodą"
+                        onClick={() => copyText(clientUrl, "Nuoroda nukopijuota")}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => window.open(clientUrl, "_blank", "noopener,noreferrer")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Atidaryti kliento puslapį
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => copyText(clientUrl, "Nuoroda nukopijuota")}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Kopijuoti nuorodą
+                    </Button>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card/60 p-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <MessageSquareText className="h-4 w-4 text-gold" />
+                      Paruošta žinutė klientui
+                    </div>
+                    <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-sm leading-6 text-muted-foreground">
+                      {clientMessage}
+                    </pre>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        variant="gold"
+                        onClick={() => copyText(clientMessage, "Žinutė nukopijuota")}
+                      >
+                        <Copy className="h-4 w-4" />
+                        Kopijuoti žinutę
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const subject = encodeURIComponent("Equus registracijos užklausa");
+                          const body = encodeURIComponent(clientMessage);
+                          window.location.href = `mailto:${selected.email}?subject=${subject}&body=${body}`;
+                        }}
+                      >
+                        <Mail className="h-4 w-4" />
+                        Siųsti el. paštu
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
