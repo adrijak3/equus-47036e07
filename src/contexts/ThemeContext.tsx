@@ -1,6 +1,14 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-export type EquusTheme = "automatic" | "spring" | "summer" | "autumn" | "winter";
+export type EquusTheme =
+  | "automatic"
+  | "spring"
+  | "summer"
+  | "autumn"
+  | "winter"
+  | "ocean"
+  | "lavender"
+  | "midnight";
 export type ResolvedTheme = Exclude<EquusTheme, "automatic">;
 export type AppearanceMode = "automatic" | "light" | "dark";
 
@@ -17,7 +25,16 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const THEME_KEY = "equus_seasonal_theme";
 const MODE_KEY = "equus_appearance_mode";
-const validThemes: EquusTheme[] = ["automatic", "spring", "summer", "autumn", "winter"];
+const validThemes: EquusTheme[] = [
+  "automatic",
+  "spring",
+  "summer",
+  "autumn",
+  "winter",
+  "ocean",
+  "lavender",
+  "midnight",
+];
 const validModes: AppearanceMode[] = ["automatic", "light", "dark"];
 
 function seasonalTheme(month = new Date().getMonth()): ResolvedTheme {
@@ -38,7 +55,7 @@ function initialMode(): AppearanceMode {
 }
 
 function naturalMode(theme: ResolvedTheme): "light" | "dark" {
-  return theme === "spring" || theme === "summer" ? "light" : "dark";
+  return ["spring", "summer", "ocean", "lavender"].includes(theme) ? "light" : "dark";
 }
 
 function applyTheme(theme: ResolvedTheme, mode: "light" | "dark") {
