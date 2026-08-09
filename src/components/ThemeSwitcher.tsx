@@ -6,8 +6,11 @@ import {
   Loader2,
   Monitor,
   Moon,
+  Sparkles,
+  Stars,
   Snowflake,
   Sun,
+  Waves,
 } from "lucide-react";
 
 import {
@@ -59,6 +62,27 @@ const THEMES: Array<{
     icon: Snowflake,
     description: { lt: "Tamsi arktinė Equus tema.", en: "Midnight arctic Equus theme." },
     preview: "from-[#07111f] via-[#102b49] to-[#7cbcff]",
+  },
+  {
+    value: "ocean",
+    label: { lt: "Vandenynas", en: "Ocean" },
+    icon: Waves,
+    description: { lt: "Šviesi turkio ir jūros tema.", en: "Light turquoise sea theme." },
+    preview: "from-[#d7eef4] via-[#69c2d4] to-[#1a6f8c]",
+  },
+  {
+    value: "lavender",
+    label: { lt: "Levanda", en: "Lavender" },
+    icon: Sparkles,
+    description: { lt: "Švelni violetinė tema.", en: "Soft violet theme." },
+    preview: "from-[#efe6fb] via-[#b28ae0] to-[#6a45a8]",
+  },
+  {
+    value: "midnight",
+    label: { lt: "Vidurnaktis", en: "Midnight" },
+    icon: Stars,
+    description: { lt: "Tamsi mėlyna su auksu.", en: "Deep navy with gold." },
+    preview: "from-[#0d1320] via-[#1d2b45] to-[#e2be6a]",
   },
 ];
 
