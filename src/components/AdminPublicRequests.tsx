@@ -180,7 +180,9 @@ export function AdminPublicRequests() {
                   {` · ${row.phone} · ${row.email}`}
                 </div>
               </div>
-              <span className="text-xs text-gold">{row.status}</span>
+              <span className="text-xs text-gold">
+                {STATUS_LT[row.status] ?? row.status}
+              </span>
             </div>
           </button>
         ))
