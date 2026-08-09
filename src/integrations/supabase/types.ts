@@ -423,6 +423,7 @@ export type Database = {
         Row: {
           admin_note: string | null
           age: number
+          client_note: string | null
           created_at: string
           duration_minutes: number
           email: string
@@ -448,6 +449,7 @@ export type Database = {
         Insert: {
           admin_note?: string | null
           age: number
+          client_note?: string | null
           created_at?: string
           duration_minutes?: number
           email: string
@@ -473,6 +475,7 @@ export type Database = {
         Update: {
           admin_note?: string | null
           age?: number
+          client_note?: string | null
           created_at?: string
           duration_minutes?: number
           email?: string
@@ -793,6 +796,7 @@ export type Database = {
       cleanup_old_bookings: { Args: never; Returns: number }
       cleanup_old_conversations: { Args: never; Returns: number }
       cleanup_old_day_notes: { Args: never; Returns: number }
+      cleanup_old_public_registrations: { Args: never; Returns: number }
       cleanup_old_subscriptions: { Args: never; Returns: number }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       expire_makeup_cancellations: { Args: never; Returns: number }
@@ -842,6 +846,7 @@ export type Database = {
         Returns: {
           admin_note: string | null
           age: number
+          client_note: string | null
           created_at: string
           duration_minutes: number
           email: string
@@ -900,6 +905,10 @@ export type Database = {
           _slot_time: string
           _user_id: string
         }
+        Returns: Json
+      }
+      respond_to_public_registration: {
+        Args: { _action: string; _message?: string; _token: string }
         Returns: Json
       }
       respond_to_public_registration_proposal: {
