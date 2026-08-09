@@ -25,6 +25,18 @@ const EXPERIENCE_NAMES: Record<string, string> = {
   advanced: "Pažengęs",
 };
 
+const STATUS_LT: Record<string, string> = {
+  pending: "Naujas prašymas",
+  proposed: "Pasiūlytas laikas",
+  approved: "Patvirtinta administracijos",
+  accepted: "Klientas priėmė",
+  confirmed: "Klientas patvirtino · tvarkaraštyje",
+  reschedule: "Klientas prašo kito laiko",
+  rejected: "Atmesta",
+  cancelled: "Atšaukta",
+  completed: "Įvykdyta",
+};
+
 export function AdminPublicRequests() {
   const [rows, setRows] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);

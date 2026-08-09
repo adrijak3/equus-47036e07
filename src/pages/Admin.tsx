@@ -34,20 +34,22 @@ interface Sub {
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
 export default function Admin() {
-  const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0 });
+  const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
   const [section, setSection] = useState<string>("overview");
   useEffect(() => {
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [c, u] = await Promise.all([
+      const [c, u, reg] = await Promise.all([
         supabase.from("cancellation_requests").select("id, sickness, document_url, document_deadline, status").eq("status", "pending"),
         supabase.from("messages").select("id").eq("from_admin", false).eq("read_by_admin", false),
+        (supabase as any).from("public_registration_requests").select("id, status").in("status", ["pending", "reschedule", "accepted", "confirmed"]),
       ]);
       const reqs = (c.data ?? []) as any[];
       setAlerts({
         sickness: reqs.filter((r) => r.sickness).length,
         missingDoc: reqs.filter((r) => r.sickness && !r.document_url && r.document_deadline && r.document_deadline < today).length,
         unread: (u.data ?? []).length,
+        registrations: ((reg as any)?.data ?? []).length,
       });
     })();
   }, []);
@@ -63,7 +65,7 @@ export default function Admin() {
     { value: "users", label: "Vartotojai", icon: Users },
     { value: "subs", label: "Abonimentai", icon: Wallet },
     { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
-    { value: "registrations", label: "Registracijos", icon: ClipboardPenLine },
+    { value: "registrations", label: "Registracijos", icon: ClipboardPenLine, badge: alerts.registrations, badgeCls: "bg-gold text-background" },
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
