@@ -112,6 +112,8 @@ export default function PublicRegistration() {
   const [emailFailed, setEmailFailed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [existing, setExisting] = useState<any>(null);
+  const [clientNote, setClientNote] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const selectedService = useMemo(
     () => SERVICES.find((item) => item.value === service),
@@ -275,19 +277,48 @@ export default function PublicRegistration() {
   };
 
   if (token && existing) {
-    const accept = async (yes: boolean) => {
-      const { error } = await (supabase as any).rpc(
-        "respond_to_public_registration_proposal",
-        { _token: token, _accept: yes },
+    const STATUS_LT: Record<string, string> = {
+      pending: "Laukiama administracijos patvirtinimo",
+      proposed: "Administracija pasiūlė laiką – laukiama Jūsų atsakymo",
+      approved: "Administracija patvirtino laiką – laukiama Jūsų patvirtinimo",
+      accepted: "Laikas priimtas",
+      confirmed: "Patvirtinta ir įtraukta į tvarkaraštį",
+      reschedule: "Paprašėte kito laiko – administracija susisieks",
+      rejected: "Atmesta",
+      cancelled: "Atšaukta",
+      completed: "Įvykdyta",
+    };
+
+    const respond = async (action: "confirm" | "cancel" | "reschedule") => {
+      const { data, error } = await (supabase as any).rpc(
+        "respond_to_public_registration",
+        {
+          _token: token,
+          _action: action,
+          _message: action === "reschedule" ? clientNote.trim() || null : null,
+        },
       );
 
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(yes ? "Laikas patvirtintas" : "Pasiūlymas atmestas");
-        location.reload();
+      if (error || data?.ok === false) {
+        toast.error(error?.message || "Nepavyko išsaugoti atsakymo");
+        return;
       }
+
+      toast.success(
+        action === "confirm"
+          ? "Laikas patvirtintas – esate įtraukta į tvarkaraštį"
+          : action === "cancel"
+            ? "Registracija atšaukta"
+            : "Prašymas dėl kito laiko išsiųstas",
+      );
+      location.reload();
     };
+
+    const shownDate = existing.proposed_date ?? existing.requested_date;
+    const shownTime = existing.proposed_time ?? existing.requested_time;
+    const canRespond = ["proposed", "approved", "accepted"].includes(
+      existing.status,
+    );
 
     return (
       <div className="container max-w-2xl py-12">
@@ -301,12 +332,11 @@ export default function PublicRegistration() {
 
           <div className="mt-5 rounded-xl border border-gold/15 bg-background/35 p-4">
             <p>
-              <b>Būsena:</b> {existing.status}
+              <b>Būsena:</b> {STATUS_LT[existing.status] ?? existing.status}
             </p>
-            {existing.proposed_date && (
+            {shownDate && (
               <p className="mt-2">
-                <b>Pasiūlytas laikas:</b> {existing.proposed_date} ·{" "}
-                {String(existing.proposed_time).slice(0, 5)}
+                <b>Laikas:</b> {shownDate} · {String(shownTime).slice(0, 5)}
               </p>
             )}
             {existing.admin_note && (
@@ -316,21 +346,55 @@ export default function PublicRegistration() {
             )}
           </div>
 
-          {existing.status === "proposed" && (
-            <div className="mt-5 flex gap-3">
-              <Button variant="gold" onClick={() => accept(true)}>
-                Priimti laiką
-              </Button>
-              <Button variant="outline" onClick={() => accept(false)}>
-                Atmesti
-              </Button>
+          {canRespond && (
+            <div className="mt-5 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Pasirinkite, ką norite daryti su šiuo laiku:
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <Button variant="gold" onClick={() => void respond("confirm")}>
+                  Patvirtinti laiką
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setNoteOpen((value) => !value)}
+                >
+                  Man netinka – siūlyti kitą laiką
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => void respond("cancel")}
+                >
+                  Atšaukti registraciją
+                </Button>
+              </div>
+
+              {noteOpen && (
+                <div className="space-y-2 rounded-xl border border-gold/15 bg-background/35 p-4">
+                  <Label>Kada Jums būtų patogu?</Label>
+                  <Textarea
+                    value={clientNote}
+                    onChange={(event) => setClientNote(event.target.value)}
+                    placeholder="Pvz. norėčiau savaitgalį po 12:00"
+                  />
+                  <Button
+                    variant="gold"
+                    onClick={() => void respond("reschedule")}
+                  >
+                    Siųsti prašymą
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
-          {existing.status === "approved" && (
+          {existing.status === "confirmed" && (
             <p className="mt-5 text-emerald-500">
-              Registracija patvirtinta. Jei negalėsite dalyvauti, taikomos
-              įprastos Equus atšaukimo taisyklės.
+              Registracija patvirtinta ir laikas įtrauktas į tvarkaraštį.
+              Nepamirškite pasirašyti jojimo sutarties ir atvykti 30 min. prieš
+              treniruotę. Jei negalėsite dalyvauti, taikomos įprastos Equus
+              atšaukimo taisyklės.
             </p>
           )}
         </div>

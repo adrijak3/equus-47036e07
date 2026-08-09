@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
-type Profile = { id: string; full_name: string | null; email: string | null };
+type Profile = { id: string; full_name: string | null };
 
 export function AdminDuplicateBookings() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -17,7 +17,7 @@ export function AdminDuplicateBookings() {
     void (async () => {
       const { data, error } = await (supabase as any)
         .from("profiles")
-        .select("id, full_name, email")
+        .select("id, full_name")
         .order("full_name", { ascending: true });
 
       if (error) {
@@ -30,7 +30,7 @@ export function AdminDuplicateBookings() {
   }, []);
 
   const filtered = profiles.filter((p) =>
-    `${p.full_name ?? ""} ${p.email ?? ""}`.toLowerCase().includes(query.toLowerCase()),
+    (p.full_name ?? "").toLowerCase().includes(query.toLowerCase()),
   );
 
   return (
@@ -68,7 +68,7 @@ export function AdminDuplicateBookings() {
             >
               <Users className="h-4 w-4 flex-shrink-0 text-gold" />
               <span className="min-w-0 truncate">
-                {profile.full_name || profile.email || "Be vardo"}
+                {profile.full_name || "Be vardo"}
               </span>
             </button>
           ))}
