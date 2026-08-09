@@ -54,6 +54,12 @@ export default function Informacija() {
               </a>
             </Button>
           </div>
+
+          <p className="mt-4 text-sm text-muted-foreground">
+            Į treniruotę atvykite <strong className="text-foreground">30 min. prieš</strong> jos
+            pradžią – reikia laiko pasiruošti ir pabalnoti žirgą. Be pasirašytos sutarties
+            treniruotė nebus įskaityta.
+          </p>
         </div>
       </section>
 
