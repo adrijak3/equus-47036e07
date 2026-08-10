@@ -13,6 +13,8 @@ import RequireAuth from "@/components/RequireAuth";
 import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { SeasonalParticles } from "@/components/SeasonalParticles";
 import { AutoTranslate } from "@/components/AutoTranslate";
+import { InstallPrompt } from "@/components/InstallPrompt";
+import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
 
 import Grafikas from "./pages/Grafikas";
 import Pradzia from "./pages/Pradzia";
@@ -31,7 +33,7 @@ const queryClient = new QueryClient();
 const HomeRoute = () => {
   const { user, loading } = useAuth();
 
-  if (loading) return null;
+  if (loading) return <EquusLoadingScreen />;
 
   return user ? <Pradzia /> : <Grafikas />;
 };
@@ -40,7 +42,7 @@ const HomeRoute = () => {
 const PaskyraRoute = () => {
   const { isAdmin, loading } = useAuth();
 
-  if (loading) return null;
+  if (loading) return <EquusLoadingScreen />;
 
   if (isAdmin) {
     return <Navigate to="/admin" replace />;
@@ -65,6 +67,7 @@ const App = () => (
               <Layout>
                 <SeasonalParticles />
                 <WelcomeOnboarding />
+                <InstallPrompt />
 
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
