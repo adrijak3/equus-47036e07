@@ -17,6 +17,9 @@ import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { AdminPublicRequests } from "@/components/AdminPublicRequests";
 import { AdminReviews } from "@/components/AdminReviews";
 import { AdminDuplicateBookings } from "@/components/AdminDuplicateBookings";
+import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
+import { AdminCancellationHistory } from "@/components/AdminCancellationHistory";
+import { History } from "lucide-react";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -36,6 +39,7 @@ interface Msg { id: string; user_id: string; body: string; created_at: string; r
 export default function Admin() {
   const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
   const [section, setSection] = useState<string>("overview");
+  const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
