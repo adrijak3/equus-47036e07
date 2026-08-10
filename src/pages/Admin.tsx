@@ -73,6 +73,7 @@ export default function Admin() {
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
+    { value: "cancelHistory", label: "Atšaukimų istorija", icon: History },
   ];
   const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
 
@@ -161,6 +162,7 @@ export default function Admin() {
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
             <TabsContent value="duplicates"><AdminDuplicateBookings /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
+            <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
           </Tabs>
         </div>
       </div>
