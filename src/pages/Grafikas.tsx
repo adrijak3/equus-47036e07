@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
 import { VacationBanner } from "@/components/VacationsPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
+import { RiderActionSheet, type RiderTarget } from "@/components/RiderActionSheet";
 
 interface TimeSlot {
   id: string;
@@ -89,7 +91,8 @@ interface SlotNote {
 }
 
 export default function Grafikas() {
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, isTrainer } = useAuth();
+  const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
   const { language, t } = useLanguage();
   const [calendarView, setCalendarView] = useState<"week" | "list">(() => {
     const saved = localStorage.getItem("equus_calendar_view");
