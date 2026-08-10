@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,13 @@ export default function Admin() {
   const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [params] = useSearchParams();
+  useEffect(() => {
+    const s = params.get("section");
+    const q = params.get("q");
+    if (s) setSection(s);
+    if (q) setSearchQuery(q);
+  }, [params]);
   useEffect(() => {
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
