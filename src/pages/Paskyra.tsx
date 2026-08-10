@@ -548,7 +548,16 @@ export default function Paskyra() {
                         {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
                       </div>
                     )}
-                    <SubscriptionCard s={s} effectiveUsed={actualUsed} onMarkPaid={markSubPaid} onDelete={undefined} onEditLessons={undefined} />
+                    <SubscriptionCard
+                      s={s}
+                      effectiveUsed={actualUsed}
+                      onMarkPaid={markSubPaid}
+                      onDelete={undefined}
+                      onEditLessons={undefined}
+                      lessons={bookings
+                        .filter((b) => b.subscription_id === s.id)
+                        .map((b) => ({ id: b.id, slot_date: b.slot_date, slot_time: b.slot_time, status: b.status }))}
+                    />
                   </div>
                 );
               })}
