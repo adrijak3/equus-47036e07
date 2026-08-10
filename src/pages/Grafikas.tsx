@@ -1266,7 +1266,30 @@ const key = `book-${formatDateISO(date)}-${time}`;
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
-                                  <span className="truncate">
+                                  <span
+                                    className={cn(
+                                      "truncate",
+                                      (isAdmin || isTrainer) &&
+                                        "cursor-pointer rounded px-0.5 underline-offset-4 hover:underline",
+                                    )}
+                                    role={isAdmin || isTrainer ? "button" : undefined}
+                                    tabIndex={isAdmin || isTrainer ? 0 : undefined}
+                                    onClick={
+                                      isAdmin || isTrainer
+                                        ? () =>
+                                            setRiderTarget({
+                                              bookingId: b.id,
+                                              userId: b.user_id,
+                                              name: b.is_guest
+                                                ? (b.guest_name ?? "Svečias")
+                                                : (b.profile_name ?? "—"),
+                                              isGuest: !!b.is_guest,
+                                              slotDate: formatDateISO(date),
+                                              slotTime: slot.slot_time,
+                                            })
+                                        : undefined
+                                    }
+                                  >
                                     {b.is_guest
                                       ? (b.guest_name ?? "Svečias")
                                       : formatBookedName(b.profile_name ?? "—", b.display_name)}
