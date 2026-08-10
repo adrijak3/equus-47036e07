@@ -1903,6 +1903,12 @@ const key = `book-${formatDateISO(date)}-${time}`;
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RiderActionSheet
+        target={riderTarget}
+        onClose={() => setRiderTarget(null)}
+        onChanged={() => { void loadData(); }}
+      />
     </div>
   );
 }
