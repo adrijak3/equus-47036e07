@@ -1,0 +1,17 @@
+{
+  "name": "Equus jojimo mokykla",
+  "short_name": "Equus",
+  "description": "Jojimo treniruočių grafikas, registracija ir paskyra.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1524",
+  "theme_color": "#0d1524",
+  "lang": "lt",
+  "icons": [
+    { "src": "/equus-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/equus-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/equus-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
