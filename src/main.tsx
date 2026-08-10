@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { registerEquusServiceWorker } from "./lib/pwa";
 
 // Secret message shown in browser devtools console (F12)
 // eslint-disable-next-line no-console
@@ -10,3 +11,5 @@ console.log(
 );
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+registerEquusServiceWorker();
