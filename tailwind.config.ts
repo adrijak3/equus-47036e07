@@ -58,6 +58,11 @@ export default {
           foreground: "hsl(var(--gold-foreground))",
         },
         blush: "hsl(var(--blush))",
+        avail: {
+          free: "hsl(var(--avail-free))",
+          low: "hsl(var(--avail-low))",
+          full: "hsl(var(--avail-full))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

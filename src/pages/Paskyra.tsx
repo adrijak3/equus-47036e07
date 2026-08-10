@@ -548,7 +548,16 @@ export default function Paskyra() {
                         {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
                       </div>
                     )}
-                    <SubscriptionCard s={s} effectiveUsed={actualUsed} onMarkPaid={markSubPaid} onDelete={undefined} onEditLessons={undefined} />
+                    <SubscriptionCard
+                      s={s}
+                      effectiveUsed={actualUsed}
+                      onMarkPaid={markSubPaid}
+                      onDelete={undefined}
+                      onEditLessons={undefined}
+                      lessons={bookings
+                        .filter((b) => b.subscription_id === s.id)
+                        .map((b) => ({ id: b.id, slot_date: b.slot_date, slot_time: b.slot_time, status: b.status }))}
+                    />
                   </div>
                 );
               })}
@@ -1108,17 +1117,22 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode }) {
+export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode; lessons?: { id: string; slot_date: string; slot_time: string; status: string }[] }) {
   const used = effectiveUsed ?? s.lessons_used;
   const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
   const empty = remaining <= 0;
+  const [showLessons, setShowLessons] = useState(false);
+  const dots = Array.from({ length: Math.min(s.lessons_total, 20) });
   return (
     <div className={cn(
       "p-5 rounded-lg border bg-gradient-card transition-all",
       empty ? "border-destructive/40 shadow-[0_0_30px_-8px_hsl(var(--destructive)/0.3)]" : "border-gold/15",
       expired && "opacity-60",
     )}>
+      <div className="mb-2 font-display text-lg text-foreground">
+        {s.lessons_total} treniruočių abonementas
+      </div>
       <div className="flex items-baseline justify-between mb-3">
         {onEditLessons ? (
           <button
@@ -1149,6 +1163,24 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
           </button>
         )}
       </div>
+
+      <div className="mb-3">
+        <div className="flex flex-wrap items-center gap-1.5" aria-hidden>
+          {dots.map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "h-2.5 w-2.5 rounded-full border",
+                i < used ? "border-gold bg-gold" : "border-gold/40 bg-transparent",
+              )}
+            />
+          ))}
+        </div>
+        <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
+          {used} / {s.lessons_total} panaudota
+        </p>
+      </div>
+
       <div className="text-sm space-y-1 text-muted-foreground">
         {s.lesson_type && (
           <div>Tipas: <span className="text-foreground">{LESSON_TYPE_LABEL[(s.lesson_type as LessonType)] ?? s.lesson_type}</span></div>
@@ -1165,6 +1197,34 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
       )}
       {extra && (
         <div className="mt-3 pt-3 border-t border-gold/10">{extra}</div>
+      )}
+
+      {lessons && (
+        <div className="mt-3 pt-3 border-t border-gold/10">
+          <button
+            type="button"
+            onClick={() => setShowLessons((v) => !v)}
+            className="text-xs text-gold hover:underline"
+          >
+            {showLessons ? "Slėpti treniruotes" : "Peržiūrėti treniruotes"}
+          </button>
+          {showLessons && (
+            lessons.length === 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">Šiam abonementui dar nepriskirta treniruočių.</p>
+            ) : (
+              <ul className="mt-2 space-y-1 text-xs">
+                {lessons.map((l) => (
+                  <li key={l.id} className="flex items-center justify-between gap-2 tabular-nums">
+                    <span className="text-foreground/85">{l.slot_date} · {l.slot_time.slice(0, 5)}</span>
+                    <span className={cn("text-muted-foreground", l.status === "cancelled" && "text-destructive")}>
+                      {l.status === "cancelled" ? "atšaukta" : l.status === "completed" ? "įvykusi" : "suplanuota"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+        </div>
       )}
       {onDelete && (
         <div className="mt-4 pt-3 border-t border-gold/10 flex justify-end">

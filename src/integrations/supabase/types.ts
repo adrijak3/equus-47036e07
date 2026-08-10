@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_cancellations: {
+        Row: {
+          booking_id: string | null
+          cancelled_by: string | null
+          cancelled_by_role: string
+          created_at: string
+          guest_name: string | null
+          id: string
+          reason: string | null
+          restored_at: string | null
+          slot_date: string
+          slot_time: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: string
+          created_at?: string
+          guest_name?: string | null
+          id?: string
+          reason?: string | null
+          restored_at?: string | null
+          slot_date: string
+          slot_time: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: string
+          created_at?: string
+          guest_name?: string | null
+          id?: string
+          reason?: string | null
+          restored_at?: string | null
+          slot_date?: string
+          slot_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           counts_in_subscription: boolean

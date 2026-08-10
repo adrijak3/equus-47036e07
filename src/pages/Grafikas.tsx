@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
 import { VacationBanner } from "@/components/VacationsPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
+import { RiderActionSheet, type RiderTarget } from "@/components/RiderActionSheet";
 
 interface TimeSlot {
   id: string;
@@ -89,7 +91,8 @@ interface SlotNote {
 }
 
 export default function Grafikas() {
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, isTrainer } = useAuth();
+  const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
   const { language, t } = useLanguage();
   const [calendarView, setCalendarView] = useState<"week" | "list">(() => {
     const saved = localStorage.getItem("equus_calendar_view");
@@ -1137,10 +1140,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <Users className="w-3 h-3" />
-                            <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
-                          </div>
+                          <AvailabilityBadge taken={slotBookings.length} capacity={cap} />
                           {/* Waiting list dot — visible to everyone */}
                           {slotWaiting.length > 0 && (
                             <Popover>
@@ -1266,7 +1266,30 @@ const key = `book-${formatDateISO(date)}-${time}`;
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
-                                  <span className="truncate">
+                                  <span
+                                    className={cn(
+                                      "truncate",
+                                      (isAdmin || isTrainer) &&
+                                        "cursor-pointer rounded px-0.5 underline-offset-4 hover:underline",
+                                    )}
+                                    role={isAdmin || isTrainer ? "button" : undefined}
+                                    tabIndex={isAdmin || isTrainer ? 0 : undefined}
+                                    onClick={
+                                      isAdmin || isTrainer
+                                        ? () =>
+                                            setRiderTarget({
+                                              bookingId: b.id,
+                                              userId: b.user_id,
+                                              name: b.is_guest
+                                                ? (b.guest_name ?? "Svečias")
+                                                : (b.profile_name ?? "—"),
+                                              isGuest: !!b.is_guest,
+                                              slotDate: formatDateISO(date),
+                                              slotTime: slot.slot_time,
+                                            })
+                                        : undefined
+                                    }
+                                  >
                                     {b.is_guest
                                       ? (b.guest_name ?? "Svečias")
                                       : formatBookedName(b.profile_name ?? "—", b.display_name)}
@@ -1880,6 +1903,12 @@ const key = `book-${formatDateISO(date)}-${time}`;
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RiderActionSheet
+        target={riderTarget}
+        onClose={() => setRiderTarget(null)}
+        onChanged={() => { void loadData(); }}
+      />
     </div>
   );
 }
