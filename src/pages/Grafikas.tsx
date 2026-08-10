@@ -1140,10 +1140,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <Users className="w-3 h-3" />
-                            <span className={cn(isFull && "text-blush")}>{slotBookings.length}/{cap}</span>
-                          </div>
+                          <AvailabilityBadge taken={slotBookings.length} capacity={cap} />
                           {/* Waiting list dot — visible to everyone */}
                           {slotWaiting.length > 0 && (
                             <Popover>
