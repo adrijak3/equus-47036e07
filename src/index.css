@@ -45,6 +45,11 @@
 
     --radius: 0.75rem;
 
+    /* Availability semantics (shared across all themes) */
+    --avail-free: 145 55% 45%;
+    --avail-low: 40 92% 55%;
+    --avail-full: 0 72% 58%;
+
     --gradient-ink:
       radial-gradient(
         ellipse at top,
