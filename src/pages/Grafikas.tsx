@@ -76,7 +76,7 @@ interface HorseAssignment {
   horse_id: string;
   horse_name?: string;
 }
-interface ProfileLite { id: string; full_name: string; }
+interface ProfileLite { id: string; full_name: string; riding_level?: string | null; }
 interface ProfileLiteWithDisplay { id: string; full_name: string; display_name: string | null; }
 interface DayNote {
   id: string;
@@ -139,6 +139,7 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+  const [forcePrompt, setForcePrompt] = useState<{ date: Date; time: string; userId: string; reason: string } | null>(null);
   // Guest (naujokė) name
   const [adminGuestName, setAdminGuestName] = useState("");
 
@@ -567,7 +568,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
   const adminAddUserToSlot = async (date: Date, time: string, userId: string, force = false) => {
     if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
     const slot = slots.find(
-      (s) => s.slot_time === time && (s.one_off_date === formatDateISO(date) || s.day_of_week === isoDay(date)),
+      (s) => s.slot_time === time && (s.one_off_date === formatDateISO(date) || s.day_of_week === dbDayOfWeek(date)),
     );
     if (slot?.trainer_name && !force) {
       const reason = blockReason(
