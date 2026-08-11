@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { InstallMenuAction } from "@/components/InstallPrompt";
 import {
   Calendar,
   Check,
