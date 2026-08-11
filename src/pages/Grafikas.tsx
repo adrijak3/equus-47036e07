@@ -290,8 +290,8 @@ export default function Grafikas() {
   // Load all profiles once for admin user-picker
   useEffect(() => {
     if (!isAdmin) return;
-    supabase.from("profiles").select("id, full_name").order("full_name").then(({ data }) => {
-      setAllProfiles(data ?? []);
+    supabase.from("profiles").select("id, full_name, riding_level").order("full_name").then(({ data }) => {
+      setAllProfiles((data ?? []) as any);
     });
   }, [isAdmin]);
 
