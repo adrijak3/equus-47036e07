@@ -210,14 +210,23 @@ export default function Grafikas() {
 
     let nameMap: Record<string, string> = {};
     let displayMap: Record<string, string | null> = {};
+    let levelMap: Record<string, string | null> = {};
     if (userIds.size > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, full_name, display_name").in("id", Array.from(userIds));
+      const { data: profs } = await supabase
+        .from("profiles").select("id, full_name, display_name, riding_level")
+        .in("id", Array.from(userIds));
       nameMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p.full_name]));
       displayMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.display_name]));
+      levelMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.riding_level]));
     }
 
     setSlots(slotsRes.data ?? []);
-    setBookings((bookingsRes.data ?? []).map((b) => ({ ...b, profile_name: nameMap[b.user_id], display_name: displayMap[b.user_id] })));
+    setBookings((bookingsRes.data ?? []).map((b) => ({
+      ...b,
+      profile_name: nameMap[b.user_id],
+      display_name: displayMap[b.user_id],
+      riding_level: b.is_guest ? "beginner" : levelMap[b.user_id],
+    })));
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
@@ -308,6 +317,31 @@ export default function Grafikas() {
     const dateISO = formatDateISO(date);
     const o = overrides.find((x) => x.slot_date === dateISO && x.slot_time === time);
     return o ? o.max_capacity : baseCapacity;
+  };
+
+  /** Levels of everyone currently booked into a slot (unknown level = beginner). */
+  const slotLevels = (date: Date, time: string): RidingLevel[] =>
+    getSlotBookings(date, time).map((b) => levelOf(b.riding_level));
+
+  /**
+   * Trainer-led group lessons (e.g. Jolita) have a dynamic safe capacity:
+   * max 4, max 3 with one beginner, max 2 with two beginners.
+   */
+  const getGroupInfo = (date: Date, time: string, slot: TimeSlot) => {
+    const cap = getCapacity(date, time, slot.max_capacity);
+    if (!slot.trainer_name) {
+      const taken = getSlotBookings(date, time).length;
+      return { trainer: null as string | null, capacity: cap, taken, note: null as string | null, levels: [] as RidingLevel[] };
+    }
+    const levels = slotLevels(date, time);
+    const state = trainerGroupState(levels, Math.min(4, cap));
+    return {
+      trainer: slot.trainer_name,
+      capacity: state.maxAllowed,
+      taken: state.total,
+      note: state.reason,
+      levels,
+    };
   };
 
   const getSlotBookings = (date: Date, time: string) => {
