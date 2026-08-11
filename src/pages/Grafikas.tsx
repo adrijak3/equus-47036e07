@@ -563,9 +563,24 @@ const key = `book-${formatDateISO(date)}-${time}`;
     loadData();
   };
 
-  /** Admin: force-add a user to a slot */
-  const adminAddUserToSlot = async (date: Date, time: string, userId: string) => {
+  /** Admin: add a user to a slot (validates trainer group rules, allows explicit force) */
+  const adminAddUserToSlot = async (date: Date, time: string, userId: string, force = false) => {
     if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    const slot = slots.find(
+      (s) => s.slot_time === time && (s.one_off_date === formatDateISO(date) || s.day_of_week === isoDay(date)),
+    );
+    if (slot?.trainer_name && !force) {
+      const reason = blockReason(
+        slotLevels(date, time),
+        levelOf(allProfiles.find((p) => p.id === userId)?.riding_level),
+        Math.min(4, getCapacity(date, time, slot.max_capacity)),
+      );
+      if (reason) {
+        setForcePrompt({ date, time, userId, reason });
+        toast.error(reason);
+        return;
+      }
+    }
     setAdminBusy(true);
     const { error } = await supabase.from("bookings").insert({
       user_id: userId, slot_date: formatDateISO(date), slot_time: time, status: "active",
@@ -577,6 +592,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
     }
     toast.success("Pridėta");
     setAdminAddUserId("");
+    setForcePrompt(null);
     loadData();
   };
 
