@@ -335,6 +335,7 @@ export default function Layout({
                   </span>
                 </Link>
               )}
+              <InstallMenuAction onDone={close} />
             </nav>
 {/* Kalbos ir išvaizdos valdikliai */}
             <div className="sticky bottom-0 z-10 space-y-3 border-t border-gold/10 bg-background/90 px-4 py-4 backdrop-blur-xl">
