@@ -425,6 +425,7 @@ export type Database = {
           onboarding_accepted_at: string | null
           onboarding_version: number | null
           phone: string | null
+          riding_level: string | null
           rules_version: string | null
           theme: string | null
           updated_at: string
@@ -440,6 +441,7 @@ export type Database = {
           onboarding_accepted_at?: string | null
           onboarding_version?: number | null
           phone?: string | null
+          riding_level?: string | null
           rules_version?: string | null
           theme?: string | null
           updated_at?: string
@@ -455,6 +457,7 @@ export type Database = {
           onboarding_accepted_at?: string | null
           onboarding_version?: number | null
           phone?: string | null
+          riding_level?: string | null
           rules_version?: string | null
           theme?: string | null
           updated_at?: string
@@ -690,6 +693,7 @@ export type Database = {
           max_capacity: number
           one_off_date: string | null
           slot_time: string
+          trainer_name: string | null
         }
         Insert: {
           active?: boolean
@@ -700,6 +704,7 @@ export type Database = {
           max_capacity?: number
           one_off_date?: string | null
           slot_time: string
+          trainer_name?: string | null
         }
         Update: {
           active?: boolean
@@ -710,6 +715,7 @@ export type Database = {
           max_capacity?: number
           one_off_date?: string | null
           slot_time?: string
+          trainer_name?: string | null
         }
         Relationships: []
       }
@@ -811,6 +817,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_booking_subscription: {
+        Args: { _booking_id: string; _subscription_id: string }
+        Returns: Json
+      }
       admin_set_public_registration_status: {
         Args: { _note?: string; _request_id: string; _status: string }
         Returns: undefined
@@ -836,6 +846,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_bookings: { Args: never; Returns: number }
+      cleanup_old_cancellations: { Args: never; Returns: number }
       cleanup_old_conversations: { Args: never; Returns: number }
       cleanup_old_day_notes: { Args: never; Returns: number }
       cleanup_old_public_registrations: { Args: never; Returns: number }
@@ -956,6 +967,10 @@ export type Database = {
       respond_to_public_registration_proposal: {
         Args: { _accept: boolean; _token: string }
         Returns: undefined
+      }
+      slot_group_state: {
+        Args: { _slot_date: string; _slot_time: string }
+        Returns: Json
       }
       submit_public_registration: {
         Args: {
