@@ -1752,6 +1752,21 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   Individuali
                 </Button>
               </div>
+              {forcePrompt && adminSlotDialog && (
+                <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-[11px] text-destructive">
+                  <div className="font-medium">Negalima pridėti raitelio</div>
+                  <p className="mt-0.5">{forcePrompt.reason}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1.5 h-7 text-[11px]"
+                    disabled={adminBusy}
+                    onClick={() => adminAddUserToSlot(forcePrompt.date, forcePrompt.time, forcePrompt.userId, true)}
+                  >
+                    Vis tiek pridėti (ignoruoti limitą)
+                  </Button>
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground mt-1.5 italic">
                 Talpos limitas ignoruojamas. Norint pridėti +1 vietą, naudokite +1 mygtuką.
               </p>
