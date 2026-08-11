@@ -24,6 +24,8 @@ import { VacationBanner } from "@/components/VacationsPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { RiderActionSheet, type RiderTarget } from "@/components/RiderActionSheet";
+import { RiderLevelBadge } from "@/components/RiderLevelBadge";
+import { levelOf, trainerGroupState, blockReason, type RidingLevel } from "@/lib/levels";
 
 interface TimeSlot {
   id: string;
@@ -32,6 +34,7 @@ interface TimeSlot {
   max_capacity: number;
   is_permanent_for: string | null;
   one_off_date?: string | null;
+  trainer_name?: string | null;
 }
 interface Booking {
   id: string;
@@ -41,6 +44,7 @@ interface Booking {
   status: string;
   profile_name?: string;
   display_name?: string | null;
+  riding_level?: string | null;
   is_guest?: boolean;
   guest_name?: string | null;
   is_individual?: boolean;
@@ -72,7 +76,7 @@ interface HorseAssignment {
   horse_id: string;
   horse_name?: string;
 }
-interface ProfileLite { id: string; full_name: string; }
+interface ProfileLite { id: string; full_name: string; riding_level?: string | null; }
 interface ProfileLiteWithDisplay { id: string; full_name: string; display_name: string | null; }
 interface DayNote {
   id: string;
@@ -135,6 +139,7 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+  const [forcePrompt, setForcePrompt] = useState<{ date: Date; time: string; userId: string; reason: string } | null>(null);
   // Guest (naujokė) name
   const [adminGuestName, setAdminGuestName] = useState("");
 
@@ -206,14 +211,23 @@ export default function Grafikas() {
 
     let nameMap: Record<string, string> = {};
     let displayMap: Record<string, string | null> = {};
+    let levelMap: Record<string, string | null> = {};
     if (userIds.size > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, full_name, display_name").in("id", Array.from(userIds));
+      const { data: profs } = await supabase
+        .from("profiles").select("id, full_name, display_name, riding_level")
+        .in("id", Array.from(userIds));
       nameMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p.full_name]));
       displayMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.display_name]));
+      levelMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.riding_level]));
     }
 
     setSlots(slotsRes.data ?? []);
-    setBookings((bookingsRes.data ?? []).map((b) => ({ ...b, profile_name: nameMap[b.user_id], display_name: displayMap[b.user_id] })));
+    setBookings((bookingsRes.data ?? []).map((b) => ({
+      ...b,
+      profile_name: nameMap[b.user_id],
+      display_name: displayMap[b.user_id],
+      riding_level: b.is_guest ? "beginner" : levelMap[b.user_id],
+    })));
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
@@ -276,8 +290,8 @@ export default function Grafikas() {
   // Load all profiles once for admin user-picker
   useEffect(() => {
     if (!isAdmin) return;
-    supabase.from("profiles").select("id, full_name").order("full_name").then(({ data }) => {
-      setAllProfiles(data ?? []);
+    supabase.from("profiles").select("id, full_name, riding_level").order("full_name").then(({ data }) => {
+      setAllProfiles((data ?? []) as any);
     });
   }, [isAdmin]);
 
@@ -304,6 +318,31 @@ export default function Grafikas() {
     const dateISO = formatDateISO(date);
     const o = overrides.find((x) => x.slot_date === dateISO && x.slot_time === time);
     return o ? o.max_capacity : baseCapacity;
+  };
+
+  /** Levels of everyone currently booked into a slot (unknown level = beginner). */
+  const slotLevels = (date: Date, time: string): RidingLevel[] =>
+    getSlotBookings(date, time).map((b) => levelOf(b.riding_level));
+
+  /**
+   * Trainer-led group lessons (e.g. Jolita) have a dynamic safe capacity:
+   * max 4, max 3 with one beginner, max 2 with two beginners.
+   */
+  const getGroupInfo = (date: Date, time: string, slot: TimeSlot) => {
+    const cap = getCapacity(date, time, slot.max_capacity);
+    if (!slot.trainer_name) {
+      const taken = getSlotBookings(date, time).length;
+      return { trainer: null as string | null, capacity: cap, taken, note: null as string | null, levels: [] as RidingLevel[] };
+    }
+    const levels = slotLevels(date, time);
+    const state = trainerGroupState(levels, Math.min(4, cap));
+    return {
+      trainer: slot.trainer_name,
+      capacity: state.maxAllowed,
+      taken: state.total,
+      note: state.reason,
+      levels,
+    };
   };
 
   const getSlotBookings = (date: Date, time: string) => {
@@ -380,7 +419,13 @@ const key = `book-${formatDateISO(date)}-${time}`;
     });
     setBusy(null);
     if (error) {
-      toast.error(error.code === "23505" ? "Jūs jau užregistruoti į šią pamoką" : "Klaida: " + error.message);
+      toast.error(
+        error.code === "23505"
+          ? "Jūs jau užregistruoti į šią pamoką"
+          : /pradedant|Grupė/i.test(error.message)
+            ? error.message
+            : "Klaida: " + error.message,
+      );
       return;
     }
     setBookingSuccess({ date, time });
@@ -519,9 +564,24 @@ const key = `book-${formatDateISO(date)}-${time}`;
     loadData();
   };
 
-  /** Admin: force-add a user to a slot */
-  const adminAddUserToSlot = async (date: Date, time: string, userId: string) => {
+  /** Admin: add a user to a slot (validates trainer group rules, allows explicit force) */
+  const adminAddUserToSlot = async (date: Date, time: string, userId: string, force = false) => {
     if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    const slot = slots.find(
+      (s) => s.slot_time === time && (s.one_off_date === formatDateISO(date) || s.day_of_week === dbDayOfWeek(date)),
+    );
+    if (slot?.trainer_name && !force) {
+      const reason = blockReason(
+        slotLevels(date, time),
+        levelOf(allProfiles.find((p) => p.id === userId)?.riding_level),
+        Math.min(4, getCapacity(date, time, slot.max_capacity)),
+      );
+      if (reason) {
+        setForcePrompt({ date, time, userId, reason });
+        toast.error(reason);
+        return;
+      }
+    }
     setAdminBusy(true);
     const { error } = await supabase.from("bookings").insert({
       user_id: userId, slot_date: formatDateISO(date), slot_time: time, status: "active",
@@ -533,6 +593,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
     }
     toast.success("Pridėta");
     setAdminAddUserId("");
+    setForcePrompt(null);
     loadData();
   };
 
@@ -1116,8 +1177,9 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   {/* Slot cards stacked vertically */}
                   {!getDayCancellation(date) && daySlots.map((slot) => {
                     const slotBookings = getSlotBookings(date, slot.slot_time);
-                    const cap = getCapacity(date, slot.slot_time, slot.max_capacity);
-                    const isFull = slotBookings.length >= cap;
+                    const group = getGroupInfo(date, slot.slot_time, slot);
+                    const cap = group.capacity;
+                    const isFull = group.taken >= cap;
                     const myBooking = slotBookings.find((b) => isMyBooking(b));
                     const slotWaiting = getWaitingFor(date, slot.slot_time);
                     const iAmWaiting = amIWaiting(date, slot.slot_time);
@@ -1138,9 +1200,14 @@ const key = `book-${formatDateISO(date)}-${time}`;
                             <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
+                            {slot.trainer_name && (
+                              <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold">
+                                Trenerė: {slot.trainer_name}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                          <AvailabilityBadge taken={slotBookings.length} capacity={cap} />
+                          <AvailabilityBadge taken={group.taken} capacity={cap} />
                           {/* Waiting list dot — visible to everyone */}
                           {slotWaiting.length > 0 && (
                             <Popover>
@@ -1220,6 +1287,13 @@ const key = `book-${formatDateISO(date)}-${time}`;
                         </div>
 
                         {/* Per-slot admin note (visible to everyone) */}
+                        {group.trainer && (
+                          <div className="mx-3 mt-2 rounded-md border border-gold/20 bg-background/30 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground">
+                            {group.note}
+                            {" · "}
+                            <span className="text-foreground/80">{group.taken} / maks. {cap}</span>
+                          </div>
+                        )}
                         {(() => {
                           const sn = getSlotNote(date, slot.slot_time);
                           if (!sn) return null;
@@ -1266,6 +1340,9 @@ const key = `book-${formatDateISO(date)}-${time}`;
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
+                                  {(isAdmin || isTrainer) && slot.trainer_name && (
+                                    <RiderLevelBadge level={b.riding_level} compact />
+                                  )}
                                   <span
                                     className={cn(
                                       "truncate",
@@ -1675,6 +1752,21 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   Individuali
                 </Button>
               </div>
+              {forcePrompt && adminSlotDialog && (
+                <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-[11px] text-destructive">
+                  <div className="font-medium">Negalima pridėti raitelio</div>
+                  <p className="mt-0.5">{forcePrompt.reason}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1.5 h-7 text-[11px]"
+                    disabled={adminBusy}
+                    onClick={() => adminAddUserToSlot(forcePrompt.date, forcePrompt.time, forcePrompt.userId, true)}
+                  >
+                    Vis tiek pridėti (ignoruoti limitą)
+                  </Button>
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground mt-1.5 italic">
                 Talpos limitas ignoruojamas. Norint pridėti +1 vietą, naudokite +1 mygtuką.
               </p>

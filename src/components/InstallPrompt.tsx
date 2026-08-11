@@ -1,47 +1,27 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, X } from "lucide-react";
+import { Download, Share, X, Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { promptInstall, rememberDismissal, useInstallState } from "@/lib/install";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const DISMISS_KEY = "equus_install_dismissed";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
+/** Floating, non-nagging install banner. Appears as soon as the browser allows it. */
 export function InstallPrompt() {
   const { language } = useLanguage();
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
+  const lt = language === "lt";
+  const { canInstall, dismissed, installed } = useInstallState();
+  const [hidden, setHidden] = useState(false);
 
+  // Small delay so the banner never fights with the first paint.
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (localStorage.getItem(DISMISS_KEY) === "1") return;
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+    const t = setTimeout(() => setReady(true), 1200);
+    return () => clearTimeout(t);
   }, []);
 
-  const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, "1");
-    setVisible(false);
-  };
+  if (!ready || hidden || installed || dismissed || !canInstall) return null;
 
-  const install = async () => {
-    if (!deferred) return;
-    await deferred.prompt();
-    await deferred.userChoice;
-    dismiss();
-  };
-
-  if (!visible || !deferred) return null;
-  const lt = language === "lt";
+  const dismiss = () => { rememberDismissal(); setHidden(true); };
 
   return (
     <div className="fixed inset-x-3 bottom-3 z-50 sm:left-auto sm:right-4 sm:w-80">
@@ -60,10 +40,70 @@ export function InstallPrompt() {
         <p className="mt-1 text-xs text-muted-foreground">
           {lt ? "Greitesnė prieiga prie grafiko ir paskyros." : "Faster access to the schedule and your account."}
         </p>
-        <Button variant="gold" size="sm" className="mt-3 w-full" onClick={install}>
+        <Button
+          variant="gold"
+          size="sm"
+          className="mt-3 w-full"
+          onClick={() => { void promptInstall().then(() => setHidden(true)); }}
+        >
           <Download className="mr-1.5 h-4 w-4" /> {lt ? "Įdiegti" : "Install"}
         </Button>
       </div>
     </div>
+  );
+}
+
+/** Menu entry — only visible when installing is actually possible (or on iOS, with instructions). */
+export function InstallMenuAction({ onDone }: { onDone?: () => void }) {
+  const { language } = useLanguage();
+  const lt = language === "lt";
+  const { canInstall, iosInstructions, installed } = useInstallState();
+  const [iosOpen, setIosOpen] = useState(false);
+
+  if (installed || (!canInstall && !iosInstructions)) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          if (canInstall) {
+            void promptInstall().then(() => onDone?.());
+          } else {
+            setIosOpen(true);
+          }
+        }}
+        className="flex w-full items-center gap-4 rounded-md border-l-2 border-transparent px-4 py-3.5 text-left text-foreground/85 transition-all hover:bg-gold/5 hover:text-gold"
+      >
+        <Download className="h-4 w-4" />
+        <span className="font-display text-base tracking-wide">
+          {lt ? "Įdiegti Equus programėlę" : "Install the Equus app"}
+        </span>
+      </button>
+
+      <Dialog open={iosOpen} onOpenChange={setIosOpen}>
+        <DialogContent className="rounded-3xl border-gold/20 bg-gradient-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">
+              {lt ? "Pridėti į pradžios ekraną" : "Add to Home Screen"}
+            </DialogTitle>
+          </DialogHeader>
+          <ol className="space-y-3 text-sm text-foreground/85">
+            <li className="flex items-start gap-2">
+              <Share className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+              {lt ? "Paspauskite „Bendrinti“ (Share) mygtuką naršyklės apačioje." : "Tap the Share button in Safari."}
+            </li>
+            <li className="flex items-start gap-2">
+              <Plus className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+              {lt ? "Pasirinkite „Įtraukti į pagrindinį ekraną“." : "Choose “Add to Home Screen”."}
+            </li>
+            <li className="flex items-start gap-2">
+              <Download className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+              {lt ? "Patvirtinkite — Equus atsiras tarp programėlių." : "Confirm — Equus will appear with your apps."}
+            </li>
+          </ol>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

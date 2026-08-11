@@ -18,6 +18,8 @@ import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { AdminPublicRequests } from "@/components/AdminPublicRequests";
 import { AdminReviews } from "@/components/AdminReviews";
 import { AdminDuplicateBookings } from "@/components/AdminDuplicateBookings";
+import { RiderLevelBadge, RiderLevelSelect } from "@/components/RiderLevelBadge";
+import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
 import { AdminCancellationHistory } from "@/components/AdminCancellationHistory";
 import { History } from "lucide-react";
@@ -41,12 +43,15 @@ export default function Admin() {
   const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [focusUserId, setFocusUserId] = useState<string | null>(null);
   const [params] = useSearchParams();
   useEffect(() => {
     const s = params.get("section");
     const q = params.get("q");
+    const uid = params.get("uid");
     if (s) setSection(s);
     if (q) setSearchQuery(q);
+    setFocusUserId(uid);
   }, [params]);
   useEffect(() => {
     (async () => {
@@ -170,8 +175,13 @@ export default function Admin() {
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
-            <TabsContent value="users" className="space-y-6"><UnpaidLessonsOverview staff /><UsersTab /></TabsContent>
-            <TabsContent value="subs"><SubsTab /></TabsContent>
+            <TabsContent value="users" className="space-y-6">
+              <UnpaidLessonsOverview staff />
+              <UsersTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+            </TabsContent>
+            <TabsContent value="subs">
+              <SubsTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+            </TabsContent>
             <TabsContent value="messages"><MessagesTab /></TabsContent>
             <TabsContent value="registrations"><AdminPublicRequests /></TabsContent>
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
@@ -1074,7 +1084,7 @@ function StatsTab() {
 }
 
 /* ---------- SUBSCRIPTIONS (full overview, per-user add) ---------- */
-function SubsTab() {
+function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; onClearFocus?: () => void } = {}) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [filter, setFilter] = useState("");
@@ -1172,6 +1182,7 @@ function SubsTab() {
   };
 
   const filteredProfiles = profiles.filter((p) => {
+    if (focusUserId) return p.id === focusUserId;
     if (filter && !p.full_name.toLowerCase().includes(filter.toLowerCase())) return false;
     const us = subs.filter((s) => s.user_id === p.id);
     if (showOnlyUnpaid && !us.some((s) => !s.paid)) return false;
@@ -1182,6 +1193,15 @@ function SubsTab() {
 
   return (
     <div className="space-y-3">
+      {focusUserId && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-gold/25 bg-gold/5 px-4 py-2 text-sm">
+          <span>
+            Rodomas vienas vartotojas:{" "}
+            <strong className="text-gold">{profiles.find((p) => p.id === focusUserId)?.full_name ?? "…"}</strong>
+          </span>
+          <Button variant="ghost" size="sm" onClick={onClearFocus}>Rodyti visus</Button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <Input
           placeholder="Ieškoti vartotojo..."
@@ -1211,7 +1231,11 @@ function SubsTab() {
           const us = subs.filter((s) => s.user_id === p.id);
           const unpaid = us.some((s) => !s.paid);
           return (
-            <details key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg" open={us.length > 0 && unpaid}>
+            <details
+              key={p.id}
+              className="bg-gradient-card border border-gold/15 rounded-lg"
+              open={focusUserId === p.id || (us.length > 0 && unpaid)}
+            >
               <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
                 <div>
                   <div className="font-display text-base text-gold">{p.full_name}</div>
@@ -1362,6 +1386,7 @@ function SubDetailDialog({
   const [rows, setRows] = useState<{ id: string; slot_date: string; slot_time: string; status: string; counts_in_subscription: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveSub, setLiveSub] = useState<Sub>(sub);
+  const [freeRows, setFreeRows] = useState<{ id: string; slot_date: string; slot_time: string; status: string }[]>([]);
   useEffect(() => { setLiveSub(sub); }, [sub]);
   const refreshSub = async () => {
     const { data } = await supabase.from("subscriptions").select("*").eq("id", sub.id).maybeSingle();
@@ -1375,21 +1400,37 @@ function SubDetailDialog({
       .eq("subscription_id", sub.id)
       .order("slot_date", { ascending: false });
     setRows((data ?? []) as any);
+    // Lessons of the same rider that are not attached to any abonementas yet
+    const { data: free } = await supabase.from("bookings")
+      .select("id, slot_date, slot_time, status")
+      .eq("user_id", sub.user_id)
+      .is("subscription_id", null)
+      .neq("status", "cancelled")
+      .gte("slot_date", sub.purchase_date)
+      .order("slot_date", { ascending: false })
+      .limit(30);
+    setFreeRows((free ?? []) as any);
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sub.id]);
 
   const detach = async (bookingId: string) => {
-    if (!confirm("Pašalinti šią pamoką iš abonimento? (Pati pamoka nebus ištrinta — tik atkabinta.)")) return;
-    const { error } = await supabase.from("bookings")
-      .update({ subscription_id: null } as any).eq("id", bookingId);
+    if (!confirm("Atkabinti šią treniruotę nuo abonemento?")) return;
+    const { error } = await supabase.rpc("admin_set_booking_subscription" as any, {
+      _booking_id: bookingId, _subscription_id: null,
+    } as any);
     if (error) { toast.error(error.message); return; }
-    // Decrement stored counter if it's > 0
-    if (liveSub.lessons_used > 0) {
-      await supabase.from("subscriptions")
-        .update({ lessons_used: liveSub.lessons_used - 1 }).eq("id", sub.id);
-    }
-    toast.success("Atkabinta");
+    toast.success("Atkabinta nuo abonemento (treniruotė nepanaikinta)");
+    load(); refreshSub();
+    onChanged();
+  };
+
+  const attach = async (bookingId: string) => {
+    const { error } = await supabase.rpc("admin_set_booking_subscription" as any, {
+      _booking_id: bookingId, _subscription_id: sub.id,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Priskirta abonementui");
     load(); refreshSub();
     onChanged();
   };
@@ -1487,7 +1528,7 @@ function SubDetailDialog({
                     {counted.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5">
                         <span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}</span>
-                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti</button>
+                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button>
                       </li>
                     ))}
                   </ul>
@@ -1501,7 +1542,23 @@ function SubDetailDialog({
                     {cancelled.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5">
                         <span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span>
-                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti</button>
+                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {freeRows.length > 0 && (
+                <div>
+                  <h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">
+                    Nepriskirtos treniruotės ({freeRows.length})
+                  </h4>
+                  <ul className="space-y-1">
+                    {freeRows.map((r) => (
+                      <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5">
+                        <span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span>
+                        <button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button>
                       </li>
                     ))}
                   </ul>
@@ -1656,20 +1713,27 @@ function CancellationsTab() {
 }
 
 /* ---------- USERS ---------- */
-function UsersTab() {
+function UsersTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; onClearFocus?: () => void } = {}) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = async () => {
     const [p, s] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
+      supabase.from("profiles").select("id, full_name, phone, riding_level").order("full_name"),
       supabase.from("subscriptions").select("*").order("purchase_date", { ascending: false }),
     ]);
-    setProfiles(p.data ?? []);
+    setProfiles((p.data ?? []) as any);
     setSubs(s.data ?? []);
   };
   useEffect(() => { load(); }, []);
+
+  const setLevel = async (p: Profile, level: RidingLevel) => {
+    const { error } = await supabase.from("profiles").update({ riding_level: level } as any).eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${p.full_name}: ${LEVEL_META[level].label}`);
+    load();
+  };
 
   const togglePaid = async (subId: string, paid: boolean) => {
     const { error } = await supabase.from("subscriptions").update({ paid }).eq("id", subId);
@@ -1730,19 +1794,39 @@ function UsersTab() {
 
   return (
     <div className="space-y-3">
-      {profiles.map((p) => {
+      {focusUserId && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-gold/25 bg-gold/5 px-4 py-2 text-sm">
+          <span>
+            Rodomas vienas vartotojas:{" "}
+            <strong className="text-gold">{profiles.find((p) => p.id === focusUserId)?.full_name ?? "…"}</strong>
+          </span>
+          <Button variant="ghost" size="sm" onClick={onClearFocus}>Rodyti visus</Button>
+        </div>
+      )}
+      {profiles.filter((p) => !focusUserId || p.id === focusUserId).map((p) => {
         const userSubs = subs.filter((s) => s.user_id === p.id);
         const unpaid = userSubs.some((s) => !s.paid);
         return (
-          <details key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg group">
+          <details key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg group" open={focusUserId === p.id}>
             <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
               <div>
-                <div className="font-display text-lg text-gold">{p.full_name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg text-gold">{p.full_name}</span>
+                  <RiderLevelBadge level={(p as any).riding_level} />
+                </div>
                 <div className="text-xs text-muted-foreground">{p.phone ?? "—"}</div>
               </div>
               {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Yra neapmokėta</span>}
             </summary>
             <div className="border-t border-gold/10 px-5 py-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>Vidinis raitelio lygis:</span>
+                <RiderLevelSelect
+                  value={(p as any).riding_level}
+                  onChange={(lvl) => setLevel(p, lvl)}
+                />
+                <span className="italic">Naudojamas Jolitos grupių saugumo taisyklėms.</span>
+              </div>
               {userSubs.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
               ) : (
