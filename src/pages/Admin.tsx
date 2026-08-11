@@ -1528,7 +1528,7 @@ function SubDetailDialog({
                     {counted.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5">
                         <span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}</span>
-                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti</button>
+                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button>
                       </li>
                     ))}
                   </ul>
@@ -1542,7 +1542,23 @@ function SubDetailDialog({
                     {cancelled.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5">
                         <span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span>
-                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti</button>
+                        <button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {freeRows.length > 0 && (
+                <div>
+                  <h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">
+                    Nepriskirtos treniruotės ({freeRows.length})
+                  </h4>
+                  <ul className="space-y-1">
+                    {freeRows.map((r) => (
+                      <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5">
+                        <span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span>
+                        <button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button>
                       </li>
                     ))}
                   </ul>
