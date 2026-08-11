@@ -41,12 +41,15 @@ export default function Admin() {
   const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [focusUserId, setFocusUserId] = useState<string | null>(null);
   const [params] = useSearchParams();
   useEffect(() => {
     const s = params.get("section");
     const q = params.get("q");
+    const uid = params.get("uid");
     if (s) setSection(s);
     if (q) setSearchQuery(q);
+    setFocusUserId(uid);
   }, [params]);
   useEffect(() => {
     (async () => {
@@ -170,8 +173,13 @@ export default function Admin() {
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
-            <TabsContent value="users" className="space-y-6"><UnpaidLessonsOverview staff /><UsersTab /></TabsContent>
-            <TabsContent value="subs"><SubsTab /></TabsContent>
+            <TabsContent value="users" className="space-y-6">
+              <UnpaidLessonsOverview staff />
+              <UsersTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+            </TabsContent>
+            <TabsContent value="subs">
+              <SubsTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+            </TabsContent>
             <TabsContent value="messages"><MessagesTab /></TabsContent>
             <TabsContent value="registrations"><AdminPublicRequests /></TabsContent>
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
