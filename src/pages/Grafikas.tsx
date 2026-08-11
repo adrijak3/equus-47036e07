@@ -1154,8 +1154,9 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   {/* Slot cards stacked vertically */}
                   {!getDayCancellation(date) && daySlots.map((slot) => {
                     const slotBookings = getSlotBookings(date, slot.slot_time);
-                    const cap = getCapacity(date, slot.slot_time, slot.max_capacity);
-                    const isFull = slotBookings.length >= cap;
+                    const group = getGroupInfo(date, slot.slot_time, slot);
+                    const cap = group.capacity;
+                    const isFull = group.taken >= cap;
                     const myBooking = slotBookings.find((b) => isMyBooking(b));
                     const slotWaiting = getWaitingFor(date, slot.slot_time);
                     const iAmWaiting = amIWaiting(date, slot.slot_time);
@@ -1176,9 +1177,14 @@ const key = `book-${formatDateISO(date)}-${time}`;
                             <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
                               {formatTime(slot.slot_time)}
                             </span>
+                            {slot.trainer_name && (
+                              <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold">
+                                Trenerė: {slot.trainer_name}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                          <AvailabilityBadge taken={slotBookings.length} capacity={cap} />
+                          <AvailabilityBadge taken={group.taken} capacity={cap} />
                           {/* Waiting list dot — visible to everyone */}
                           {slotWaiting.length > 0 && (
                             <Popover>
