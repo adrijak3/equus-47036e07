@@ -1386,6 +1386,7 @@ function SubDetailDialog({
   const [rows, setRows] = useState<{ id: string; slot_date: string; slot_time: string; status: string; counts_in_subscription: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveSub, setLiveSub] = useState<Sub>(sub);
+  const [freeRows, setFreeRows] = useState<{ id: string; slot_date: string; slot_time: string; status: string }[]>([]);
   useEffect(() => { setLiveSub(sub); }, [sub]);
   const refreshSub = async () => {
     const { data } = await supabase.from("subscriptions").select("*").eq("id", sub.id).maybeSingle();
@@ -1399,21 +1400,37 @@ function SubDetailDialog({
       .eq("subscription_id", sub.id)
       .order("slot_date", { ascending: false });
     setRows((data ?? []) as any);
+    // Lessons of the same rider that are not attached to any abonementas yet
+    const { data: free } = await supabase.from("bookings")
+      .select("id, slot_date, slot_time, status")
+      .eq("user_id", sub.user_id)
+      .is("subscription_id", null)
+      .neq("status", "cancelled")
+      .gte("slot_date", sub.purchase_date)
+      .order("slot_date", { ascending: false })
+      .limit(30);
+    setFreeRows((free ?? []) as any);
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sub.id]);
 
   const detach = async (bookingId: string) => {
-    if (!confirm("Pašalinti šią pamoką iš abonimento? (Pati pamoka nebus ištrinta — tik atkabinta.)")) return;
-    const { error } = await supabase.from("bookings")
-      .update({ subscription_id: null } as any).eq("id", bookingId);
+    if (!confirm("Atkabinti šią treniruotę nuo abonemento?")) return;
+    const { error } = await supabase.rpc("admin_set_booking_subscription" as any, {
+      _booking_id: bookingId, _subscription_id: null,
+    } as any);
     if (error) { toast.error(error.message); return; }
-    // Decrement stored counter if it's > 0
-    if (liveSub.lessons_used > 0) {
-      await supabase.from("subscriptions")
-        .update({ lessons_used: liveSub.lessons_used - 1 }).eq("id", sub.id);
-    }
-    toast.success("Atkabinta");
+    toast.success("Atkabinta nuo abonemento (treniruotė nepanaikinta)");
+    load(); refreshSub();
+    onChanged();
+  };
+
+  const attach = async (bookingId: string) => {
+    const { error } = await supabase.rpc("admin_set_booking_subscription" as any, {
+      _booking_id: bookingId, _subscription_id: sub.id,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Priskirta abonementui");
     load(); refreshSub();
     onChanged();
   };
