@@ -418,7 +418,13 @@ const key = `book-${formatDateISO(date)}-${time}`;
     });
     setBusy(null);
     if (error) {
-      toast.error(error.code === "23505" ? "Jūs jau užregistruoti į šią pamoką" : "Klaida: " + error.message);
+      toast.error(
+        error.code === "23505"
+          ? "Jūs jau užregistruoti į šią pamoką"
+          : /pradedant|Grupė/i.test(error.message)
+            ? error.message
+            : "Klaida: " + error.message,
+      );
       return;
     }
     setBookingSuccess({ date, time });
