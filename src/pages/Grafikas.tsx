@@ -1264,9 +1264,6 @@ const key = `book-${formatDateISO(date)}-${time}`;
                         </div>
 
                         {/* Per-slot admin note (visible to everyone) */}
-                        {(() => {
-                          return null;
-                        })()}
                         {group.trainer && (
                           <div className="mx-3 mt-2 rounded-md border border-gold/20 bg-background/30 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground">
                             {group.note}
