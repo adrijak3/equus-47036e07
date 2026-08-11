@@ -24,6 +24,8 @@ import { VacationBanner } from "@/components/VacationsPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { RiderActionSheet, type RiderTarget } from "@/components/RiderActionSheet";
+import { RiderLevelBadge } from "@/components/RiderLevelBadge";
+import { levelOf, trainerGroupState, blockReason, type RidingLevel } from "@/lib/levels";
 
 interface TimeSlot {
   id: string;
@@ -32,6 +34,7 @@ interface TimeSlot {
   max_capacity: number;
   is_permanent_for: string | null;
   one_off_date?: string | null;
+  trainer_name?: string | null;
 }
 interface Booking {
   id: string;
@@ -41,6 +44,7 @@ interface Booking {
   status: string;
   profile_name?: string;
   display_name?: string | null;
+  riding_level?: string | null;
   is_guest?: boolean;
   guest_name?: string | null;
   is_individual?: boolean;
