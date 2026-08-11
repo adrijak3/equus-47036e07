@@ -1265,6 +1265,16 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
                         {/* Per-slot admin note (visible to everyone) */}
                         {(() => {
+                          return null;
+                        })()}
+                        {group.trainer && (
+                          <div className="mx-3 mt-2 rounded-md border border-gold/20 bg-background/30 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground">
+                            {group.note}
+                            {" · "}
+                            <span className="text-foreground/80">{group.taken} / maks. {cap}</span>
+                          </div>
+                        )}
+                        {(() => {
                           const sn = getSlotNote(date, slot.slot_time);
                           if (!sn) return null;
                           return (
