@@ -1317,6 +1317,9 @@ const key = `book-${formatDateISO(date)}-${time}`;
                                 >
                                   <span className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/40")}>•</span>
                                   {perm && <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />}
+                                  {(isAdmin || isTrainer) && slot.trainer_name && (
+                                    <RiderLevelBadge level={b.riding_level} compact />
+                                  )}
                                   <span
                                     className={cn(
                                       "truncate",
