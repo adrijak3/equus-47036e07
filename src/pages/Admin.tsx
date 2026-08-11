@@ -1082,7 +1082,7 @@ function StatsTab() {
 }
 
 /* ---------- SUBSCRIPTIONS (full overview, per-user add) ---------- */
-function SubsTab() {
+function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; onClearFocus?: () => void } = {}) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [filter, setFilter] = useState("");
@@ -1180,6 +1180,7 @@ function SubsTab() {
   };
 
   const filteredProfiles = profiles.filter((p) => {
+    if (focusUserId) return p.id === focusUserId;
     if (filter && !p.full_name.toLowerCase().includes(filter.toLowerCase())) return false;
     const us = subs.filter((s) => s.user_id === p.id);
     if (showOnlyUnpaid && !us.some((s) => !s.paid)) return false;
@@ -1190,6 +1191,15 @@ function SubsTab() {
 
   return (
     <div className="space-y-3">
+      {focusUserId && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-gold/25 bg-gold/5 px-4 py-2 text-sm">
+          <span>
+            Rodomas vienas vartotojas:{" "}
+            <strong className="text-gold">{profiles.find((p) => p.id === focusUserId)?.full_name ?? "…"}</strong>
+          </span>
+          <Button variant="ghost" size="sm" onClick={onClearFocus}>Rodyti visus</Button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <Input
           placeholder="Ieškoti vartotojo..."
@@ -1219,7 +1229,11 @@ function SubsTab() {
           const us = subs.filter((s) => s.user_id === p.id);
           const unpaid = us.some((s) => !s.paid);
           return (
-            <details key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg" open={us.length > 0 && unpaid}>
+            <details
+              key={p.id}
+              className="bg-gradient-card border border-gold/15 rounded-lg"
+              open={focusUserId === p.id || (us.length > 0 && unpaid)}
+            >
               <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
                 <div>
                   <div className="font-display text-base text-gold">{p.full_name}</div>
