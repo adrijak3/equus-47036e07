@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { toastUndo } from "@/lib/undo";
 import { formatTime, isValidTime } from "@/lib/equus";
-import { ArrowRightLeft, CalendarX2, IdCard, Wallet } from "lucide-react";
+import { ArrowRightLeft, CalendarX2, CheckCircle2, IdCard, Wallet } from "lucide-react";
 
 export interface RiderTarget {
   bookingId: string;
@@ -82,20 +82,52 @@ export function RiderActionSheet({
     });
   };
 
+  const doAttended = async () => {
+    if (!target) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: "completed" })
+      .eq("id", target.bookingId);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    onClose();
+    onChanged();
+    toastUndo("Pažymėta: dalyvavo.", async () => {
+      const { error: undoErr } = await supabase
+        .from("bookings")
+        .update({ status: "active" })
+        .eq("id", target.bookingId);
+      if (undoErr) throw undoErr;
+      onChanged();
+    });
+  };
+
+  /** Deep-link into Admin for this exact rider (by user id — display names are not unique). */
+  const goAdmin = (section: "subs" | "users") => {
+    if (!target) return;
+    onClose();
+    navigate(
+      `/admin?section=${section}&uid=${encodeURIComponent(target.userId)}&open=1`,
+      { state: { from: "grafikas" } },
+    );
+  };
+
   const actions = [
     { key: "move", label: "Perkelti", icon: ArrowRightLeft, onClick: openMove },
     { key: "cancel", label: "Atšaukti", icon: CalendarX2, onClick: doCancel, danger: true },
+    { key: "attended", label: "Pažymėti dalyvavo", icon: CheckCircle2, onClick: doAttended },
     {
       key: "sub",
       label: "Abonementas",
       icon: Wallet,
-      onClick: () => { onClose(); navigate(`/admin?section=subs&q=${encodeURIComponent(target?.name ?? "")}`); },
+      onClick: () => goAdmin("subs"),
     },
     {
       key: "profile",
       label: "Atidaryti profilį",
       icon: IdCard,
-      onClick: () => { onClose(); navigate(`/admin?section=users&q=${encodeURIComponent(target?.name ?? "")}`); },
+      onClick: () => goAdmin("users"),
     },
   ];
 
