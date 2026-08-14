@@ -53,6 +53,33 @@ export function dbDayOfWeek(date: Date): number {
   return day === 0 ? 7 : day;
 }
 
+/**
+ * Historic data can contain more than one booking row for the same date+time
+ * (e.g. a cancelled row plus a re-created active one). For display and counters
+ * we keep a single canonical row per date+time.
+ */
+export function canonicalBookings<T extends {
+  slot_date: string;
+  slot_time: string;
+  status: string;
+  counts_in_subscription?: boolean;
+  subscription_id?: string | null;
+}>(rows: T[]): T[] {
+  const rank = (b: T) => {
+    const statusRank = b.status === "completed" ? 4 : b.status === "active" ? 3 : b.status === "pending_cancel" ? 2 : 1;
+    return statusRank * 10 + (b.subscription_id ? 2 : 0) + (b.counts_in_subscription ? 1 : 0);
+  };
+  const best = new Map<string, T>();
+  for (const row of rows) {
+    const key = `${row.slot_date}|${row.slot_time}`;
+    const current = best.get(key);
+    if (!current || rank(row) > rank(current)) best.set(key, row);
+  }
+  return Array.from(best.values()).sort(
+    (a, b) => a.slot_date.localeCompare(b.slot_date) || a.slot_time.localeCompare(b.slot_time),
+  );
+}
+
 export function formatTime(t: string): string {
   // "16:00:00" → "16:00"
   return t.slice(0, 5);

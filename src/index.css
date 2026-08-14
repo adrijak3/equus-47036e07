@@ -848,3 +848,256 @@
   --sidebar-border: 218 20% 27%;
   --sidebar-ring: 43 74% 62%;
 }
+
+/* ============================================
+   EXTRA THEMES — Miškas · Auksas · Švelni žalia
+   ============================================ */
+
+:root[data-theme="forest"] {
+  color-scheme: dark;
+  --background: 145 24% 9%;
+  --foreground: 60 24% 92%;
+  --card: 145 20% 14%;
+  --card-foreground: 60 24% 92%;
+  --popover: 145 20% 14%;
+  --popover-foreground: 60 24% 92%;
+  --primary: 70 26% 58%;
+  --primary-foreground: 145 30% 10%;
+  --gold: 70 26% 58%;
+  --gold-soft: 128 16% 40%;
+  --gold-glow: 68 34% 70%;
+  --gold-foreground: 145 30% 10%;
+  --secondary: 140 15% 22%;
+  --secondary-foreground: 60 24% 92%;
+  --muted: 142 14% 18%;
+  --muted-foreground: 75 12% 72%;
+  --accent: 135 17% 26%;
+  --accent-foreground: 60 24% 92%;
+  --border: 140 14% 27%;
+  --input: 140 14% 27%;
+  --ring: 70 26% 58%;
+  --gradient-ink:
+    radial-gradient(circle at 18% 4%, hsl(140 26% 20%) 0%, transparent 42%),
+    radial-gradient(circle at 88% 18%, hsl(90 20% 20%) 0%, transparent 46%),
+    linear-gradient(145deg, hsl(145 22% 12%) 0%, hsl(146 22% 10%) 55%, hsl(148 22% 8%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(143 18% 18%) 0%, hsl(145 18% 13%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(68 34% 72%), hsl(70 26% 58%), hsl(128 18% 38%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(66 36% 78%), hsl(80 24% 62%));
+  --shadow-elegant: 0 30px 80px -22px hsl(145 40% 3% / 0.6), 0 10px 35px -12px hsl(70 26% 40% / 0.2);
+  --shadow-gold: 0 0 35px hsl(70 30% 55% / 0.2);
+  --shadow-soft: 0 5px 25px hsl(145 35% 4% / 0.5);
+  --sidebar-background: 145 22% 11%;
+  --sidebar-foreground: 60 24% 92%;
+  --sidebar-primary: 70 26% 58%;
+  --sidebar-primary-foreground: 145 30% 10%;
+  --sidebar-accent: 135 17% 26%;
+  --sidebar-accent-foreground: 60 24% 92%;
+  --sidebar-border: 140 14% 27%;
+  --sidebar-ring: 70 26% 58%;
+}
+
+:root[data-theme="forest"][data-mode="light"] {
+  color-scheme: light;
+  --background: 44 38% 94%;
+  --foreground: 145 26% 14%;
+  --card: 44 46% 97%;
+  --card-foreground: 145 26% 14%;
+  --popover: 44 46% 97%;
+  --popover-foreground: 145 26% 14%;
+  --primary: 140 18% 32%;
+  --primary-foreground: 44 46% 97%;
+  --gold: 140 18% 32%;
+  --gold-soft: 70 22% 52%;
+  --gold-glow: 70 32% 66%;
+  --gold-foreground: 44 46% 97%;
+  --secondary: 60 24% 88%;
+  --secondary-foreground: 145 26% 16%;
+  --muted: 52 24% 90%;
+  --muted-foreground: 145 12% 38%;
+  --accent: 72 22% 84%;
+  --accent-foreground: 145 26% 16%;
+  --border: 60 18% 78%;
+  --input: 60 18% 78%;
+  --ring: 140 18% 32%;
+  --gradient-ink:
+    radial-gradient(circle at 15% 5%, hsl(70 34% 88%) 0%, transparent 55%),
+    radial-gradient(circle at 90% 20%, hsl(140 24% 88%) 0%, transparent 57%),
+    linear-gradient(145deg, hsl(46 40% 95%) 0%, hsl(52 32% 92%) 52%, hsl(60 24% 90%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(46 48% 98%) 0%, hsl(52 32% 93%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(70 32% 68%), hsl(120 18% 42%), hsl(145 22% 28%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(140 22% 32%), hsl(145 28% 20%));
+  --sidebar-background: 46 42% 95%;
+  --sidebar-foreground: 145 26% 14%;
+  --sidebar-primary: 140 18% 32%;
+  --sidebar-primary-foreground: 44 46% 97%;
+  --sidebar-accent: 72 22% 84%;
+  --sidebar-accent-foreground: 145 26% 16%;
+  --sidebar-border: 60 18% 78%;
+  --sidebar-ring: 140 18% 32%;
+}
+
+:root[data-theme="goldleaf"] {
+  color-scheme: dark;
+  --background: 28 26% 10%;
+  --foreground: 42 42% 90%;
+  --card: 28 22% 15%;
+  --card-foreground: 42 42% 90%;
+  --popover: 28 22% 15%;
+  --popover-foreground: 42 42% 90%;
+  --primary: 38 36% 55%;
+  --primary-foreground: 28 30% 11%;
+  --gold: 38 36% 55%;
+  --gold-soft: 32 22% 40%;
+  --gold-glow: 40 44% 70%;
+  --gold-foreground: 28 30% 11%;
+  --secondary: 30 18% 23%;
+  --secondary-foreground: 42 42% 90%;
+  --muted: 30 16% 19%;
+  --muted-foreground: 40 18% 72%;
+  --accent: 33 20% 27%;
+  --accent-foreground: 42 42% 90%;
+  --border: 32 17% 28%;
+  --input: 32 17% 28%;
+  --ring: 38 36% 55%;
+  --gradient-ink:
+    radial-gradient(circle at 18% 4%, hsl(32 30% 22%) 0%, transparent 42%),
+    radial-gradient(circle at 88% 18%, hsl(24 26% 20%) 0%, transparent 46%),
+    linear-gradient(145deg, hsl(28 24% 13%) 0%, hsl(28 24% 11%) 55%, hsl(26 24% 9%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(29 20% 19%) 0%, hsl(28 20% 14%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(42 46% 74%), hsl(38 38% 56%), hsl(30 28% 40%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(42 48% 80%), hsl(36 34% 62%));
+  --shadow-elegant: 0 30px 80px -22px hsl(28 40% 3% / 0.6), 0 10px 35px -12px hsl(38 34% 38% / 0.2);
+  --shadow-gold: 0 0 35px hsl(38 36% 52% / 0.2);
+  --shadow-soft: 0 5px 25px hsl(28 35% 4% / 0.5);
+  --sidebar-background: 28 24% 12%;
+  --sidebar-foreground: 42 42% 90%;
+  --sidebar-primary: 38 36% 55%;
+  --sidebar-primary-foreground: 28 30% 11%;
+  --sidebar-accent: 33 20% 27%;
+  --sidebar-accent-foreground: 42 42% 90%;
+  --sidebar-border: 32 17% 28%;
+  --sidebar-ring: 38 36% 55%;
+}
+
+:root[data-theme="goldleaf"][data-mode="light"] {
+  color-scheme: light;
+  --background: 41 46% 93%;
+  --foreground: 28 30% 16%;
+  --card: 42 54% 97%;
+  --card-foreground: 28 30% 16%;
+  --popover: 42 54% 97%;
+  --popover-foreground: 28 30% 16%;
+  --primary: 33 34% 38%;
+  --primary-foreground: 42 54% 97%;
+  --gold: 33 34% 38%;
+  --gold-soft: 38 34% 58%;
+  --gold-glow: 41 52% 72%;
+  --gold-foreground: 42 54% 97%;
+  --secondary: 40 34% 87%;
+  --secondary-foreground: 28 30% 18%;
+  --muted: 40 28% 90%;
+  --muted-foreground: 30 16% 40%;
+  --accent: 38 38% 84%;
+  --accent-foreground: 28 30% 18%;
+  --border: 36 24% 77%;
+  --input: 36 24% 77%;
+  --ring: 33 34% 38%;
+  --gradient-ink:
+    radial-gradient(circle at 15% 5%, hsl(42 56% 90%) 0%, transparent 55%),
+    radial-gradient(circle at 90% 20%, hsl(30 38% 88%) 0%, transparent 57%),
+    linear-gradient(145deg, hsl(42 48% 95%) 0%, hsl(38 40% 92%) 52%, hsl(32 32% 90%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(44 56% 98%) 0%, hsl(40 42% 93%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(42 52% 74%), hsl(36 38% 52%), hsl(28 32% 34%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(35 38% 42%), hsl(28 34% 26%));
+  --sidebar-background: 42 50% 95%;
+  --sidebar-foreground: 28 30% 16%;
+  --sidebar-primary: 33 34% 38%;
+  --sidebar-primary-foreground: 42 54% 97%;
+  --sidebar-accent: 38 38% 84%;
+  --sidebar-accent-foreground: 28 30% 18%;
+  --sidebar-border: 36 24% 77%;
+  --sidebar-ring: 33 34% 38%;
+}
+
+:root[data-theme="sage"] {
+  color-scheme: light;
+  --background: 46 30% 91%;
+  --foreground: 96 18% 18%;
+  --card: 48 40% 96%;
+  --card-foreground: 96 18% 18%;
+  --popover: 48 40% 96%;
+  --popover-foreground: 96 18% 18%;
+  --primary: 96 18% 34%;
+  --primary-foreground: 48 40% 96%;
+  --gold: 96 18% 34%;
+  --gold-soft: 70 22% 55%;
+  --gold-glow: 70 30% 68%;
+  --gold-foreground: 48 40% 96%;
+  --secondary: 60 22% 86%;
+  --secondary-foreground: 96 18% 20%;
+  --muted: 52 20% 89%;
+  --muted-foreground: 96 10% 38%;
+  --accent: 72 24% 82%;
+  --accent-foreground: 96 18% 20%;
+  --border: 66 16% 75%;
+  --input: 66 16% 75%;
+  --ring: 96 18% 34%;
+  --gradient-ink:
+    radial-gradient(circle at 15% 5%, hsl(70 30% 88%) 0%, transparent 55%),
+    radial-gradient(circle at 90% 20%, hsl(96 20% 87%) 0%, transparent 57%),
+    linear-gradient(145deg, hsl(46 32% 93%) 0%, hsl(54 26% 90%) 52%, hsl(66 20% 88%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(48 42% 97%) 0%, hsl(54 26% 92%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(70 30% 70%), hsl(84 20% 46%), hsl(96 20% 30%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(96 20% 34%), hsl(100 24% 22%));
+  --shadow-elegant: 0 30px 80px -22px hsl(96 22% 24% / 0.22), 0 10px 35px -12px hsl(80 20% 40% / 0.16);
+  --shadow-gold: 0 0 35px hsl(90 20% 45% / 0.18);
+  --shadow-soft: 0 5px 25px hsl(96 18% 32% / 0.14);
+  --sidebar-background: 48 34% 94%;
+  --sidebar-foreground: 96 18% 18%;
+  --sidebar-primary: 96 18% 34%;
+  --sidebar-primary-foreground: 48 40% 96%;
+  --sidebar-accent: 72 24% 82%;
+  --sidebar-accent-foreground: 96 18% 20%;
+  --sidebar-border: 66 16% 75%;
+  --sidebar-ring: 96 18% 34%;
+}
+
+:root[data-theme="sage"][data-mode="dark"] {
+  color-scheme: dark;
+  --background: 100 14% 10%;
+  --foreground: 52 22% 91%;
+  --card: 100 12% 15%;
+  --card-foreground: 52 22% 91%;
+  --popover: 100 12% 15%;
+  --popover-foreground: 52 22% 91%;
+  --primary: 70 24% 62%;
+  --primary-foreground: 100 18% 11%;
+  --gold: 70 24% 62%;
+  --gold-soft: 96 14% 42%;
+  --gold-glow: 68 30% 72%;
+  --gold-foreground: 100 18% 11%;
+  --secondary: 98 10% 23%;
+  --secondary-foreground: 52 22% 91%;
+  --muted: 98 10% 19%;
+  --muted-foreground: 66 12% 72%;
+  --accent: 92 12% 27%;
+  --accent-foreground: 52 22% 91%;
+  --border: 96 10% 28%;
+  --input: 96 10% 28%;
+  --ring: 70 24% 62%;
+  --gradient-ink:
+    radial-gradient(circle at 18% 4%, hsl(96 18% 20%) 0%, transparent 42%),
+    radial-gradient(circle at 88% 18%, hsl(70 16% 20%) 0%, transparent 46%),
+    linear-gradient(145deg, hsl(100 13% 13%) 0%, hsl(100 13% 11%) 55%, hsl(102 13% 9%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(99 11% 19%) 0%, hsl(100 11% 14%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(68 30% 74%), hsl(70 24% 62%), hsl(96 16% 40%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(66 32% 80%), hsl(80 22% 66%));
+  --sidebar-background: 100 13% 12%;
+  --sidebar-foreground: 52 22% 91%;
+  --sidebar-primary: 70 24% 62%;
+  --sidebar-primary-foreground: 100 18% 11%;
+  --sidebar-accent: 92 12% 27%;
+  --sidebar-accent-foreground: 52 22% 91%;
+  --sidebar-border: 96 10% 28%;
+  --sidebar-ring: 70 24% 62%;
+}

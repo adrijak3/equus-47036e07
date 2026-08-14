@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubPriceByType, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
+import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
 import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,6 +18,7 @@ import { FloralAccent } from "@/components/Decorations";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Booking {
   id: string;
@@ -80,6 +81,9 @@ export default function Paskyra() {
   const [loading, setLoading] = useState(true);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [editOpen, setEditOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+  const { language } = useLanguage();
 
   // Add subscription dialog
   const [subDialog, setSubDialog] = useState(false);
@@ -128,7 +132,7 @@ export default function Paskyra() {
       }
       const haMap: Record<string, string> = {};
       (ha ?? []).forEach((x: any) => { if (x.booking_id) haMap[x.booking_id] = horseMap[x.horse_id]; });
-      setBookings(bs.map((x) => ({ ...x, horse_name: haMap[x.id] ?? null })));
+      setBookings(canonicalBookings(bs.map((x) => ({ ...x, horse_name: haMap[x.id] ?? null }))));
     } else {
       setBookings([]);
     }
@@ -222,7 +226,9 @@ export default function Paskyra() {
   useEffect(() => {
     if (!subDialog || !acting) return;
     (async () => {
-      // Include today's bookings too — admin/user chooses whether today counts
+      // Offer lessons from the last 14 days (and today) — user chooses which ones this subscription covers
+      const since = new Date();
+      since.setDate(since.getDate() - 14);
       const { data } = await supabase
         .from("bookings")
         .select("id, slot_date, slot_time, status, counts_in_subscription, subscription_id")
@@ -230,10 +236,10 @@ export default function Paskyra() {
         .is("subscription_id", null)
         .lte("slot_date", formatDateISO(new Date()))
         .neq("status", "cancelled")
-        .gte("slot_date", newSubDate)
+        .gte("slot_date", formatDateISO(since))
         .order("slot_date", { ascending: false })
         .limit(30);
-      setUnattributedPast((data ?? []) as any);
+      setUnattributedPast(canonicalBookings((data ?? []) as any) as any);
       setAttributeIds(new Set());
     })();
   }, [subDialog, acting, newSubDate]);
@@ -408,15 +414,33 @@ export default function Paskyra() {
             futureLessons={future.length}
             totalAttended={totalAttended}
             subscriptions={subs}
-            onEdit={() => document.getElementById("profile-edit")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            onPassword={() => document.getElementById("password-change")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onEdit={() => setEditOpen(true)}
+            onPassword={() => setPwOpen(true)}
           />
-          <div id="profile-edit" className="scroll-mt-24">
-            <ProfileSettings onSaved={async () => { await refreshProfile(); await load(); }} />
-          </div>
-          <div id="password-change" className="scroll-mt-24">
-            <PasswordChange />
-          </div>
+
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{language === "lt" ? "Asmeninė informacija" : "Personal information"}</DialogTitle>
+              </DialogHeader>
+              <ProfileSettings
+                onSaved={async () => {
+                  await refreshProfile();
+                  await load();
+                  setEditOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{language === "lt" ? "Slaptažodžio keitimas" : "Change password"}</DialogTitle>
+              </DialogHeader>
+              <PasswordChange />
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* LESSONS */}
