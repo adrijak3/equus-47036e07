@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatDateISO, formatTime } from "@/lib/equus";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
+import { levelOf, trainerGroupState, LEVEL_META, type RidingLevel } from "@/lib/levels";
 
 interface Horse {
   id: string;
@@ -83,13 +84,15 @@ export default function Trener() {
         <div className="gold-divider mt-4 max-w-[120px]" />
       </header>
 
-      <Tabs defaultValue="today">
-        <TabsList className="mb-6 grid h-auto w-full grid-cols-4 bg-background/50">
+      <Tabs defaultValue="mine">
+        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 bg-background/50 sm:grid-cols-5">
+          <TabsTrigger value="mine">Mano treniruotės</TabsTrigger>
           <TabsTrigger value="today">Paskirti žirgus</TabsTrigger>
           <TabsTrigger value="horses">Žirgų sąrašas</TabsTrigger>
           <TabsTrigger value="subs">Abonementai</TabsTrigger>
           <TabsTrigger value="unpaid">Nepriskirtos</TabsTrigger>
         </TabsList>
+        <TabsContent value="mine"><MyLessons /></TabsContent>
         <TabsContent value="today"><TodayAssignments /></TabsContent>
         <TabsContent value="horses"><HorsesTab /></TabsContent>
         <TabsContent value="subs"><SubsOverview /></TabsContent>
