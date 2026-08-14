@@ -10,6 +10,9 @@ import {
   Stars,
   Snowflake,
   Sun,
+  TreePine,
+  Crown,
+  Sprout,
   Waves,
 } from "lucide-react";
 
@@ -27,6 +30,7 @@ const THEMES: Array<{
   icon: typeof Sun;
   description: { lt: string; en: string };
   preview: string;
+  swatches: string[];
 }> = [
   {
     value: "automatic",
@@ -34,6 +38,7 @@ const THEMES: Array<{
     icon: CalendarHeart,
     description: { lt: "Tema keičiasi pagal metų laiką.", en: "Changes with the season." },
     preview: "from-rose-200 via-amber-200 to-slate-800",
+    swatches: ["#f6c4d9", "#f9d75e", "#72412a", "#102b49"],
   },
   {
     value: "spring",
@@ -41,6 +46,7 @@ const THEMES: Array<{
     icon: Flower2,
     description: { lt: "Rožinė sakurų tema.", en: "Pink sakura theme." },
     preview: "from-[#f6c4d9] via-[#dc87ae] to-[#9f4674]",
+    swatches: ["#fdeef4", "#f6c4d9", "#dc87ae", "#9f4674"],
   },
   {
     value: "summer",
@@ -48,6 +54,7 @@ const THEMES: Array<{
     icon: Sun,
     description: { lt: "Geltonas, violetinis ir aqua saulėlydis.", en: "Yellow, violet and aqua sunset." },
     preview: "from-[#f9d75e] via-[#bd83da] to-[#58bfd0]",
+    swatches: ["#fff6d6", "#f9d75e", "#bd83da", "#58bfd0"],
   },
   {
     value: "autumn",
@@ -55,6 +62,7 @@ const THEMES: Array<{
     icon: Leaf,
     description: { lt: "Karamelė, varis ir klevo lapai.", en: "Caramel, copper and maple leaves." },
     preview: "from-[#2a1712] via-[#72412a] to-[#d08a4c]",
+    swatches: ["#2a1712", "#72412a", "#d08a4c", "#f0d9b5"],
   },
   {
     value: "winter",
@@ -62,6 +70,7 @@ const THEMES: Array<{
     icon: Snowflake,
     description: { lt: "Tamsi arktinė Equus tema.", en: "Midnight arctic Equus theme." },
     preview: "from-[#07111f] via-[#102b49] to-[#7cbcff]",
+    swatches: ["#07111f", "#102b49", "#7cbcff", "#e4f1ff"],
   },
   {
     value: "ocean",
@@ -69,6 +78,7 @@ const THEMES: Array<{
     icon: Waves,
     description: { lt: "Šviesi turkio ir jūros tema.", en: "Light turquoise sea theme." },
     preview: "from-[#d7eef4] via-[#69c2d4] to-[#1a6f8c]",
+    swatches: ["#eaf7fa", "#a7dde8", "#69c2d4", "#1a6f8c"],
   },
   {
     value: "lavender",
@@ -76,6 +86,7 @@ const THEMES: Array<{
     icon: Sparkles,
     description: { lt: "Švelni violetinė tema.", en: "Soft violet theme." },
     preview: "from-[#efe6fb] via-[#b28ae0] to-[#6a45a8]",
+    swatches: ["#efe6fb", "#cdb2ee", "#b28ae0", "#6a45a8"],
   },
   {
     value: "midnight",
@@ -83,6 +94,31 @@ const THEMES: Array<{
     icon: Stars,
     description: { lt: "Tamsi mėlyna su auksu.", en: "Deep navy with gold." },
     preview: "from-[#0d1320] via-[#1d2b45] to-[#e2be6a]",
+    swatches: ["#0d1320", "#1d2b45", "#e2be6a", "#f6e8c4"],
+  },
+  {
+    value: "forest",
+    label: { lt: "Miškas", en: "Forest" },
+    icon: TreePine,
+    description: { lt: "Rami tamsiai žalia su šalavijo atspalviais.", en: "Calm dark green with sage accents." },
+    preview: "from-[#1F3328] via-[#435E48] to-[#A5AF79]",
+    swatches: ["#1F3328", "#435E48", "#A5AF79", "#F2E8D5"],
+  },
+  {
+    value: "goldleaf",
+    label: { lt: "Auksas", en: "Gold" },
+    icon: Crown,
+    description: { lt: "Elegantiška ruda su šampano auksu.", en: "Elegant brown with champagne gold." },
+    preview: "from-[#2B2118] via-[#665238] to-[#B99A5E]",
+    swatches: ["#2B2118", "#665238", "#B99A5E", "#F2E2BC"],
+  },
+  {
+    value: "sage",
+    label: { lt: "Švelni žalia", en: "Soft sage" },
+    icon: Sprout,
+    description: { lt: "Šviesi šalavijo ir smėlio tema.", en: "Light sage and sand theme." },
+    preview: "from-[#E9E5D6] via-[#A5AF79] to-[#4E5944]",
+    swatches: ["#E9E5D6", "#A5AF79", "#75825E", "#4E5944"],
   },
 ];
 
@@ -102,26 +138,37 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className={cn("grid gap-3", compact ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
-        {THEMES.map(({ value, label, icon: Icon, description, preview }) => {
+      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        {THEMES.map(({ value, label, icon: Icon, swatches }) => {
           const active = theme === value;
           return (
             <button
               key={value}
               type="button"
               onClick={() => setTheme(value)}
+              aria-pressed={active}
               className={cn(
-                "rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5",
-                active ? "border-gold bg-gold/15 shadow-gold" : "border-border bg-card hover:border-gold/50",
+                "flex min-h-11 items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors",
+                active ? "border-gold bg-gold/15" : "border-border bg-card hover:border-gold/50",
               )}
             >
-              {!compact && <div className={cn("mb-3 h-14 rounded-lg bg-gradient-to-br", preview)} />}
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 text-gold" />
-                <span className="font-semibold">{label[language]}</span>
-                {active && (saving ? <Loader2 className="ml-auto h-4 w-4 animate-spin" /> : <Check className="ml-auto h-4 w-4 text-gold" />)}
-              </div>
-              {!compact && <p className="mt-2 text-xs text-muted-foreground">{description[language]}</p>}
+              <span className="flex shrink-0 -space-x-1.5">
+                {swatches.map((c) => (
+                  <span
+                    key={c}
+                    className="h-4 w-4 rounded-full border border-border/60"
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </span>
+              <Icon className="h-3.5 w-3.5 shrink-0 text-gold" />
+              <span className="truncate text-sm font-medium">{label[language]}</span>
+              {active &&
+                (saving ? (
+                  <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin" />
+                ) : (
+                  <Check className="ml-auto h-4 w-4 shrink-0 text-gold" />
+                ))}
             </button>
           );
         })}
