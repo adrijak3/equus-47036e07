@@ -18,7 +18,7 @@ import {
   Search,
   AlertTriangle,
 } from "lucide-react";
-import { formatDateISO, formatTime } from "@/lib/equus";
+import { addDays, dbDayOfWeek, formatDateISO, formatTime, WEEKDAYS_LT } from "@/lib/equus";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { levelOf, trainerGroupState, LEVEL_META, type RidingLevel } from "@/lib/levels";
 
