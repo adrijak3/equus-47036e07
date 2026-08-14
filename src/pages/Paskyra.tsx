@@ -408,15 +408,33 @@ export default function Paskyra() {
             futureLessons={future.length}
             totalAttended={totalAttended}
             subscriptions={subs}
-            onEdit={() => document.getElementById("profile-edit")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            onPassword={() => document.getElementById("password-change")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onEdit={() => setEditOpen(true)}
+            onPassword={() => setPwOpen(true)}
           />
-          <div id="profile-edit" className="scroll-mt-24">
-            <ProfileSettings onSaved={async () => { await refreshProfile(); await load(); }} />
-          </div>
-          <div id="password-change" className="scroll-mt-24">
-            <PasswordChange />
-          </div>
+
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{language === "lt" ? "Asmeninė informacija" : "Personal information"}</DialogTitle>
+              </DialogHeader>
+              <ProfileSettings
+                onSaved={async () => {
+                  await refreshProfile();
+                  await load();
+                  setEditOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{language === "lt" ? "Slaptažodžio keitimas" : "Change password"}</DialogTitle>
+              </DialogHeader>
+              <PasswordChange />
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* LESSONS */}
