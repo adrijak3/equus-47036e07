@@ -592,6 +592,192 @@ interface SubRow {
   price: number;
 }
 
+interface MySlot {
+  date: string;
+  time: string;
+  trainer: string;
+  maxCapacity: number;
+}
+interface MyRider {
+  id: string;
+  name: string;
+  level: RidingLevel;
+  isGuest: boolean;
+  horse: string | null;
+}
+
+/** Simplified "my lessons" view: upcoming lessons led by the signed-in trainer. */
+function MyLessons() {
+  const { user, isAdmin } = useAuth();
+  const [trainers, setTrainers] = useState<string[]>([]);
+  const [trainer, setTrainer] = useState<string>("");
+  const [slots, setSlots] = useState<MySlot[]>([]);
+  const [riders, setRiders] = useState<Record<string, MyRider[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(14);
+
+  // Determine which trainer name belongs to this account (first name match).
+  useEffect(() => {
+    (async () => {
+      const [{ data: ts }, { data: prof }] = await Promise.all([
+        supabase.from("time_slots").select("trainer_name").not("trainer_name", "is", null),
+        user ? supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null } as any),
+      ]);
+      const names = Array.from(new Set((ts ?? []).map((t: any) => t.trainer_name).filter(Boolean))).sort();
+      setTrainers(names as string[]);
+      const mine = (prof as any)?.full_name?.split(" ")[0]?.toLowerCase();
+      const match = (names as string[]).find((n) => n.toLowerCase().includes(mine ?? "\u0000"));
+      setTrainer(match ?? (names as string[])[0] ?? "");
+    })();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!trainer) { setLoading(false); return; }
+    (async () => {
+      setLoading(true);
+      const today = new Date();
+      const from = formatDateISO(today);
+      const to = formatDateISO(addDays(today, days));
+
+      const { data: ts } = await supabase
+        .from("time_slots")
+        .select("day_of_week, slot_time, max_capacity, one_off_date, active, trainer_name")
+        .eq("active", true)
+        .eq("trainer_name", trainer);
+
+      const list: MySlot[] = [];
+      for (let i = 0; i <= days; i++) {
+        const d = addDays(today, i);
+        const iso = formatDateISO(d);
+        const dow = dbDayOfWeek(d);
+        for (const s of (ts ?? []) as any[]) {
+          const matches = s.one_off_date ? s.one_off_date === iso : s.day_of_week === dow;
+          if (matches) list.push({ date: iso, time: s.slot_time, trainer, maxCapacity: s.max_capacity ?? 4 });
+        }
+      }
+      list.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+      setSlots(list);
+
+      const [{ data: bk }, { data: ha }] = await Promise.all([
+        supabase.from("bookings").select("*").gte("slot_date", from).lte("slot_date", to).eq("status", "active"),
+        supabase.from("horse_assignments").select("slot_date, slot_time, user_id, guest_name, horse_id"),
+      ]);
+      const ids = Array.from(new Set((bk ?? []).map((b: any) => b.user_id)));
+      let profMap: Record<string, { name: string; level: string | null }> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, riding_level").in("id", ids);
+        profMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, { name: p.full_name, level: p.riding_level }]));
+      }
+      const { data: hs } = await supabase.from("horses").select("id, name");
+      const horseMap = Object.fromEntries((hs ?? []).map((h: any) => [h.id, h.name]));
+
+      const grouped: Record<string, MyRider[]> = {};
+      for (const b of (bk ?? []) as any[]) {
+        const key = `${b.slot_date}|${b.slot_time}`;
+        const assign = (ha ?? []).find((a: any) =>
+          a.slot_date === b.slot_date && a.slot_time === b.slot_time &&
+          (b.is_guest ? a.guest_name === b.guest_name : a.user_id === b.user_id));
+        (grouped[key] ||= []).push({
+          id: b.id,
+          name: b.is_guest ? `${b.guest_name ?? "Svečias"} (naujokė)` : profMap[b.user_id]?.name ?? "—",
+          level: levelOf(b.is_guest ? "beginner" : profMap[b.user_id]?.level),
+          isGuest: !!b.is_guest,
+          horse: assign ? horseMap[assign.horse_id] ?? null : null,
+        });
+      }
+      for (const key of Object.keys(grouped)) grouped[key].sort((a, b) => a.name.localeCompare(b.name, "lt"));
+      setRiders(grouped);
+      setLoading(false);
+    })();
+  }, [trainer, days]);
+
+  const byDate = useMemo(() => {
+    const groups: Record<string, MySlot[]> = {};
+    for (const s of slots) (groups[s.date] ||= []).push(s);
+    return Object.entries(groups);
+  }, [slots]);
+
+  if (loading) return <p className="py-8 text-center italic text-muted-foreground">Kraunama…</p>;
+
+  return (
+    <div className="space-y-4">
+      <section className="flex flex-wrap items-end gap-4 rounded-xl border border-gold/15 bg-gradient-card p-4">
+        {(isAdmin || trainers.length > 1) && (
+          <div>
+            <Label>Trenerė</Label>
+            <select
+              value={trainer}
+              onChange={(e) => setTrainer(e.target.value)}
+              className="h-10 w-48 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {trainers.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
+        <div>
+          <Label>Laikotarpis</Label>
+          <select
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="h-10 w-40 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value={7}>7 dienos</option>
+            <option value={14}>14 dienų</option>
+            <option value={30}>30 dienų</option>
+          </select>
+        </div>
+      </section>
+
+      {byDate.length === 0 ? (
+        <p className="py-8 text-center italic text-muted-foreground">Artimiausiu metu treniruočių nėra.</p>
+      ) : (
+        byDate.map(([date, list]) => {
+          const d = new Date(`${date}T00:00:00`);
+          return (
+            <section key={date} className="rounded-xl border border-gold/15 bg-gradient-card p-4">
+              <h3 className="mb-3 flex items-center gap-2 font-display text-lg text-gold">
+                <CalendarDays className="h-4 w-4" />
+                {WEEKDAYS_LT[dbDayOfWeek(d) - 1]} · {date.slice(5).replace("-", ".")}
+              </h3>
+              <div className="space-y-3">
+                {list.map((slot) => {
+                  const group = riders[`${slot.date}|${slot.time}`] ?? [];
+                  const state = trainerGroupState(group.map((r) => r.level), slot.maxCapacity);
+                  return (
+                    <div key={slot.time} className="rounded-lg border border-gold/10 bg-background/25 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-display text-base text-foreground">{formatTime(slot.time)}</span>
+                        <span className={state.full ? "text-xs text-avail-full" : "text-xs text-avail-free"}>
+                          {group.length}/{state.maxAllowed} · {state.reason}
+                        </span>
+                      </div>
+                      {group.length === 0 ? (
+                        <p className="mt-2 text-xs italic text-muted-foreground">Registruotų raitelių nėra.</p>
+                      ) : (
+                        <ul className="mt-2 space-y-1">
+                          {group.map((r) => (
+                            <li key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
+                              <span className="font-medium">{r.name}</span>
+                              <span className={`rounded-full border px-2 py-0.5 text-[10px] ${LEVEL_META[r.level].cls}`}>
+                                {LEVEL_META[r.level].label}
+                              </span>
+                              {r.horse && <span className="text-xs text-gold">🐴 {r.horse}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 function SubsOverview() {
   const [rows, setRows] = useState<(SubRow & { full_name: string })[]>([]);
   const [loading, setLoading] = useState(true);
