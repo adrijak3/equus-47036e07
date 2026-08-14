@@ -18,6 +18,7 @@ import { FloralAccent } from "@/components/Decorations";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Booking {
   id: string;
@@ -80,6 +81,9 @@ export default function Paskyra() {
   const [loading, setLoading] = useState(true);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [editOpen, setEditOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+  const { language } = useLanguage();
 
   // Add subscription dialog
   const [subDialog, setSubDialog] = useState(false);
