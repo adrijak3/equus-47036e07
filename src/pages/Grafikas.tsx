@@ -1891,6 +1891,17 @@ const key = `book-${formatDateISO(date)}-${time}`;
         </DialogContent>
       </Dialog>
 
+      <GuestRiderDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        busy={adminBusy}
+        onConfirm={(riderId, displayName) => {
+          if (adminSlotDialog) {
+            void adminAddGuest(adminSlotDialog.date, adminSlotDialog.time, riderId, displayName);
+          }
+        }}
+      />
+
       {/* Day notes dialog */}
       <Dialog open={!!notesDialog} onOpenChange={(o) => !o && setNotesDialog(null)}>
         <DialogContent className="bg-gradient-card border-gold/20 max-w-lg">
