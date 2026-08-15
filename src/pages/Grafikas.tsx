@@ -1271,7 +1271,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
                   {/* Slot cards stacked vertically */}
                   {!getDayCancellation(date) && daySlots.map((slot) => {
-                    const slotBookings = getSlotBookings(date, slot.slot_time);
+                    const slotBookings = getSlotBookings(date, slot.slot_time, slot);
                     const group = getGroupInfo(date, slot.slot_time, slot);
                     const cap = group.capacity;
                     const isFull = group.taken >= cap;
@@ -1354,7 +1354,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                           {isAdmin && !slotPast && (
                               <button
                                 type="button"
-                                onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time }); setAdminAddUserId(""); }}
+                                onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time, slot }); setAdminAddUserId(""); }}
                                 className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                 title="Valdyti dalyvius (admin)"
                                 aria-label="Valdyti"
@@ -1781,7 +1781,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
             <div>
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Užsiregistravę</Label>
               {adminSlotDialog && (() => {
-                const list = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time);
+                const list = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time, adminSlotDialog.slot);
                 if (list.length === 0) {
                   return <p className="text-sm italic text-muted-foreground mt-2">Nėra užsiregistravusių</p>;
                 }
@@ -1822,7 +1822,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   {allProfiles
                     .filter((p) => {
                       if (!adminSlotDialog) return true;
-                      const booked = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time);
+                      const booked = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time, adminSlotDialog.slot);
                       return !booked.some((b) => b.user_id === p.id);
                     })
                     .map((p) => (
