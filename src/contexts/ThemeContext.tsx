@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type EquusTheme =
   | "automatic"
@@ -76,6 +77,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<EquusTheme>(initialTheme);
   const [appearanceMode, setModeState] = useState<AppearanceMode>(initialMode);
   const [saving, setSaving] = useState(false);
+  const userIdRef = useRef<string | null>(null);
+  /** Skip the first remote write right after we hydrate from the account. */
+  const hydratedRef = useRef(false);
   const resolvedTheme = useMemo<ResolvedTheme>(() => theme === "automatic" ? seasonalTheme() : theme, [theme]);
   const resolvedMode = appearanceMode === "automatic" ? naturalMode(resolvedTheme) : appearanceMode;
 
@@ -84,17 +88,73 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => setSaving(false), 250);
   };
 
+  /** Persist the preference on the signed-in profile so it follows the rider across devices. */
+  const persistRemote = async (next: { theme?: EquusTheme; appearanceMode?: AppearanceMode }) => {
+    const uid = userIdRef.current;
+    if (!uid) return;
+    const payload: { theme?: string; appearance_mode?: string } = {};
+    if (next.theme) payload.theme = next.theme;
+    if (next.appearanceMode) payload.appearance_mode = next.appearanceMode;
+    if (!Object.keys(payload).length) return;
+    setSaving(true);
+    await supabase.from("profiles").update(payload).eq("id", uid);
+    setSaving(false);
+  };
+
   const setTheme = (next: EquusTheme) => {
     setThemeState(next);
     localStorage.setItem(THEME_KEY, next);
     pulseSaving();
+    void persistRemote({ theme: next });
   };
 
   const setAppearanceMode = (next: AppearanceMode) => {
     setModeState(next);
     localStorage.setItem(MODE_KEY, next);
     pulseSaving();
+    void persistRemote({ appearanceMode: next });
   };
+
+  useEffect(() => {
+    const hydrate = async (uid: string) => {
+      userIdRef.current = uid;
+      const { data } = await supabase
+        .from("profiles")
+        .select("theme, appearance_mode")
+        .eq("id", uid)
+        .maybeSingle();
+      if (!data) return;
+      const remoteTheme = data.theme as EquusTheme | null;
+      const remoteMode = (data as { appearance_mode?: string | null }).appearance_mode as AppearanceMode | null;
+      if (remoteTheme && validThemes.includes(remoteTheme)) {
+        setThemeState(remoteTheme);
+        localStorage.setItem(THEME_KEY, remoteTheme);
+      }
+      if (remoteMode && validModes.includes(remoteMode)) {
+        setModeState(remoteMode);
+        localStorage.setItem(MODE_KEY, remoteMode);
+      }
+      hydratedRef.current = true;
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      userIdRef.current = uid;
+      if (uid) {
+        // Defer: never call other Supabase APIs inside the auth callback.
+        setTimeout(() => void hydrate(uid), 0);
+      } else {
+        hydratedRef.current = false;
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const uid = session?.user?.id;
+      if (uid) void hydrate(uid);
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     applyTheme(resolvedTheme, resolvedMode);

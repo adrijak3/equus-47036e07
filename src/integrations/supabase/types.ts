@@ -21,12 +21,13 @@ export type Database = {
           cancelled_by_role: string
           created_at: string
           guest_name: string | null
+          guest_rider_id: string | null
           id: string
           reason: string | null
           restored_at: string | null
           slot_date: string
           slot_time: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           booking_id?: string | null
@@ -34,12 +35,13 @@ export type Database = {
           cancelled_by_role?: string
           created_at?: string
           guest_name?: string | null
+          guest_rider_id?: string | null
           id?: string
           reason?: string | null
           restored_at?: string | null
           slot_date: string
           slot_time: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           booking_id?: string | null
@@ -47,12 +49,13 @@ export type Database = {
           cancelled_by_role?: string
           created_at?: string
           guest_name?: string | null
+          guest_rider_id?: string | null
           id?: string
           reason?: string | null
           restored_at?: string | null
           slot_date?: string
           slot_time?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -60,7 +63,9 @@ export type Database = {
         Row: {
           counts_in_subscription: boolean
           created_at: string
+          created_by: string | null
           guest_name: string | null
+          guest_rider_id: string | null
           id: string
           is_guest: boolean
           is_individual: boolean
@@ -68,13 +73,16 @@ export type Database = {
           slot_time: string
           status: Database["public"]["Enums"]["booking_status"]
           subscription_id: string | null
+          trainer_name: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           counts_in_subscription?: boolean
           created_at?: string
+          created_by?: string | null
           guest_name?: string | null
+          guest_rider_id?: string | null
           id?: string
           is_guest?: boolean
           is_individual?: boolean
@@ -82,13 +90,16 @@ export type Database = {
           slot_time: string
           status?: Database["public"]["Enums"]["booking_status"]
           subscription_id?: string | null
+          trainer_name?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           counts_in_subscription?: boolean
           created_at?: string
+          created_by?: string | null
           guest_name?: string | null
+          guest_rider_id?: string | null
           id?: string
           is_guest?: boolean
           is_individual?: boolean
@@ -96,10 +107,19 @@ export type Database = {
           slot_time?: string
           status?: Database["public"]["Enums"]["booking_status"]
           subscription_id?: string | null
+          trainer_name?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_guest_rider_id_fkey"
+            columns: ["guest_rider_id"]
+            isOneToOne: false
+            referencedRelation: "guest_riders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cancellation_requests: {
         Row: {
@@ -202,6 +222,48 @@ export type Database = {
           label?: string | null
           link?: string
           note_date?: string
+        }
+        Relationships: []
+      }
+      guest_riders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          first_name: string
+          id: string
+          is_newcomer: boolean
+          last_name: string
+          linked_user_id: string | null
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          is_newcomer?: boolean
+          last_name: string
+          linked_user_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_newcomer?: boolean
+          last_name?: string
+          linked_user_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -415,6 +477,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          appearance_mode: string | null
           created_at: string
           display_name: string | null
           full_name: string
@@ -425,12 +488,14 @@ export type Database = {
           onboarding_accepted_at: string | null
           onboarding_version: number | null
           phone: string | null
+          reduced_effects: boolean
           riding_level: string | null
           rules_version: string | null
           theme: string | null
           updated_at: string
         }
         Insert: {
+          appearance_mode?: string | null
           created_at?: string
           display_name?: string | null
           full_name: string
@@ -441,12 +506,14 @@ export type Database = {
           onboarding_accepted_at?: string | null
           onboarding_version?: number | null
           phone?: string | null
+          reduced_effects?: boolean
           riding_level?: string | null
           rules_version?: string | null
           theme?: string | null
           updated_at?: string
         }
         Update: {
+          appearance_mode?: string | null
           created_at?: string
           display_name?: string | null
           full_name?: string
@@ -457,6 +524,7 @@ export type Database = {
           onboarding_accepted_at?: string | null
           onboarding_version?: number | null
           phone?: string | null
+          reduced_effects?: boolean
           riding_level?: string | null
           rules_version?: string | null
           theme?: string | null
@@ -639,6 +707,7 @@ export type Database = {
         Row: {
           created_at: string
           expires_at: string
+          guest_rider_id: string | null
           id: string
           lesson_type: string
           lessons_total: number
@@ -649,11 +718,12 @@ export type Database = {
           sickness_credits: number
           start_from_date: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           expires_at: string
+          guest_rider_id?: string | null
           id?: string
           lesson_type?: string
           lessons_total: number
@@ -664,11 +734,12 @@ export type Database = {
           sickness_credits?: number
           start_from_date?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           expires_at?: string
+          guest_rider_id?: string | null
           id?: string
           lesson_type?: string
           lessons_total?: number
@@ -679,9 +750,17 @@ export type Database = {
           sickness_credits?: number
           start_from_date?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_guest_rider_id_fkey"
+            columns: ["guest_rider_id"]
+            isOneToOne: false
+            referencedRelation: "guest_riders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       time_slots: {
         Row: {
@@ -718,6 +797,47 @@ export type Database = {
           trainer_name?: string | null
         }
         Relationships: []
+      }
+      trainer_riders: {
+        Row: {
+          created_at: string
+          guest_rider_id: string | null
+          id: string
+          level: string
+          note: string | null
+          rider_user_id: string | null
+          trainer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guest_rider_id?: string | null
+          id?: string
+          level?: string
+          note?: string | null
+          rider_user_id?: string | null
+          trainer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guest_rider_id?: string | null
+          id?: string
+          level?: string
+          note?: string | null
+          rider_user_id?: string | null
+          trainer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_riders_guest_rider_id_fkey"
+            columns: ["guest_rider_id"]
+            isOneToOne: false
+            referencedRelation: "guest_riders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -946,6 +1066,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_guest_rider_to_account: {
+        Args: { _guest_id: string; _user_id: string }
+        Returns: Json
+      }
       materialize_permanent_bookings: {
         Args: { _end: string; _start: string }
         Returns: number
@@ -969,7 +1093,7 @@ export type Database = {
         Returns: undefined
       }
       slot_group_state: {
-        Args: { _slot_date: string; _slot_time: string }
+        Args: { _slot_date: string; _slot_time: string; _trainer_name?: string }
         Returns: Json
       }
       submit_public_registration: {
@@ -1019,6 +1143,14 @@ export type Database = {
           _body: string
           _rating: number
           _show_name?: boolean
+        }
+        Returns: string
+      }
+      trainer_rider_level: {
+        Args: {
+          _guest_rider_id: string
+          _trainer_name: string
+          _user_id: string
         }
         Returns: string
       }
