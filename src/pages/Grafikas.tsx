@@ -139,7 +139,7 @@ export default function Grafikas() {
   // Simple confirm dialog (replaces window.confirm)
   const [confirmDialog, setConfirmDialog] = useState<{ title: string; description?: string; onConfirm: () => void } | null>(null);
   // Admin manage-slot dialog
-  const [adminSlotDialog, setAdminSlotDialog] = useState<{ date: Date; time: string; trainerName: string | null } | null>(null);
+  const [adminSlotDialog, setAdminSlotDialog] = useState<{ date: Date; time: string; slot: TimeSlot } | null>(null);
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
