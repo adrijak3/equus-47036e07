@@ -21,6 +21,10 @@ import {
 import { addDays, dbDayOfWeek, formatDateISO, formatTime, WEEKDAYS_LT } from "@/lib/equus";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { levelOf, trainerGroupState, LEVEL_META, type RidingLevel } from "@/lib/levels";
+import { TrainerRidersTab } from "@/components/trainer/TrainerRidersTab";
+import { useTrainerScope } from "@/components/trainer/useTrainerScope";
+import { useTrainerRoster } from "@/components/trainer/useTrainerRoster";
+import { guestDisplayName, type MinimalGuestRider } from "@/components/trainer/guestDisplay";
 
 interface Horse {
   id: string;
@@ -31,13 +35,16 @@ interface Horse {
 }
 interface Booking {
   id: string;
-  user_id: string;
+  user_id: string | null;
   slot_date: string;
   slot_time: string;
   status: string;
   is_guest: boolean;
   guest_name: string | null;
+  guest_rider_id: string | null;
+  trainer_name: string | null;
   profile_name?: string;
+  guest_rider?: MinimalGuestRider;
 }
 interface Assignment {
   id: string;
@@ -85,15 +92,17 @@ export default function Trener() {
       </header>
 
       <Tabs defaultValue="mine">
-        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 bg-background/50 sm:grid-cols-5">
+        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 bg-background/50 sm:grid-cols-6">
           <TabsTrigger value="mine">Mano treniruotės</TabsTrigger>
           <TabsTrigger value="today">Paskirti žirgus</TabsTrigger>
+          <TabsTrigger value="riders">Mano raiteliai</TabsTrigger>
           <TabsTrigger value="horses">Žirgų sąrašas</TabsTrigger>
           <TabsTrigger value="subs">Abonementai</TabsTrigger>
           <TabsTrigger value="unpaid">Nepriskirtos</TabsTrigger>
         </TabsList>
         <TabsContent value="mine"><MyLessons /></TabsContent>
         <TabsContent value="today"><TodayAssignments /></TabsContent>
+        <TabsContent value="riders"><TrainerRidersTab /></TabsContent>
         <TabsContent value="horses"><HorsesTab /></TabsContent>
         <TabsContent value="subs"><SubsOverview /></TabsContent>
         <TabsContent value="unpaid"><UnpaidLessonsOverview staff /></TabsContent>
@@ -339,6 +348,7 @@ function HorsesTab() {
 }
 
 function TodayAssignments() {
+  const { trainer, setTrainer, trainers, isAdmin } = useTrainerScope();
   const [date, setDate] = useState(formatDateISO(new Date()));
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [horses, setHorses] = useState<Horse[]>([]);
@@ -347,7 +357,22 @@ function TodayAssignments() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
+    if (!trainer) { setBookings([]); setLoading(false); return; }
     setLoading(true);
+
+    // Only the trainer's own lesson times for this date (permanent day-of-week or one-off).
+    const dow = dbDayOfWeek(new Date(`${date}T00:00:00`));
+    const { data: ts } = await supabase
+      .from("time_slots")
+      .select("slot_time, day_of_week, one_off_date, active, trainer_name")
+      .eq("active", true)
+      .eq("trainer_name", trainer);
+    const myTimes = new Set(
+      ((ts ?? []) as any[])
+        .filter((s) => (s.one_off_date ? s.one_off_date === date : s.day_of_week === dow))
+        .map((s) => s.slot_time)
+    );
+
     const [b, h, a, r] = await Promise.all([
       supabase.from("bookings").select("*").eq("slot_date", date).eq("status", "active").order("slot_time"),
       supabase.from("horses").select("id, name, notes, active, max_daily_rides").eq("active", true).order("name"),
@@ -355,25 +380,39 @@ function TodayAssignments() {
       supabase.from("horse_requests").select("*").eq("slot_date", date),
     ]);
 
+    const myBookings = (b.data ?? []).filter((x: any) =>
+      myTimes.has(x.slot_time) && (x.trainer_name === trainer || !x.trainer_name)
+    );
+
     const ids = Array.from(new Set([
-      ...(b.data ?? []).map((x: any) => x.user_id),
+      ...myBookings.map((x: any) => x.user_id).filter(Boolean),
       ...(r.data ?? []).map((x: any) => x.user_id),
     ]));
+    const guestIds = Array.from(new Set(myBookings.map((x: any) => x.guest_rider_id).filter(Boolean)));
 
     let nameMap: Record<string, string> = {};
     if (ids.length) {
       const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
       nameMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name]));
     }
+    let guestMap: Record<string, MinimalGuestRider> = {};
+    if (guestIds.length) {
+      const { data: guests } = await supabase.from("guest_riders").select("*").in("id", guestIds);
+      guestMap = Object.fromEntries((guests ?? []).map((g: any) => [g.id, g]));
+    }
 
-    setBookings((b.data ?? []).map((x: any) => ({ ...x, profile_name: nameMap[x.user_id] })));
+    setBookings(myBookings.map((x: any) => ({
+      ...x,
+      profile_name: nameMap[x.user_id],
+      guest_rider: x.guest_rider_id ? guestMap[x.guest_rider_id] : undefined,
+    })));
     setRequests((r.data ?? []).map((x: any) => ({ ...x, profile_name: nameMap[x.user_id] })));
     setHorses((h.data ?? []) as Horse[]);
     setAssigns((a.data ?? []) as Assignment[]);
     setLoading(false);
   };
 
-  useEffect(() => { void load(); }, [date]);
+  useEffect(() => { void load(); }, [date, trainer]);
 
   const getAssignment = (booking: Booking) =>
     assigns.find((assignment) =>
@@ -432,7 +471,7 @@ function TodayAssignments() {
       const { error } = await supabase.from("horse_assignments").insert({
         booking_id: booking.id,
         user_id: booking.is_guest ? null : booking.user_id,
-        guest_name: booking.is_guest ? booking.guest_name : null,
+        guest_name: booking.is_guest ? guestDisplayName(booking.guest_rider, booking.guest_name) : null,
         slot_date: booking.slot_date,
         slot_time: booking.slot_time,
         horse_id: horseId,
@@ -467,9 +506,23 @@ function TodayAssignments() {
   return (
     <div className="space-y-5">
       <section className="flex flex-col gap-3 rounded-xl border border-gold/15 bg-gradient-card p-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Label>Pasirinkite dieną</Label>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-48" />
+        <div className="flex flex-wrap gap-3">
+          <div>
+            <Label>Pasirinkite dieną</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-48" />
+          </div>
+          {(isAdmin || trainers.length > 1) && (
+            <div>
+              <Label>Trenerė</Label>
+              <select
+                value={trainer}
+                onChange={(e) => setTrainer(e.target.value)}
+                className="h-10 w-48 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {trainers.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">
           Skaičius skliausteliuose rodo: <strong className="text-foreground">kiek kartų žirgas jau priskirtas tą dieną / jo limitas</strong>.
@@ -479,7 +532,7 @@ function TodayAssignments() {
       {loading ? (
         <p className="py-8 text-center italic text-muted-foreground">Kraunama…</p>
       ) : grouped.length === 0 ? (
-        <p className="py-8 text-center italic text-muted-foreground">Šiai dienai nėra užsiregistravusių.</p>
+        <p className="py-8 text-center italic text-muted-foreground">Šiai dienai nėra jūsų treniruočių.</p>
       ) : (
         <div className="space-y-4">
           {grouped.map(([time, list]) => (
@@ -504,10 +557,11 @@ function TodayAssignments() {
                       className="grid gap-3 rounded-lg border border-gold/10 bg-background/25 p-3 md:grid-cols-[1fr_280px] md:items-center"
                     >
                       <div>
-                        <div className="font-medium text-foreground">
-                          {booking.is_guest
-                            ? `${booking.guest_name ?? "Svečias"} (naujokė)`
-                            : booking.profile_name ?? "—"}
+                        <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                          <span>{booking.is_guest ? guestDisplayName(booking.guest_rider, booking.guest_name) : booking.profile_name ?? "—"}</span>
+                          {booking.is_guest && booking.guest_rider?.is_newcomer && (
+                            <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] text-gold">naujokė</span>
+                          )}
                         </div>
                         <div className="mt-1 flex flex-wrap gap-2 text-xs">
                           {request && (
@@ -608,28 +662,13 @@ interface MyRider {
 
 /** Simplified "my lessons" view: upcoming lessons led by the signed-in trainer. */
 function MyLessons() {
-  const { user, isAdmin } = useAuth();
-  const [trainers, setTrainers] = useState<string[]>([]);
-  const [trainer, setTrainer] = useState<string>("");
+  const { isAdmin } = useAuth();
+  const { trainer, setTrainer, trainers } = useTrainerScope();
+  const { levelFor } = useTrainerRoster();
   const [slots, setSlots] = useState<MySlot[]>([]);
   const [riders, setRiders] = useState<Record<string, MyRider[]>>({});
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(14);
-
-  // Determine which trainer name belongs to this account (first name match).
-  useEffect(() => {
-    (async () => {
-      const [{ data: ts }, { data: prof }] = await Promise.all([
-        supabase.from("time_slots").select("trainer_name").not("trainer_name", "is", null),
-        user ? supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null } as any),
-      ]);
-      const names = Array.from(new Set((ts ?? []).map((t: any) => t.trainer_name).filter(Boolean))).sort();
-      setTrainers(names as string[]);
-      const mine = (prof as any)?.full_name?.split(" ")[0]?.toLowerCase();
-      const match = (names as string[]).find((n) => n.toLowerCase().includes(mine ?? "\u0000"));
-      setTrainer(match ?? (names as string[])[0] ?? "");
-    })();
-  }, [user?.id]);
 
   useEffect(() => {
     if (!trainer) { setLoading(false); return; }
@@ -658,29 +697,46 @@ function MyLessons() {
       list.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
       setSlots(list);
 
-      const [{ data: bk }, { data: ha }] = await Promise.all([
-        supabase.from("bookings").select("*").gte("slot_date", from).lte("slot_date", to).eq("status", "active"),
-        supabase.from("horse_assignments").select("slot_date, slot_time, user_id, guest_name, horse_id"),
-      ]);
-      const ids = Array.from(new Set((bk ?? []).map((b: any) => b.user_id)));
-      let profMap: Record<string, { name: string; level: string | null }> = {};
+      const { data: bkAll } = await supabase
+        .from("bookings")
+        .select("*")
+        .gte("slot_date", from)
+        .lte("slot_date", to)
+        .eq("status", "active");
+      const mySlotTimes = new Set(list.map((s2) => `${s2.date}|${s2.time}`));
+      const bk = (bkAll ?? []).filter((b: any) =>
+        mySlotTimes.has(`${b.slot_date}|${b.slot_time}`) && (b.trainer_name === trainer || !b.trainer_name)
+      );
+      const { data: ha } = await supabase.from("horse_assignments").select("slot_date, slot_time, user_id, guest_name, horse_id");
+      const ids = Array.from(new Set(bk.map((b: any) => b.user_id).filter(Boolean)));
+      let profMap: Record<string, string> = {};
       if (ids.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, full_name, riding_level").in("id", ids);
-        profMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, { name: p.full_name, level: p.riding_level }]));
+        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+        profMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      }
+      const guestIds = Array.from(new Set(bk.map((b: any) => b.guest_rider_id).filter(Boolean)));
+      let guestMap: Record<string, { first_name: string; last_name: string; is_newcomer: boolean }> = {};
+      if (guestIds.length) {
+        const { data: guests } = await supabase.from("guest_riders").select("*").in("id", guestIds);
+        guestMap = Object.fromEntries((guests ?? []).map((g: any) => [g.id, g]));
       }
       const { data: hs } = await supabase.from("horses").select("id, name");
       const horseMap = Object.fromEntries((hs ?? []).map((h: any) => [h.id, h.name]));
 
       const grouped: Record<string, MyRider[]> = {};
-      for (const b of (bk ?? []) as any[]) {
+      for (const b of bk as any[]) {
         const key = `${b.slot_date}|${b.slot_time}`;
         const assign = (ha ?? []).find((a: any) =>
           a.slot_date === b.slot_date && a.slot_time === b.slot_time &&
           (b.is_guest ? a.guest_name === b.guest_name : a.user_id === b.user_id));
+        const guest = b.guest_rider_id ? guestMap[b.guest_rider_id] : undefined;
+        const displayName = b.is_guest
+          ? (guest ? `${guest.first_name} ${guest.last_name}`.trim() : b.guest_name ?? "Svečias")
+          : profMap[b.user_id] ?? "—";
         (grouped[key] ||= []).push({
           id: b.id,
-          name: b.is_guest ? `${b.guest_name ?? "Svečias"} (naujokė)` : profMap[b.user_id]?.name ?? "—",
-          level: levelOf(b.is_guest ? "beginner" : profMap[b.user_id]?.level),
+          name: displayName + (b.is_guest && (guest ? guest.is_newcomer : true) ? " (naujokė)" : ""),
+          level: b.is_guest ? levelFor(null, b.guest_rider_id) : levelFor(b.user_id, null),
           isGuest: !!b.is_guest,
           horse: assign ? horseMap[assign.horse_id] ?? null : null,
         });

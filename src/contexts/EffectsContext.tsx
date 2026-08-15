@@ -1,5 +1,6 @@
 import { MotionConfig } from "framer-motion";
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "equus_effects_enabled";
 
@@ -22,11 +23,45 @@ function initialEffectsEnabled() {
 
 export function EffectsProvider({ children }: { children: ReactNode }) {
   const [effectsEnabled, setEffectsEnabledState] = useState(initialEffectsEnabled);
+  const userIdRef = useRef<string | null>(null);
 
   const setEffectsEnabled = (enabled: boolean) => {
     setEffectsEnabledState(enabled);
     window.localStorage.setItem(STORAGE_KEY, String(enabled));
+    const uid = userIdRef.current;
+    if (uid) {
+      void supabase.from("profiles").update({ reduced_effects: !enabled }).eq("id", uid);
+    }
   };
+
+  useEffect(() => {
+    const hydrate = async (uid: string) => {
+      userIdRef.current = uid;
+      const { data } = await supabase
+        .from("profiles")
+        .select("reduced_effects")
+        .eq("id", uid)
+        .maybeSingle();
+      if (data && typeof data.reduced_effects === "boolean") {
+        const enabled = !data.reduced_effects;
+        setEffectsEnabledState(enabled);
+        window.localStorage.setItem(STORAGE_KEY, String(enabled));
+      }
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      userIdRef.current = uid;
+      if (uid) setTimeout(() => void hydrate(uid), 0);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const uid = session?.user?.id;
+      if (uid) void hydrate(uid);
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.effects = effectsEnabled ? "on" : "off";

@@ -25,6 +25,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { RiderActionSheet, type RiderTarget } from "@/components/RiderActionSheet";
 import { RiderLevelBadge } from "@/components/RiderLevelBadge";
+import { GuestRiderDialog } from "@/components/GuestRiderDialog";
 import { levelOf, trainerGroupState, blockReason, type RidingLevel } from "@/lib/levels";
 
 interface TimeSlot {
@@ -38,7 +39,7 @@ interface TimeSlot {
 }
 interface Booking {
   id: string;
-  user_id: string;
+  user_id: string | null;
   slot_date: string;
   slot_time: string;
   status: string;
@@ -48,6 +49,9 @@ interface Booking {
   is_guest?: boolean;
   guest_name?: string | null;
   is_individual?: boolean;
+  guest_rider_id?: string | null;
+  trainer_name?: string | null;
+  is_newcomer?: boolean;
 }
 interface SlotOverride {
   slot_date: string;
@@ -135,13 +139,15 @@ export default function Grafikas() {
   // Simple confirm dialog (replaces window.confirm)
   const [confirmDialog, setConfirmDialog] = useState<{ title: string; description?: string; onConfirm: () => void } | null>(null);
   // Admin manage-slot dialog
-  const [adminSlotDialog, setAdminSlotDialog] = useState<{ date: Date; time: string } | null>(null);
+  const [adminSlotDialog, setAdminSlotDialog] = useState<{ date: Date; time: string; slot: TimeSlot } | null>(null);
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
   const [forcePrompt, setForcePrompt] = useState<{ date: Date; time: string; userId: string; reason: string } | null>(null);
-  // Guest (naujokė) name
-  const [adminGuestName, setAdminGuestName] = useState("");
+  // Guest (naujokė) dialog
+  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
+  // Trainer roster levels: key `user:<id>` or `guest:<id>` -> level, scoped by trainer full_name
+  const [trainerRosterByTrainer, setTrainerRosterByTrainer] = useState<Record<string, Record<string, string>>>({});
 
   // Day notes
   const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
@@ -191,7 +197,7 @@ export default function Grafikas() {
     const [slotsRes, bookingsRes, overridesRes, waitingRes, permRes, cancelsRes] = await Promise.all([
   supabase.from("time_slots").select("*").eq("active", true).order("slot_time"),
   supabase.from("bookings")
-    .select("id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual")
+    .select("id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name")
     .gte("slot_date", startISO)
     .lte("slot_date", endISO)
     .in("status", ["active", "completed"]),
@@ -206,7 +212,7 @@ export default function Grafikas() {
 ]);
 
     const userIds = new Set<string>();
-    (bookingsRes.data ?? []).forEach((b) => userIds.add(b.user_id));
+    (bookingsRes.data ?? []).forEach((b) => { if (b.user_id) userIds.add(b.user_id); });
     (waitingRes.data ?? []).forEach((w) => userIds.add(w.user_id));
 
     let nameMap: Record<string, string> = {};
@@ -221,17 +227,71 @@ export default function Grafikas() {
       levelMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.riding_level]));
     }
 
+    // Guest riders referenced by this week's bookings (new-style guests)
+    const guestRiderIds = Array.from(new Set(
+      (bookingsRes.data ?? []).map((b: any) => b.guest_rider_id).filter(Boolean),
+    ));
+    let guestNameMap: Record<string, string> = {};
+    let guestNewcomerMap: Record<string, boolean> = {};
+    if (guestRiderIds.length > 0) {
+      const { data: guests } = await supabase
+        .from("guest_riders")
+        .select("id, first_name, last_name, is_newcomer")
+        .in("id", guestRiderIds as string[]);
+      guestNameMap = Object.fromEntries((guests ?? []).map((g: any) => [g.id, `${g.first_name} ${g.last_name}`.trim()]));
+      guestNewcomerMap = Object.fromEntries((guests ?? []).map((g: any) => [g.id, !!g.is_newcomer]));
+    }
+
     setSlots(slotsRes.data ?? []);
-    setBookings((bookingsRes.data ?? []).map((b) => ({
+    setBookings((bookingsRes.data ?? []).map((b: any) => ({
       ...b,
-      profile_name: nameMap[b.user_id],
-      display_name: displayMap[b.user_id],
+      profile_name: b.guest_rider_id ? guestNameMap[b.guest_rider_id] : nameMap[b.user_id],
+      display_name: b.user_id ? displayMap[b.user_id] : null,
+      is_newcomer: b.guest_rider_id ? !!guestNewcomerMap[b.guest_rider_id] : undefined,
       riding_level: b.is_guest ? "beginner" : levelMap[b.user_id],
     })));
     setOverrides(overridesRes.data ?? []);
     setWaiting((waitingRes.data ?? []).map((w) => ({ ...w, profile_name: nameMap[w.user_id] })));
     setPermanents(permRes.data ?? []);
     setDayCancellations((cancelsRes.data as any[] | null) ?? []);
+
+    // Trainer rosters (private levels) — only for trainers whose name contains "Jolita"
+    const jolitaTrainerNames = Array.from(new Set(
+      (slotsRes.data ?? [])
+        .map((s: any) => s.trainer_name as string | null)
+        .filter((n): n is string => !!n && n.toLowerCase().includes("jolita")),
+    ));
+    if (jolitaTrainerNames.length > 0) {
+      const { data: trainerProfiles } = await supabase
+        .from("profiles").select("id, full_name")
+        .in("full_name", jolitaTrainerNames);
+      const trainerIdByName: Record<string, string> = Object.fromEntries(
+        (trainerProfiles ?? []).map((p: any) => [p.full_name, p.id]),
+      );
+      const trainerIds = Object.values(trainerIdByName);
+      if (trainerIds.length > 0) {
+        const { data: roster } = await supabase
+          .from("trainer_riders")
+          .select("trainer_user_id, rider_user_id, guest_rider_id, level")
+          .in("trainer_user_id", trainerIds as string[]);
+        const nameByTrainerId: Record<string, string> = Object.fromEntries(
+          Object.entries(trainerIdByName).map(([name, id]) => [id as string, name]),
+        );
+        const byTrainer: Record<string, Record<string, string>> = {};
+        (roster ?? []).forEach((r: any) => {
+          const trainerName = nameByTrainerId[r.trainer_user_id];
+          if (!trainerName) return;
+          if (!byTrainer[trainerName]) byTrainer[trainerName] = {};
+          const key = r.rider_user_id ? `user:${r.rider_user_id}` : `guest:${r.guest_rider_id}`;
+          byTrainer[trainerName][key] = r.level;
+        });
+        setTrainerRosterByTrainer(byTrainer);
+      } else {
+        setTrainerRosterByTrainer({});
+      }
+    } else {
+      setTrainerRosterByTrainer({});
+    }
 
     // Load horse assignments + horse names for this week
     const { data: assignsRaw } = await supabase
@@ -314,15 +374,39 @@ export default function Grafikas() {
     });
   };
 
+  /** All time_slots rows sharing this date+time (may be several trainers at once). */
+  const getSlotsAtTime = (date: Date, time: string) =>
+    getDaySlots(date).filter((s) => s.slot_time === time);
+
+  /** The "primary" slot for a date+time — used to home legacy (trainer-less) bookings. */
+  const isPrimarySlot = (slot: TimeSlot, date: Date) => {
+    const candidates = getSlotsAtTime(date, slot.slot_time);
+    return candidates[0]?.id === slot.id;
+  };
+
   const getCapacity = (date: Date, time: string, baseCapacity: number) => {
     const dateISO = formatDateISO(date);
     const o = overrides.find((x) => x.slot_date === dateISO && x.slot_time === time);
     return o ? o.max_capacity : baseCapacity;
   };
 
+  /** Resolve a rider's internal level: trainer roster (Jolita groups) > profile fallback > beginner. */
+  const riderLevel = (b: Booking, slot: TimeSlot): RidingLevel => {
+    const trainerName = slot.trainer_name;
+    if (trainerName && trainerName.toLowerCase().includes("jolita")) {
+      const roster = trainerRosterByTrainer[trainerName];
+      if (roster) {
+        const key = b.is_guest && b.guest_rider_id ? `guest:${b.guest_rider_id}` : `user:${b.user_id}`;
+        const found = roster[key];
+        if (found) return levelOf(found);
+      }
+    }
+    return levelOf(b.riding_level);
+  };
+
   /** Levels of everyone currently booked into a slot (unknown level = beginner). */
-  const slotLevels = (date: Date, time: string): RidingLevel[] =>
-    getSlotBookings(date, time).map((b) => levelOf(b.riding_level));
+  const slotLevels = (date: Date, time: string, slot: TimeSlot): RidingLevel[] =>
+    getSlotBookings(date, time, slot).map((b) => riderLevel(b, slot));
 
   /**
    * Trainer-led group lessons (e.g. Jolita) have a dynamic safe capacity:
@@ -330,11 +414,12 @@ export default function Grafikas() {
    */
   const getGroupInfo = (date: Date, time: string, slot: TimeSlot) => {
     const cap = getCapacity(date, time, slot.max_capacity);
-    if (!slot.trainer_name) {
-      const taken = getSlotBookings(date, time).length;
-      return { trainer: null as string | null, capacity: cap, taken, note: null as string | null, levels: [] as RidingLevel[] };
+    const isJolita = !!slot.trainer_name && slot.trainer_name.toLowerCase().includes("jolita");
+    if (!isJolita) {
+      const taken = getSlotBookings(date, time, slot).length;
+      return { trainer: slot.trainer_name ?? null, capacity: cap, taken, note: null as string | null, levels: [] as RidingLevel[] };
     }
-    const levels = slotLevels(date, time);
+    const levels = slotLevels(date, time, slot);
     const state = trainerGroupState(levels, Math.min(4, cap));
     return {
       trainer: slot.trainer_name,
@@ -345,18 +430,20 @@ export default function Grafikas() {
     };
   };
 
-  const getSlotBookings = (date: Date, time: string) => {
+  const getSlotBookings = (date: Date, time: string, slot: TimeSlot) => {
   const dateISO = formatDateISO(date);
+  const primary = isPrimarySlot(slot, date);
 
   const matching = bookings.filter(
-    (b) => b.slot_date === dateISO && b.slot_time === time,
+    (b) => b.slot_date === dateISO && b.slot_time === time &&
+      (b.trainer_name ? b.trainer_name === slot.trainer_name : primary),
   );
 
   const seen = new Set<string>();
 
   const list = matching.filter((b) => {
     const key = b.is_guest
-      ? `guest:${b.guest_name ?? b.id}`
+      ? `guest:${b.guest_rider_id ?? b.guest_name ?? b.id}`
       : `user:${b.user_id}`;
 
     if (seen.has(key)) return false;
@@ -380,7 +467,7 @@ export default function Grafikas() {
     return waiting.filter((w) => w.slot_date === dateISO && w.slot_time === time);
   };
 
-  const isMyBooking = (b: Booking) => user && b.user_id === user.id;
+  const isMyBooking = (b: Booking) => !!(user && b.user_id && b.user_id === user.id);
   const getHorseFor = (b: Booking): string | null => {
     const a = assignments.find((x) =>
       x.booking_id === b.id ||
@@ -410,12 +497,14 @@ if (getDayCancellation(date)) {
 }
 
 const key = `book-${formatDateISO(date)}-${time}`;
+    const slotForBooking = getSlotsAtTime(date, time)[0];
     setBusy(key);
     const { error } = await supabase.from("bookings").insert({
       user_id: user.id,
       slot_date: formatDateISO(date),
       slot_time: time,
       status: "active",
+      trainer_name: slotForBooking?.trainer_name ?? null,
     });
     setBusy(null);
     if (error) {
@@ -570,9 +659,10 @@ const key = `book-${formatDateISO(date)}-${time}`;
     const slot = slots.find(
       (s) => s.slot_time === time && (s.one_off_date === formatDateISO(date) || s.day_of_week === dbDayOfWeek(date)),
     );
-    if (slot?.trainer_name && !force) {
+    const isJolitaSlot = !!slot?.trainer_name && slot.trainer_name.toLowerCase().includes("jolita");
+    if (isJolitaSlot && slot && !force) {
       const reason = blockReason(
-        slotLevels(date, time),
+        slotLevels(date, time, slot),
         levelOf(allProfiles.find((p) => p.id === userId)?.riding_level),
         Math.min(4, getCapacity(date, time, slot.max_capacity)),
       );
@@ -585,6 +675,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
     setAdminBusy(true);
     const { error } = await supabase.from("bookings").insert({
       user_id: userId, slot_date: formatDateISO(date), slot_time: time, status: "active",
+      trainer_name: slot?.trainer_name ?? null,
     });
     setAdminBusy(false);
     if (error) {
@@ -597,31 +688,34 @@ const key = `book-${formatDateISO(date)}-${time}`;
     loadData();
   };
 
-  /** Admin: add a guest ("naujokė") booking — uses admin's user_id with is_guest flag */
-  const adminAddGuest = async (date: Date, time: string) => {
+  /** Admin: add a guest ("naujokė") booking, backed by a guest_riders row (reused if it already exists). */
+  const adminAddGuest = async (date: Date, time: string, guestRiderId: string, displayName: string) => {
     if (!user) return;
-    const name = adminGuestName.trim();
-    if (name.length < 2) { toast.error("Įveskite svečio vardą"); return; }
+    const slot = getSlotsAtTime(date, time)[0];
     setAdminBusy(true);
     const { error } = await supabase.from("bookings").insert({
-      user_id: user.id,
+      user_id: null,
       slot_date: formatDateISO(date),
       slot_time: time,
       status: "active",
       is_guest: true,
-      guest_name: name,
+      guest_rider_id: guestRiderId,
+      guest_name: displayName,
       counts_in_subscription: false,
+      trainer_name: slot?.trainer_name ?? null,
+      created_by: user.id,
     } as any);
     setAdminBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Pridėta naujokė: ${name}`);
-    setAdminGuestName("");
+    toast.success(`Pridėta naujokė: ${displayName}`);
+    setGuestDialogOpen(false);
     loadData();
   };
 
   /** Admin: add an individual lesson booking for a chosen user (marked is_individual). */
   const adminAddIndividual = async (date: Date, time: string, userId: string) => {
     if (!userId) { toast.error("Pasirinkite vartotoją"); return; }
+    const slot = getSlotsAtTime(date, time)[0];
     setAdminBusy(true);
     const { error } = await supabase.from("bookings").insert({
       user_id: userId,
@@ -629,6 +723,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
       slot_time: time,
       status: "active",
       is_individual: true,
+      trainer_name: slot?.trainer_name ?? null,
     } as any);
     setAdminBusy(false);
     if (error) {
@@ -1176,7 +1271,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
                   {/* Slot cards stacked vertically */}
                   {!getDayCancellation(date) && daySlots.map((slot) => {
-                    const slotBookings = getSlotBookings(date, slot.slot_time);
+                    const slotBookings = getSlotBookings(date, slot.slot_time, slot);
                     const group = getGroupInfo(date, slot.slot_time, slot);
                     const cap = group.capacity;
                     const isFull = group.taken >= cap;
@@ -1259,7 +1354,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                           {isAdmin && !slotPast && (
                               <button
                                 type="button"
-                                onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time }); setAdminAddUserId(""); }}
+                                onClick={() => { setAdminSlotDialog({ date, time: slot.slot_time, slot }); setAdminAddUserId(""); }}
                                 className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                 title="Valdyti dalyvius (admin)"
                                 aria-label="Valdyti"
@@ -1686,7 +1781,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
             <div>
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Užsiregistravę</Label>
               {adminSlotDialog && (() => {
-                const list = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time);
+                const list = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time, adminSlotDialog.slot);
                 if (list.length === 0) {
                   return <p className="text-sm italic text-muted-foreground mt-2">Nėra užsiregistravusių</p>;
                 }
@@ -1727,7 +1822,7 @@ const key = `book-${formatDateISO(date)}-${time}`;
                   {allProfiles
                     .filter((p) => {
                       if (!adminSlotDialog) return true;
-                      const booked = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time);
+                      const booked = getSlotBookings(adminSlotDialog.date, adminSlotDialog.time, adminSlotDialog.slot);
                       return !booked.some((b) => b.user_id === p.id);
                     })
                     .map((p) => (
@@ -1774,21 +1869,14 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
             <div className="pt-3 border-t border-gold/10">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti naujokę (svečią)</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  value={adminGuestName}
-                  onChange={(e) => setAdminGuestName(e.target.value)}
-                  placeholder="Vardas (ir pavardė)"
-                  maxLength={60}
-                  className="flex-1"
-                />
+              <div className="mt-2">
                 <Button
                   variant="gold"
                   size="sm"
-                  disabled={adminBusy || adminGuestName.trim().length < 2}
-                  onClick={() => adminSlotDialog && adminAddGuest(adminSlotDialog.date, adminSlotDialog.time)}
+                  disabled={adminBusy}
+                  onClick={() => setGuestDialogOpen(true)}
                 >
-                  Pridėti svečią
+                  Pridėti naujokę
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1.5 italic">
@@ -1802,6 +1890,17 @@ const key = `book-${formatDateISO(date)}-${time}`;
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <GuestRiderDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        busy={adminBusy}
+        onConfirm={(riderId, displayName) => {
+          if (adminSlotDialog) {
+            void adminAddGuest(adminSlotDialog.date, adminSlotDialog.time, riderId, displayName);
+          }
+        }}
+      />
 
       {/* Day notes dialog */}
       <Dialog open={!!notesDialog} onOpenChange={(o) => !o && setNotesDialog(null)}>

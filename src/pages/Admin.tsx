@@ -22,6 +22,8 @@ import { RiderLevelBadge, RiderLevelSelect } from "@/components/RiderLevelBadge"
 import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
 import { AdminCancellationHistory } from "@/components/AdminCancellationHistory";
+import { UsersSection } from "@/components/admin/UsersSection";
+import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders";
 import { History } from "lucide-react";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
@@ -171,13 +173,13 @@ export default function Admin() {
 
           <Tabs value={section} onValueChange={setSection}>
             <TabsList className="sr-only"><TabsTrigger value={section}>{section}</TabsTrigger></TabsList>
-            <TabsContent value="overview"><OverviewTab alerts={alerts} onGo={setSection} /></TabsContent>
+            <TabsContent value="overview"><OverviewTab alerts={alerts} onGo={setSection} onFocusUser={(uid) => { setFocusUserId(uid); setSection("users"); }} /></TabsContent>
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
             <TabsContent value="users" className="space-y-6">
               <UnpaidLessonsOverview staff />
-              <UsersTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+              <UsersSection focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
             </TabsContent>
             <TabsContent value="subs">
               <SubsTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
@@ -196,7 +198,7 @@ export default function Admin() {
 }
 
 /* ---------- OVERVIEW ---------- */
-function OverviewTab({ alerts, onGo }: { alerts: { sickness: number; missingDoc: number; unread: number }; onGo: (s: string) => void }) {
+function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { sickness: number; missingDoc: number; unread: number }; onGo: (s: string) => void; onFocusUser: (userId: string) => void }) {
   const [stats, setStats] = useState({ users: 0, activeSubs: 0, unpaidSubs: 0, weekBookings: 0, onVacation: 0 });
   useEffect(() => {
     (async () => {
@@ -230,7 +232,9 @@ function OverviewTab({ alerts, onGo }: { alerts: { sickness: number; missingDoc:
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="space-y-4">
+      <SubscriptionReminders onFocusUser={onFocusUser} onShowAll={() => onGo("subs")} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {cards.map((c) => {
         const Icon = c.icon;
         return (
@@ -250,6 +254,7 @@ function OverviewTab({ alerts, onGo }: { alerts: { sickness: number; missingDoc:
           </button>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -1708,192 +1713,6 @@ function CancellationsTab() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-/* ---------- USERS ---------- */
-function UsersTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; onClearFocus?: () => void } = {}) {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [subs, setSubs] = useState<Sub[]>([]);
-  const [deleting, setDeleting] = useState<string | null>(null);
-
-  const load = async () => {
-    const [p, s] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, phone, riding_level").order("full_name"),
-      supabase.from("subscriptions").select("*").order("purchase_date", { ascending: false }),
-    ]);
-    setProfiles((p.data ?? []) as any);
-    setSubs(s.data ?? []);
-  };
-  useEffect(() => { load(); }, []);
-
-  const setLevel = async (p: Profile, level: RidingLevel) => {
-    const { error } = await supabase.from("profiles").update({ riding_level: level } as any).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`${p.full_name}: ${LEVEL_META[level].label}`);
-    load();
-  };
-
-  const togglePaid = async (subId: string, paid: boolean) => {
-    const { error } = await supabase.from("subscriptions").update({ paid }).eq("id", subId);
-    if (error) { toast.error(error.message); return; }
-    load();
-  };
-
-  const editLessons = async (s: Sub) => {
-    const txt = prompt(`Naujas treniruočių skaičius (dabar ${s.lessons_total}):`, String(s.lessons_total));
-    if (txt === null) return;
-    const n = parseInt(txt);
-    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    const newUsed = Math.min(s.lessons_used, n);
-    const { error } = await supabase.from("subscriptions")
-      .update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Atnaujinta");
-    load();
-  };
-
-  const deleteSub = async (s: Sub) => {
-    if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
-    const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ištrinta");
-    load();
-  };
-
-  const deleteUser = async (p: Profile) => {
-    const txt = prompt(
-      `Visiškai ištrinti vartotoją "${p.full_name}"?\n\nVisi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negrįžtamai pašalinti.\n\nĮrašykite vartotojo vardą patvirtinti:`
-    );
-    if (txt !== p.full_name) { if (txt !== null) toast.error("Vardas nesutampa — atšaukta"); return; }
-    setDeleting(p.id);
-    const { data, error } = await supabase.functions.invoke("admin-delete-user", {
-      body: { user_id: p.id },
-    });
-    setDeleting(null);
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Klaida");
-      return;
-    }
-    toast.success(`${p.full_name} ištrintas`);
-    load();
-  };
-
-  const renameUser = async (p: Profile) => {
-    const txt = prompt(`Pakeisti vardą ir pavardę (dabar: ${p.full_name}):`, p.full_name);
-    if (txt === null) return;
-    const newName = txt.trim();
-    if (!newName) { toast.error("Vardas negali būti tuščias"); return; }
-    if (newName === p.full_name) return;
-    const { error } = await supabase.from("profiles").update({ full_name: newName }).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Atnaujinta");
-    load();
-  };
-
-  return (
-    <div className="space-y-3">
-      {focusUserId && (
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-gold/25 bg-gold/5 px-4 py-2 text-sm">
-          <span>
-            Rodomas vienas vartotojas:{" "}
-            <strong className="text-gold">{profiles.find((p) => p.id === focusUserId)?.full_name ?? "…"}</strong>
-          </span>
-          <Button variant="ghost" size="sm" onClick={onClearFocus}>Rodyti visus</Button>
-        </div>
-      )}
-      {profiles.filter((p) => !focusUserId || p.id === focusUserId).map((p) => {
-        const userSubs = subs.filter((s) => s.user_id === p.id);
-        const unpaid = userSubs.some((s) => !s.paid);
-        return (
-          <details key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg group" open={focusUserId === p.id}>
-            <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-lg text-gold">{p.full_name}</span>
-                  <RiderLevelBadge level={(p as any).riding_level} />
-                </div>
-                <div className="text-xs text-muted-foreground">{p.phone ?? "—"}</div>
-              </div>
-              {unpaid && <span className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Yra neapmokėta</span>}
-            </summary>
-            <div className="border-t border-gold/10 px-5 py-3 space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span>Vidinis raitelio lygis:</span>
-                <RiderLevelSelect
-                  value={(p as any).riding_level}
-                  onChange={(lvl) => setLevel(p, lvl)}
-                />
-                <span className="italic">Naudojamas Jolitos grupių saugumo taisyklėms.</span>
-              </div>
-              {userSubs.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
-              ) : (
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {userSubs.map((s) => (
-                    <SubscriptionCard
-                      key={s.id}
-                      s={s as any}
-                      effectiveUsed={s.lessons_used ?? 0}
-                      onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
-                      onEditLessons={() => editLessons(s)}
-                      onDelete={() => deleteSub(s)}
-                      extra={s.paid ? (
-                        <div className="flex justify-end">
-                          <button
-                            onClick={() => togglePaid(s.id, false)}
-                            className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
-                          >
-                            Pažymėti neapmokėta
-                          </button>
-                        </div>
-                      ) : undefined}
-                    />
-                  ))}
-                </div>
-              )}
-              <div className="flex justify-end pt-2 border-t border-gold/5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-foreground/80 hover:text-gold hover:bg-gold/10"
-                  onClick={() => renameUser(p)}
-                >
-                  Pervardyti
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-gold hover:text-gold hover:bg-gold/10"
-                  onClick={async () => {
-                    if (!confirm(`Atstatyti ${p.full_name} slaptažodį į „vardas_equus123"?`)) return;
-                    const { data, error } = await supabase.functions.invoke("admin-reset-password", { body: { user_id: p.id } });
-                    if (error || (data as any)?.error) {
-                      toast.error((data as any)?.error || error?.message || "Klaida");
-                      return;
-                    }
-                    toast.success(`Naujas slaptažodis: ${(data as any).password}`);
-                  }}
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  Atstatyti slaptažodį
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  disabled={deleting === p.id}
-                  onClick={() => deleteUser(p)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  {deleting === p.id ? "Trinama…" : "Ištrinti vartotoją"}
-                </Button>
-              </div>
-            </div>
-          </details>
-        );
-      })}
     </div>
   );
 }
