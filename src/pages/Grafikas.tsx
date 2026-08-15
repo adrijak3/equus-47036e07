@@ -1869,21 +1869,14 @@ const key = `book-${formatDateISO(date)}-${time}`;
 
             <div className="pt-3 border-t border-gold/10">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pridėti naujokę (svečią)</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  value={adminGuestName}
-                  onChange={(e) => setAdminGuestName(e.target.value)}
-                  placeholder="Vardas (ir pavardė)"
-                  maxLength={60}
-                  className="flex-1"
-                />
+              <div className="mt-2">
                 <Button
                   variant="gold"
                   size="sm"
-                  disabled={adminBusy || adminGuestName.trim().length < 2}
-                  onClick={() => adminSlotDialog && adminAddGuest(adminSlotDialog.date, adminSlotDialog.time)}
+                  disabled={adminBusy}
+                  onClick={() => setGuestDialogOpen(true)}
                 >
-                  Pridėti svečią
+                  Pridėti naujokę
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1.5 italic">
