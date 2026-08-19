@@ -62,7 +62,6 @@ interface HorseAssignment {
   horse_id: string;
 }
 
-/** Staff-only bottom-sheet with large tap targets for quick rider actions. */
 export function RiderActionSheet({
   target,
   onClose,
@@ -181,12 +180,14 @@ export function RiderActionSheet({
     );
   }, [assignments, target]);
 
+  // IMPORTANT:
+  // This counts the current rider's assignment too.
+  // So after selecting Fėja it shows 1/2, not 0/2.
   const usageFor = (horseId: string) => {
     return assignments.filter(
       (assignment) =>
         assignment.horse_id === horseId &&
-        assignment.slot_date === target?.slotDate &&
-        assignment.id !== currentAssignment?.id,
+        assignment.slot_date === target?.slotDate,
     ).length;
   };
 
@@ -434,24 +435,20 @@ export function RiderActionSheet({
       label: "Abonementas",
       icon: Wallet,
       onClick: () => goAdmin("subs"),
-      disabled:
-        target?.isGuest ?? false,
+      disabled: target?.isGuest ?? false,
     },
     {
       key: "profile",
       label: "Atidaryti profilį",
       icon: IdCard,
       onClick: () => goAdmin("users"),
-      disabled:
-        target?.isGuest ?? false,
+      disabled: target?.isGuest ?? false,
     },
   ];
 
   return (
     <>
-      {/* ================================================= */}
-      {/* RIDER ACTION SHEET                               */}
-      {/* ================================================= */}
+      {/* RIDER ACTION SHEET */}
 
       <Drawer
         open={
@@ -491,9 +488,7 @@ export function RiderActionSheet({
                   key={action.key}
                   type="button"
                   disabled={disabled}
-                  onClick={
-                    action.onClick
-                  }
+                  onClick={action.onClick}
                   className={[
                     "flex min-h-[56px] w-full items-center gap-3 rounded-xl border px-4 text-left text-base transition-colors disabled:opacity-40",
                     action.danger
@@ -510,9 +505,7 @@ export function RiderActionSheet({
         </DrawerContent>
       </Drawer>
 
-      {/* ================================================= */}
-      {/* HORSE CHANGE DIALOG                              */}
-      {/* ================================================= */}
+      {/* HORSE CHANGE DIALOG */}
 
       <Dialog
         open={horseOpen}
@@ -553,24 +546,13 @@ export function RiderActionSheet({
                   selectedHorseId ===
                   horse.id;
 
-                /*
-                 * Trainer:
-                 *   0/2 -> available
-                 *   1/2 -> available
-                 *   2/2 -> unavailable
-                 *
-                 * Admin:
-                 *   0/3 -> available
-                 *   1/3 -> available
-                 *   2/3 -> available
-                 *   3/3 -> unavailable
-                 */
+                // Trainer = 2/day
+                // Admin = 3/day
                 const allowedLimit =
                   isAdmin ? 3 : 2;
 
                 const full =
-                  used >=
-                    allowedLimit &&
+                  used >= allowedLimit &&
                   !isCurrent;
 
                 return (
@@ -596,9 +578,7 @@ export function RiderActionSheet({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 font-medium">
                           <Horse size={16} />
-                          <span>
-                            {horse.name}
-                          </span>
+                          <span>{horse.name}</span>
                         </div>
 
                         {horse.notes && (
@@ -616,8 +596,7 @@ export function RiderActionSheet({
                             : "bg-gold/10 text-gold",
                         )}
                       >
-                        {used}/
-                        {allowedLimit}
+                        {used}/{allowedLimit}
                       </span>
                     </div>
 
@@ -663,9 +642,7 @@ export function RiderActionSheet({
                 !selectedHorseId ||
                 horseSaving
               }
-              onClick={
-                doChangeHorse
-              }
+              onClick={doChangeHorse}
             >
               {horseSaving
                 ? "Išsaugoma…"
@@ -675,9 +652,7 @@ export function RiderActionSheet({
         </DialogContent>
       </Dialog>
 
-      {/* ================================================= */}
-      {/* MOVE DIALOG                                      */}
-      {/* ================================================= */}
+      {/* MOVE DIALOG */}
 
       <Dialog
         open={moveOpen}
@@ -706,9 +681,7 @@ export function RiderActionSheet({
                 type="date"
                 value={moveDate}
                 onChange={(e) =>
-                  setMoveDate(
-                    e.target.value,
-                  )
+                  setMoveDate(e.target.value)
                 }
               />
             </div>
@@ -722,9 +695,7 @@ export function RiderActionSheet({
                 id="move-time"
                 value={moveTime}
                 onChange={(e) =>
-                  setMoveTime(
-                    e.target.value,
-                  )
+                  setMoveTime(e.target.value)
                 }
                 placeholder="17:00"
               />
