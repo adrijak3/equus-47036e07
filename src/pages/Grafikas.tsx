@@ -915,15 +915,13 @@ export default function Grafikas() {
   const horseUsageForDay = (
     horseId: string,
     date: Date,
-    ignoreAssignmentId?: string,
   ) => {
     const dateISO = formatDateISO(date);
 
     return assignments.filter(
       (a) =>
         a.horse_id === horseId &&
-        a.slot_date === dateISO &&
-        a.id !== ignoreAssignmentId,
+        a.slot_date === dateISO,
     ).length;
   };
 
@@ -936,52 +934,31 @@ export default function Grafikas() {
   // Europe/Vilnius
   // ----------------------------------------------------------
 
+  const vilniusTodayISO = () =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Vilnius",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
   const canSelectHorse = (date: Date) => {
-    const now = new Date();
-
-    const todayISO = new Intl.DateTimeFormat(
-      "en-CA",
-      {
-        timeZone: "Europe/Vilnius",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      },
-    ).format(now);
-
-    const dateISO = formatDateISO(date);
-
-    if (todayISO !== dateISO) {
+    if (formatDateISO(date) !== vilniusTodayISO()) {
       return false;
     }
 
-    const vilniusTime =
-      new Intl.DateTimeFormat(
-        "en-GB",
-        {
-          timeZone: "Europe/Vilnius",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        },
-      ).format(now);
+    const vilniusTime = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vilnius",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date());
 
     return vilniusTime < "21:00";
   };
 
-  const isTodayVilnius = (date: Date) => {
-    const todayISO = new Intl.DateTimeFormat(
-      "en-CA",
-      {
-        timeZone: "Europe/Vilnius",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      },
-    ).format(new Date());
-
-    return formatDateISO(date) === todayISO;
-  };
+  const isTodayVilnius = (date: Date) =>
+    formatDateISO(date) === vilniusTodayISO();
 
   // ----------------------------------------------------------
   // BOOKING
@@ -3365,11 +3342,9 @@ export default function Grafikas() {
                                             </span>
 
                                             {/* USER HORSE SELECTION */}
-                                            {mine && (
+                                            {mine && !b.is_guest && (
                                               <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
-                                                {canSelectHorse(
-                                                  date,
-                                                ) && (
+                                                {canSelectHorse(date) && (
                                                   <button
                                                     type="button"
                                                     onClick={() =>
@@ -3379,40 +3354,27 @@ export default function Grafikas() {
                                                         slot.slot_time,
                                                       )
                                                     }
-                                                    className="rounded-md border border-gold/30 px-2 py-1 text-[10px] uppercase tracking-wide text-gold hover:bg-gold/10"
+                                                    className="inline-flex items-center gap-1 rounded-md border border-gold/30 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gold hover:border-gold/60 hover:bg-gold/10 transition-colors"
                                                   >
+                                                    🐴{" "}
                                                     {horse
                                                       ? "Pakeisti žirgą"
                                                       : "Pasirinkti žirgą"}
                                                   </button>
                                                 )}
 
-                                                {!canSelectHorse(
-                                                  date,
-                                                ) &&
-                                                  isTodayVilnius(
-                                                    date,
-                                                  ) && (
+                                                {!canSelectHorse(date) &&
+                                                  isTodayVilnius(date) && (
                                                     <span className="text-[10px] text-muted-foreground">
                                                       Žirgų pasirinkimas uždarytas
                                                     </span>
                                                   )}
 
-                                                {!new Date(
-                                                  `${formatDateISO(date)}T${slot.slot_time}`,
-                                                ).getTime() ||
-                                                new Date(
-                                                  `${formatDateISO(date)}T${slot.slot_time}`,
-                                                ).getTime() >
-                                                  Date.now() ? null : null}
-
                                                 {!slotPast && (
                                                   <button
                                                     type="button"
                                                     onClick={() =>
-                                                      handleCancelClick(
-                                                        b,
-                                                      )
+                                                      handleCancelClick(b)
                                                     }
                                                     className="text-muted-foreground hover:text-destructive transition-colors"
                                                     aria-label="Atšaukti"
@@ -3422,6 +3384,7 @@ export default function Grafikas() {
                                                 )}
                                               </div>
                                             )}
+}
                                           </motion.li>
                                         );
                                       },
@@ -3563,26 +3526,11 @@ export default function Grafikas() {
           <div className="space-y-2 py-2">
             {horses.map(
               (horse) => {
-                const existing =
-                  horseDialog
-                    ? getHorseAssignment(
-                        bookings.find(
-                          (b) =>
-                            b.id ===
-                            horseDialog.bookingId,
-                        ) ?? ({} as Booking),
-                      )
-                    : null;
-
-                const ignoreAssignmentId =
-                  existing?.id;
-
                 const used =
                   horseDialog
                     ? horseUsageForDay(
                         horse.id,
                         horseDialog.date,
-                        ignoreAssignmentId,
                       )
                     : 0;
 
