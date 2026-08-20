@@ -934,31 +934,52 @@ export default function Grafikas() {
   // Europe/Vilnius
   // ----------------------------------------------------------
 
-  const vilniusTodayISO = () =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Vilnius",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-
   const canSelectHorse = (date: Date) => {
-    if (formatDateISO(date) !== vilniusTodayISO()) {
+    const now = new Date();
+
+    const todayISO = new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone: "Europe/Vilnius",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      },
+    ).format(now);
+
+    const dateISO = formatDateISO(date);
+
+    if (todayISO !== dateISO) {
       return false;
     }
 
-    const vilniusTime = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/Vilnius",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(new Date());
+    const vilniusTime =
+      new Intl.DateTimeFormat(
+        "en-GB",
+        {
+          timeZone: "Europe/Vilnius",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        },
+      ).format(now);
 
     return vilniusTime < "21:00";
   };
 
-  const isTodayVilnius = (date: Date) =>
-    formatDateISO(date) === vilniusTodayISO();
+  const isTodayVilnius = (date: Date) => {
+    const todayISO = new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone: "Europe/Vilnius",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      },
+    ).format(new Date());
+
+    return formatDateISO(date) === todayISO;
+  };
 
   // ----------------------------------------------------------
   // BOOKING
@@ -3342,9 +3363,11 @@ export default function Grafikas() {
                                             </span>
 
                                             {/* USER HORSE SELECTION */}
-                                            {mine && !b.is_guest && (
+                                            {mine && (
                                               <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
-                                                {canSelectHorse(date) && (
+                                                {canSelectHorse(
+                                                  date,
+                                                ) && (
                                                   <button
                                                     type="button"
                                                     onClick={() =>
@@ -3354,27 +3377,40 @@ export default function Grafikas() {
                                                         slot.slot_time,
                                                       )
                                                     }
-                                                    className="inline-flex items-center gap-1 rounded-md border border-gold/30 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gold hover:border-gold/60 hover:bg-gold/10 transition-colors"
+                                                    className="rounded-md border border-gold/30 px-2 py-1 text-[10px] uppercase tracking-wide text-gold hover:bg-gold/10"
                                                   >
-                                                    🐴{" "}
                                                     {horse
                                                       ? "Pakeisti žirgą"
                                                       : "Pasirinkti žirgą"}
                                                   </button>
                                                 )}
 
-                                                {!canSelectHorse(date) &&
-                                                  isTodayVilnius(date) && (
+                                                {!canSelectHorse(
+                                                  date,
+                                                ) &&
+                                                  isTodayVilnius(
+                                                    date,
+                                                  ) && (
                                                     <span className="text-[10px] text-muted-foreground">
                                                       Žirgų pasirinkimas uždarytas
                                                     </span>
                                                   )}
 
+                                                {!new Date(
+                                                  `${formatDateISO(date)}T${slot.slot_time}`,
+                                                ).getTime() ||
+                                                new Date(
+                                                  `${formatDateISO(date)}T${slot.slot_time}`,
+                                                ).getTime() >
+                                                  Date.now() ? null : null}
+
                                                 {!slotPast && (
                                                   <button
                                                     type="button"
                                                     onClick={() =>
-                                                      handleCancelClick(b)
+                                                      handleCancelClick(
+                                                        b,
+                                                      )
                                                     }
                                                     className="text-muted-foreground hover:text-destructive transition-colors"
                                                     aria-label="Atšaukti"
