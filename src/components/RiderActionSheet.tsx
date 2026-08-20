@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Drawer,
@@ -104,7 +104,6 @@ export function RiderActionSheet({
         .select("id, name, notes, active, max_daily_rides")
         .eq("active", true)
         .order("name"),
-
       supabase
         .from("horse_assignments")
         .select(
@@ -127,9 +126,10 @@ export function RiderActionSheet({
       return;
     }
 
-    setHorses((horsesRes.data ?? []) as HorseOption[]);
-    const assignmentData =
-      (assignmentsRes.data ?? []) as HorseAssignment[];
+    const horseData = (horsesRes.data ?? []) as HorseOption[];
+    const assignmentData = (assignmentsRes.data ?? []) as HorseAssignment[];
+
+    setHorses(horseData);
     setAssignments(assignmentData);
 
     const current = assignmentData.find(
@@ -151,12 +151,23 @@ export function RiderActionSheet({
     await loadHorseData();
   };
 
-  const usageFor = (horseId: string) =>
-    assignments.filter(
+  const currentAssignment = useMemo(() => {
+    if (!target) return null;
+
+    return (
+      assignments.find(
+        (assignment) => assignment.booking_id === target.bookingId,
+      ) ?? null
+    );
+  }, [assignments, target]);
+
+  const usageFor = (horseId: string) => {
+    return assignments.filter(
       (assignment) =>
         assignment.horse_id === horseId &&
         assignment.slot_date === target?.slotDate,
     ).length;
+  };
 
   const doChangeHorse = async () => {
     if (!target || !selectedHorseId) return;
@@ -181,8 +192,6 @@ export function RiderActionSheet({
         toast.error("Neturite teisės keisti žirgų.");
       } else if (error.message.includes("HORSE_NOT_AVAILABLE")) {
         toast.error("Šis žirgas šiuo metu nepasiekiamas.");
-      } else if (error.message.includes("BOOKING_NOT_FOUND")) {
-        toast.error("Rezervacija nerasta.");
       } else {
         toast.error(error.message);
       }
@@ -374,6 +383,7 @@ export function RiderActionSheet({
             <DrawerTitle className="font-display text-2xl text-gradient-gold">
               {target?.name}
             </DrawerTitle>
+
             <DrawerDescription>
               {target
                 ? `${target.slotDate} · ${formatTime(target.slotTime)}`
@@ -422,12 +432,13 @@ export function RiderActionSheet({
             <DialogTitle className="font-display text-2xl text-gradient-gold">
               Pakeisti žirgą
             </DialogTitle>
-            <DialogDescription>
+
+            <div className="text-sm text-muted-foreground">
               {target?.name}
               {target
                 ? ` · ${target.slotDate} · ${formatTime(target.slotTime)}`
                 : ""}
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           {horseLoading ? (
@@ -439,6 +450,7 @@ export function RiderActionSheet({
               {horses.map((horse) => {
                 const used = usageFor(horse.id);
                 const isCurrent = selectedHorseId === horse.id;
+
                 const allowedLimit = isAdmin ? 3 : 2;
                 const full = used >= allowedLimit && !isCurrent;
 
@@ -577,7 +589,11 @@ export function RiderActionSheet({
               Atgal
             </Button>
 
-            <Button variant="gold" disabled={busy} onClick={doMove}>
+            <Button
+              variant="gold"
+              disabled={busy}
+              onClick={doMove}
+            >
               Perkelti
             </Button>
           </DialogFooter>
