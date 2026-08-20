@@ -3384,7 +3384,6 @@ export default function Grafikas() {
                                                 )}
                                               </div>
                                             )}
-}
                                           </motion.li>
                                         );
                                       },
