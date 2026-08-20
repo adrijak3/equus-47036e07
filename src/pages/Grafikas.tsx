@@ -1111,6 +1111,17 @@ export default function Grafikas() {
         );
       } else if (
         error.message.includes(
+          "horse_assignments_one_horse_per_slot",
+        ) ||
+        error.message.includes(
+          "duplicate key value violates unique constraint",
+        )
+      ) {
+        toast.error(
+          "Šis žirgas jau pasirinktas šiam laikui. Pasirinkite kitą žirgą.",
+        );
+      } else if (
+        error.message.includes(
           "HORSE_NOT_AVAILABLE",
         )
       ) {
@@ -3573,15 +3584,39 @@ export default function Grafikas() {
                   selectedHorseId ===
                   horse.id;
 
-                const full =
+                const slotDateISO = horseDialog
+                  ? formatDateISO(horseDialog.date)
+                  : "";
+                const slotTime = horseDialog?.time
+                  ? String(horseDialog.time).slice(0, 8)
+                  : "";
+
+                // A horse can only be assigned to ONE rider in the exact
+                // same date + time slot. The current rider may keep their
+                // own existing assignment.
+                const alreadyChosenAtThisSlot =
+                  !!horseDialog &&
+                  assignments.some(
+                    (a) =>
+                      a.horse_id === horse.id &&
+                      a.slot_date === slotDateISO &&
+                      String(a.slot_time).slice(0, 8) === slotTime &&
+                      a.booking_id !== horseDialog.bookingId,
+                  );
+
+                const dailyLimitReached =
                   used >= 2 &&
+                  !currentlySelected;
+
+                const unavailable =
+                  (dailyLimitReached || alreadyChosenAtThisSlot) &&
                   !currentlySelected;
 
                 return (
                   <button
                     key={horse.id}
                     type="button"
-                    disabled={full}
+                    disabled={unavailable}
                     onClick={() =>
                       setSelectedHorseId(
                         horse.id,
@@ -3591,7 +3626,7 @@ export default function Grafikas() {
                       "w-full rounded-xl border p-3 text-left transition-colors",
                       currentlySelected
                         ? "border-gold bg-gold/10"
-                        : full
+                        : unavailable
                           ? "cursor-not-allowed border-border/50 opacity-50"
                           : "border-gold/15 hover:border-gold/40 hover:bg-gold/5",
                     )}
@@ -3617,7 +3652,7 @@ export default function Grafikas() {
                       <span
                         className={cn(
                           "rounded-full px-2 py-1 text-xs font-semibold",
-                          full
+                          unavailable
                             ? "bg-destructive/10 text-destructive"
                             : "bg-gold/10 text-gold",
                         )}
@@ -3627,11 +3662,15 @@ export default function Grafikas() {
                       </span>
                     </div>
 
-                    {full && (
+                    {alreadyChosenAtThisSlot ? (
+                      <div className="mt-1 text-[10px] text-destructive">
+                        (Šis žirgas jau pasirinktas šiam laikui)
+                      </div>
+                    ) : dailyLimitReached ? (
                       <div className="mt-1 text-[10px] text-destructive">
                         Dienos limitas pasiektas
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 );
               },
