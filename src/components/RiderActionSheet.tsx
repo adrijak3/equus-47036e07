@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Drawer,
@@ -21,10 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { toastUndo } from "@/lib/undo";
-import {
-  formatTime,
-  isValidTime,
-} from "@/lib/equus";
+import { formatTime, isValidTime } from "@/lib/equus";
 import {
   ArrowRightLeft,
   CalendarX2,
@@ -91,7 +88,6 @@ export function RiderActionSheet({
 
   const openMove = () => {
     if (!target) return;
-
     setMoveDate(target.slotDate);
     setMoveTime(formatTime(target.slotTime));
     setMoveOpen(true);
@@ -102,30 +98,25 @@ export function RiderActionSheet({
 
     setHorseLoading(true);
 
-    const [horsesRes, assignmentsRes] =
-      await Promise.all([
-        supabase
-          .from("horses")
-          .select(
-            "id, name, notes, active, max_daily_rides",
-          )
-          .eq("active", true)
-          .order("name"),
+    const [horsesRes, assignmentsRes] = await Promise.all([
+      supabase
+        .from("horses")
+        .select("id, name, notes, active, max_daily_rides")
+        .eq("active", true)
+        .order("name"),
 
-        supabase
-          .from("horse_assignments")
-          .select(
-            "id, booking_id, user_id, guest_name, slot_date, slot_time, horse_id",
-          )
-          .eq("slot_date", target.slotDate),
-      ]);
+      supabase
+        .from("horse_assignments")
+        .select(
+          "id, booking_id, user_id, guest_name, slot_date, slot_time, horse_id",
+        )
+        .eq("slot_date", target.slotDate),
+    ]);
 
     setHorseLoading(false);
 
     if (horsesRes.error) {
-      toast.error(
-        `Nepavyko įkelti žirgų: ${horsesRes.error.message}`,
-      );
+      toast.error(`Nepavyko įkelti žirgų: ${horsesRes.error.message}`);
       return;
     }
 
@@ -136,32 +127,23 @@ export function RiderActionSheet({
       return;
     }
 
-    const horseData =
-      (horsesRes.data ?? []) as HorseOption[];
-
+    setHorses((horsesRes.data ?? []) as HorseOption[]);
     const assignmentData =
       (assignmentsRes.data ?? []) as HorseAssignment[];
-
-    setHorses(horseData);
     setAssignments(assignmentData);
 
     const current = assignmentData.find(
-      (assignment) =>
-        assignment.booking_id === target.bookingId,
+      (assignment) => assignment.booking_id === target.bookingId,
     );
 
-    setSelectedHorseId(
-      current?.horse_id ?? "",
-    );
+    setSelectedHorseId(current?.horse_id ?? "");
   };
 
   const openHorse = async () => {
     if (!target) return;
 
     if (!canManageHorses) {
-      toast.error(
-        "Neturite trenerio arba administratoriaus teisių.",
-      );
+      toast.error("Neturite trenerio arba administratoriaus teisių.");
       return;
     }
 
@@ -169,60 +151,38 @@ export function RiderActionSheet({
     await loadHorseData();
   };
 
-  const currentAssignment = useMemo(() => {
-    if (!target) return null;
-
-    return (
-      assignments.find(
-        (assignment) =>
-          assignment.booking_id === target.bookingId,
-      ) ?? null
-    );
-  }, [assignments, target]);
-
-  // IMPORTANT:
-  // This counts the current rider's assignment too.
-  // So after selecting Fėja it shows 1/2, not 0/2.
-  const usageFor = (horseId: string) => {
-    return assignments.filter(
+  const usageFor = (horseId: string) =>
+    assignments.filter(
       (assignment) =>
         assignment.horse_id === horseId &&
         assignment.slot_date === target?.slotDate,
     ).length;
-  };
 
   const doChangeHorse = async () => {
     if (!target || !selectedHorseId) return;
 
     setHorseSaving(true);
 
-    const { error } = await supabase.rpc(
-      "admin_set_booking_horse",
-      {
-        _booking_id: target.bookingId,
-        _horse_id: selectedHorseId,
-      },
-    );
+    const { error } = await supabase.rpc("admin_set_booking_horse", {
+      _booking_id: target.bookingId,
+      _horse_id: selectedHorseId,
+    });
 
     setHorseSaving(false);
 
     if (error) {
-      if (
-        error.message.includes(
-          "HORSE_LIMIT_REACHED",
-        )
-      ) {
+      if (error.message.includes("HORSE_LIMIT_REACHED")) {
         toast.error(
           isAdmin
             ? "Šis žirgas jau pasiekė 3 jojimų dienos limitą."
             : "Šis žirgas jau pasiekė 2 jojimų dienos limitą.",
         );
-      } else if (
-        error.message.includes("NOT_ADMIN")
-      ) {
-        toast.error(
-          "Šiai funkcijai reikalingos administratoriaus teisės.",
-        );
+      } else if (error.message.includes("NOT_ALLOWED")) {
+        toast.error("Neturite teisės keisti žirgų.");
+      } else if (error.message.includes("HORSE_NOT_AVAILABLE")) {
+        toast.error("Šis žirgas šiuo metu nepasiekiamas.");
+      } else if (error.message.includes("BOOKING_NOT_FOUND")) {
+        toast.error("Rezervacija nerasta.");
       } else {
         toast.error(error.message);
       }
@@ -232,10 +192,8 @@ export function RiderActionSheet({
     }
 
     toast.success("Žirgas pakeistas.");
-
     setHorseOpen(false);
     setSelectedHorseId("");
-
     onChanged();
   };
 
@@ -243,9 +201,7 @@ export function RiderActionSheet({
     if (!target) return;
 
     if (!isValidTime(moveTime)) {
-      toast.error(
-        "Įveskite teisingą laiką (HH:MM)",
-      );
+      toast.error("Įveskite teisingą laiką (HH:MM)");
       return;
     }
 
@@ -275,23 +231,15 @@ export function RiderActionSheet({
     onClose();
     onChanged();
 
-    toastUndo(
-      `Rezervacija perkelta į ${moveDate} ${moveTime}.`,
-      async () => {
-        const { error: undoErr } =
-          await supabase
-            .from("bookings")
-            .update(prev)
-            .eq(
-              "id",
-              target.bookingId,
-            );
+    toastUndo(`Rezervacija perkelta į ${moveDate} ${moveTime}.`, async () => {
+      const { error: undoErr } = await supabase
+        .from("bookings")
+        .update(prev)
+        .eq("id", target.bookingId);
 
-        if (undoErr) throw undoErr;
-
-        onChanged();
-      },
-    );
+      if (undoErr) throw undoErr;
+      onChanged();
+    });
   };
 
   const doCancel = async () => {
@@ -301,9 +249,7 @@ export function RiderActionSheet({
 
     const { error } = await supabase
       .from("bookings")
-      .update({
-        status: "cancelled",
-      })
+      .update({ status: "cancelled" })
       .eq("id", target.bookingId);
 
     setBusy(false);
@@ -316,25 +262,15 @@ export function RiderActionSheet({
     onClose();
     onChanged();
 
-    toastUndo(
-      "Rezervacija atšaukta.",
-      async () => {
-        const { error: undoErr } =
-          await supabase
-            .from("bookings")
-            .update({
-              status: "active",
-            })
-            .eq(
-              "id",
-              target.bookingId,
-            );
+    toastUndo("Rezervacija atšaukta.", async () => {
+      const { error: undoErr } = await supabase
+        .from("bookings")
+        .update({ status: "active" })
+        .eq("id", target.bookingId);
 
-        if (undoErr) throw undoErr;
-
-        onChanged();
-      },
-    );
+      if (undoErr) throw undoErr;
+      onChanged();
+    });
   };
 
   const doAttended = async () => {
@@ -344,9 +280,7 @@ export function RiderActionSheet({
 
     const { error } = await supabase
       .from("bookings")
-      .update({
-        status: "completed",
-      })
+      .update({ status: "completed" })
       .eq("id", target.bookingId);
 
     setBusy(false);
@@ -359,43 +293,25 @@ export function RiderActionSheet({
     onClose();
     onChanged();
 
-    toastUndo(
-      "Pažymėta: dalyvavo.",
-      async () => {
-        const { error: undoErr } =
-          await supabase
-            .from("bookings")
-            .update({
-              status: "active",
-            })
-            .eq(
-              "id",
-              target.bookingId,
-            );
+    toastUndo("Pažymėta: dalyvavo.", async () => {
+      const { error: undoErr } = await supabase
+        .from("bookings")
+        .update({ status: "active" })
+        .eq("id", target.bookingId);
 
-        if (undoErr) throw undoErr;
-
-        onChanged();
-      },
-    );
+      if (undoErr) throw undoErr;
+      onChanged();
+    });
   };
 
-  const goAdmin = (
-    section: "subs" | "users",
-  ) => {
+  const goAdmin = (section: "subs" | "users") => {
     if (!target) return;
 
     onClose();
 
     navigate(
-      `/admin?section=${section}&uid=${encodeURIComponent(
-        target.userId,
-      )}&open=1`,
-      {
-        state: {
-          from: "grafikas",
-        },
-      },
+      `/admin?section=${section}&uid=${encodeURIComponent(target.userId)}&open=1`,
+      { state: { from: "grafikas" } },
     );
   };
 
@@ -405,8 +321,7 @@ export function RiderActionSheet({
       label: "Pakeisti žirgą",
       icon: Horse,
       onClick: openHorse,
-      disabled:
-        !canManageHorses || target?.isGuest,
+      disabled: !canManageHorses || target?.isGuest,
     },
     {
       key: "move",
@@ -448,14 +363,8 @@ export function RiderActionSheet({
 
   return (
     <>
-      {/* RIDER ACTION SHEET */}
-
       <Drawer
-        open={
-          !!target &&
-          !moveOpen &&
-          !horseOpen
-        }
+        open={!!target && !moveOpen && !horseOpen}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
@@ -465,12 +374,9 @@ export function RiderActionSheet({
             <DrawerTitle className="font-display text-2xl text-gradient-gold">
               {target?.name}
             </DrawerTitle>
-
             <DrawerDescription>
               {target
-                ? `${target.slotDate} · ${formatTime(
-                    target.slotTime,
-                  )}`
+                ? `${target.slotDate} · ${formatTime(target.slotTime)}`
                 : ""}
             </DrawerDescription>
           </DrawerHeader>
@@ -478,10 +384,7 @@ export function RiderActionSheet({
           <div className="grid gap-2 px-4 pb-8">
             {actions.map((action) => {
               const Icon = action.icon;
-
-              const disabled =
-                busy ||
-                action.disabled;
+              const disabled = busy || action.disabled;
 
               return (
                 <button
@@ -505,8 +408,6 @@ export function RiderActionSheet({
         </DrawerContent>
       </Drawer>
 
-      {/* HORSE CHANGE DIALOG */}
-
       <Dialog
         open={horseOpen}
         onOpenChange={(open) => {
@@ -521,15 +422,12 @@ export function RiderActionSheet({
             <DialogTitle className="font-display text-2xl text-gradient-gold">
               Pakeisti žirgą
             </DialogTitle>
-
-            <div className="text-sm text-muted-foreground">
+            <DialogDescription>
               {target?.name}
               {target
-                ? ` · ${target.slotDate} · ${formatTime(
-                    target.slotTime,
-                  )}`
+                ? ` · ${target.slotDate} · ${formatTime(target.slotTime)}`
                 : ""}
-            </div>
+            </DialogDescription>
           </DialogHeader>
 
           {horseLoading ? (
@@ -539,32 +437,17 @@ export function RiderActionSheet({
           ) : (
             <div className="space-y-2">
               {horses.map((horse) => {
-                const used =
-                  usageFor(horse.id);
-
-                const isCurrent =
-                  selectedHorseId ===
-                  horse.id;
-
-                // Trainer = 2/day
-                // Admin = 3/day
-                const allowedLimit =
-                  isAdmin ? 3 : 2;
-
-                const full =
-                  used >= allowedLimit &&
-                  !isCurrent;
+                const used = usageFor(horse.id);
+                const isCurrent = selectedHorseId === horse.id;
+                const allowedLimit = isAdmin ? 3 : 2;
+                const full = used >= allowedLimit && !isCurrent;
 
                 return (
                   <button
                     key={horse.id}
                     type="button"
                     disabled={full}
-                    onClick={() =>
-                      setSelectedHorseId(
-                        horse.id,
-                      )
-                    }
+                    onClick={() => setSelectedHorseId(horse.id)}
                     className={cn(
                       "w-full rounded-xl border p-3 text-left transition-colors",
                       isCurrent
@@ -606,13 +489,11 @@ export function RiderActionSheet({
                       </div>
                     )}
 
-                    {isAdmin &&
-                      used === 2 &&
-                      !isCurrent && (
-                        <div className="mt-1 text-[10px] text-gold">
-                          Administratoriaus 3-iasis jojimas galimas
-                        </div>
-                      )}
+                    {isAdmin && used === 2 && !isCurrent && (
+                      <div className="mt-1 text-[10px] text-gold">
+                        Administratoriaus 3-iasis jojimas galimas
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -638,21 +519,14 @@ export function RiderActionSheet({
 
             <Button
               variant="gold"
-              disabled={
-                !selectedHorseId ||
-                horseSaving
-              }
+              disabled={!selectedHorseId || horseSaving}
               onClick={doChangeHorse}
             >
-              {horseSaving
-                ? "Išsaugoma…"
-                : "Išsaugoti"}
+              {horseSaving ? "Išsaugoma…" : "Išsaugoti"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* MOVE DIALOG */}
 
       <Dialog
         open={moveOpen}
@@ -672,31 +546,21 @@ export function RiderActionSheet({
 
           <div className="space-y-3">
             <div>
-              <Label htmlFor="move-date">
-                Data
-              </Label>
-
+              <Label htmlFor="move-date">Data</Label>
               <Input
                 id="move-date"
                 type="date"
                 value={moveDate}
-                onChange={(e) =>
-                  setMoveDate(e.target.value)
-                }
+                onChange={(e) => setMoveDate(e.target.value)}
               />
             </div>
 
             <div>
-              <Label htmlFor="move-time">
-                Laikas (HH:MM)
-              </Label>
-
+              <Label htmlFor="move-time">Laikas (HH:MM)</Label>
               <Input
                 id="move-time"
                 value={moveTime}
-                onChange={(e) =>
-                  setMoveTime(e.target.value)
-                }
+                onChange={(e) => setMoveTime(e.target.value)}
                 placeholder="17:00"
               />
             </div>
@@ -713,11 +577,7 @@ export function RiderActionSheet({
               Atgal
             </Button>
 
-            <Button
-              variant="gold"
-              disabled={busy}
-              onClick={doMove}
-            >
+            <Button variant="gold" disabled={busy} onClick={doMove}>
               Perkelti
             </Button>
           </DialogFooter>
