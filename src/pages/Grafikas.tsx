@@ -3028,8 +3028,8 @@ export default function Grafikas() {
                                 )}
                               >
                                 {/* Slot header */}
-                                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
-                                  <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
+                                  <div className="flex flex-wrap items-center justify-end gap-1.5 min-w-0">
                                     <Clock className="w-4 h-4 text-gold/60" />
 
                                     <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
@@ -3346,6 +3346,10 @@ export default function Grafikas() {
                                                             ),
                                                           slotTime:
                                                             slot.slot_time,
+                                                          trainerName:
+                                                            slot.trainer_name,
+                                                          isIndividual:
+                                                            !!b.is_individual,
                                                         },
                                                       )
                                                   : undefined
