@@ -185,7 +185,7 @@ export default function Grafikas() {
   const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [dayCancellations, setDayCancellations] = useState<
-    { note_date: string; note: string | null }[]
+    { note_date: string; note: string | null; trainer_name: string | null }[]
   >([]);
 
   const [assignments, setAssignments] = useState<HorseAssignment[]>([]);
@@ -369,7 +369,7 @@ export default function Grafikas() {
 
       supabase
         .from("day_cancellations" as any)
-        .select("note_date, note")
+        .select("note_date, note, trainer_name")
         .gte("note_date", startISO)
         .lte("note_date", endISO),
     ]);
@@ -1016,6 +1016,22 @@ export default function Grafikas() {
       return;
     }
 
+    const bookSlot = getDaySlots(date).find(
+      (s) => s.slot_time === time,
+    );
+
+    if (
+      getTrainerDayCancellation(
+        date,
+        bookSlot?.trainer_name,
+      )
+    ) {
+      toast.error(
+        "Šios treniruotės ta diena nevyksta",
+      );
+      return;
+    }
+
     const key = `book-${formatDateISO(date)}-${time}`;
 
     const slotForBooking =
@@ -1127,6 +1143,14 @@ export default function Grafikas() {
       ) {
         toast.error(
           "Šis žirgas šiuo metu nepasiekiamas.",
+        );
+      } else if (
+        error.message.includes(
+          "HORSE_ASSIGNED_BY_TRAINER",
+        )
+      ) {
+        toast.error(
+          "Trenerė jau paskyrė žirgą šiai pamokai. Norėdami pakeisti, susisiekite su ja.",
         );
       } else {
         toast.error(error.message);
@@ -1995,8 +2019,27 @@ export default function Grafikas() {
     dayCancellations.find(
       (c) =>
         c.note_date ===
-        formatDateISO(date),
+        formatDateISO(date) &&
+        !c.trainer_name,
     ) ?? null;
+
+  // Trainer-scoped cancellation: only affects that one trainer's own
+  // lessons on that date, leaving every other trainer's lessons that
+  // day untouched.
+  const getTrainerDayCancellation = (
+    date: Date,
+    trainerName: string | null | undefined,
+  ) => {
+    if (!trainerName) return null;
+
+    return (
+      dayCancellations.find(
+        (c) =>
+          c.note_date === formatDateISO(date) &&
+          c.trainer_name === trainerName,
+      ) ?? null
+    );
+  };
 
   const getSlotNote = (
     date: Date,
@@ -3016,6 +3059,45 @@ export default function Grafikas() {
                                 `${formatDateISO(date)}T${slot.slot_time}`,
                               ).getTime() <
                               Date.now();
+
+                            const trainerCancelled =
+                              getTrainerDayCancellation(
+                                date,
+                                slot.trainer_name,
+                              );
+
+                            if (trainerCancelled) {
+                              return (
+                                <div
+                                  key={slot.id}
+                                  className="overflow-hidden rounded-2xl border border-blush/30 bg-gradient-card shadow-sm"
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-blush/15">
+                                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                      <Clock className="w-4 h-4 text-blush/60" />
+                                      <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground/70">
+                                        {formatTime(slot.slot_time)}
+                                      </span>
+                                      {slot.trainer_name && (
+                                        <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold">
+                                          Trenerė: {slot.trainer_name}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="px-3 py-6 text-xs text-blush text-center italic font-semibold">
+                                    {t("lessonsCancelled")}
+
+                                    {trainerCancelled.note && (
+                                      <div className="mt-1 text-foreground/70 not-italic font-normal">
+                                        {trainerCancelled.note}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
 
                             return (
                               <div
