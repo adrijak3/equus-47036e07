@@ -580,7 +580,13 @@ export default function Paskyra() {
                       onEditLessons={undefined}
                       lessons={bookings
                         .filter((b) => b.subscription_id === s.id)
-                        .map((b) => ({ id: b.id, slot_date: b.slot_date, slot_time: b.slot_time, status: b.status }))}
+                        .map((b) => ({
+                          id: b.id,
+                          slot_date: b.slot_date,
+                          slot_time: b.slot_time,
+                          status: b.status,
+                          is_individual: !!b.is_individual,
+                        }))}
                     />
                   </div>
                 );
@@ -1141,7 +1147,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode; lessons?: { id: string; slot_date: string; slot_time: string; status: string }[] }) {
+export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode; lessons?: { id: string; slot_date: string; slot_time: string; status: string; is_individual?: boolean }[] }) {
   const used = effectiveUsed ?? s.lessons_used;
   const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
@@ -1241,7 +1247,15 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
                   <li key={l.id} className="flex items-center justify-between gap-2 tabular-nums">
                     <span className="text-foreground/85">{l.slot_date} · {l.slot_time.slice(0, 5)}</span>
                     <span className={cn("text-muted-foreground", l.status === "cancelled" && "text-destructive")}>
-                      {l.status === "cancelled" ? "atšaukta" : l.status === "completed" ? "įvykusi" : "suplanuota"}
+                      {l.status === "cancelled"
+                        ? "atšaukta"
+                        : l.status === "completed"
+                          ? l.is_individual
+                            ? "įvykusi · individuali"
+                            : "įvykusi"
+                          : l.is_individual
+                            ? "suplanuota · individuali"
+                            : "suplanuota"}
                     </span>
                   </li>
                 ))}
