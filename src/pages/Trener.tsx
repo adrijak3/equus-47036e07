@@ -92,13 +92,14 @@ export default function Trener() {
       </header>
 
       <Tabs defaultValue="mine">
-        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 bg-background/50 sm:grid-cols-6">
+        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 bg-background/50 sm:grid-cols-7">
           <TabsTrigger value="mine">Mano treniruotės</TabsTrigger>
           <TabsTrigger value="today">Paskirti žirgus</TabsTrigger>
           <TabsTrigger value="riders">Mano raiteliai</TabsTrigger>
           <TabsTrigger value="horses">Žirgų sąrašas</TabsTrigger>
           <TabsTrigger value="subs">Abonementai</TabsTrigger>
           <TabsTrigger value="unpaid">Nepriskirtos</TabsTrigger>
+          <TabsTrigger value="cancel">Dienos atšaukimas</TabsTrigger>
         </TabsList>
         <TabsContent value="mine"><MyLessons /></TabsContent>
         <TabsContent value="today"><TodayAssignments /></TabsContent>
@@ -106,6 +107,7 @@ export default function Trener() {
         <TabsContent value="horses"><HorsesTab /></TabsContent>
         <TabsContent value="subs"><SubsOverview /></TabsContent>
         <TabsContent value="unpaid"><UnpaidLessonsOverview staff /></TabsContent>
+        <TabsContent value="cancel"><CancelDayTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -631,6 +633,119 @@ function TodayAssignments() {
           })}
         </div>
       </section>
+    </div>
+  );
+}
+
+interface DayCancellation {
+  note_date: string;
+  note: string | null;
+  trainer_name: string | null;
+}
+
+/**
+ * Lets a trainer cancel or restore her own lessons on a given date.
+ * Scoped to `trainer_name` only — other trainers' lessons that same
+ * day are completely unaffected.
+ */
+function CancelDayTab() {
+  const { trainer, setTrainer, trainers, isAdmin } = useTrainerScope();
+  const [date, setDate] = useState(formatDateISO(new Date()));
+  const [cancellation, setCancellation] = useState<DayCancellation | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+
+  const load = async () => {
+    if (!trainer) { setCancellation(null); setLoading(false); return; }
+    setLoading(true);
+    const { data } = await supabase
+      .from("day_cancellations" as any)
+      .select("note_date, note, trainer_name")
+      .eq("note_date", date)
+      .eq("trainer_name", trainer)
+      .maybeSingle();
+    setCancellation((data as any) ?? null);
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, [date, trainer]);
+
+  const cancelDay = async () => {
+    if (!trainer) return;
+    setBusy(true);
+    const { error } = await supabase.from("day_cancellations" as any).insert({
+      note_date: date,
+      trainer_name: trainer,
+      note: note.trim() || null,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Jūsų treniruotės šią dieną atšauktos.");
+    setNote("");
+    void load();
+  };
+
+  const restoreDay = async () => {
+    if (!trainer) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("day_cancellations" as any)
+      .delete()
+      .eq("note_date", date)
+      .eq("trainer_name", trainer);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Diena grąžinta į tvarkaraštį.");
+    void load();
+  };
+
+  return (
+    <div className="space-y-5">
+      <section className="flex flex-col gap-3 rounded-xl border border-gold/15 bg-gradient-card p-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-wrap gap-3">
+          <div>
+            <Label>Pasirinkite dieną</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-48" />
+          </div>
+          {(isAdmin || trainers.length > 1) && (
+            <div>
+              <Label>Trenerė</Label>
+              <select
+                value={trainer}
+                onChange={(e) => setTrainer(e.target.value)}
+                className="h-10 w-48 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {trainers.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {loading ? (
+        <p className="py-8 text-center italic text-muted-foreground">Kraunama…</p>
+      ) : cancellation ? (
+        <div className="rounded-xl border border-blush/30 bg-blush/10 p-4 space-y-3">
+          <p className="text-sm text-blush font-semibold">
+            Jūsų treniruotės {date} atšauktos. Kitų trenerių treniruotės tą dieną nepaliestos.
+          </p>
+          {cancellation.note && (
+            <p className="text-xs text-foreground/70 italic">{cancellation.note}</p>
+          )}
+          <Button variant="outline" size="sm" disabled={busy} onClick={restoreDay}>
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Grąžinti dieną
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gold/15 bg-gradient-card p-4 space-y-3">
+          <Label>Priežastis (nebūtina)</Label>
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Pvz., liga, atostogos..." />
+          <Button variant="destructive" size="sm" disabled={busy || !trainer} onClick={cancelDay}>
+            <AlertTriangle className="w-3.5 h-3.5 mr-1.5" /> Atšaukti šios dienos mano treniruotes
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
