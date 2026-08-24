@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   IdCard,
   Wallet,
+  UserRound,
 } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,8 @@ export interface RiderTarget {
   isGuest: boolean;
   slotDate: string;
   slotTime: string;
+  trainerName?: string | null;
+  isIndividual?: boolean;
 }
 
 interface HorseOption {
@@ -206,6 +209,33 @@ export function RiderActionSheet({
     onChanged();
   };
 
+  const doMakeIndividual = async () => {
+    if (!target || target.isIndividual || target.isGuest) return;
+
+    setBusy(true);
+
+    const { error } = await supabase.rpc("make_booking_individual", {
+      _booking_id: target.bookingId,
+    });
+
+    setBusy(false);
+
+    if (error) {
+      if (error.message.includes("INDIVIDUAL_REQUIRES_SINGLE_RIDER")) {
+        toast.error("Individualiai pamokai tuo pačiu laiku turi būti tik vienas raitelis.");
+      } else if (error.message.includes("NOT_ALLOWED")) {
+        toast.error("Neturite teisės keisti pamokos tipo.");
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+
+    toast.success("Pamoka pažymėta kaip individuali (1/1).");
+    onClose();
+    onChanged();
+  };
+
   const doMove = async () => {
     if (!target) return;
 
@@ -353,6 +383,13 @@ export function RiderActionSheet({
       icon: CheckCircle2,
       onClick: doAttended,
       disabled: false,
+    },
+    {
+      key: "individual",
+      label: "Padaryti individualia (1/1)",
+      icon: UserRound,
+      onClick: doMakeIndividual,
+      disabled: target?.isGuest ?? false,
     },
     {
       key: "sub",
