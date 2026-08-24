@@ -183,18 +183,21 @@ export type Database = {
           created_by: string | null
           note: string | null
           note_date: string
+          trainer_name: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           note?: string | null
           note_date: string
+          trainer_name?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
           note?: string | null
           note_date?: string
+          trainer_name?: string | null
         }
         Relationships: []
       }
