@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export type EquusTheme =
@@ -97,8 +98,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (next.appearanceMode) payload.appearance_mode = next.appearanceMode;
     if (!Object.keys(payload).length) return;
     setSaving(true);
-    await supabase.from("profiles").update(payload).eq("id", uid);
+    const { error } = await supabase.from("profiles").update(payload).eq("id", uid);
     setSaving(false);
+    if (error) {
+      // If this silently fails, the next hydrate() will pull the old
+      // remote value back down and undo the change on refresh — so
+      // surface it instead of swallowing it.
+      console.error("Nepavyko išsaugoti temos pasirinkimo:", error);
+      toast.error("Nepavyko išsaugoti temos pasirinkimo. Pabandykite dar kartą.");
+    }
   };
 
   const setTheme = (next: EquusTheme) => {
