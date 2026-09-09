@@ -43,7 +43,7 @@ export default function PrivatumoPolitika() {
         <p>
           Kontaktai duomenų apsaugos klausimais: telefonu{" "}
           <a href="tel:+37065822872" className="text-gold underline underline-offset-4">
-            +370 658 22872
+            +370 628 76 090
           </a>{" "}
           arba el. paštu{" "}
           <a href="mailto:jojimomokykla@gmail.com" className="text-gold underline underline-offset-4">
