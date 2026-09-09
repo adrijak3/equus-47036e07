@@ -181,6 +181,16 @@ export default function Auth() {
                 <Label htmlFor="su-pw">Slaptažodis</Label>
                 <Input id="su-pw" name="password" type="password" required minLength={8} autoComplete="new-password" />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Sukurdami paskyrą sutinkate su{" "}
+                <a href="/privatumo-politika" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4">
+                  Privatumo politika
+                </a>{" "}
+                ir{" "}
+                <a href="/taisykles-ir-salygos" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4">
+                  Taisyklėmis ir sąlygomis
+                </a>.
+              </p>
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Kuriama…" : "Sukurti paskyrą"}
               </Button>
