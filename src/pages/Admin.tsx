@@ -428,12 +428,24 @@ function ScheduleTab() {
         const { error } = await supabase.from("time_slots")
           .update({ slot_time: newT }).eq("id", slot.id);
         if (error) { toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message); return; }
-        // also move future bookings on this recurring day to the new time
-        await supabase.from("bookings")
-          .update({ slot_time: newT })
+        // also move future bookings on this recurring day to the new time —
+        // but ONLY bookings that actually fall on this slot's day_of_week,
+        // since slot_time alone is shared across different weekdays.
+        const { data: candidates, error: fetchErr } = await supabase.from("bookings")
+          .select("id, slot_date")
           .gte("slot_date", new Date().toISOString().slice(0,10))
           .eq("slot_time", slot.slot_time)
           .eq("status", "active");
+        if (fetchErr) { toast.error(fetchErr.message); return; }
+        const matchingIds = (candidates || []).filter((b) => {
+          const d = new Date(b.slot_date + "T00:00:00");
+          const js = d.getDay();
+          const dow = js === 0 ? 7 : js;
+          return dow === slot.day_of_week;
+        }).map((b) => b.id);
+        if (matchingIds.length > 0) {
+          await supabase.from("bookings").update({ slot_time: newT }).in("id", matchingIds);
+        }
         toast.success("Laikas atnaujintas (visoms savaitėms)");
       } else {
         // Per-week: create one-off slot at new time for chosen date, hide original with cap=0 override, move bookings
