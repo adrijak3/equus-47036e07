@@ -53,7 +53,7 @@ export default function TaisyklesIrSalygos() {
       <Section icon={CalendarClock} title="Registracija ir sutartis">
         <p>
           Registracija į treniruotę vykdoma per svetainės registracijos
-          formą. Registracija tampa galutinė, kai administracija ją
+          formą arba susitarimu (žodiniu arba elektroniniu būdu). Registracija tampa galutinė, kai administracija ją
           patvirtina. Prieš pirmąją treniruotę privaloma pasirašyti jojimo
           paslaugų sutartį – be pasirašytos sutarties treniruotė nevyks.
           Sutartį galite peržiūrėti{" "}
