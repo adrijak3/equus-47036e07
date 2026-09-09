@@ -106,6 +106,7 @@ export default function PublicRegistration() {
   const [selected, setSelected] = useState<Slot | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [rules, setRules] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -205,7 +206,7 @@ export default function PublicRegistration() {
     service !== "sportine" || level === "beginner";
 
   const submit = async () => {
-    if (!service || !validInfo || !rules) return;
+    if (!service || !validInfo || !rules || !privacyConsent) return;
     if (service === "sportine" && !level) return;
 
     if (!needsAdminSelectedTime && !selected) {
@@ -633,6 +634,10 @@ export default function PublicRegistration() {
                   }
                   placeholder="Trumpai parašykite, ką jau mokate arba kur esate joję."
                 />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Prašome čia nerašyti sveikatos duomenų (diagnozių, ligų) –
+                  apie tai praneškite treneriui tiesiogiai.
+                </p>
               </Field>
               <Field label="Facebook vardas ir pavardė (nebūtina)" full>
                 <Input
@@ -846,6 +851,27 @@ export default function PublicRegistration() {
                 sutinku, kad jos bus taikomos patvirtinus registraciją.
               </span>
             </label>
+
+            <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-gold/20 p-4">
+              <Checkbox
+                checked={privacyConsent}
+                onCheckedChange={(value) => setPrivacyConsent(value === true)}
+              />
+              <span className="text-sm">
+                Susipažinau su{" "}
+                <a
+                  href="/privatumo-politika"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gold underline underline-offset-4"
+                >
+                  Privatumo politika
+                </a>{" "}
+                ir sutinku, kad būtų tvarkomi mano (arba mano atstovaujamo
+                nepilnamečio) pateikti duomenys registracijos ir treniruočių
+                organizavimo tikslais.
+              </span>
+            </label>
           </div>
         )}
 
@@ -874,7 +900,7 @@ export default function PublicRegistration() {
           ) : (
             <Button
               variant="gold"
-              disabled={!rules || busy}
+              disabled={!rules || !privacyConsent || busy}
               onClick={submit}
             >
               {busy ? "Siunčiama…" : "Pateikti registraciją"}
