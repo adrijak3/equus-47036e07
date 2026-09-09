@@ -27,6 +27,9 @@ import Informacija from "./pages/Informacija";
 import NotFound from "./pages/NotFound";
 import PublicRegistration from "./pages/PublicRegistration";
 import Reviews from "./pages/Reviews";
+import PrivatumoPolitika from "./pages/PrivatumoPolitika";
+import TaisyklesIrSalygos from "./pages/TaisyklesIrSalygos";
+import SlapukuPolitika from "./pages/SlapukuPolitika";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +81,9 @@ const App = () => (
                   <Route path="/registracija" element={<PublicRegistration />} />
                   <Route path="/registracija/:token" element={<PublicRegistration />} />
                   <Route path="/atsiliepimai" element={<Reviews />} />
+                  <Route path="/privatumo-politika" element={<PrivatumoPolitika />} />
+                  <Route path="/taisykles-ir-salygos" element={<TaisyklesIrSalygos />} />
+                  <Route path="/slapuku-politika" element={<SlapukuPolitika />} />
 
                   <Route
                     path="/paskyra"
