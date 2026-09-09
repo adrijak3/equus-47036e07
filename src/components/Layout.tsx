@@ -535,6 +535,31 @@ export default function Layout({
           </div>
 
           <p className="text-xs tracking-wide text-muted-foreground">
+            VšĮ Jojimo mokykla „Equus", įm. k. 302754824
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs">
+            <Link
+              to="/privatumo-politika"
+              className="text-foreground/70 underline underline-offset-4 transition-colors hover:text-gold"
+            >
+              Privatumo politika
+            </Link>
+            <Link
+              to="/taisykles-ir-salygos"
+              className="text-foreground/70 underline underline-offset-4 transition-colors hover:text-gold"
+            >
+              Taisyklės ir sąlygos
+            </Link>
+            <Link
+              to="/slapuku-politika"
+              className="text-foreground/70 underline underline-offset-4 transition-colors hover:text-gold"
+            >
+              Slapukų politika
+            </Link>
+          </div>
+
+          <p className="text-xs tracking-wide text-muted-foreground">
             © 2026 Equus Jojimo Mokykla. Visos teisės saugomos.
             Svetainės visos autoriaus teisės priklauso Adrijai
             Kalikaitei.
