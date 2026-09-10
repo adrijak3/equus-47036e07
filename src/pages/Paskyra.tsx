@@ -28,6 +28,7 @@ interface Booking {
   counts_in_subscription: boolean;
   subscription_id?: string | null;
   horse_name?: string | null;
+  is_individual?: boolean;
 }
 interface Subscription {
   id: string;
