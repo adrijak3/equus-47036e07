@@ -424,18 +424,23 @@ function ScheduleTab() {
     } else {
       // TIME
       const newT = String(value);
+      const oldT = slot.slot_time;
       if (scopeChoice === "always") {
+        // 1) update the recurring template
         const { error } = await supabase.from("time_slots")
           .update({ slot_time: newT }).eq("id", slot.id);
         if (error) { toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message); return; }
-        // also move future bookings on this recurring day to the new time —
-        // but ONLY bookings that actually fall on this slot's day_of_week,
-        // since slot_time alone is shared across different weekdays.
+        // 2) keep permanent slots in sync so future materialized bookings land on the new time
+        await supabase.from("permanent_slots")
+          .update({ slot_time: newT })
+          .eq("day_of_week", slot.day_of_week)
+          .eq("slot_time", oldT);
+        // 3) move future active/pending bookings that actually fall on this slot's weekday
         const { data: candidates, error: fetchErr } = await supabase.from("bookings")
           .select("id, slot_date")
           .gte("slot_date", new Date().toISOString().slice(0,10))
-          .eq("slot_time", slot.slot_time)
-          .eq("status", "active");
+          .eq("slot_time", oldT)
+          .in("status", ["active", "pending_cancel"]);
         if (fetchErr) { toast.error(fetchErr.message); return; }
         const matchingIds = (candidates || []).filter((b) => {
           const d = new Date(b.slot_date + "T00:00:00");
@@ -444,11 +449,12 @@ function ScheduleTab() {
           return dow === slot.day_of_week;
         }).map((b) => b.id);
         if (matchingIds.length > 0) {
-          await supabase.from("bookings").update({ slot_time: newT }).in("id", matchingIds);
+          const { error: moveErr } = await supabase.from("bookings").update({ slot_time: newT }).in("id", matchingIds);
+          if (moveErr) { toast.error(moveErr.message); return; }
         }
-        toast.success("Laikas atnaujintas (visoms savaitėms)");
+        toast.success(`Laikas atnaujintas (visoms savaitėms). Pakeista ${matchingIds.length} rezervacijų.`);
       } else {
-        // Per-week: create one-off slot at new time for chosen date, hide original with cap=0 override, move bookings
+        // Per-week: create one-off slot at new time for chosen date, hide original with cap=0 override, move active bookings only
         const dateISO = scopeWeekDate;
         const d = new Date(dateISO + "T00:00:00");
         const js = d.getDay();
@@ -459,16 +465,17 @@ function ScheduleTab() {
           active: true, one_off_date: dateISO,
         } as any);
         if (e1 && e1.code !== "23505") { toast.error(e1.message); return; }
-        // 2) move bookings on that date/time
-        await supabase.from("bookings").update({ slot_time: `${newT}:00` })
-          .eq("slot_date", dateISO).eq("slot_time", slot.slot_time);
+        // 2) move active bookings on that date/time
+        const { error: moveErr } = await supabase.from("bookings").update({ slot_time: `${newT}:00` })
+          .eq("slot_date", dateISO).eq("slot_time", oldT).in("status", ["active", "pending_cancel"]);
+        if (moveErr) { toast.error(moveErr.message); return; }
         // 3) hide original by overriding cap to 0 for that date
         const { data: existing } = await supabase.from("slot_overrides")
-          .select("id").eq("slot_date", dateISO).eq("slot_time", slot.slot_time).maybeSingle();
+          .select("id").eq("slot_date", dateISO).eq("slot_time", oldT).maybeSingle();
         if (existing?.id) {
           await supabase.from("slot_overrides").update({ max_capacity: 0 }).eq("id", existing.id);
         } else {
-          await supabase.from("slot_overrides").insert({ slot_date: dateISO, slot_time: slot.slot_time, max_capacity: 0 });
+          await supabase.from("slot_overrides").insert({ slot_date: dateISO, slot_time: oldT, max_capacity: 0 });
         }
         toast.success(`Laikas pakeistas tik ${dateISO}`);
       }
