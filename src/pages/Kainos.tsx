@@ -7,19 +7,34 @@ export default function Kainos() {
       </header>
 
       <div className="grid sm:grid-cols-2 gap-6">
-        {/* Standard */}
-        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
-          <h2 className="text-2xl font-display text-gold mb-6">Treniruotės</h2>
+        {/* Treniruotės */}
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up sm:col-span-2">
+          <h2 className="text-2xl font-display text-gold mb-6">Pavienės pamokos</h2>
           <ul className="space-y-4 font-body">
-            <Row label="1 treniruotė" price="35 €" />
-            <Row label="4 treniruotės" price="140 €" />
-            <Row label="8 treniruotės" price="240 €" />
+            <Row label="Grupinė jojimo pamoka" price="35 €" />
+            <Row label="Asmeninė jojimo pamoka (po 2)" price="40 €" />
+            <Row label="Asmeninė jojimo pamoka" price="50 €" />
           </ul>
-          <div className="gold-divider my-6" />
-          <div className="text-sm text-muted-foreground space-y-1.5">
-            <p>≤ 7 treniruotės — 35 € / treniruotė</p>
-            <p>≥ 8 treniruotės — 30 € / treniruotė</p>
-          </div>
+        </section>
+
+        {/* 4k abonementai */}
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
+          <h2 className="text-2xl font-display text-gold mb-6">4 kartų abonementai</h2>
+          <ul className="space-y-4 font-body">
+            <Row label="Sportinės grupinės" price="140 €" />
+            <Row label="Sportinių po 2" price="160 €" />
+            <Row label="Jojant nuosavu žirgu" price="140 €" />
+          </ul>
+        </section>
+
+        {/* 8k abonementai */}
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
+          <h2 className="text-2xl font-display text-gold mb-6">8 kartų abonementai</h2>
+          <ul className="space-y-4 font-body">
+            <Row label="Sportinės grupinės" price="280 €" />
+            <Row label="Sportinės po 2" price="320 €" />
+            <Row label="Jojant nuosavu žirgu" price="240 €" />
+          </ul>
         </section>
 
         {/* Mažylio svajonė */}
@@ -31,18 +46,12 @@ export default function Kainos() {
           </ul>
         </section>
 
-        {/* Individuali treniruotė */}
-        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up sm:col-span-2">
-          <h2 className="text-2xl font-display text-gold mb-6">Individuali treniruotė</h2>
+        {/* Gardo nuoma */}
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
+          <h2 className="text-2xl font-display text-gold mb-6">Gardo nuoma</h2>
           <ul className="space-y-4 font-body">
-            <Row label="1 individuali treniruotė" price="40 €" />
+            <Row label="1 mėnuo" price="450 €" />
           </ul>
-          <div className="gold-divider my-6" />
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Individualiai treniruotei laiką reikia suderinti su Laura. Susitarus, parašykite žinutę
-            administracijai per savo paskyrą („Žinutės" skiltyje), kad būtumėte užregistruoti
-            tuo ir tuo laiku individualiai treniruotei.
-          </p>
         </section>
       </div>
     </div>
