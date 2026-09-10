@@ -133,12 +133,14 @@ export function calculateSubscriptionPrice(lessons: number): number {
 }
 
 /** Lesson types for subscriptions */
-export type LessonType = "sportine" | "nesportine" | "vienkartine";
+export type LessonType = "sportine" | "nesportine" | "vienkartine" | "sportine_po2" | "nuosavu_zirgu";
 
 export const LESSON_TYPE_LABEL: Record<LessonType, string> = {
-  sportine: "Sportinė",
+  sportine: "Sportinė (grupinė)",
   nesportine: "Nesportinė",
   vienkartine: "Vienkartinė",
+  sportine_po2: "Sportinė (po 2)",
+  nuosavu_zirgu: "Jojant nuosavu žirgu",
 };
 
 /** Returns total price for a given lesson count + type. */
@@ -152,8 +154,22 @@ export function calculateSubPriceByType(lessons: number, type: LessonType): numb
     if (lessons === 1) return 35;
     return lessons * 35;
   }
-  // sportine (default existing rule)
-  return lessons >= 8 ? lessons * 30 : lessons * 35;
+  if (type === "sportine_po2") {
+    // Tiered: 4-card 160€, 8-card 320€; otherwise per-lesson 40€
+    if (lessons === 4) return 160;
+    if (lessons === 8) return 320;
+    return lessons * 40;
+  }
+  if (type === "nuosavu_zirgu") {
+    // Tiered: 4-card 140€, 8-card 240€; otherwise per-lesson 35€
+    if (lessons === 4) return 140;
+    if (lessons === 8) return 240;
+    return lessons * 35;
+  }
+  // sportine (grupinė): 4-card 140€, 8-card 280€; otherwise per-lesson 35€
+  if (lessons === 4) return 140;
+  if (lessons === 8) return 280;
+  return lessons * 35;
 }
 
 /** Build a Date in local TZ from slot_date (YYYY-MM-DD) + slot_time (HH:MM[:SS]) */
