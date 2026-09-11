@@ -11,8 +11,8 @@ export default function Kainos() {
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up sm:col-span-2">
           <h2 className="text-2xl font-display text-gold mb-6">Pavienės pamokos</h2>
           <ul className="space-y-4 font-body">
-            <Row label="Grupinė jojimo pamoka" price="35 €" />
-            <Row label="Asmeninė jojimo pamoka (po 2)" price="40 €" />
+            <Row label="Grupinė jojimo pamoka" price="40 €" />
+            <Row label="Asmeninė jojimo pamoka (po 2)" price="45 €" />
             <Row label="Asmeninė jojimo pamoka" price="50 €" />
           </ul>
         </section>
