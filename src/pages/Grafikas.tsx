@@ -160,6 +160,19 @@ interface SlotNote {
   day_of_week?: number | null;
 }
 
+/** Savaitgalio treniruočių antraštės pagal trenerį. */
+function trainerSectionLabel(
+  dow: number,
+  slot: { trainer_name?: string | null },
+): string | null {
+  const isJolita = !!slot?.trainer_name?.toLowerCase().includes("jolita");
+  if (isJolita) return "Treniruotės pas Jolitą";
+  if (dow === 6) return "Treniruotės pas Vytautą";
+  return null;
+}
+
+
+
 export default function Grafikas() {
   const { user, isAdmin, isTrainer } = useAuth();
   const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
