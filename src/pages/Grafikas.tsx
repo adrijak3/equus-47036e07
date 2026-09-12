@@ -160,6 +160,19 @@ interface SlotNote {
   day_of_week?: number | null;
 }
 
+/** Savaitgalio treniruočių antraštės pagal trenerį. */
+function trainerSectionLabel(
+  dow: number,
+  slot: { trainer_name?: string | null },
+): string | null {
+  const isJolita = !!slot?.trainer_name?.toLowerCase().includes("jolita");
+  if (isJolita) return "Treniruotės pas Jolitą";
+  if (dow === 6) return "Treniruotės pas Vytautą";
+  return null;
+}
+
+
+
 export default function Grafikas() {
   const { user, isAdmin, isTrainer } = useAuth();
   const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
@@ -3010,7 +3023,27 @@ export default function Grafikas() {
                         daySlots.map(
                           (
                             slot,
+                            slotIdx,
                           ) => {
+                            const sectionLabel =
+                              trainerSectionLabel(
+                                dow,
+                                slot,
+                              );
+                            const prevSectionLabel =
+                              slotIdx > 0
+                                ? trainerSectionLabel(
+                                    dow,
+                                    daySlots[slotIdx - 1],
+                                  )
+                                : null;
+                            const sectionBanner =
+                              sectionLabel &&
+                              sectionLabel !== prevSectionLabel ? (
+                                <div className="rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-center font-display text-xs sm:text-sm uppercase tracking-[0.2em] text-gold">
+                                  {sectionLabel}
+                                </div>
+                              ) : null;
                             const slotBookings =
                               getSlotBookings(
                                 date,
@@ -3068,8 +3101,9 @@ export default function Grafikas() {
 
                             if (trainerCancelled) {
                               return (
+                                <div key={slot.id} className="space-y-2">
+                                {sectionBanner}
                                 <div
-                                  key={slot.id}
                                   className="overflow-hidden rounded-2xl border border-blush/30 bg-gradient-card shadow-sm"
                                 >
                                   <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-blush/15">
@@ -3096,12 +3130,14 @@ export default function Grafikas() {
                                     )}
                                   </div>
                                 </div>
+                                </div>
                               );
                             }
 
                             return (
+                              <div key={slot.id} className="space-y-2">
+                              {sectionBanner}
                               <div
-                                key={slot.id}
                                 className={cn(
                                   "group overflow-hidden rounded-2xl border bg-gradient-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
                                   myBooking
@@ -3593,8 +3629,9 @@ export default function Grafikas() {
                                       )}
                                     </div>
                                   )}
-                              </div>
-                            );
+                               </div>
+                               </div>
+                             );
                           },
                         )}
                     </motion.div>

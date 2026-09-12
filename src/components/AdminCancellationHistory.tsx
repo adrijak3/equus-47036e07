@@ -51,12 +51,38 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
         .order("created_at", { ascending: false })
         .limit(400);
       const list = ((data ?? []) as Row[]);
-      const ids = [...new Set(list.map((r) => r.user_id))];
-      const { data: profs } = ids.length
-        ? await supabase.from("profiles").select("id, full_name").in("id", ids)
-        : { data: [] as any[] };
+      const ids = [...new Set(list.map((r) => r.user_id).filter(Boolean))] as string[];
+      const guestIds = [
+        ...new Set(list.map((r: any) => r.guest_rider_id).filter(Boolean)),
+      ] as string[];
+
+      const [{ data: profs }, { data: guests }] = await Promise.all([
+        ids.length
+          ? supabase.from("profiles").select("id, full_name").in("id", ids)
+          : Promise.resolve({ data: [] as any[] } as any),
+        guestIds.length
+          ? (supabase as any)
+              .from("guest_riders")
+              .select("id, first_name, last_name")
+              .in("id", guestIds)
+          : Promise.resolve({ data: [] as any[] } as any),
+      ]);
+
       const map = new Map((profs ?? []).map((p: any) => [p.id, p.full_name]));
-      setRows(list.map((r) => ({ ...r, name: r.guest_name ?? map.get(r.user_id) ?? "—" })));
+      const guestMap = new Map(
+        (guests ?? []).map((g: any) => [g.id, `${g.first_name} ${g.last_name}`.trim()]),
+      );
+
+      setRows(
+        list.map((r: any) => ({
+          ...r,
+          name:
+            (r.user_id ? map.get(r.user_id) : null) ??
+            r.guest_name ??
+            (r.guest_rider_id ? guestMap.get(r.guest_rider_id) : null) ??
+            "—",
+        })),
+      );
       setLoading(false);
     })();
   }, []);
