@@ -2,29 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { RiderLevelBadge, RiderLevelSelect } from "@/components/RiderLevelBadge";
-import { LEVEL_META, type RidingLevel } from "@/lib/levels";
-import { WEEKDAYS_LT, formatTime, formatDateISO } from "@/lib/equus";
-import { SubscriptionCard } from "@/pages/Paskyra";
-import { KeyRound, Trash2, Search, UserPlus2, PhoneCall, Link2 } from "lucide-react";
+import { RiderLevelBadge } from "@/components/RiderLevelBadge";
+import { UserProfileSheet } from "@/components/admin/UserProfileSheet";
+import { Search, UserPlus2, PhoneCall, Link2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; }
-interface Sub {
-  id: string; user_id: string | null; guest_rider_id?: string | null; lessons_total: number; lessons_used: number;
-  price: number; purchase_date: string; expires_at: string; paid: boolean; lesson_type?: string;
-}
+interface Sub { id: string; user_id: string | null; lessons_total: number; lessons_used: number; expires_at: string; paid: boolean; }
 interface PermSlot { id: string; user_id: string; day_of_week: number; slot_time: string; }
 interface Vacation { id: string; user_id: string; starts_on: string; ends_on: string; }
-interface TrainerRiderRow { id: string; trainer_user_id: string; rider_user_id: string | null; guest_rider_id: string | null; level: string; note: string | null; }
+interface TrainerRiderRow { id: string; trainer_user_id: string; rider_user_id: string | null; level: string; }
 interface GuestRider {
   id: string; first_name: string; last_name: string; phone: string | null; email: string | null;
-  notes: string | null; is_newcomer: boolean; linked_user_id: string | null; created_by: string | null;
+  is_newcomer: boolean; linked_user_id: string | null;
 }
 
 type FilterKey = "all" | "hasSub" | "noSub" | "permanent" | "guests";
@@ -37,6 +29,8 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "guests", label: "Svečiai (naujokai)" },
 ];
 
+const PAGE_SIZE = 15;
+
 export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: string | null; onClearFocus?: () => void } = {}) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
@@ -44,24 +38,23 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [trainerRiders, setTrainerRiders] = useState<TrainerRiderRow[]>([]);
   const [guests, setGuests] = useState<GuestRider[]>([]);
-  const [trainerIds, setTrainerIds] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [page, setPage] = useState(1);
   const [openUserId, setOpenUserId] = useState<string | null>(null);
   const [linkGuest, setLinkGuest] = useState<GuestRider | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const today = formatDateISO(new Date());
-    const [p, s, ps, v, tr, g, roles] = await Promise.all([
+    const today = new Date().toISOString().slice(0, 10);
+    const [p, s, ps, v, tr, g] = await Promise.all([
       supabase.from("profiles").select("id, full_name, phone, riding_level").order("full_name"),
-      supabase.from("subscriptions").select("*").order("purchase_date", { ascending: false }),
+      supabase.from("subscriptions").select("id, user_id, lessons_total, lessons_used, expires_at, paid").order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time"),
       supabase.from("vacations").select("id, user_id, starts_on, ends_on").lte("starts_on", today).gte("ends_on", today),
-      supabase.from("trainer_riders").select("*"),
-      supabase.from("guest_riders").select("*").order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("user_id, role").eq("role", "trainer"),
+      supabase.from("trainer_riders").select("id, trainer_user_id, rider_user_id, level"),
+      supabase.from("guest_riders").select("id, first_name, last_name, phone, email, is_newcomer, linked_user_id").order("created_at", { ascending: false }),
     ]);
     setProfiles((p.data ?? []) as any);
     setSubs((s.data ?? []) as any);
@@ -69,7 +62,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
     setVacations((v.data ?? []) as any);
     setTrainerRiders((tr.data ?? []) as any);
     setGuests((g.data ?? []) as any);
-    setTrainerIds(((roles.data ?? []) as any[]).map((r) => r.user_id));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -78,81 +70,8 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
     if (focusUserId) setOpenUserId(focusUserId);
   }, [focusUserId]);
 
-  const setLevel = async (p: Profile, level: RidingLevel) => {
-    const { error } = await supabase.from("profiles").update({ riding_level: level } as any).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
-    // Keep the trainer roster in sync — the source of truth for group logic.
-    for (const trainerId of trainerIds) {
-      const existing = trainerRiders.find((r) => r.trainer_user_id === trainerId && r.rider_user_id === p.id);
-      if (existing) {
-        await supabase.from("trainer_riders").update({ level }).eq("id", existing.id);
-      } else {
-        await supabase.from("trainer_riders").insert({ trainer_user_id: trainerId, rider_user_id: p.id, level });
-      }
-    }
-    toast.success(`${p.full_name}: ${LEVEL_META[level].label}`);
-    load();
-  };
-
-  const renameUser = async (p: Profile, first: string, last: string, phone: string) => {
-    const fullName = `${first.trim()} ${last.trim()}`.trim();
-    if (!fullName) { toast.error("Vardas negali būti tuščias"); return; }
-    const { error } = await supabase.from("profiles").update({ full_name: fullName, phone: phone.trim() || null }).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Atnaujinta");
-    load();
-  };
-
-  const resetPassword = async (p: Profile) => {
-    if (!confirm(`Atstatyti ${p.full_name} slaptažodį į „vardas_equus123"?`)) return;
-    const { data, error } = await supabase.functions.invoke("admin-reset-password", { body: { user_id: p.id } });
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Klaida");
-      return;
-    }
-    toast.success(`Naujas slaptažodis: ${(data as any).password}`);
-  };
-
-  const deleteUser = async (p: Profile) => {
-    const txt = prompt(
-      `Visiškai ištrinti vartotoją "${p.full_name}"?\n\nVisi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negrįžtamai pašalinti.\n\nĮrašykite vartotojo vardą patvirtinti:`
-    );
-    if (txt !== p.full_name) { if (txt !== null) toast.error("Vardas nesutampa — atšaukta"); return; }
-    const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: p.id } });
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Klaida");
-      return;
-    }
-    toast.success(`${p.full_name} ištrintas`);
-    setOpenUserId(null);
-    load();
-  };
-
-  const togglePaid = async (subId: string, paid: boolean) => {
-    const { error } = await supabase.from("subscriptions").update({ paid }).eq("id", subId);
-    if (error) { toast.error(error.message); return; }
-    load();
-  };
-
-  const editLessons = async (s: Sub) => {
-    const txt = prompt(`Naujas treniruočių skaičius (dabar ${s.lessons_total}):`, String(s.lessons_total));
-    if (txt === null) return;
-    const n = parseInt(txt);
-    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    const newUsed = Math.min(s.lessons_used, n);
-    const { error } = await supabase.from("subscriptions").update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Atnaujinta");
-    load();
-  };
-
-  const deleteSub = async (s: Sub) => {
-    if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
-    const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ištrinta");
-    load();
-  };
+  // reset to page 1 whenever the visible set changes
+  useEffect(() => { setPage(1); }, [query, filter]);
 
   const toggleGuestNewcomer = async (g: GuestRider) => {
     const { error } = await supabase.from("guest_riders").update({ is_newcomer: !g.is_newcomer }).eq("id", g.id);
@@ -200,7 +119,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
     for (const r of trainerRiders) if (r.rider_user_id) m[r.rider_user_id] = r.level;
     return m;
   }, [trainerRiders]);
-  const upcomingCountByGuest = useMemo(() => ({} as Record<string, number>), [guests]);
 
   const filtered = profiles.filter((p) => {
     const q = query.trim().toLowerCase();
@@ -218,7 +136,9 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
     return true;
   });
 
-  const activeUser = profiles.find((p) => p.id === openUserId) ?? null;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, pageCount);
+  const pageRows = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
   return (
     <div className="space-y-3">
@@ -232,6 +152,7 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
         </div>
       )}
 
+      {/* Sticky search + filters, so this never disappears while scrolling a long list */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur pb-2 pt-1 space-y-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -286,66 +207,89 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
-          {loading && <p className="text-center text-muted-foreground py-8">Kraunama…</p>}
-          {!loading && filtered.length === 0 && <p className="text-center text-muted-foreground italic py-8">Nieko nerasta</p>}
-          {filtered.map((p) => {
-            const us = subsByUser[p.id] ?? [];
-            const latest = us.find((s) => new Date(s.expires_at) >= new Date()) ?? us[0];
-            const remaining = latest ? latest.lessons_total - latest.lessons_used : null;
-            const unpaid = us.some((s) => !s.paid);
-            const permCount = (permByUser[p.id] ?? []).length;
-            const onVacation = vacationByUser.has(p.id);
-            const rosterLevel = rosterLevelByUser[p.id];
-            return (
-              <button
-                key={p.id}
-                onClick={() => setOpenUserId(p.id)}
-                className="w-full text-left bg-gradient-card border border-gold/15 rounded-lg px-4 py-3 flex items-center justify-between gap-3 hover:border-gold/40 transition-colors"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-display text-base text-gold truncate">{p.full_name}</span>
-                    <RiderLevelBadge level={rosterLevel ?? (p as any).riding_level} compact />
-                  </div>
-                  <div className="text-xs text-muted-foreground">{p.phone ?? "—"}</div>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
-                  {remaining !== null && (
-                    <span className={cn("text-[10px] px-2 py-0.5 rounded-full border", remaining <= 1 ? "bg-blush/15 text-blush border-blush/30" : "bg-background/40 border-gold/15 text-muted-foreground")}>
-                      {remaining}/{latest.lessons_total} liko
-                    </span>
-                  )}
-                  {unpaid && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</span>}
-                  {onVacation && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30">Atostogos</span>}
-                  {permCount > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/40 border border-gold/15 text-muted-foreground">{permCount} nuolat.</span>}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          {/* Compact table instead of a long scrolling list */}
+          <div className="rounded-lg border border-gold/15 overflow-hidden bg-gradient-card">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gold/15 bg-background/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="px-4 py-2.5 font-medium">Vardas</th>
+                  <th className="px-4 py-2.5 font-medium hidden sm:table-cell">Telefonas</th>
+                  <th className="px-4 py-2.5 font-medium">Būsena</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr><td colSpan={3} className="text-center text-muted-foreground py-8">Kraunama…</td></tr>
+                )}
+                {!loading && pageRows.length === 0 && (
+                  <tr><td colSpan={3} className="text-center text-muted-foreground italic py-8">Nieko nerasta</td></tr>
+                )}
+                {pageRows.map((p) => {
+                  const us = subsByUser[p.id] ?? [];
+                  const latest = us.find((s) => new Date(s.expires_at) >= new Date()) ?? us[0];
+                  const remaining = latest ? latest.lessons_total - latest.lessons_used : null;
+                  const unpaid = us.some((s) => !s.paid);
+                  const permCount = (permByUser[p.id] ?? []).length;
+                  const onVacation = vacationByUser.has(p.id);
+                  const rosterLevel = rosterLevelByUser[p.id];
+                  return (
+                    <tr
+                      key={p.id}
+                      onClick={() => setOpenUserId(p.id)}
+                      className="border-b border-gold/10 last:border-0 cursor-pointer hover:bg-gold/5 transition-colors"
+                    >
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-display text-gold truncate">{p.full_name}</span>
+                          <RiderLevelBadge level={rosterLevel ?? (p as any).riding_level} compact />
+                        </div>
+                        <div className="text-xs text-muted-foreground sm:hidden">{p.phone ?? "—"}</div>
+                      </td>
+                      <td className="px-4 py-2.5 hidden sm:table-cell text-muted-foreground">{p.phone ?? "—"}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {remaining !== null && (
+                            <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap", remaining <= 1 ? "bg-blush/15 text-blush border-blush/30" : "bg-background/40 border-gold/15 text-muted-foreground")}>
+                              {remaining}/{latest.lessons_total} liko
+                            </span>
+                          )}
+                          {unpaid && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 whitespace-nowrap">Neapmokėta</span>}
+                          {onVacation && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 whitespace-nowrap">Atostogos</span>}
+                          {permCount > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/40 border border-gold/15 text-muted-foreground whitespace-nowrap">{permCount} nuolat.</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-1 text-sm">
+              <span className="text-xs text-muted-foreground">
+                {filtered.length} vartotojai · puslapis {pageSafe}/{pageCount}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="sm" disabled={pageSafe <= 1} onClick={() => setPage(pageSafe - 1)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" disabled={pageSafe >= pageCount} onClick={() => setPage(pageSafe + 1)}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      <Sheet open={!!activeUser} onOpenChange={(o) => { if (!o) { setOpenUserId(null); onClearFocus?.(); } }}>
-        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-          {activeUser && (
-            <UserDetails
-              key={activeUser.id}
-              profile={activeUser}
-              subs={subsByUser[activeUser.id] ?? []}
-              permSlots={permByUser[activeUser.id] ?? []}
-              rosterLevel={rosterLevelByUser[activeUser.id]}
-              onSetLevel={(lvl) => setLevel(activeUser, lvl)}
-              onRename={(f, l, ph) => renameUser(activeUser, f, l, ph)}
-              onResetPassword={() => resetPassword(activeUser)}
-              onDelete={() => deleteUser(activeUser)}
-              onTogglePaid={togglePaid}
-              onEditLessons={editLessons}
-              onDeleteSub={deleteSub}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+      <UserProfileSheet
+        userId={openUserId}
+        open={!!openUserId}
+        onOpenChange={(o) => { if (!o) { setOpenUserId(null); onClearFocus?.(); } }}
+        onChanged={load}
+      />
 
       <LinkGuestDialog
         guest={linkGuest}
@@ -353,124 +297,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
         onClose={() => setLinkGuest(null)}
         onConfirm={(userId) => linkGuest && linkGuestToAccount(linkGuest.id, userId)}
       />
-    </div>
-  );
-}
-
-function UserDetails({
-  profile, subs, permSlots, rosterLevel, onSetLevel, onRename, onResetPassword, onDelete, onTogglePaid, onEditLessons, onDeleteSub,
-}: {
-  profile: Profile; subs: Sub[]; permSlots: PermSlot[]; rosterLevel?: string;
-  onSetLevel: (lvl: RidingLevel) => void;
-  onRename: (first: string, last: string, phone: string) => void;
-  onResetPassword: () => void;
-  onDelete: () => void;
-  onTogglePaid: (subId: string, paid: boolean) => void;
-  onEditLessons: (s: Sub) => void;
-  onDeleteSub: (s: Sub) => void;
-}) {
-  const parts = profile.full_name.split(" ");
-  const [first, setFirst] = useState(parts[0] ?? "");
-  const [last, setLast] = useState(parts.slice(1).join(" "));
-  const [phone, setPhone] = useState(profile.phone ?? "");
-  const [deleting, setDeleting] = useState(false);
-
-  return (
-    <div className="space-y-4">
-      <SheetHeader>
-        <SheetTitle className="font-display text-gradient-gold text-2xl">{profile.full_name}</SheetTitle>
-      </SheetHeader>
-
-      <Tabs defaultValue="profile">
-        <TabsList className="grid grid-cols-4 w-full">
-          <TabsTrigger value="profile">Profilis</TabsTrigger>
-          <TabsTrigger value="subs">Abonementai</TabsTrigger>
-          <TabsTrigger value="lessons">Treniruotės</TabsTrigger>
-          <TabsTrigger value="actions">Veiksmai</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Vardas</Label>
-              <Input value={first} onChange={(e) => setFirst(e.target.value)} />
-            </div>
-            <div>
-              <Label>Pavardė</Label>
-              <Input value={last} onChange={(e) => setLast(e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <Label>Telefonas</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-          <Button variant="gold" size="sm" onClick={() => onRename(first, last, phone)}>Išsaugoti</Button>
-          <div className="pt-2 border-t border-gold/10 space-y-2">
-            <Label>Vidinis raitelio lygis (trenerio grafikas)</Label>
-            <div className="flex items-center gap-2">
-              <RiderLevelSelect value={rosterLevel ?? (profile as any).riding_level} onChange={onSetLevel} />
-              <RiderLevelBadge level={rosterLevel ?? (profile as any).riding_level} />
-            </div>
-            <p className="text-xs text-muted-foreground italic">Atnaujina ir profilį, ir trenerio raitelių sąrašą.</p>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="subs" className="space-y-3 pt-4">
-          {subs.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
-          ) : (
-            subs.map((s) => (
-              <SubscriptionCard
-                key={s.id}
-                s={s as any}
-                effectiveUsed={s.lessons_used ?? 0}
-                onMarkPaid={!s.paid ? () => onTogglePaid(s.id, true) : undefined}
-                onEditLessons={() => onEditLessons(s)}
-                onDelete={() => onDeleteSub(s)}
-                extra={s.paid ? (
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => onTogglePaid(s.id, false)}
-                      className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
-                    >
-                      Pažymėti neapmokėta
-                    </button>
-                  </div>
-                ) : undefined}
-              />
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="lessons" className="space-y-2 pt-4">
-          {permSlots.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">Nėra nuolatinių laikų</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {permSlots.map((ps) => (
-                <li key={ps.id} className="text-sm bg-background/40 border border-gold/10 rounded px-3 py-2">
-                  {WEEKDAYS_LT[ps.day_of_week - 1]} · {formatTime(ps.slot_time)}
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="text-xs text-muted-foreground italic">Nuolatinius laikus tvarkykite skiltyje „Nuolatiniai“.</p>
-        </TabsContent>
-
-        <TabsContent value="actions" className="space-y-3 pt-4">
-          <Button variant="ghostGold" className="w-full justify-start" onClick={onResetPassword}>
-            <KeyRound className="w-4 h-4" /> Atstatyti slaptažodį
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-            disabled={deleting}
-            onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
-          >
-            <Trash2 className="w-4 h-4" /> {deleting ? "Trinama…" : "Ištrinti vartotoją"}
-          </Button>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
