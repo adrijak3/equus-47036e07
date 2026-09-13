@@ -7,7 +7,7 @@ export default function Kainos() {
       </header>
 
       <div className="grid sm:grid-cols-2 gap-6">
-        {/* Treniruotės */}
+        {/* Pavienės pamokos */}
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up sm:col-span-2">
           <h2 className="text-2xl font-display text-gold mb-6">Pavienės pamokos</h2>
           <ul className="space-y-4 font-body">
@@ -19,7 +19,7 @@ export default function Kainos() {
 
         {/* 4k abonementai */}
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
-          <h2 className="text-2xl font-display text-gold mb-6">4 kartų abonementai</h2>
+          <h2 className="text-2xl font-display text-gold mb-6">4 kartų abonementai (1 treniruotė per savaitę)</h2>
           <ul className="space-y-4 font-body">
             <Row label="Sportinės grupinės" price="140 €" />
             <Row label="Sportinių po 2" price="160 €" />
@@ -29,11 +29,20 @@ export default function Kainos() {
 
         {/* 8k abonementai */}
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
-          <h2 className="text-2xl font-display text-gold mb-6">8 kartų abonementai</h2>
+          <h2 className="text-2xl font-display text-gold mb-6">8 kartų abonementai (2 treniruotės per savaitę)</h2>
           <ul className="space-y-4 font-body">
             <Row label="Sportinės grupinės" price="280 €" />
             <Row label="Sportinės po 2" price="320 €" />
             <Row label="Jojant nuosavu žirgu" price="240 €" />
+          </ul>
+        </section>
+
+        {/* 12k abonementai */}
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
+          <h2 className="text-2xl font-display text-gold mb-6">12 kartų abonementai (3 treniruotės per savaitę)</h2>
+          <ul className="space-y-4 font-body">
+            <Row label="Sportinės grupinės" price="400 €" />
+            <Row label="Jojant nuosavu žirgu" price="340 €" />
           </ul>
         </section>
 
@@ -47,7 +56,7 @@ export default function Kainos() {
         </section>
 
         {/* Gardo nuoma */}
-        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
+        <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up sm:col-span-2">
           <h2 className="text-2xl font-display text-gold mb-6">Gardo nuoma</h2>
           <ul className="space-y-4 font-body">
             <Row label="1 mėnuo" price="450 €" />
@@ -62,7 +71,7 @@ function Row({ label, price }: { label: string; price: string }) {
   return (
     <li className="flex items-baseline justify-between gap-4 pb-2 border-b border-gold/5">
       <span className="text-foreground/90">{label}</span>
-      <span className="text-xl font-display text-gradient-gold tabular-nums">{price}</span>
+      <span className="text-xl font-display text-gradient-gold tabular-nums whitespace-nowrap">{price}</span>
     </li>
   );
 }
