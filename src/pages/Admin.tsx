@@ -1353,11 +1353,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
               <Label>Tipas</Label>
               <select value={lessonType} onChange={(e) => setLessonType(e.target.value as LessonType)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="sportine">Sportinė grupinė (4=140€, 8=280€)</option>
+                <option value="sportine">Sportinė grupinė (4=140€, 8=280€, 12=400€)</option>
                 <option value="sportine_po2">Sportinė po 2 (4=160€, 8=320€)</option>
-                <option value="nuosavu_zirgu">Jojant nuosavu žirgu (4=140€, 8=240€)</option>
+                <option value="nuosavu_zirgu">Jojant nuosavu žirgu (4=140€, 8=240€, 12=340€)</option>
                 <option value="nesportine">Nesportinė (1=35€, 4=120€, 8=200€)</option>
-                <option value="vienkartine">Vienkartinė (35€)</option>
+                <option value="vienkartine">Vienkartinė (40€)</option>
               </select>
             </div>
             {lessonType !== "vienkartine" && (
