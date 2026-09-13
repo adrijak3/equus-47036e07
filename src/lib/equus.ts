@@ -161,14 +161,16 @@ export function calculateSubPriceByType(lessons: number, type: LessonType): numb
     return lessons * 40;
   }
   if (type === "nuosavu_zirgu") {
-    // Tiered: 4-card 140€, 8-card 240€; otherwise per-lesson 35€
+    // Tiered: 4-card 140€, 8-card 240€, 12-card 340€; otherwise per-lesson 35€
     if (lessons === 4) return 140;
     if (lessons === 8) return 240;
+    if (lessons === 12) return 340;
     return lessons * 35;
   }
-  // sportine (grupinė): 4-card 140€, 8-card 280€; otherwise per-lesson 35€
+  // sportine (grupinė): 4-card 140€, 8-card 280€, 12-card 400€; otherwise per-lesson 35€
   if (lessons === 4) return 140;
   if (lessons === 8) return 280;
+  if (lessons === 12) return 400;
   return lessons * 35;
 }
 
