@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { BookOpen, CheckCircle2, ChevronLeft, ChevronRight, FileText, ShieldCheck, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEquusTheme, type EquusTheme } from "@/contexts/ThemeContext";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
