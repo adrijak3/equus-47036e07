@@ -52,7 +52,7 @@ export function UserProfileSheet({
     setLoading(true);
     const today = formatDateISO(new Date());
     const [p, s, ps, v, up, pa, tr, roles] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, phone, riding_level").eq("id", id).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, phone, riding_level, experience_text, phone_is_parent").eq("id", id).maybeSingle(),
       supabase.from("subscriptions").select("*").eq("user_id", id).order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time").eq("user_id", id).order("day_of_week").order("slot_time"),
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").eq("user_id", id).order("starts_on", { ascending: false }),
