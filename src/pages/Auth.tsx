@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -15,7 +16,15 @@ const signUpSchema = z.object({
   phone: z.string().trim().min(6, "Neteisingas telefono numeris").max(20),
   email: z.string().trim().email("Neteisingas el. paštas").max(255),
   password: z.string().min(8, "Slaptažodis turi būti bent 8 simbolių").max(128),
+  experience_text: z
+    .string()
+    .trim()
+    .min(50, "Aprašykite patirtį bent 50 simbolių")
+    .max(1000, "Per ilgas aprašymas"),
 });
+
+const EXPERIENCE_PLACEHOLDER =
+  "Pvz.: jodinėju 2 metus, jaučiuosi užtikrintai žingsniu ir risčia, šuoliuoju prižiūrima trenerio, pati pasibalnoju ir pasivaldau žirgą. Varžybose nedalyvavau.";
 
 const signInSchema = z.object({
   identifier: z.string().trim().min(3, "Įveskite el. paštą arba telefoną"),
@@ -38,6 +47,10 @@ export default function Auth() {
   const [fpPw2, setFpPw2] = useState("");
   const [fpBusy, setFpBusy] = useState(false);
 
+  // Sign-up extras
+  const [parentPhone, setParentPhone] = useState(false);
+  const [experience, setExperience] = useState("");
+
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -46,6 +59,7 @@ export default function Auth() {
       phone: fd.get("phone"),
       email: fd.get("email"),
       password: fd.get("password"),
+      experience_text: fd.get("experience_text"),
     });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
@@ -57,7 +71,12 @@ export default function Auth() {
       password: parsed.data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: parsed.data.full_name, phone: parsed.data.phone },
+        data: {
+          full_name: parsed.data.full_name,
+          phone: parsed.data.phone,
+          experience_text: parsed.data.experience_text,
+          phone_is_parent: parentPhone,
+        },
       },
     });
     setLoading(false);
@@ -168,10 +187,43 @@ export default function Auth() {
               <div>
                 <Label htmlFor="su-name">Vardas ir pavardė</Label>
                 <Input id="su-name" name="full_name" required maxLength={80} placeholder="Vardenis Pavardenis" />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Įrašykite <strong>raitelio</strong> vardą ir pavardę – to, kuris jos (vaiko, o ne tėvų).
+                </p>
               </div>
               <div>
                 <Label htmlFor="su-phone">Telefono numeris</Label>
                 <Input id="su-phone" name="phone" type="tel" required maxLength={20} placeholder="+370" />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Nurodykite <strong>tikrą</strong> numerį – juo susisieksime dėl pakeitimų ar nenumatytų atvejų.
+                </p>
+                <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={parentPhone}
+                    onChange={(e) => setParentPhone(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[hsl(var(--gold))]"
+                  />
+                  <span>Tai tėvų / globėjo numeris (raitelis – vaikas)</span>
+                </label>
+              </div>
+              <div>
+                <Label htmlFor="su-exp">Jojimo patirtis</Label>
+                <Textarea
+                  id="su-exp"
+                  name="experience_text"
+                  required
+                  minLength={50}
+                  maxLength={1000}
+                  rows={4}
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  placeholder={EXPERIENCE_PLACEHOLDER}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Trumpai aprašykite: kiek laiko jodinėjate, ar jojate žingsniu, risčia, šuoliais, ar patys pasibalnojate
+                  ir pasivaldote žirgą, ar turite varžybų patirties. Bent 50 simbolių ({experience.trim().length}/50).
+                </p>
               </div>
               <div>
                 <Label htmlFor="su-email">El. paštas</Label>

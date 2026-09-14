@@ -14,7 +14,7 @@ import { SubscriptionCard } from "@/pages/Paskyra";
 import { TimeInput } from "@/components/TimeInput";
 import { KeyRound, Trash2, Plus, Palmtree, CalendarClock, History } from "lucide-react";
 
-interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; }
+interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; experience_text?: string | null; phone_is_parent?: boolean | null; }
 interface Sub {
   id: string; user_id: string | null; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean; lesson_type?: string;
@@ -52,7 +52,7 @@ export function UserProfileSheet({
     setLoading(true);
     const today = formatDateISO(new Date());
     const [p, s, ps, v, up, pa, tr, roles] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, phone, riding_level").eq("id", id).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, phone, riding_level, experience_text, phone_is_parent").eq("id", id).maybeSingle(),
       supabase.from("subscriptions").select("*").eq("user_id", id).order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time").eq("user_id", id).order("day_of_week").order("slot_time"),
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").eq("user_id", id).order("starts_on", { ascending: false }),
@@ -317,6 +317,15 @@ function UserDetailsBody({
           <div>
             <Label>Telefonas</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            {profile.phone_is_parent && (
+              <p className="mt-1 text-xs text-gold">Tai tėvų / globėjo numeris</p>
+            )}
+          </div>
+          <div className="rounded-lg border border-gold/15 bg-background/40 p-3">
+            <Label>Jojimo patirtis (raitelio aprašymas)</Label>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+              {profile.experience_text?.trim() || "Nenurodyta"}
+            </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => onRename(first, last, phone)}>Išsaugoti</Button>
           <div className="pt-2 border-t border-gold/10 space-y-2">

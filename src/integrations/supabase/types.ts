@@ -483,6 +483,7 @@ export type Database = {
           appearance_mode: string | null
           created_at: string
           display_name: string | null
+          experience_text: string | null
           full_name: string
           id: string
           notify_lesson_reminders: boolean
@@ -491,6 +492,7 @@ export type Database = {
           onboarding_accepted_at: string | null
           onboarding_version: number | null
           phone: string | null
+          phone_is_parent: boolean
           reduced_effects: boolean
           riding_level: string | null
           rules_version: string | null
@@ -501,6 +503,7 @@ export type Database = {
           appearance_mode?: string | null
           created_at?: string
           display_name?: string | null
+          experience_text?: string | null
           full_name: string
           id: string
           notify_lesson_reminders?: boolean
@@ -509,6 +512,7 @@ export type Database = {
           onboarding_accepted_at?: string | null
           onboarding_version?: number | null
           phone?: string | null
+          phone_is_parent?: boolean
           reduced_effects?: boolean
           riding_level?: string | null
           rules_version?: string | null
@@ -519,6 +523,7 @@ export type Database = {
           appearance_mode?: string | null
           created_at?: string
           display_name?: string | null
+          experience_text?: string | null
           full_name?: string
           id?: string
           notify_lesson_reminders?: boolean
@@ -527,6 +532,7 @@ export type Database = {
           onboarding_accepted_at?: string | null
           onboarding_version?: number | null
           phone?: string | null
+          phone_is_parent?: boolean
           reduced_effects?: boolean
           riding_level?: string | null
           rules_version?: string | null
