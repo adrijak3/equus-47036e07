@@ -14,7 +14,7 @@ import { SubscriptionCard } from "@/pages/Paskyra";
 import { TimeInput } from "@/components/TimeInput";
 import { KeyRound, Trash2, Plus, Palmtree, CalendarClock, History } from "lucide-react";
 
-interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; }
+interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; experience_text?: string | null; phone_is_parent?: boolean | null; }
 interface Sub {
   id: string; user_id: string | null; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean; lesson_type?: string;
