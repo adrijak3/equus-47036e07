@@ -70,7 +70,12 @@ export default function Auth() {
       password: parsed.data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: parsed.data.full_name, phone: parsed.data.phone },
+        data: {
+          full_name: parsed.data.full_name,
+          phone: parsed.data.phone,
+          experience_text: parsed.data.experience_text,
+          phone_is_parent: parentPhone,
+        },
       },
     });
     setLoading(false);
