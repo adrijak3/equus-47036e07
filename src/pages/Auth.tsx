@@ -186,10 +186,43 @@ export default function Auth() {
               <div>
                 <Label htmlFor="su-name">Vardas ir pavardė</Label>
                 <Input id="su-name" name="full_name" required maxLength={80} placeholder="Vardenis Pavardenis" />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Įrašykite <strong>raitelio</strong> vardą ir pavardę – to, kuris jos (vaiko, o ne tėvų).
+                </p>
               </div>
               <div>
                 <Label htmlFor="su-phone">Telefono numeris</Label>
                 <Input id="su-phone" name="phone" type="tel" required maxLength={20} placeholder="+370" />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Nurodykite <strong>tikrą</strong> numerį – juo susisieksime dėl pakeitimų ar nenumatytų atvejų.
+                </p>
+                <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={parentPhone}
+                    onChange={(e) => setParentPhone(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[hsl(var(--gold))]"
+                  />
+                  <span>Tai tėvų / globėjo numeris (raitelis – vaikas)</span>
+                </label>
+              </div>
+              <div>
+                <Label htmlFor="su-exp">Jojimo patirtis</Label>
+                <Textarea
+                  id="su-exp"
+                  name="experience_text"
+                  required
+                  minLength={50}
+                  maxLength={1000}
+                  rows={4}
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  placeholder={EXPERIENCE_PLACEHOLDER}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Trumpai aprašykite: kiek laiko jodinėjate, ar jojate žingsniu, risčia, šuoliais, ar patys pasibalnojate
+                  ir pasivaldote žirgą, ar turite varžybų patirties. Bent 50 simbolių ({experience.trim().length}/50).
+                </p>
               </div>
               <div>
                 <Label htmlFor="su-email">El. paštas</Label>
