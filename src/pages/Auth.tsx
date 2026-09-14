@@ -15,7 +15,15 @@ const signUpSchema = z.object({
   phone: z.string().trim().min(6, "Neteisingas telefono numeris").max(20),
   email: z.string().trim().email("Neteisingas el. paštas").max(255),
   password: z.string().min(8, "Slaptažodis turi būti bent 8 simbolių").max(128),
+  experience_text: z
+    .string()
+    .trim()
+    .min(50, "Aprašykite patirtį bent 50 simbolių")
+    .max(1000, "Per ilgas aprašymas"),
 });
+
+const EXPERIENCE_PLACEHOLDER =
+  "Pvz.: jodinėju 2 metus, jaučiuosi užtikrintai žingsniu ir risčia, šuoliuoju prižiūrima trenerio, pati pasibalnoju ir pasivaldau žirgą. Varžybose nedalyvavau.";
 
 const signInSchema = z.object({
   identifier: z.string().trim().min(3, "Įveskite el. paštą arba telefoną"),
