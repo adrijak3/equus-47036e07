@@ -11,13 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const themes: {value:EquusTheme;label:string;preview:string}[]=[
- {value:"automatic",label:"Automatinė",preview:"from-pink-200 via-amber-200 to-slate-700"},
- {value:"spring",label:"Pavasaris",preview:"from-[#f6c4d9] via-[#dc87ae] to-[#9f4674]"},
- {value:"summer",label:"Vasara",preview:"from-[#FFEED6] via-[#A5AF79] to-[#E8A07C]"},
- {value:"autumn",label:"Ruduo",preview:"from-[#2a1712] via-[#72412a] to-[#d08a4c]"},
- {value:"winter",label:"Žiema",preview:"from-[#07111f] via-[#102b49] to-[#7cbcff]"},
-];
 
 export function WelcomeOnboarding(){
  const {user,isAdmin,profile,refreshProfile}=useAuth(); const {theme,setTheme}=useEquusTheme();
