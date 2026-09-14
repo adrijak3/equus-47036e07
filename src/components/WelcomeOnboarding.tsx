@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 
 export function WelcomeOnboarding(){
- const {user,isAdmin,profile,refreshProfile}=useAuth(); const {theme,setTheme}=useEquusTheme();
+ const {user,isAdmin,profile,refreshProfile}=useAuth();
  const [open,setOpen]=useState(false); const [step,setStep]=useState(1); const [displayName,setDisplayName]=useState("");
  const [notifyReminders,setNotifyReminders]=useState(true); const [notifyChanges,setNotifyChanges]=useState(true); const [notifyNews,setNotifyNews]=useState(true);
  const [readToEnd,setReadToEnd]=useState(false); const [accepted,setAccepted]=useState(false); const [saving,setSaving]=useState(false); const scrollRef=useRef<HTMLDivElement>(null);
