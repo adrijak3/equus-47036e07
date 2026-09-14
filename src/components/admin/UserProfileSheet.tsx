@@ -317,6 +317,15 @@ function UserDetailsBody({
           <div>
             <Label>Telefonas</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            {profile.phone_is_parent && (
+              <p className="mt-1 text-xs text-gold">Tai tėvų / globėjo numeris</p>
+            )}
+          </div>
+          <div className="rounded-lg border border-gold/15 bg-background/40 p-3">
+            <Label>Jojimo patirtis (raitelio aprašymas)</Label>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+              {profile.experience_text?.trim() || "Nenurodyta"}
+            </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => onRename(first, last, phone)}>Išsaugoti</Button>
           <div className="pt-2 border-t border-gold/10 space-y-2">
