@@ -46,6 +46,10 @@ export default function Auth() {
   const [fpPw2, setFpPw2] = useState("");
   const [fpBusy, setFpBusy] = useState(false);
 
+  // Sign-up extras
+  const [parentPhone, setParentPhone] = useState(false);
+  const [experience, setExperience] = useState("");
+
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -54,6 +58,7 @@ export default function Auth() {
       phone: fd.get("phone"),
       email: fd.get("email"),
       password: fd.get("password"),
+      experience_text: fd.get("experience_text"),
     });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
