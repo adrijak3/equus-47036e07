@@ -652,6 +652,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          id: number
+          maintenance_mode: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          maintenance_mode?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          maintenance_mode?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       slot_notes: {
         Row: {
           created_at: string
