@@ -8,6 +8,13 @@
       "when": 1789379646521,
       "tag": "0000_add_rider_experience_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789575619866,
+      "tag": "0001_create_site_settings_maintenance_mode",
+      "breakpoints": true
     }
   ]
 }
