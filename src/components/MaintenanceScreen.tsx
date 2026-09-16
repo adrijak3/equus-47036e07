@@ -35,11 +35,10 @@ export function MaintenanceScreen() {
             {/* Lithuanian — always first */}
             <section lang="lt" className="space-y-4">
               <h1 className="font-display text-[clamp(1.7rem,5.5vw,2.6rem)] leading-snug text-gradient-gold">
-                Svetainėje atliekami techniniai atnaujinimai
+               Svetainė trumpam išjojo į techninę pertrauką
               </h1>
               <p className="text-[clamp(0.95rem,2.8vw,1.05rem)] leading-relaxed text-foreground/85 max-w-prose mx-auto md:mx-0">
-                Šiuo metu mūsų svetainėje vyksta techniniai darbai, kurie padės mums
-                suteikti dar patogesnę naudojimosi patirtį.
+                Šiuo metu svetainėje atliekami techniniai atnaujinimai, kad Jūsų patirtis būtų dar patogesnė.
               </p>
               <p className="text-foreground/80">Ačiū už kantrybę! ♡</p>
               <p className="font-display italic text-gold/90 text-[clamp(1rem,3vw,1.15rem)]">
@@ -52,7 +51,7 @@ export function MaintenanceScreen() {
             {/* English */}
             <section lang="en" className="space-y-4">
               <h2 className="font-display text-[clamp(1.4rem,4.5vw,2rem)] leading-snug text-foreground">
-                Technical updates are in progress
+                The website has stepped out for a little maintenance break.
               </h2>
               <p className="text-[clamp(0.9rem,2.6vw,1rem)] leading-relaxed text-muted-foreground max-w-prose mx-auto md:mx-0">
                 Our website is currently undergoing technical maintenance to make
