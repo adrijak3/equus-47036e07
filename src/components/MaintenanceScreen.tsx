@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * Vidurnaktis, …) and both light/dark modes.
  */
 export function MaintenanceScreen() {
-  const { lang } = useLanguageSafe();
+  const { language } = useLanguage();
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-background text-foreground">
@@ -84,32 +84,14 @@ export function MaintenanceScreen() {
         </div>
       </div>
       {/* Screen-reader hint so visitors know this is temporary */}
-      <p className="sr-only" lang={lang === "en" ? "en" : "lt"}>
-        {lang === "en"
+      <p className="sr-only" lang={language === "en" ? "en" : "lt"}>
+        {language === "en"
           ? "The site is temporarily unavailable due to maintenance. Please check back soon."
           : "Svetainė laikinai nepasiekiama dėl techninių darbų. Užsukite vėliau."}
       </p>
     </div>
   );
 }
-
-function useLanguageSafe(): { lang: string } {
-  try {
-    // Imported lazily to keep the screen standalone
-    const mod = require_lang();
-    const ctx = mod.useLanguage?.();
-    return { lang: ctx?.lang ?? "lt" };
-  } catch {
-    return { lang: "lt" };
-  }
-}
-
-function require_lang() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return langModule;
-}
-
-import * as langModule from "@/contexts/LanguageContext";
 
 function Horseshoe({ className }: { className?: string }) {
   return (
