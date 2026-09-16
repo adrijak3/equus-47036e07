@@ -74,9 +74,9 @@ export function MaintenanceScreen() {
           >
             <img
               src="/maintenance-horse.png"
-              alt="Šiltas arklys tvarte — Equus jojimo mokykla / A warm horse in the stable — Equus riding school"
-              width={372}
-              height={809}
+              alt="Arklys iš arklidės su miegančiomis katytėmis — Equus jojimo mokykla / A horse looking out from the stable with sleeping kittens — Equus riding school"
+              width={740}
+              height={982}
               className="w-auto max-w-[46vw] sm:max-w-[300px] md:max-w-full max-h-[38dvh] md:max-h-[70dvh] object-contain drop-shadow-elegant motion-safe:animate-maintenance-float select-none pointer-events-none"
               draggable={false}
             />
