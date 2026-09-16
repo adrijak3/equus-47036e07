@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart } from "lucide-react";
-import { LayoutDashboard, Palmtree, Menu, CopyCheck } from "lucide-react";
+import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import { AdminCancellationHistory } from "@/components/AdminCancellationHistory"
 import { UsersSection } from "@/components/admin/UsersSection";
 import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders";
 import { History } from "lucide-react";
+import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
 interface CancelReq {
@@ -89,6 +90,7 @@ export default function Admin() {
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
     { value: "cancelHistory", label: "Atšaukimų istorija", icon: History },
+    { value: "settings", label: "Nustatymai", icon: Settings },
   ];
   const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
 
@@ -190,6 +192,9 @@ export default function Admin() {
             <TabsContent value="duplicates"><AdminDuplicateBookings /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
+            <TabsContent value="settings" className="space-y-6">
+              <MaintenanceSettings />
+            </TabsContent>
           </Tabs>
         </div>
       </div>

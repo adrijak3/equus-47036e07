@@ -10,6 +10,7 @@ import { EffectsProvider } from "@/contexts/EffectsContext";
 
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
+import { MaintenanceGate } from "@/components/MaintenanceGate";
 import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { SeasonalParticles } from "@/components/SeasonalParticles";
 import { AutoTranslate } from "@/components/AutoTranslate";
@@ -67,6 +68,7 @@ const App = () => (
 
           <BrowserRouter>
             <AuthProvider>
+              <MaintenanceGate>
               <Layout>
                 <SeasonalParticles />
                 <WelcomeOnboarding />
@@ -115,6 +117,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Layout>
+              </MaintenanceGate>
             </AuthProvider>
           </BrowserRouter>
           </ThemeProvider>
