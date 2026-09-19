@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EffectsToggle from "@/components/EffectsToggle";
+import { EquusHelpWidget } from "@/components/EquusHelpWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -493,6 +494,8 @@ export default function Layout({
           </div>
         </motion.aside>
       </div>
+
+      <EquusHelpWidget />
 
       <main className="flex-1 overflow-x-hidden">
         <AnimatePresence mode="wait" initial={false}>
