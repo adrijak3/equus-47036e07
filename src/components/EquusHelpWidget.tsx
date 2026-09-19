@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { MessageCircle, X, MapPin, Phone, MessageSquare, Send } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { MessageCircle, X, MapPin, Phone, MessageSquare, Send, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type HelpMessage = {
@@ -73,7 +74,6 @@ const FAQ_DATA = {
 function answerForInput(input: string, language: "lt" | "en") {
   const text = input.toLowerCase();
   const faqs = FAQ_DATA[language];
-
   const matches = (words: string[]) => words.some((word) => text.includes(word));
 
   if (matches(["kain", "price", "lesson", "pamok", "treniruot"])) return faqs[0].a;
@@ -89,133 +89,241 @@ function answerForInput(input: string, language: "lt" | "en") {
     : "I cannot answer this exactly. Please contact Equus.";
 }
 
+const responseDelay = 650;
+
 export function EquusHelpWidget() {
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<HelpMessage[]>([
     {
       type: "bot",
       text: language === "lt" ? "Sveiki! Kaip galiu padėti?" : "Hi! How can I help?",
     },
   ]);
-
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const faqs = useMemo(() => FAQ_DATA[language], [language]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  const sendBotReply = (answer: string) => {
+    setIsTyping(true);
+    window.setTimeout(() => {
+      setMessages((prev) => [...prev, { type: "bot", text: answer }]);
+      setIsTyping(false);
+    }, responseDelay);
+  };
+
   const handleFAQClick = (faq: { q: string; a: string }) => {
-    setMessages((prev) => [
-      ...prev,
-      { type: "user", text: faq.q },
-      { type: "bot", text: faq.a },
-    ]);
+    if (isTyping) return;
+    setMessages((prev) => [...prev, { type: "user", text: faq.q }]);
+    sendBotReply(faq.a);
   };
 
   const handleSubmit = () => {
     const value = input.trim();
-    if (!value) return;
+    if (!value || isTyping) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { type: "user", text: value },
-      { type: "bot", text: answerForInput(value, language) },
-    ]);
+    setMessages((prev) => [...prev, { type: "user", text: value }]);
     setInput("");
+    sendBotReply(answerForInput(value, language));
   };
 
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        aria-label={language === "lt" ? "Equus pagalba" : "Equus help"}
-        className="fixed bottom-6 right-4 sm:right-6 p-4 bg-amber-700 text-white rounded-full shadow-lg hover:bg-amber-800 transition-all z-50"
-      >
-        <MessageCircle size={28} />
-      </button>
-    );
-  }
-
   return (
-    <div className="fixed bottom-4 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-sm bg-background rounded-xl shadow-2xl border border-gold/20 z-50 flex flex-col overflow-hidden">
-      <div className="bg-amber-700 text-white p-4 flex justify-between items-center">
-        <span className="font-semibold flex items-center gap-2">🐴 Equus pagalba</span>
-        <button onClick={() => setIsOpen(false)} aria-label="Uždaryti">
-          <X size={20} />
-        </button>
-      </div>
-
-      <div className="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-background/80">
-        {messages.map((msg, idx) => (
-          <div
-            key={`${idx}-${msg.type}`}
-            className={`p-3 rounded-lg max-w-[88%] text-sm ${
-              msg.type === "bot"
-                ? "bg-card border border-gold/10 self-start"
-                : "bg-gold/10 text-foreground self-end"
-            }`}
+    <>
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.7, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.7, y: 16 }}
+            whileHover={{ scale: 1.06, y: -2 }}
+            whileTap={{ scale: 0.94 }}
+            transition={{ type: "spring", stiffness: 420, damping: 24 }}
+            onClick={() => setIsOpen(true)}
+            aria-label={language === "lt" ? "Equus pagalba" : "Equus help"}
+            className="fixed bottom-6 right-4 sm:right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-gold flex items-center justify-center border border-gold/30 overflow-hidden"
           >
-            {msg.text}
-          </div>
-        ))}
-      </div>
-
-      <div className="p-3 bg-background border-t border-gold/10 flex flex-col gap-2">
-        <div className="flex flex-wrap gap-2">
-          {faqs.map((faq) => (
-            <button
-              key={faq.q}
-              onClick={() => handleFAQClick(faq)}
-              className="text-xs bg-muted hover:bg-muted/80 px-3 py-1.5 rounded-full text-left transition-colors"
+            <motion.span
+              animate={{ rotate: [0, -8, 8, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 3 }}
+              className="relative z-10"
             >
-              {faq.q}
-            </button>
-          ))}
-        </div>
+              <MessageCircle size={26} />
+            </motion.span>
+            <motion.span
+              className="absolute inset-0 rounded-full border border-gold/40"
+              animate={{ scale: [1, 1.28], opacity: [0.45, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+            />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmit();
-            }}
-            placeholder={language === "lt" ? "Parašykite klausimą…" : "Ask a question…"}
-            className="min-w-0 flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-gold/50"
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!input.trim()}
-            className="h-9 w-9 shrink-0 rounded-md bg-gold text-background flex items-center justify-center disabled:opacity-40"
-            aria-label={language === "lt" ? "Siųsti" : "Send"}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 360, damping: 30 }}
+            className="fixed bottom-4 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
           >
-            <Send size={15} />
-          </button>
-        </div>
+            <div className="relative overflow-hidden bg-gradient-gold p-4 text-gold-foreground">
+              <motion.div
+                className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10"
+                animate={{ scale: [1, 1.12, 1], rotate: [0, 8, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <motion.div
+                    initial={{ rotate: -8 }}
+                    animate={{ rotate: [0, -5, 5, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 2 }}
+                    className="h-9 w-9 rounded-full bg-background/20 border border-white/20 flex items-center justify-center text-lg"
+                  >
+                    🐴
+                  </motion.div>
+                  <div>
+                    <div className="font-semibold leading-tight">Equus pagalba</div>
+                    <div className="text-[11px] opacity-80 flex items-center gap-1 mt-0.5">
+                      <Sparkles size={11} /> {language === "lt" ? "Greita pagalba" : "Quick help"}
+                    </div>
+                  </div>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsOpen(false)}
+                  aria-label={language === "lt" ? "Uždaryti" : "Close"}
+                  className="rounded-full p-1.5 hover:bg-white/10 transition-colors"
+                >
+                  <X size={19} />
+                </motion.button>
+              </div>
+            </div>
 
-        <div className="flex gap-2 mt-1 pt-2 border-t border-gold/10">
-          <a
-            href="https://maps.app.goo.gl/Tjd1rUUVSabq52ip6"
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100"
-          >
-            <MapPin size={14} /> {language === "lt" ? "Kaip atvykti" : "Directions"}
-          </a>
-          <a
-            href="https://wa.me/37062876090"
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100"
-          >
-            <MessageSquare size={14} /> WhatsApp
-          </a>
-          <a
-            href="tel:+37062876090"
-            className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-amber-50 text-amber-700 rounded-md hover:bg-amber-100"
-          >
-            <Phone size={14} /> {language === "lt" ? "Skambinti" : "Call"}
-          </a>
-        </div>
-      </div>
-    </div>
+            <div className="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-background/35">
+              <AnimatePresence initial={false} mode="popLayout">
+                {messages.map((msg, idx) => (
+                  <motion.div
+                    key={`${idx}-${msg.type}`}
+                    initial={{ opacity: 0, y: 10, scale: 0.96, x: msg.type === "user" ? 12 : -12 }}
+                    animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                    className={`p-3 rounded-2xl max-w-[88%] text-sm leading-relaxed shadow-sm ${
+                      msg.type === "bot"
+                        ? "bg-card border border-border/70 self-start rounded-bl-md"
+                        : "bg-primary text-primary-foreground self-end rounded-br-md"
+                    }`}
+                  >
+                    {msg.text}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    className="self-start rounded-2xl rounded-bl-md bg-card border border-border/70 px-4 py-3 shadow-sm"
+                    aria-label={language === "lt" ? "Rašoma" : "Typing"}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {[0, 1, 2].map((dot) => (
+                        <motion.span
+                          key={dot}
+                          className="h-1.5 w-1.5 rounded-full bg-primary"
+                          animate={{ y: [0, -4, 0], opacity: [0.45, 1, 0.45] }}
+                          transition={{ duration: 0.8, repeat: Infinity, delay: dot * 0.14 }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="p-3 bg-card border-t border-border/70 flex flex-col gap-2.5">
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                {faqs.map((faq) => (
+                  <motion.button
+                    key={faq.q}
+                    whileHover={{ y: -1, scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleFAQClick(faq)}
+                    disabled={isTyping}
+                    className="text-xs bg-muted hover:bg-accent border border-border/50 px-3 py-1.5 rounded-full text-left transition-colors disabled:opacity-50"
+                  >
+                    {faq.q}
+                  </motion.button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSubmit();
+                  }}
+                  placeholder={language === "lt" ? "Parašykite klausimą…" : "Ask a question…"}
+                  disabled={isTyping}
+                  className="min-w-0 flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/30 transition-all disabled:opacity-60"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={handleSubmit}
+                  disabled={!input.trim() || isTyping}
+                  className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-sm disabled:opacity-40 transition-opacity"
+                  aria-label={language === "lt" ? "Siųsti" : "Send"}
+                >
+                  <Send size={15} />
+                </motion.button>
+              </div>
+
+              <div className="flex gap-1.5 pt-2 border-t border-border/60">
+                <motion.a
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  href="https://maps.app.goo.gl/Tjd1rUUVSabq52ip6"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors"
+                >
+                  <MapPin size={13} /> {language === "lt" ? "Kaip atvykti" : "Directions"}
+                </motion.a>
+                <motion.a
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  href="https://wa.me/37062876090"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors"
+                >
+                  <MessageSquare size={13} /> WhatsApp
+                </motion.a>
+                <motion.a
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  href="tel:+37062876090"
+                  className="flex-1 flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors"
+                >
+                  <Phone size={13} /> {language === "lt" ? "Skambinti" : "Call"}
+                </motion.a>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
