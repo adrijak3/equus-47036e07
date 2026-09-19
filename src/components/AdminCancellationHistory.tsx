@@ -17,6 +17,7 @@ interface Row {
   reason: string | null;
   restored_at: string | null;
   created_at: string;
+  accidental?: boolean | null;
   name?: string;
 }
 

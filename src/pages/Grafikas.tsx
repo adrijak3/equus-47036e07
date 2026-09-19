@@ -4242,6 +4242,79 @@ export default function Grafikas() {
         </DialogContent>
       </Dialog>
 
+      {/* Accidental registration (within 2 h) */}
+      <Dialog
+        open={!!accidentDialog}
+        onOpenChange={(open) =>
+          !open && setAccidentDialog(null)
+        }
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Atšaukti registraciją
+            </DialogTitle>
+            <DialogDescription>
+              Registracija atlikta ką tik, todėl galite ją tiesiog pašalinti, jei paspaudėte per klaidą.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="rounded-md border border-gold/15 p-3 text-sm">
+              <div className="flex items-center gap-2 font-medium">
+                <AlertCircle className="h-4 w-4 text-gold" />
+                Registravausi per klaidą
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Registracija bus visiškai pašalinta: nebus skaičiuojama abonemente ir nebus rodoma treniruočių istorijoje. Galima tik 2 val. nuo registracijos.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                const booking =
+                  accidentDialog?.booking;
+                setAccidentDialog(null);
+                if (!booking) return;
+                const hours = hoursUntil(
+                  booking.slot_date,
+                  booking.slot_time,
+                );
+                if (hours > 24) {
+                  setConfirmDialog({
+                    title: "Atšaukti pamoką?",
+                    description:
+                      "Pamoka bus pažymėta kaip atšaukta.",
+                    onConfirm: () =>
+                      cancelSingleBooking(booking),
+                  });
+                } else {
+                  setCancelDialog({ booking });
+                  setCancelReason("");
+                  setCancelSickness(false);
+                  setCancelFile(null);
+                }
+              }}
+            >
+              Įprastas atšaukimas
+            </Button>
+
+            <Button
+              variant="gold"
+              onClick={submitAccidentCancel}
+              disabled={accidentBusy}
+            >
+              {accidentBusy
+                ? "Šalinama…"
+                : "Taip, per klaidą"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Late cancel */}
       <Dialog
         open={!!cancelDialog}
