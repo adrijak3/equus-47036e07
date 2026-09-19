@@ -54,7 +54,7 @@ export function trainerGroupState(levels: RidingLevel[], hardMax = 4): GroupStat
     maxAllowed,
     free,
     full: total >= maxAllowed,
-    reason: `Maksimalus dalyvių skaičius — ${maxAllowed}`,
+    reason: `Maksimalus raitelių skaičius — ${maxAllowed}`,
   };
 }
 
@@ -62,7 +62,7 @@ export function trainerGroupState(levels: RidingLevel[], hardMax = 4): GroupStat
 export function blockReason(levels: RidingLevel[], _newLevel: RidingLevel, hardMax = 4): string | null {
   const max = Math.min(hardMax, 4);
   if (levels.length + 1 > max) {
-    return `Grupė pilna — maksimalus dalyvių skaičius yra ${max}.`;
+    return `Grupė pilna — maksimalus raitelių skaičius yra ${max}.`;
   }
   return null;
 }
