@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
+import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { disablePushNotifications, enablePushNotifications, getPushSubscription, pushNotificationsSupported, syncPushLanguage } from "@/lib/pushNotifications";
 
 interface Booking {
   id: string;
@@ -85,6 +86,10 @@ export default function Paskyra() {
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const { language } = useLanguage();
+  useEffect(() => {
+    void syncPushLanguage(language);
+  }, [language]);
+
 
   // Add subscription dialog
   const [subDialog, setSubDialog] = useState(false);
@@ -418,6 +423,8 @@ export default function Paskyra() {
             onEdit={() => setEditOpen(true)}
             onPassword={() => setPwOpen(true)}
           />
+
+          <PushNotificationSettings language={language} />
 
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
@@ -768,6 +775,72 @@ export default function Paskyra() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!pushNotificationsSupported()) return;
+    getPushSubscription().then((subscription) => setEnabled(!!subscription));
+  }, []);
+
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      if (enabled) {
+        await disablePushNotifications();
+        setEnabled(false);
+        toast.success(language === "lt" ? "Pranešimai išjungti." : "Notifications disabled.");
+      } else {
+        await enablePushNotifications(language);
+        setEnabled(true);
+        toast.success(language === "lt" ? "Telefono pranešimai įjungti." : "Phone notifications enabled.");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.message ??
+          (language === "lt"
+            ? "Nepavyko pakeisti pranešimų nustatymo."
+            : "Could not change notification setting."),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section
+      title={language === "lt" ? "Pranešimai" : "Notifications"}
+      icon={<Bell className="w-4 h-4" />}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div>
+          <div className="font-medium">
+            {language === "lt" ? "Telefono pranešimai" : "Phone notifications"}
+          </div>
+          <p className="mt-1 max-w-xl text-xs text-muted-foreground">
+            {language === "lt"
+              ? "Gausite svarbius Equus pranešimus apie atšaukimus, pakeistus laikus, atšauktas dienas ir priminimą likus 24 val."
+              : "Receive important Equus notifications about cancellations, time changes, cancelled days and a 24-hour reminder."}
+          </p>
+        </div>
+        <Button
+          variant={enabled ? "outlineGold" : "gold"}
+          size="sm"
+          onClick={() => void toggle()}
+          disabled={busy || !pushNotificationsSupported()}
+        >
+          {busy
+            ? language === "lt" ? "Kraunama…" : "Working…"
+            : enabled
+              ? language === "lt" ? "Išjungti" : "Disable"
+              : language === "lt" ? "Įjungti" : "Enable"}
+        </Button>
+      </div>
+    </Section>
   );
 }
 
