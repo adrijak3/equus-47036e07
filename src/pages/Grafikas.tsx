@@ -1453,7 +1453,7 @@ export default function Grafikas() {
 
     setAccidentDialog(null);
     toast.success(
-      "Registracija pašalinta — ji nebus skaičiuojama.",
+      "Registracija pašalinta:)",
     );
 
     await loadData();
@@ -1618,9 +1618,9 @@ export default function Grafikas() {
     toast.success(
       cancelSickness
         ? cancelFile
-          ? "Atšaukta. Pažyma įkelta — laukia administracijos."
-          : "Atšaukta. Iki 7 d. pridėkite pažymą paskyroje."
-        : "Atšaukta. Laukia administracijos sprendimo.",
+          ? "Atšaukta. Pažyma įkelta - ačiū!"
+          : "Atšaukta. Sveikite!"
+        : "Atšaukta. Sveikite!",
     );
 
     setCancelDialog(null);
