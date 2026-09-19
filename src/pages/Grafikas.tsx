@@ -16,6 +16,7 @@ import {
   Grid2X2,
   List,
   CircleCheckBig,
+  ArrowRightLeft,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ import { cn } from "@/lib/utils";
 import { FloralAccent, HorseFlourish } from "@/components/Decorations";
 import { VacationBanner } from "@/components/VacationsPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { flushPushNotifications } from "@/lib/pushNotifications";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import {
   RiderActionSheet,
@@ -226,6 +228,21 @@ export default function Grafikas() {
   const [cancelDialog, setCancelDialog] = useState<{
     booking: Booking;
   } | null>(null);
+
+  const [moveDialog, setMoveDialog] = useState<{
+    booking: Booking;
+    options: {
+      id: string;
+      time: string;
+      trainer_name: string | null;
+      capacity: number;
+      taken: number;
+      horseBlocked: boolean;
+    }[];
+  } | null>(null);
+  const [moveSelectedTime, setMoveSelectedTime] = useState("");
+  const [moveLoading, setMoveLoading] = useState(false);
+  const [moveBusy, setMoveBusy] = useState(false);
 
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSickness, setCancelSickness] = useState(false);
@@ -1074,13 +1091,17 @@ export default function Grafikas() {
 
     if (error) {
       toast.error(
-        error.code === "23505"
-          ? "Jūs jau užregistruoti į šią pamoką"
-          : /pradedant|Grupė/i.test(
-                error.message,
-              )
-            ? error.message
-            : "Klaida: " + error.message,
+        error.message?.includes("BOOKING_CUTOFF")
+          ? (language === "lt"
+              ? "Registracija uždaryta likus 3 valandoms iki treniruotės."
+              : "Registration closes 3 hours before training.")
+          : error.code === "23505"
+            ? "Jūs jau užregistruoti į šią pamoką"
+            : /pradedant|Grupė/i.test(
+                  error.message,
+                )
+              ? error.message
+              : "Klaida: " + error.message,
       );
       return;
     }
@@ -1326,6 +1347,7 @@ export default function Grafikas() {
     );
 
     toast.success("Pamoka atšaukta");
+    void flushPushNotifications();
 
     await loadData();
   };
@@ -1456,6 +1478,116 @@ export default function Grafikas() {
       "Registracija pašalinta:)",
     );
 
+    await loadData();
+  };
+
+  const openMoveDialog = async (booking: Booking) => {
+    if (!user || booking.user_id !== user.id || booking.status !== "active") return;
+
+    const hours = hoursUntil(booking.slot_date, booking.slot_time);
+    if (hours < 3) {
+      toast.error(
+        language === "lt"
+          ? "Perkelti galima tik likus bent 3 valandoms iki treniruotės."
+          : "A move is only available at least 3 hours before training.",
+      );
+      return;
+    }
+
+    setMoveLoading(true);
+    setMoveSelectedTime("");
+
+    const dateISO = booking.slot_date;
+    const dayDate = new Date(`${dateISO}T00:00:00`);
+    const daySlots = getDaySlots(dayDate);
+
+    const [{ data: dayBookings }, { data: dayAssignments }] = await Promise.all([
+      supabase
+        .from("bookings")
+        .select("id, slot_time, status, trainer_name")
+        .eq("slot_date", dateISO)
+        .in("status", ["active", "pending_cancel"]),
+      supabase
+        .from("horse_assignments")
+        .select("booking_id, horse_id, slot_time")
+        .eq("slot_date", dateISO),
+    ]);
+
+    const currentAssignment = (dayAssignments ?? []).find(
+      (a: any) => a.booking_id === booking.id,
+    );
+
+    const options = daySlots
+      .filter((slot) => slot.slot_time !== booking.slot_time)
+      .map((slot) => {
+        const taken = (dayBookings ?? []).filter(
+          (b: any) =>
+            b.slot_time === slot.slot_time &&
+            (b.trainer_name ?? null) === (slot.trainer_name ?? null) &&
+            b.id !== booking.id,
+        ).length;
+
+        const capacity = getCapacity(dayDate, slot.slot_time, slot.max_capacity);
+        const horseBlocked = !!currentAssignment && (dayAssignments ?? []).some(
+          (a: any) =>
+            a.booking_id !== booking.id &&
+            a.slot_time === slot.slot_time &&
+            a.horse_id === currentAssignment.horse_id,
+        );
+
+        const targetStart = new Date(`${dateISO}T${slot.slot_time}`);
+        const cutoffBlocked = targetStart.getTime() - Date.now() < 3 * 60 * 60 * 1000;
+        const cancelled = !!getTrainerDayCancellation(dayDate, slot.trainer_name);
+
+        return {
+          id: slot.id,
+          time: slot.slot_time,
+          trainer_name: slot.trainer_name ?? null,
+          capacity,
+          taken,
+          horseBlocked: horseBlocked || cutoffBlocked || cancelled,
+        };
+      })
+      .filter((slot) => slot.taken < slot.capacity && !slot.horseBlocked)
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    setMoveDialog({ booking, options });
+    setMoveLoading(false);
+  };
+
+  const confirmMove = async () => {
+    if (!moveDialog || !moveSelectedTime) return;
+
+    setMoveBusy(true);
+    const { error } = await (supabase as any).rpc("move_booking_same_day", {
+      _booking_id: moveDialog.booking.id,
+      _target_slot_id: moveSelectedTime,
+    });
+    setMoveBusy(false);
+
+    if (error) {
+      const message =
+        error.message?.includes("SLOT_FULL")
+          ? (language === "lt" ? "Ši treniruotė jau pilna." : "This training is already full.")
+          : error.message?.includes("HORSE_NOT_AVAILABLE")
+            ? (language === "lt" ? "Šis žirgas jau pasirinktas tuo pačiu metu." : "This horse is already chosen at that time.")
+            : error.message?.includes("BOOKING_CUTOFF")
+              ? (language === "lt" ? "Iki treniruotės liko mažiau nei 3 valandos." : "Less than 3 hours remain before training.")
+              : error.message?.includes("DAY_CANCELLED")
+                ? (language === "lt" ? "Šios treniruotės diena atšaukta." : "This training day was cancelled.")
+                : (language === "lt" ? "Nepavyko perkelti treniruotės." : "The training could not be moved.");
+
+      toast.error(message);
+      await loadData();
+      return;
+    }
+
+    setMoveDialog(null);
+    setMoveSelectedTime("");
+    toast.success(
+      language === "lt" ? "Treniruotė perkelta." : "Training moved.",
+    );
+    void flushPushNotifications();
     await loadData();
   };
 
@@ -1623,6 +1755,7 @@ export default function Grafikas() {
         : "Atšaukta. Sveikite!",
     );
 
+    void flushPushNotifications();
     setCancelDialog(null);
     setCancelFile(null);
 
@@ -3602,6 +3735,20 @@ export default function Grafikas() {
                                                 ).getTime() >
                                                   Date.now() ? null : null}
 
+                                                {!slotPast &&
+                                                  b.user_id === user?.id &&
+                                                  b.status === "active" &&
+                                                  hoursUntil(b.slot_date, b.slot_time) >= 3 && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => void openMoveDialog(b)}
+                                                      className="text-muted-foreground hover:text-gold transition-colors"
+                                                      aria-label={language === "lt" ? "Perkelti" : "Move"}
+                                                      title={language === "lt" ? "Perkelti" : "Move"}
+                                                    >
+                                                      <ArrowRightLeft className="w-3 h-3" />
+                                                    </button>
+                                                  )}
                                                 {!slotPast && (
                                                   <button
                                                     type="button"
@@ -3630,7 +3777,26 @@ export default function Grafikas() {
                                   user &&
                                   !myBooking && (
                                     <div className="px-2 pb-2 pt-1">
-                                      {!isFull ? (
+                                      {hoursUntil(formatDateISO(date), slot.slot_time) < 3 ? (
+                                        <div className="space-y-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full h-8 text-[11px]"
+                                            disabled
+                                          >
+                                            🔒 {language === "lt" ? "Registracija uždaryta" : "Registration closed"}
+                                          </Button>
+                                          <a
+                                            href="https://wa.me/37062876090?text=Nor%C4%8Diau%20u%C5%BEsiregistruoti%20%C4%AF%20Equus%20treniruot%C4%99."
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block text-center text-[10px] text-gold hover:underline"
+                                          >
+                                            {language === "lt" ? "Parašyti Equus" : "Contact Equus"}
+                                          </a>
+                                        </div>
+                                      ) : !isFull ? (
                                         <Button
                                           variant="ghostGold"
                                           size="sm"
@@ -4854,6 +5020,96 @@ export default function Grafikas() {
             >
               Uždaryti
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Same-day move */}
+      <Dialog
+        open={!!moveDialog}
+        onOpenChange={(open) => {
+          if (!open && !moveBusy) {
+            setMoveDialog(null);
+            setMoveSelectedTime("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-3xl border-gold/20 bg-gradient-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">
+              {language === "lt" ? "Perkelti treniruotę" : "Move training"}
+            </DialogTitle>
+            <DialogDescription>
+              {moveDialog
+                ? language === "lt"
+                  ? `${moveDialog.booking.slot_date} · ${formatTime(moveDialog.booking.slot_time)}`
+                  : `${moveDialog.booking.slot_date} · ${formatTime(moveDialog.booking.slot_time)}`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          {moveLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {language === "lt" ? "Ieškoma laisvų laikų…" : "Finding available times…"}
+            </div>
+          ) : moveDialog && moveDialog.options.length > 0 ? (
+            <div className="space-y-3">
+              <Label>
+                {language === "lt"
+                  ? "Pasirinkite kitą laiką tą pačią dieną"
+                  : "Choose another time on the same day"}
+              </Label>
+              <select
+                value={moveSelectedTime}
+                onChange={(e) => setMoveSelectedTime(e.target.value)}
+                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">
+                  {language === "lt" ? "— pasirinkite laiką —" : "— choose a time —"}
+                </option>
+                {moveDialog.options.map((option) => (
+                  <option key={option.id} value={option.time}>
+                    {formatTime(option.time)}
+                    {option.trainer_name ? ` · ${option.trainer_name}` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {language === "lt"
+                  ? "Galima rinktis bet kokio tipo treniruotę. Pilnos treniruotės ir laikas, kai pasirinktas tas pats žirgas, nerodomi."
+                  : "Any training type can be selected. Full slots and times where the same horse is already chosen are hidden."}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-gold/15 bg-background/30 p-4 text-sm text-muted-foreground">
+              {language === "lt"
+                ? "Šiandien daugiau tinkamų laikų nėra."
+                : "There are no other suitable times today."}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setMoveDialog(null);
+                setMoveSelectedTime("");
+              }}
+              disabled={moveBusy}
+            >
+              {language === "lt" ? "Atšaukti" : "Cancel"}
+            </Button>
+            {moveDialog && moveDialog.options.length > 0 && (
+              <Button
+                variant="gold"
+                onClick={confirmMove}
+                disabled={!moveSelectedTime || moveBusy}
+              >
+                {moveBusy
+                  ? language === "lt" ? "Perkeliama…" : "Moving…"
+                  : language === "lt" ? "Perkelti" : "Move"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
