@@ -146,6 +146,11 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
               <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>
                 Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}
               </span>
+              {r.accidental && (
+                <span className="rounded-full border border-blush/40 bg-blush/10 px-2 py-0.5 text-[11px] text-blush">
+                  per klaidą
+                </span>
+              )}
               {r.restored_at && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-avail-free/40 bg-avail-free/10 px-2 py-0.5 text-[11px] text-avail-free">
                   <RotateCcw className="h-3 w-3" /> grąžinta
