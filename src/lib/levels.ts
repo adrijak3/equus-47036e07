@@ -42,11 +42,11 @@ export interface GroupState {
   reason: string;
 }
 
-/** Dynamic safe capacity for a trainer group lesson (max 4, 3 with one beginner, 2 with two). */
+/** Group capacity for a trainer lesson — flat limit, rider levels no longer restrict it. */
 export function trainerGroupState(levels: RidingLevel[], hardMax = 4): GroupState {
   const total = levels.length;
   const beginners = levels.filter((l) => l === "beginner").length;
-  const maxAllowed = Math.min(hardMax, beginners >= 2 ? 2 : beginners === 1 ? 3 : 4);
+  const maxAllowed = Math.min(hardMax, 4);
   const free = Math.max(0, maxAllowed - total);
   return {
     total,
@@ -54,27 +54,15 @@ export function trainerGroupState(levels: RidingLevel[], hardMax = 4): GroupStat
     maxAllowed,
     free,
     full: total >= maxAllowed,
-    reason:
-      beginners >= 2
-        ? "2 pradedantieji"
-        : beginners === 1
-          ? "Grupėje yra pradedantysis"
-          : "Grupės dydis priklauso nuo raitelių lygio",
+    reason: `Maksimalus dalyvių skaičius — ${maxAllowed}`,
   };
 }
 
-/** Explains why one more rider of the given level cannot join. Returns null when allowed. */
-export function blockReason(levels: RidingLevel[], newLevel: RidingLevel, hardMax = 4): string | null {
-  const next = [...levels, newLevel];
-  const beginners = next.filter((l) => l === "beginner").length;
-  if (beginners > 2) {
-    return "Šioje treniruotėje jau yra 2 pradedantieji, todėl daugiau pradedančiųjų registruoti negalima.";
-  }
-  const max = Math.min(hardMax, beginners >= 2 ? 2 : beginners === 1 ? 3 : 4);
-  if (next.length > max) {
-    if (beginners >= 2) return "Šioje treniruotėje jau yra 2 pradedantieji, todėl grupės limitas yra 2.";
-    if (beginners === 1) return "Grupėje yra 1 pradedantysis, todėl maksimalus dalyvių skaičius yra 3.";
-    return "Grupė pilna — maksimalus dalyvių skaičius yra 4.";
+/** Explains why one more rider cannot join. Returns null when allowed. */
+export function blockReason(levels: RidingLevel[], _newLevel: RidingLevel, hardMax = 4): string | null {
+  const max = Math.min(hardMax, 4);
+  if (levels.length + 1 > max) {
+    return `Grupė pilna — maksimalus dalyvių skaičius yra ${max}.`;
   }
   return null;
 }
