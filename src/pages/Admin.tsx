@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
@@ -27,7 +28,7 @@ import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders"
 import { History } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
 
-interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; }
+interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; trainer_name?: string | null; }
 interface CancelReq {
   id: string; booking_id: string; user_id: string; reason: string; sickness: boolean;
   status: string; created_at: string; admin_decision_counts: boolean | null;
@@ -375,6 +376,14 @@ function ScheduleTab() {
     return new Date().toISOString().slice(0, 10);
   });
 
+  const [recurringPreview, setRecurringPreview] = useState<{
+    slot: TimeSlot;
+    newTime: string;
+    rows: { id: string; date: string; name: string; oldTime: string; newTime: string; permanent: boolean }[];
+    conflict: boolean;
+  } | null>(null);
+  const [recurringApplying, setRecurringApplying] = useState(false);
+
   const upcomingDateForDay = (dow: number): string => {
     // Return the date (YYYY-MM-DD) in the CURRENT ISO week (Mon..Sun) that matches day_of_week (1=Mon..7=Sun)
     const now = new Date();
@@ -398,6 +407,31 @@ function ScheduleTab() {
     setScopeChoice("week");
     setScopeWeekDate(slot.one_off_date || upcomingDateForDay(slot.day_of_week));
     setScopeDialog({ kind: "time", slot, value: t });
+  };
+
+  const confirmRecurringTimeChange = async () => {
+    if (!recurringPreview) return;
+    setRecurringApplying(true);
+    const { data, error } = await (supabase as any).rpc("admin_apply_recurring_time_change", {
+      _slot_id: recurringPreview.slot.id,
+      _new_time: recurringPreview.newTime,
+    });
+    setRecurringApplying(false);
+
+    if (error) {
+      const msg =
+        error.message?.includes("RECURRING_MOVE_CONFLICT") ? "Pakeitimas sukeltų rezervacijų konfliktą." :
+        error.message?.includes("TARGET_TIME_EXISTS") ? "Šis laikas jau naudojamas tame pačiame trenerio grafike." :
+        error.message;
+      toast.error(msg);
+      return;
+    }
+
+    const moved = Number((data as any)?.bookings_moved ?? recurringPreview.rows.length);
+    setRecurringPreview(null);
+    toast.success(`Laikas atnaujintas. Perkeltos ${moved} rezervacijos.`);
+    void flushPushNotifications();
+    load();
   };
 
   const applyScope = async () => {
@@ -431,33 +465,66 @@ function ScheduleTab() {
       const newT = String(value);
       const oldT = slot.slot_time;
       if (scopeChoice === "always") {
-        // 1) update the recurring template
-        const { error } = await supabase.from("time_slots")
-          .update({ slot_time: newT }).eq("id", slot.id);
-        if (error) { toast.error(error.code === "23505" ? "Toks laikas jau egzistuoja" : error.message); return; }
-        // 2) keep permanent slots in sync so future materialized bookings land on the new time
-        await supabase.from("permanent_slots")
-          .update({ slot_time: newT })
-          .eq("day_of_week", slot.day_of_week)
-          .eq("slot_time", oldT);
-        // 3) move future active/pending bookings that actually fall on this slot's weekday
-        const { data: candidates, error: fetchErr } = await supabase.from("bookings")
-          .select("id, slot_date")
-          .gte("slot_date", new Date().toISOString().slice(0,10))
-          .eq("slot_time", oldT)
+        // Preview first. Nothing is changed until the admin confirms.
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Vilnius" });
+        const { data: candidates, error: fetchErr } = await supabase
+          .from("bookings")
+          .select("id, user_id, guest_name, is_guest, slot_date, slot_time, trainer_name")
+          .gte("slot_date", today)
           .in("status", ["active", "pending_cancel"]);
+
         if (fetchErr) { toast.error(fetchErr.message); return; }
-        const matchingIds = (candidates || []).filter((b) => {
-          const d = new Date(b.slot_date + "T00:00:00");
+
+        const matching = (candidates ?? []).filter((b: any) => {
+          const d = new Date(`${b.slot_date}T00:00:00`);
           const js = d.getDay();
           const dow = js === 0 ? 7 : js;
-          return dow === slot.day_of_week;
-        }).map((b) => b.id);
-        if (matchingIds.length > 0) {
-          const { error: moveErr } = await supabase.from("bookings").update({ slot_time: newT }).in("id", matchingIds);
-          if (moveErr) { toast.error(moveErr.message); return; }
-        }
-        toast.success(`Laikas atnaujintas (visoms savaitėms). Pakeista ${matchingIds.length} rezervacijų.`);
+          return dow === slot.day_of_week &&
+            (b.trainer_name ?? null) === (slot.trainer_name ?? null);
+        });
+
+        const ids = matching.map((b: any) => b.id);
+        const userIds = matching.map((b: any) => b.user_id).filter(Boolean);
+        const [{ data: profiles }, { data: permanentsForPreview }] = await Promise.all([
+          userIds.length
+            ? supabase.from("profiles").select("id, full_name").in("id", Array.from(new Set(userIds)))
+            : Promise.resolve({ data: [] as any[] }),
+          supabase.from("permanent_slots").select("user_id, day_of_week, slot_time")
+            .eq("day_of_week", slot.day_of_week).eq("slot_time", oldT),
+        ]);
+
+        const names = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+        const permanentUsers = new Set((permanentsForPreview ?? []).map((p: any) => p.user_id));
+        const rows = matching.map((b: any) => ({
+          id: b.id,
+          date: b.slot_date,
+          name: b.is_guest ? (b.guest_name ?? "Svečias") : (names.get(b.user_id) ?? "—"),
+          oldTime: oldT.slice(0, 5),
+          newTime: newT.slice(0, 5),
+          permanent: !!b.user_id && permanentUsers.has(b.user_id),
+        })).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name, "lt"));
+
+        // Show a visible conflict before the atomic server operation.
+        const targetSlotExists = slots.some((other) =>
+          other.id !== slot.id &&
+          !other.one_off_date &&
+          other.day_of_week === slot.day_of_week &&
+          other.slot_time.slice(0, 5) === newT.slice(0, 5) &&
+          (other.trainer_name ?? null) === (slot.trainer_name ?? null)
+        );
+        const targetConflict = targetSlotExists || matching.some((b: any) =>
+          (candidates ?? []).some((c: any) =>
+            c.id !== b.id &&
+            c.slot_date === b.slot_date &&
+            c.slot_time === newT &&
+            c.status !== "cancelled" &&
+            (c.trainer_name ?? null) === (slot.trainer_name ?? null)
+          )
+        );
+
+        setRecurringPreview({ slot, newTime: newT, rows, conflict: targetConflict });
+        setScopeDialog(null);
+        return;
       } else {
         // Per-week: create one-off slot at new time for chosen date, hide original with cap=0 override, move active bookings only
         const dateISO = scopeWeekDate;
@@ -616,6 +683,87 @@ function ScheduleTab() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
             <Button variant="gold" onClick={add}>Pridėti</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Safe recurring-time preview */}
+      <Dialog open={!!recurringPreview} onOpenChange={(o) => !o && setRecurringPreview(null)}>
+        <DialogContent className="bg-gradient-card border-gold/20 max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-gradient-gold text-xl">
+              Patvirtinkite pasikartojančio laiko pakeitimą
+            </DialogTitle>
+            <DialogDescription>
+              Nieko nepakeista. Pirmiausia peržiūrėkite visas paveiktas būsimas rezervacijas.
+            </DialogDescription>
+          </DialogHeader>
+
+          {recurringPreview && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm">
+                <div className="font-medium">
+                  {WEEKDAYS_LT[recurringPreview.slot.day_of_week - 1]} · {recurringPreview.slot.slot_time.slice(0, 5)} → {recurringPreview.newTime.slice(0, 5)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {recurringPreview.slot.trainer_name ? `Trenerė: ${recurringPreview.slot.trainer_name}` : "Trenerė nenurodyta"}
+                </div>
+              </div>
+
+              {recurringPreview.conflict && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                  Šis pakeitimas turi rezervacijų konfliktą. Patvirtinti negalima, kol konfliktas neišspręstas.
+                </div>
+              )}
+
+              <div className="text-sm font-medium">
+                {recurringPreview.rows.length} rezervacijų bus perkeltos
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-gold/10">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-gold/10 bg-background/40">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Data</th>
+                      <th className="px-3 py-2 text-left">Raitelis</th>
+                      <th className="px-3 py-2 text-left">Laikas</th>
+                      <th className="px-3 py-2 text-left">Statusas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recurringPreview.rows.map((row) => (
+                      <tr key={row.id} className="border-b border-gold/5 last:border-0">
+                        <td className="px-3 py-2 tabular-nums">{row.date}</td>
+                        <td className="px-3 py-2">{row.name}</td>
+                        <td className="px-3 py-2 tabular-nums">{row.oldTime} → {row.newTime}</td>
+                        <td className="px-3 py-2">
+                          {row.permanent ? "Nuolatinis" : "Vienkartinis"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {recurringPreview.rows.length === 0 && (
+                <p className="text-sm italic text-muted-foreground">
+                  Būsimų rezervacijų šiame pasikartojančiame laike nėra.
+                </p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRecurringPreview(null)} disabled={recurringApplying}>
+              Atšaukti
+            </Button>
+            <Button
+              variant="gold"
+              onClick={confirmRecurringTimeChange}
+              disabled={recurringApplying || !!recurringPreview?.conflict}
+            >
+              {recurringApplying ? "Keičiama…" : "Patvirtinti pakeitimą"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
