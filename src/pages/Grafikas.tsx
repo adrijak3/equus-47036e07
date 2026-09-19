@@ -1422,6 +1422,11 @@ export default function Grafikas() {
       return;
     }
 
+    if (isAccidentEligible(booking)) {
+      setAccidentDialog({ booking });
+      return;
+    }
+
     if (hours > 24) {
       setConfirmDialog({
         title: "Atšaukti pamoką?",
