@@ -232,6 +232,12 @@ export default function Grafikas() {
   const [cancelFile, setCancelFile] = useState<File | null>(null);
   const [cancelUploading, setCancelUploading] = useState(false);
 
+  // "Registravausi per klaidą" dialog (only within 2 h of booking)
+  const [accidentDialog, setAccidentDialog] = useState<{
+    booking: Booking;
+  } | null>(null);
+  const [accidentBusy, setAccidentBusy] = useState(false);
+
   // Permanent-cancel choice dialog
   const [permCancelDialog, setPermCancelDialog] = useState<{
     booking: Booking;
