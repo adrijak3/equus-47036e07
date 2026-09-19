@@ -1406,6 +1406,59 @@ export default function Grafikas() {
     await loadData();
   };
 
+  /** "Registravausi per klaidą" is only offered for 2 h after the booking was made. */
+  const isAccidentEligible = (booking: Booking) => {
+    if (!booking.created_at) return false;
+    if (booking.status !== "active") return false;
+    const ageH =
+      (Date.now() -
+        new Date(booking.created_at).getTime()) /
+      36e5;
+    return ageH >= 0 && ageH <= 2;
+  };
+
+  const submitAccidentCancel = async () => {
+    if (!accidentDialog) return;
+    setAccidentBusy(true);
+
+    const { data, error } = await supabase.rpc(
+      "cancel_booking_accidental" as any,
+      {
+        _booking_id: accidentDialog.booking.id,
+      } as any,
+    );
+
+    setAccidentBusy(false);
+
+    const res = (data ?? {}) as {
+      ok?: boolean;
+      message?: string;
+    };
+
+    if (error || !res.ok) {
+      toast.error(
+        error?.message ??
+          res.message ??
+          "Nepavyko pašalinti registracijos.",
+      );
+      await loadData();
+      return;
+    }
+
+    setBookings((current) =>
+      current.filter(
+        (b) => b.id !== accidentDialog.booking.id,
+      ),
+    );
+
+    setAccidentDialog(null);
+    toast.success(
+      "Registracija pašalinta — ji nebus skaičiuojama.",
+    );
+
+    await loadData();
+  };
+
   const handleCancelClick = async (
     booking: Booking,
   ) => {
