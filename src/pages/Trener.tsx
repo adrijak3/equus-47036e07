@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Horse } from "@/components/icons/Horse";
 import { toast } from "sonner";
+import { flushPushNotifications } from "@/lib/pushNotifications";
 import {
   Plus,
   Trash2,
@@ -682,6 +683,7 @@ function CancelDayTab() {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Jūsų treniruotės šią dieną atšauktos.");
+    void flushPushNotifications();
     setNote("");
     void load();
   };
