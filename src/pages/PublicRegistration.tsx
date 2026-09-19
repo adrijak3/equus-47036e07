@@ -68,8 +68,8 @@ const SERVICES = [
   {
     value: "sportine",
     title: "Sportinė jojimo treniruotė",
-    description: "Porinė arba grupinė treniruotė. Minimalus amžius – 10 metų.",
-    price: 35,
+    description: "Porinė (45e.) arba grupinė (40e.) treniruotė.  Minimalus amžius – 10 metų.",
+    price: 40,
     duration: 45,
     minAge: 10,
     icon: Users,
