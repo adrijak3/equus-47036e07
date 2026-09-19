@@ -96,6 +96,7 @@ interface Booking {
   guest_rider_id?: string | null;
   trainer_name?: string | null;
   is_newcomer?: boolean;
+  created_at?: string | null;
 }
 
 interface SlotOverride {
@@ -358,7 +359,7 @@ export default function Grafikas() {
       supabase
         .from("bookings")
         .select(
-          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name",
+          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at",
         )
         .gte("slot_date", startISO)
         .lte("slot_date", endISO)
