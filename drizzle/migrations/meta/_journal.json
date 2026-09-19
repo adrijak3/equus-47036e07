@@ -15,6 +15,13 @@
       "when": 1789575619866,
       "tag": "0001_create_site_settings_maintenance_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789826296256,
+      "tag": "0002_accidental_cancel_and_flat_group_limit",
+      "breakpoints": true
     }
   ]
 }

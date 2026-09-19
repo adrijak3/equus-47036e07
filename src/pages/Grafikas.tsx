@@ -96,6 +96,7 @@ interface Booking {
   guest_rider_id?: string | null;
   trainer_name?: string | null;
   is_newcomer?: boolean;
+  created_at?: string | null;
 }
 
 interface SlotOverride {
@@ -231,6 +232,12 @@ export default function Grafikas() {
   const [cancelFile, setCancelFile] = useState<File | null>(null);
   const [cancelUploading, setCancelUploading] = useState(false);
 
+  // "Registravausi per klaidą" dialog (only within 2 h of booking)
+  const [accidentDialog, setAccidentDialog] = useState<{
+    booking: Booking;
+  } | null>(null);
+  const [accidentBusy, setAccidentBusy] = useState(false);
+
   // Permanent-cancel choice dialog
   const [permCancelDialog, setPermCancelDialog] = useState<{
     booking: Booking;
@@ -358,7 +365,7 @@ export default function Grafikas() {
       supabase
         .from("bookings")
         .select(
-          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name",
+          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at",
         )
         .gte("slot_date", startISO)
         .lte("slot_date", endISO)
@@ -1399,6 +1406,59 @@ export default function Grafikas() {
     await loadData();
   };
 
+  /** "Registravausi per klaidą" is only offered for 2 h after the booking was made. */
+  const isAccidentEligible = (booking: Booking) => {
+    if (!booking.created_at) return false;
+    if (booking.status !== "active") return false;
+    const ageH =
+      (Date.now() -
+        new Date(booking.created_at).getTime()) /
+      36e5;
+    return ageH >= 0 && ageH <= 2;
+  };
+
+  const submitAccidentCancel = async () => {
+    if (!accidentDialog) return;
+    setAccidentBusy(true);
+
+    const { data, error } = await supabase.rpc(
+      "cancel_booking_accidental" as any,
+      {
+        _booking_id: accidentDialog.booking.id,
+      } as any,
+    );
+
+    setAccidentBusy(false);
+
+    const res = (data ?? {}) as {
+      ok?: boolean;
+      message?: string;
+    };
+
+    if (error || !res.ok) {
+      toast.error(
+        error?.message ??
+          res.message ??
+          "Nepavyko pašalinti registracijos.",
+      );
+      await loadData();
+      return;
+    }
+
+    setBookings((current) =>
+      current.filter(
+        (b) => b.id !== accidentDialog.booking.id,
+      ),
+    );
+
+    setAccidentDialog(null);
+    toast.success(
+      "Registracija pašalinta — ji nebus skaičiuojama.",
+    );
+
+    await loadData();
+  };
+
   const handleCancelClick = async (
     booking: Booking,
   ) => {
@@ -1412,6 +1472,11 @@ export default function Grafikas() {
 
     if (perm) {
       setPermCancelDialog({ booking });
+      return;
+    }
+
+    if (isAccidentEligible(booking)) {
+      setAccidentDialog({ booking });
       return;
     }
 
@@ -4173,6 +4238,79 @@ export default function Grafikas() {
                 Išsaugoti
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Accidental registration (within 2 h) */}
+      <Dialog
+        open={!!accidentDialog}
+        onOpenChange={(open) =>
+          !open && setAccidentDialog(null)
+        }
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Atšaukti registraciją
+            </DialogTitle>
+            <DialogDescription>
+              Registracija atlikta ką tik, todėl galite ją tiesiog pašalinti, jei paspaudėte per klaidą.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="rounded-md border border-gold/15 p-3 text-sm">
+              <div className="flex items-center gap-2 font-medium">
+                <AlertCircle className="h-4 w-4 text-gold" />
+                Registravausi per klaidą
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Registracija bus visiškai pašalinta: nebus skaičiuojama abonemente ir nebus rodoma treniruočių istorijoje. Galima tik 2 val. nuo registracijos.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                const booking =
+                  accidentDialog?.booking;
+                setAccidentDialog(null);
+                if (!booking) return;
+                const hours = hoursUntil(
+                  booking.slot_date,
+                  booking.slot_time,
+                );
+                if (hours > 24) {
+                  setConfirmDialog({
+                    title: "Atšaukti pamoką?",
+                    description:
+                      "Pamoka bus pažymėta kaip atšaukta.",
+                    onConfirm: () =>
+                      cancelSingleBooking(booking),
+                  });
+                } else {
+                  setCancelDialog({ booking });
+                  setCancelReason("");
+                  setCancelSickness(false);
+                  setCancelFile(null);
+                }
+              }}
+            >
+              Įprastas atšaukimas
+            </Button>
+
+            <Button
+              variant="gold"
+              onClick={submitAccidentCancel}
+              disabled={accidentBusy}
+            >
+              {accidentBusy
+                ? "Šalinama…"
+                : "Taip, per klaidą"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

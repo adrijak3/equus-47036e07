@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       booking_cancellations: {
         Row: {
+          accidental: boolean
           booking_id: string | null
           cancelled_by: string | null
           cancelled_by_role: string
@@ -30,6 +31,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          accidental?: boolean
           booking_id?: string | null
           cancelled_by?: string | null
           cancelled_by_role?: string
@@ -44,6 +46,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          accidental?: boolean
           booking_id?: string | null
           cancelled_by?: string | null
           cancelled_by_role?: string
@@ -986,6 +989,10 @@ export type Database = {
       }
       cancel_all_possible_duplicate_bookings: {
         Args: { _user_id?: string }
+        Returns: Json
+      }
+      cancel_booking_accidental: {
+        Args: { _booking_id: string }
         Returns: Json
       }
       cancel_booking_occurrence: {
