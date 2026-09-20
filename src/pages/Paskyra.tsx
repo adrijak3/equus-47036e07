@@ -1043,7 +1043,7 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
       .eq("id", user.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Išsaugota");
+    toast.success("Išsaugota!:)");
     await onSaved();
   };
 
@@ -1061,7 +1061,7 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             maxLength={40}
-            placeholder="Palikite tuščią — naudosis numatytas"
+            placeholder="Palikite tuščią, jei nenorite nieko keisti:)"
           />
         </div>
         <div>
