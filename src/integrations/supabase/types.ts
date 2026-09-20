@@ -412,6 +412,54 @@ export type Database = {
           },
         ]
       }
+      notification_queue: {
+        Row: {
+          attempts: number
+          body_en: string
+          body_lt: string
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          kind: string
+          last_error: string | null
+          sent_at: string | null
+          title_en: string
+          title_lt: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body_en: string
+          body_lt: string
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind: string
+          last_error?: string | null
+          sent_at?: string | null
+          title_en: string
+          title_lt: string
+          url?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body_en?: string
+          body_lt?: string
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind?: string
+          last_error?: string | null
+          sent_at?: string | null
+          title_en?: string
+          title_lt?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       permanent_booking_exceptions: {
         Row: {
           created_at: string
@@ -652,6 +700,39 @@ export type Database = {
           rating?: number
           show_name?: boolean
           status?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          language: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          language?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          language?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -958,6 +1039,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_apply_recurring_time_change: {
+        Args: { _new_time: string; _slot_id: string }
+        Returns: Json
+      }
       admin_propose_public_registration_time: {
         Args: {
           _date: string
@@ -1117,7 +1202,25 @@ export type Database = {
         Args: { _end: string; _start: string }
         Returns: number
       }
+      move_booking_same_day: {
+        Args: { _booking_id: string; _target_slot_id: string }
+        Returns: Json
+      }
       owns_profile: { Args: { _pid: string; _uid: string }; Returns: boolean }
+      queue_24h_training_reminders: { Args: never; Returns: number }
+      queue_push_notification: {
+        Args: {
+          _body_en: string
+          _body_lt: string
+          _dedupe_key?: string
+          _kind: string
+          _title_en: string
+          _title_lt: string
+          _url?: string
+          _user_id: string
+        }
+        Returns: string
+      }
       remove_permanent_slot: {
         Args: {
           _day_of_week: number
