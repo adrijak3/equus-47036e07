@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
