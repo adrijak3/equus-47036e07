@@ -23,7 +23,7 @@ export async function getAvailableSameDaySlots(currentBookingId: string, targetD
 
   for (const slot of timeSlots) {
     // Determine the exact time string (handling potential column name variations)
-    const timeString = slot.start_time || slot.time || slot.slot_time;
+    const timeString = slot.slot_time;
     if (!timeString) continue;
 
     // Check 3-hour cutoff rule
@@ -38,7 +38,7 @@ export async function getAvailableSameDaySlots(currentBookingId: string, targetD
     const slotBookings = dayBookings?.filter(b => b.slot_time === timeString) || [];
     
     // Check capacity (defaults to 1 if you don't have a specific capacity column)
-    const capacity = slot.capacity || 1;
+    const capacity = slot.max_capacity || 1;
     if (slotBookings.length >= capacity) continue;
 
     availableSlots.push({
