@@ -5068,7 +5068,7 @@ export default function Grafikas() {
                   {language === "lt" ? "— pasirinkite laiką —" : "— choose a time —"}
                 </option>
                 {moveDialog.options.map((option) => (
-                  <option key={option.id} value={option.time}>
+                  <option key={option.id} value={option.id}>
                     {formatTime(option.time)}
                     {option.trainer_name ? ` · ${option.trainer_name}` : ""}
                   </option>
