@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     let reminderCount = 0;
     if (globalProcessing) {
       const { data, error: reminderError } =
-        await admin.rpc("queue_24h_training_reminders");
+        await admin.rpc("queue_training_reminders");
       if (reminderError) return json({ error: reminderError.message }, 500);
       reminderCount = Number(data ?? 0);
     }
