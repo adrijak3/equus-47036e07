@@ -384,9 +384,9 @@ EXECUTE FUNCTION public.notify_day_cancellation();
 
 REVOKE EXECUTE ON FUNCTION public.notify_day_cancellation() FROM PUBLIC, anon, authenticated;
 
--- New registered users -> notify admins only. Trainers/riders do not receive
--- this notification.
-CREATE OR REPLACE FUNCTION public.notify_admin_new_profile()
+-- New registered users -> notify admins only. Use the role insert trigger
+-- because handle_new_user creates the profile before its user role.
+CREATE OR REPLACE FUNCTION public.notify_admin_new_user_role()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -394,21 +394,31 @@ SET search_path = public
 AS $$
 DECLARE
   admin_user uuid;
+  new_name text;
 BEGIN
+  IF NEW.role <> 'user'::app_role THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT p.full_name INTO new_name
+  FROM public.profiles p
+  WHERE p.id = NEW.user_id;
+
   FOR admin_user IN
     SELECT ur.user_id
     FROM public.user_roles ur
-    WHERE ur.role = 'admin'
+    WHERE ur.role = 'admin'::app_role
+      AND ur.user_id <> NEW.user_id
   LOOP
     PERFORM public.queue_equus_notification(
       admin_user,
       'NEW_USER_REGISTERED',
       'Naujas Equus vartotojas',
       'New Equus user',
-      format('Užsiregistravo naujas vartotojas: %s.', COALESCE(NEW.full_name, 'Naujas vartotojas')),
-      format('A new user registered: %s.', COALESCE(NEW.full_name, 'New user')),
+      format('Užsiregistravo naujas vartotojas: %s.', COALESCE(new_name, 'Naujas vartotojas')),
+      format('A new user registered: %s.', COALESCE(new_name, 'New user')),
       '/admin',
-      format('new-user-registered:%s:%s', NEW.id, admin_user)
+      format('new-user-registered:%s:%s', NEW.user_id, admin_user)
     );
   END LOOP;
 
@@ -417,9 +427,10 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_equus_new_user_notification ON public.profiles;
-CREATE TRIGGER trg_equus_new_user_notification
-AFTER INSERT ON public.profiles
+DROP TRIGGER IF EXISTS trg_equus_new_user_role_notification ON public.user_roles;
+CREATE TRIGGER trg_equus_new_user_role_notification
+AFTER INSERT ON public.user_roles
 FOR EACH ROW
-EXECUTE FUNCTION public.notify_admin_new_profile();
+EXECUTE FUNCTION public.notify_admin_new_user_role();
 
-REVOKE EXECUTE ON FUNCTION public.notify_admin_new_profile() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_admin_new_user_role() FROM PUBLIC, anon, authenticated;
