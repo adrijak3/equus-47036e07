@@ -15,6 +15,7 @@ import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { SeasonalParticles } from "@/components/SeasonalParticles";
 import { AutoTranslate } from "@/components/AutoTranslate";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { ImportantUpdatePopup } from "@/components/ImportantUpdatePopup";
 import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
 
 import Grafikas from "./pages/Grafikas";
@@ -73,6 +74,7 @@ const App = () => (
                 <SeasonalParticles />
                 <WelcomeOnboarding />
                 <InstallPrompt />
+                <ImportantUpdatePopup />
 
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
