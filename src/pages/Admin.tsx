@@ -323,8 +323,10 @@ function AdminNotificationsTab() {
           </select>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Senas laikas</Label><Input value={oldDay} onChange={(e) => setOldDay(e.target.value)} placeholder="Antradienis 18:00" /></div>
-          <div><Label>Naujas laikas</Label><Input value={newDay} onChange={(e) => setNewDay(e.target.value)} placeholder="Antradienis 18:45" /></div>
+          <div><Label>Sena diena</Label><Input value={oldDay} onChange={(e) => setOldDay(e.target.value)} placeholder="Antradienis" /></div>
+          <div><Label>Senas laikas</Label><Input value={oldTime} onChange={(e) => setOldTime(e.target.value)} placeholder="18:00" /></div>
+          <div><Label>Nauja diena</Label><Input value={newDay} onChange={(e) => setNewDay(e.target.value)} placeholder="Antradienis" /></div>
+          <div><Label>Naujas laikas</Label><Input value={newTime} onChange={(e) => setNewTime(e.target.value)} placeholder="18:45" /></div>
         </div>
         <Button variant="gold" disabled={sending} onClick={sendRecurring}>Pranešti raiteliui</Button>
       </div>
