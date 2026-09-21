@@ -206,12 +206,6 @@ export default function Admin() {
 
 /* ---------- IMPORTANT NOTIFICATIONS ---------- */
 function AdminNotificationsTab() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [selectedUser, setSelectedUser] = useState("");
-  const [oldDay, setOldDay] = useState("");
-  const [oldTime, setOldTime] = useState("");
-  const [newDay, setNewDay] = useState("");
-  const [newTime, setNewTime] = useState("");
   const [sending, setSending] = useState(false);
 
   const [globalLt, setGlobalLt] = useState(
@@ -221,19 +215,6 @@ function AdminNotificationsTab() {
     "Important Equus update\nTraining times are changing from October 5. Please check the updated schedule. 🐴"
   );
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, phone")
-        .order("full_name");
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      setProfiles((data ?? []) as Profile[]);
-    })();
-  }, []);
 
   const sendGlobal = async () => {
     if (!globalLt.trim() || !globalEn.trim()) {
@@ -272,40 +253,6 @@ function AdminNotificationsTab() {
     toast.success("Bandomasis pranešimas įtrauktas į eilę. Patikrinkite telefoną.");
   };
 
-  const sendRecurring = async () => {
-    if (!selectedUser || !oldDay.trim() || !oldTime.trim() || !newDay.trim() || !newTime.trim()) {
-      toast.error("Užpildykite vartotoją ir abu laikus.");
-      return;
-    }
-    const rider = profiles.find((p) => p.id === selectedUser);
-    if (!confirm(`Pranešti ${rider?.full_name ?? "vartotojui"} apie nuolatinio laiko pasikeitimą?`)) return;
-
-    setSending(true);
-    const { error } = await (supabase as any).rpc("admin_send_recurring_time_change", {
-      _user_id: selectedUser,
-      _old_day: oldDay.trim(),
-      _old_time: oldTime.trim(),
-      _new_day: newDay.trim(),
-      _new_time: newTime.trim(),
-    });
-    if (!error) void flushPushNotifications();
-    setSending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Pranešimas išsiųstas į eilę.");
-    setSelectedUser("");
-    setOldDay(""); setOldTime(""); setNewDay(""); setNewTime("");
-  };
-
-      <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
-        <p className="text-sm text-muted-foreground">
-          Šis testas siunčia pranešimą tik prisijungusiam administratoriui, todėl kiti raiteliai nieko negaus.
-        </p>
-        <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti testinį pranešimą man</Button>
-      </div>
 
   return (
     <section className="rounded-xl border border-gold/20 bg-gradient-card p-5 space-y-6">
@@ -350,6 +297,12 @@ function AdminNotificationsTab() {
           <div><Label>Naujas laikas</Label><Input value={newTime} onChange={(e) => setNewTime(e.target.value)} placeholder="18:45" /></div>
         </div>
         <Button variant="gold" disabled={sending} onClick={sendRecurring}>Pranešti raiteliui</Button>
+      </div>
+
+      <div className="rounded-lg border border-gold/15 p-4 space-y-3">
+        <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
+        <p className="text-sm text-muted-foreground">Šis testas siunčia pranešimą tik prisijungusiam administratoriui, todėl kiti raiteliai nieko negaus.</p>
+        <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti testinį pranešimą man</Button>
       </div>
     </section>
   );
