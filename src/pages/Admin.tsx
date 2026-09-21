@@ -194,12 +194,141 @@ export default function Admin() {
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
             <TabsContent value="settings" className="space-y-6">
+              <AdminNotificationsTab />
               <MaintenanceSettings />
             </TabsContent>
           </Tabs>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- IMPORTANT NOTIFICATIONS ---------- */
+function AdminNotificationsTab() {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [oldDay, setOldDay] = useState("");
+  const [oldTime, setOldTime] = useState("");
+  const [newDay, setNewDay] = useState("");
+  const [newTime, setNewTime] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const [globalLt, setGlobalLt] = useState(
+    "Svarbus Equus atnaujinimas\nNuo spalio 5 d. keičiasi treniruočių laikai. Prašome pasitikrinti atnaujintą grafiką. 🐴"
+  );
+  const [globalEn, setGlobalEn] = useState(
+    "Important Equus update\nTraining times are changing from October 5. Please check the updated schedule. 🐴"
+  );
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .order("full_name");
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setProfiles((data ?? []) as Profile[]);
+    })();
+  }, []);
+
+  const sendGlobal = async () => {
+    if (!globalLt.trim() || !globalEn.trim()) {
+      toast.error("Užpildykite abu pranešimus.");
+      return;
+    }
+    if (!confirm("Išsiųsti šį svarbų pranešimą VISIEMS vartotojams?")) return;
+    setSending(true);
+    const { data, error } = await (supabase as any).rpc("admin_send_global_notification", {
+      _title_lt: "Svarbus Equus atnaujinimas",
+      _title_en: "Important Equus update",
+      _body_lt: globalLt.trim(),
+      _body_en: globalEn.trim(),
+      _url: "/grafikas",
+      _dedupe_key: "schedule-update-2026-10-05",
+    });
+    if (!error) void flushPushNotifications();
+    setSending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Pranešimas įtrauktas į eilę ${Number(data ?? 0)} vartotojams.`);
+  };
+
+  const sendRecurring = async () => {
+    if (!selectedUser || !oldDay.trim() || !oldTime.trim() || !newDay.trim() || !newTime.trim()) {
+      toast.error("Užpildykite vartotoją ir abu laikus.");
+      return;
+    }
+    const rider = profiles.find((p) => p.id === selectedUser);
+    if (!confirm(`Pranešti ${rider?.full_name ?? "vartotojui"} apie nuolatinio laiko pasikeitimą?`)) return;
+
+    setSending(true);
+    const { error } = await (supabase as any).rpc("admin_send_recurring_time_change", {
+      _user_id: selectedUser,
+      _old_day: oldDay.trim(),
+      _old_time: oldTime.trim(),
+      _new_day: newDay.trim(),
+      _new_time: newTime.trim(),
+    });
+    if (!error) void flushPushNotifications();
+    setSending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Pranešimas išsiųstas į eilę.");
+    setSelectedUser("");
+    setOldDay(""); setOldTime(""); setNewDay(""); setNewTime("");
+  };
+
+  return (
+    <section className="rounded-xl border border-gold/20 bg-gradient-card p-5 space-y-6">
+      <div>
+        <h2 className="font-display text-2xl text-gradient-gold">Svarbūs pranešimai</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Šie pranešimai nepriklauso nuo 5 / 24 val. treniruotės priminimo nustatymo.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-gold/15 p-4 space-y-3">
+        <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
+        <p className="text-sm text-muted-foreground">Skirta bendriems grafiko ar kitiems svarbiems Equus atnaujinimams.</p>
+        <div>
+          <Label>Lietuviškai</Label>
+          <textarea value={globalLt} onChange={(e) => setGlobalLt(e.target.value)} rows={4}
+            className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <Label>English</Label>
+          <textarea value={globalEn} onChange={(e) => setGlobalEn(e.target.value)} rows={4}
+            className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+        </div>
+        <Button variant="gold" disabled={sending} onClick={sendGlobal}>Siųsti visiems</Button>
+      </div>
+
+      <div className="rounded-lg border border-gold/15 p-4 space-y-3">
+        <h3 className="font-display text-xl">🐴 Pasikeitęs nuolatinis laikas</h3>
+        <p className="text-sm text-muted-foreground">Pranešimas siunčiamas tik pasirinktam raiteliui.</p>
+        <div>
+          <Label>Raitelis</Label>
+          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}
+            className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">— pasirinkite raitelį —</option>
+            {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Senas laikas</Label><Input value={oldDay} onChange={(e) => setOldDay(e.target.value)} placeholder="Antradienis 18:00" /></div>
+          <div><Label>Naujas laikas</Label><Input value={newDay} onChange={(e) => setNewDay(e.target.value)} placeholder="Antradienis 18:45" /></div>
+        </div>
+        <Button variant="gold" disabled={sending} onClick={sendRecurring}>Pranešti raiteliui</Button>
+      </div>
+    </section>
   );
 }
 
