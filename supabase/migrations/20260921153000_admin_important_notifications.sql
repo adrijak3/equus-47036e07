@@ -140,3 +140,63 @@ REVOKE EXECUTE ON FUNCTION public.admin_send_global_notification(text,text,text,
 REVOKE EXECUTE ON FUNCTION public.admin_send_recurring_time_change(uuid,text,text,text,text,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_send_global_notification(text,text,text,text,text,text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_send_recurring_time_change(uuid,text,text,text,text,text) TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.admin_send_test_notification_to_me()
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  queued_id uuid;
+BEGIN
+  IF auth.uid() IS NULL
+     OR NOT public.has_role(auth.uid(), 'admin'::app_role) THEN
+    RAISE EXCEPTION 'NOT_ADMIN';
+  END IF;
+
+  INSERT INTO public.important_notifications (
+    user_id,
+    notification_type,
+    title_lt,
+    title_en,
+    body_lt,
+    body_en,
+    url,
+    dedupe_key
+  )
+  VALUES (
+    auth.uid(),
+    'TEST_NOTIFICATION',
+    'Equus – bandomasis pranešimas 🐴',
+    'Equus – test notification 🐴',
+    'Tai privatus bandomasis pranešimas. Jį matote tik jūs.',
+    'This is a private test notification. Only you can see it.',
+    '/grafikas',
+    'test-popup:' || gen_random_uuid()
+  );
+
+  SELECT public.queue_equus_notification(
+    auth.uid(),
+    'TEST_NOTIFICATION',
+    'Equus – bandomasis pranešimas 🐴',
+    'Equus – test notification 🐴',
+    'Tai privatus bandomasis pranešimas. Jį matote tik jūs.',
+    'This is a private test notification. Only you can see it.',
+    '/grafikas',
+    'test-push:' || gen_random_uuid()
+  )
+  INTO queued_id;
+
+  RETURN queued_id;
+END;
+$$;
+
+REVOKE EXECUTE
+ON FUNCTION public.admin_send_test_notification_to_me()
+FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE
+ON FUNCTION public.admin_send_test_notification_to_me()
+TO authenticated;
