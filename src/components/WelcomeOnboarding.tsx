@@ -24,7 +24,7 @@ export function WelcomeOnboarding(){
  // Kai kuriuose ekranuose turinys telpa be slinkimo (arba PDF perima slinkimą),
  // todėl tikriname periodiškai, kad varnelė netaptų neįjungiama.
  useEffect(()=>{if(step!==4)return;const check=()=>{const el=scrollRef.current;if(el&&atBottom(el))setReadToEnd(true)};check();const t=window.setInterval(check,400);window.addEventListener("resize",check);return()=>{window.clearInterval(t);window.removeEventListener("resize",check)}},[step]);
- const finish=async()=>{if(!user||!readToEnd||!accepted||!displayName.trim())return;setSaving(true);const{error}=await (supabase as any).from("profiles").update({display_name:displayName.trim(),onboarding_accepted_at:new Date().toISOString(),rules_version:"2026-08",notify_lesson_reminders:notifyReminders,notify_schedule_changes:true,notify_school_news:notifyNews,notify_lesson_reminder_hours:notifyReminderHours}).eq("id",user.id);if(error){setSaving(false);toast.error("Nepavyko išsaugoti");return}if((notifyReminders||notifyChanges||notifyNews)&&pushNotificationsSupported()){try{await enablePushNotifications("lt")}catch(e:any){toast.error(e?.message||"Nepavyko įjungti pranešimų");}}await refreshProfile();setSaving(false);toast.success("Sveiki atvykę į Equus 🐴");setOpen(false)};
+ const finish=async()=>{if(!user||!readToEnd||!accepted||!displayName.trim())return;setSaving(true);const{error}=await (supabase as any).from("profiles").update({display_name:displayName.trim(),onboarding_accepted_at:new Date().toISOString(),rules_version:"2026-08",notify_lesson_reminders:notifyReminders,notify_schedule_changes:notifyChanges,notify_school_news:notifyNews,notify_lesson_reminder_hours:notifyReminderHours}).eq("id",user.id);if(error){setSaving(false);toast.error("Nepavyko išsaugoti");return}if((notifyReminders||notifyChanges||notifyNews)&&pushNotificationsSupported()){try{await enablePushNotifications("lt")}catch(e:any){toast.error(e?.message||"Nepavyko įjungti pranešimų");}}await refreshProfile();setSaving(false);toast.success("Sveiki atvykę į Equus 🐴");setOpen(false)};
  const markPromptSeen=async()=>{if(user)await (supabase as any).from("profiles").update({notification_prompt_seen_at:new Date().toISOString()}).eq("id",user.id);};
  const enablePrompt=async()=>{setPromptBusy(true);try{await enablePushNotifications("lt");await markPromptSeen();setPromptOpen(false);toast.success("Equus pranešimai įjungti 🐴");}catch(e:any){toast.error(e?.message||"Nepavyko įjungti pranešimų");}finally{setPromptBusy(false)}};
  const dismissPrompt=async()=>{await markPromptSeen();setPromptOpen(false)};
@@ -38,6 +38,17 @@ export function WelcomeOnboarding(){
   </div>
   <div className="border-t border-border bg-card px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">{step===4&&<label className={cn("mb-3 flex items-start gap-3 rounded-lg border p-3",!readToEnd&&"opacity-50")}><Checkbox checked={accepted} disabled={!readToEnd} onCheckedChange={v=>setAccepted(v===true)}/><span className="text-sm">Susipažinau su taisyklėmis, kainomis, atšaukimo tvarka ir sutarties priminimu.</span></label>}<div className="flex justify-between"><Button variant="ghost" disabled={step===1} onClick={()=>setStep(s=>s-1)}><ChevronLeft className="h-4 w-4"/>Atgal</Button>{step<4?<Button variant="gold" disabled={step===1&&!displayName.trim()} onClick={()=>setStep(s=>s+1)}>Toliau<ChevronRight className="h-4 w-4"/></Button>:<Button variant="gold" disabled={!readToEnd||!accepted||saving} onClick={finish}>{saving?"Išsaugoma…":"Sutinku ir tęsiu"}</Button>}</div></div>
  </DialogContent></Dialog>
+
+  <Dialog open={promptOpen} onOpenChange={(next)=>{if(!next&&!promptBusy)dismissPrompt();}}>
+   <DialogContent className="border-gold/25 bg-gradient-card sm:max-w-md">
+    <DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2"><Bell className="h-5 w-5 text-gold"/>Equus pranešimai</DialogTitle></DialogHeader>
+    <div className="space-y-4">
+     <div className="rounded-2xl border border-gold/15 bg-background/30 p-4"><div className="flex items-start gap-3"><Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-gold"/><p className="text-sm leading-6 text-muted-foreground">Gaukite svarbius Equus atnaujinimus, pavyzdžiui, apie atšauktas ar perkeltas treniruotes, ir pasirinktinus treniruočių priminimus.</p></div></div>
+     <p className="text-sm text-muted-foreground">Šiuos nustatymus vėliau galėsite pakeisti savo paskyroje.</p>
+    </div>
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="ghost" onClick={dismissPrompt} disabled={promptBusy}>Ne dabar</Button><Button variant="gold" onClick={enablePrompt} disabled={promptBusy}>{promptBusy?"Įjungiama…":"Įjungti pranešimus"}</Button></div>
+   </DialogContent>
+  </Dialog></>;
 }
 function recommended(full:string){const parts=full.trim().split(/\s+/);return parts.length>1?`${parts[0]} ${parts[parts.length-1][0]}.`:parts[0]||""}
 function Card({icon:Icon,title,children}:{icon:any;title:string;children:ReactNode}){return <div className="rounded-2xl border bg-background/35 p-4"><Icon className="mb-2 h-5 w-5 text-gold"/><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm leading-6 text-muted-foreground">{children}</p></div>}
