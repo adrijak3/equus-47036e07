@@ -61,7 +61,7 @@ export function ImportantUpdatePopup() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-background/45 p-4 pt-[12vh] sm:pt-[15vh] backdrop-blur-[2px] animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-background/45 p-4 pt-[5vh] sm:pt-[7vh] backdrop-blur-[2px] animate-in fade-in duration-300">
       <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-gold/30 bg-gradient-card shadow-elegant animate-in zoom-in-95 slide-in-from-bottom-2 duration-500">
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gold/10 blur-2xl" />
         <div className="absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-gold/10 blur-2xl" />
