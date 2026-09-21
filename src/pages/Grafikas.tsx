@@ -1025,6 +1025,63 @@ export default function Grafikas() {
   // Horse is NOT selected here.
   // ----------------------------------------------------------
 
+  const shareClosedRegistration = async (
+    date: Date,
+    time: string,
+    slot: TimeSlot | undefined,
+  ) => {
+    let riderName = user?.user_metadata?.full_name?.trim() || "Vardas Pavardė";
+
+    if (user?.id) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (data?.full_name?.trim()) {
+        riderName = data.full_name.trim();
+      }
+    }
+
+    const capacity = slot?.max_capacity ?? 4;
+    const trainingType =
+      capacity === 1
+        ? "individualią treniruotę"
+        : capacity === 2
+          ? "porinę treniruotę"
+          : "grupinę treniruotę";
+
+    const message =
+      `Raitelis – ${riderName}\\n„Laba. Norėčiau užsiregistruoti į ${trainingType} ${date.getDate()} d. ${formatTime(time)}, tačiau svetainėje rodoma, kad registracija jau uždaryta. Ar būtų galima mane užregistruoti?:)”`;
+
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await navigator.share({ text: message });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(message);
+      toast.success(
+        language === "lt"
+          ? "Žinutė nukopijuota — galite ją įklijuoti į pasirinktą programėlę."
+          : "Message copied — you can paste it into your preferred app.",
+      );
+    } catch {
+      toast.error(
+        language === "lt"
+          ? "Nepavyko atidaryti bendrinimo lango."
+          : "Could not open the sharing menu.",
+      );
+    }
+  };
+
   const handleBook = async (
     date: Date,
     time: string,
@@ -1090,19 +1147,28 @@ export default function Grafikas() {
     setBusy(null);
 
     if (error) {
-      toast.error(
-        error.message?.includes("BOOKING_CUTOFF")
-          ? (language === "lt"
-              ? "Registracija uždaryta likus 3 valandoms iki treniruotės."
-              : "Registration closes 3 hours before training.")
-          : error.code === "23505"
+      if (error.message?.includes("BOOKING_CUTOFF")) {
+        toast.error(
+          language === "lt"
+            ? "Registracija uždaryta likus 3 valandoms iki treniruotės."
+            : "Registration closes 3 hours before training.",
+          {
+            action: {
+              label: language === "lt" ? "Parašyti žinutę" : "Send message",
+              onClick: () => void shareClosedRegistration(date, time, bookSlot),
+            },
+            duration: 9000,
+          },
+        );
+      } else {
+        toast.error(
+          error.code === "23505"
             ? "Jūs jau užregistruoti į šią pamoką"
-            : /pradedant|Grupė/i.test(
-                  error.message,
-                )
+            : /pradedant|Grupė/i.test(error.message)
               ? error.message
               : "Klaida: " + error.message,
-      );
+        );
+      }
       return;
     }
 
