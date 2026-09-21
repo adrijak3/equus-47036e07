@@ -1053,7 +1053,7 @@ export default function Grafikas() {
           : "grupinę treniruotę";
 
     const message =
-      `Raitelis – ${riderName}\\n„Laba. Norėčiau užsiregistruoti į ${trainingType} ${date.getDate()} d. ${formatTime(time)}, tačiau svetainėje rodoma, kad registracija jau uždaryta. Ar būtų galima mane užregistruoti?:)”`;
+      `Raitelis – ${riderName}\n„Laba. Norėčiau užsiregistruoti į ${trainingType} ${date.getDate()} d. ${formatTime(time)}, tačiau svetainėje rodoma, kad registracija jau uždaryta. Ar būtų galima mane užregistruoti?:)”`;
 
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
