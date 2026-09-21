@@ -279,24 +279,12 @@ function AdminNotificationsTab() {
         <Button variant="gold" disabled={sending} onClick={sendGlobal}>Siųsti visiems</Button>
       </div>
 
+
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🐴 Pasikeitęs nuolatinis laikas</h3>
-        <p className="text-sm text-muted-foreground">Pranešimas siunčiamas tik pasirinktam raiteliui.</p>
-        <div>
-          <Label>Raitelis</Label>
-          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}
-            className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-            <option value="">— pasirinkite raitelį —</option>
-            {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>Sena diena</Label><Input value={oldDay} onChange={(e) => setOldDay(e.target.value)} placeholder="Antradienis" /></div>
-          <div><Label>Senas laikas</Label><Input value={oldTime} onChange={(e) => setOldTime(e.target.value)} placeholder="18:00" /></div>
-          <div><Label>Nauja diena</Label><Input value={newDay} onChange={(e) => setNewDay(e.target.value)} placeholder="Antradienis" /></div>
-          <div><Label>Naujas laikas</Label><Input value={newTime} onChange={(e) => setNewTime(e.target.value)} placeholder="18:45" /></div>
-        </div>
-        <Button variant="gold" disabled={sending} onClick={sendRecurring}>Pranešti raiteliui</Button>
+        <h3 className="font-display text-xl">🐴 Nuolatinio laiko pakeitimai</h3>
+        <p className="text-sm text-muted-foreground">
+          Kai Administracija → Nuolatiniai pakeičia raitelio dieną arba laiką, pranešimas tam raiteliui išsiunčiamas automatiškai. Jo čia įvesti ar siųsti rankiniu būdu nereikia.
+        </p>
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
