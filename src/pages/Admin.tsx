@@ -259,6 +259,19 @@ function AdminNotificationsTab() {
     toast.success(`Pranešimas įtrauktas į eilę ${Number(data ?? 0)} vartotojams.`);
   };
 
+  const sendTestToMe = async () => {
+    if (!confirm("Siųsti bandomąjį Equus pranešimą tik sau?")) return;
+    setSending(true);
+    const { error } = await (supabase as any).rpc("admin_send_test_notification_to_me");
+    if (!error) void flushPushNotifications();
+    setSending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Bandomasis pranešimas įtrauktas į eilę. Patikrinkite telefoną.");
+  };
+
   const sendRecurring = async () => {
     if (!selectedUser || !oldDay.trim() || !oldTime.trim() || !newDay.trim() || !newTime.trim()) {
       toast.error("Užpildykite vartotoją ir abu laikus.");
@@ -285,6 +298,14 @@ function AdminNotificationsTab() {
     setSelectedUser("");
     setOldDay(""); setOldTime(""); setNewDay(""); setNewTime("");
   };
+
+      <div className="rounded-lg border border-gold/15 p-4 space-y-3">
+        <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
+        <p className="text-sm text-muted-foreground">
+          Šis testas siunčia pranešimą tik prisijungusiam administratoriui, todėl kiti raiteliai nieko negaus.
+        </p>
+        <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti testinį pranešimą man</Button>
+      </div>
 
   return (
     <section className="rounded-xl border border-gold/20 bg-gradient-card p-5 space-y-6">
