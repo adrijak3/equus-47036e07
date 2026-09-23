@@ -893,7 +893,13 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
                 : "These are phone push notifications only. This setting does not change your training bookings or lesson subscription."}
             </p>
           </div>
-          <Button
+          <div className="flex items-center gap-2">
+            {enabled && (
+              <span className="text-xs font-medium text-emerald-500">
+                {language === "lt" ? "Įjungta" : "Enabled"}
+              </span>
+            )}
+            <Button
             variant={enabled ? "outlineGold" : "gold"}
             size="sm"
             onClick={() => void toggle()}
@@ -914,7 +920,8 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
                   : language === "lt"
                     ? "Įjungti telefono pranešimus"
                     : "Enable phone notifications"}
-          </Button>
+            </Button>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-gold/15 bg-background/25 p-4">
