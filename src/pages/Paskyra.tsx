@@ -781,6 +781,7 @@ export default function Paskyra() {
 function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [enableFailed, setEnableFailed] = useState(false);
   const [reminderHours, setReminderHours] = useState<5 | 24>(24);
 
   useEffect(() => {
@@ -807,6 +808,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
 
   const toggle = async () => {
     setBusy(true);
+    setEnableFailed(false);
     try {
       if (enabled) {
         await disablePushNotifications();
@@ -827,6 +829,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
       }
     } catch (error: any) {
       setEnabled(false);
+      setEnableFailed(true);
       toast.error(
         error?.message ??
           (language === "lt"
@@ -904,9 +907,13 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
                 ? language === "lt"
                   ? "Išjungti telefono pranešimus"
                   : "Disable phone notifications"
-                : language === "lt"
-                  ? "Įjungti telefono pranešimus"
-                  : "Enable phone notifications"}
+                : enableFailed
+                  ? language === "lt"
+                    ? "Nepavyko įjungti"
+                    : "Enable failed"
+                  : language === "lt"
+                    ? "Įjungti telefono pranešimus"
+                    : "Enable phone notifications"}
           </Button>
         </div>
 
