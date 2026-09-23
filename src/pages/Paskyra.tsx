@@ -781,86 +781,176 @@ export default function Paskyra() {
 function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [enableFailed, setEnableFailed] = useState(false);
   const [reminderHours, setReminderHours] = useState<5 | 24>(24);
 
   useEffect(() => {
     if (!pushNotificationsSupported()) return;
-    Promise.all([
-      getPushSubscription(),
-      (supabase as any).from("profiles").select("notify_lesson_reminder_hours").eq("id", (supabase.auth.getUser as any)).maybeSingle?.(),
-    ]).catch(() => {});
-    getPushSubscription().then((subscription) => setEnabled(!!subscription));
+
+    getPushSubscription()
+      .then((subscription) => setEnabled(!!subscription))
+      .catch(() => setEnabled(false));
+
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
-      (supabase as any).from("profiles").select("notify_lesson_reminder_hours").eq("id", data.user.id).maybeSingle()
+      (supabase as any)
+        .from("profiles")
+        .select("notify_lesson_reminder_hours")
+        .eq("id", data.user.id)
+        .maybeSingle()
         .then(({ data: p }: any) => {
-          if (p?.notify_lesson_reminder_hours === 5 || p?.notify_lesson_reminder_hours === 24) setReminderHours(p.notify_lesson_reminder_hours);
+          if (p?.notify_lesson_reminder_hours === 5 || p?.notify_lesson_reminder_hours === 24) {
+            setReminderHours(p.notify_lesson_reminder_hours);
+          }
         });
     });
   }, []);
 
   const toggle = async () => {
     setBusy(true);
+    setEnableFailed(false);
     try {
       if (enabled) {
         await disablePushNotifications();
         setEnabled(false);
-        toast.success(language === "lt" ? "Pranešimai išjungti." : "Notifications disabled.");
+        toast.success(
+          language === "lt"
+            ? "Telefono pranešimai išjungti. Jūsų treniruočių rezervacijos ir abonementas liko nepakeisti."
+            : "Phone notifications are off. Your training bookings and lesson subscription were not changed.",
+        );
       } else {
         await enablePushNotifications(language);
         setEnabled(true);
-        toast.success(language === "lt" ? "Equus pranešimai įjungti 🐴" : "Equus notifications enabled 🐴");
+        toast.success(
+          language === "lt"
+            ? "Telefono pranešimai įjungti 🐴"
+            : "Phone notifications enabled 🐴",
+        );
       }
     } catch (error: any) {
-      toast.error(error?.message ?? (language === "lt" ? "Nepavyko pakeisti pranešimų nustatymo." : "Could not change notification setting."));
+      setEnabled(false);
+      setEnableFailed(true);
+      toast.error(
+        error?.message ??
+          (language === "lt"
+            ? "Nepavyko įjungti telefono pranešimų."
+            : "Could not enable phone notifications."),
+      );
     } finally {
       setBusy(false);
     }
   };
 
   const saveReminder = async (hours: 5 | 24) => {
+    const previous = reminderHours;
     setReminderHours(hours);
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
-    const { error } = await (supabase as any).from("profiles")
+    const { error } = await (supabase as any)
+      .from("profiles")
       .update({ notify_lesson_reminders: true, notify_lesson_reminder_hours: hours })
       .eq("id", data.user.id);
-    if (error) toast.error(language === "lt" ? "Nepavyko išsaugoti priminimo." : "Could not save reminder setting.");
+    if (error) {
+      setReminderHours(previous);
+      toast.error(
+        language === "lt"
+          ? "Nepavyko išsaugoti priminimo."
+          : "Could not save reminder setting.",
+      );
+    }
   };
 
   const disableReminder = async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
-    const { error } = await (supabase as any).from("profiles").update({ notify_lesson_reminders: false }).eq("id", data.user.id);
-    if (error) toast.error(language === "lt" ? "Nepavyko išjungti priminimo." : "Could not disable reminders.");
+    const { error } = await (supabase as any)
+      .from("profiles")
+      .update({ notify_lesson_reminders: false })
+      .eq("id", data.user.id);
+    if (error) {
+      toast.error(
+        language === "lt"
+          ? "Nepavyko išjungti priminimo."
+          : "Could not disable reminders.",
+      );
+    }
   };
 
   return (
-    <Section title={language === "lt" ? "Pranešimai" : "Notifications"} icon={<Bell className="w-4 h-4" />}>
+    <Section
+      title={language === "lt" ? "Pranešimai" : "Notifications"}
+      icon={<Bell className="w-4 h-4" />}
+    >
       <div className="space-y-4 px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="font-medium">{language === "lt" ? "Equus pranešimai" : "Equus notifications"}</div>
+            <div className="font-medium">
+              {language === "lt" ? "Telefono pranešimai" : "Phone notifications"}
+            </div>
             <p className="mt-1 max-w-xl text-xs text-muted-foreground">
               {language === "lt"
-                ? "Svarbūs atnaujinimai apie atšauktas ar perkeltas treniruotes ir atsiradusią vietą laukiančiųjų sąraše."
-                : "Important updates about cancelled or moved training and a place opening from the waiting list."}
+                ? "Tai tik telefono push pranešimai. Jūsų treniruočių rezervacijos ir abonementas nuo šio nustatymo nepriklauso."
+                : "These are phone push notifications only. This setting does not change your training bookings or lesson subscription."}
             </p>
           </div>
-          <Button variant={enabled ? "outlineGold" : "gold"} size="sm" onClick={() => void toggle()} disabled={busy || !pushNotificationsSupported()}>
-            {busy ? (language === "lt" ? "Kraunama…" : "Working…") : enabled ? (language === "lt" ? "Išjungti" : "Disable") : (language === "lt" ? "Įjungti" : "Enable")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {enabled && (
+              <span className="text-xs font-medium text-emerald-500">
+                {language === "lt" ? "Įjungta" : "Enabled"}
+              </span>
+            )}
+            <Button
+            variant={enabled ? "outlineGold" : "gold"}
+            size="sm"
+            onClick={() => void toggle()}
+            disabled={busy || !pushNotificationsSupported()}
+          >
+            {busy
+              ? language === "lt"
+                ? "Jungiamasi…"
+                : "Connecting…"
+              : enabled
+                ? language === "lt"
+                  ? "Išjungti telefono pranešimus"
+                  : "Disable phone notifications"
+                : enableFailed
+                  ? language === "lt"
+                    ? "Nepavyko įjungti"
+                    : "Enable failed"
+                  : language === "lt"
+                    ? "Įjungti telefono pranešimus"
+                    : "Enable phone notifications"}
+            </Button>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-gold/15 bg-background/25 p-4">
-          <div className="font-medium">{language === "lt" ? "Treniruočių priminimai" : "Training reminders"}</div>
+          <div className="font-medium">
+            {language === "lt" ? "Treniruočių priminimai" : "Training reminders"}
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {language === "lt" ? "Pasirinkite, kada norite būti priminti apie artėjančią treniruotę. Šie priminimai yra neprivalomi." : "Choose when you want to be reminded about an upcoming training. These reminders are optional."}
+            {language === "lt"
+              ? "Pasirinkite, kada norite būti priminti apie artėjančią treniruotę. Šie priminimai yra neprivalomi."
+              : "Choose when you want to be reminded about an upcoming training. These reminders are optional."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" variant={reminderHours === 24 ? "gold" : "outlineGold"} onClick={() => void saveReminder(24)}>24 {language === "lt" ? "val. prieš" : "hours before"}</Button>
-            <Button size="sm" variant={reminderHours === 5 ? "gold" : "outlineGold"} onClick={() => void saveReminder(5)}>5 {language === "lt" ? "val. prieš" : "hours before"}</Button>
-            <Button size="sm" variant="ghost" onClick={() => void disableReminder()}>{language === "lt" ? "Išjungti priminimą" : "Turn reminders off"}</Button>
+            <Button
+              size="sm"
+              variant={reminderHours === 24 ? "gold" : "outlineGold"}
+              onClick={() => void saveReminder(24)}
+            >
+              24 {language === "lt" ? "val. prieš" : "hours before"}
+            </Button>
+            <Button
+              size="sm"
+              variant={reminderHours === 5 ? "gold" : "outlineGold"}
+              onClick={() => void saveReminder(5)}
+            >
+              5 {language === "lt" ? "val. prieš" : "hours before"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => void disableReminder()}>
+              {language === "lt" ? "Išjungti priminimą" : "Turn reminders off"}
+            </Button>
           </div>
         </div>
 

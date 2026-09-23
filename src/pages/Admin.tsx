@@ -241,16 +241,50 @@ function AdminNotificationsTab() {
   };
 
   const sendTestToMe = async () => {
-    if (!confirm("Siųsti bandomąjį Equus pranešimą tik sau?")) return;
+    if (!confirm("Siųsti bandomąjį telefono pranešimą tik į jūsų aktyvius įrenginius?")) return;
     setSending(true);
-    const { error } = await (supabase as any).rpc("admin_send_test_notification_to_me");
-    if (!error) void flushPushNotifications();
-    setSending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("push-notifications", {
+        body: { action: "test" },
+      });
+
+      if (error) {
+        let detail = error.message;
+        try {
+          const response = (error as any).context;
+          if (response?.json) {
+            const payload = await response.json();
+            detail = payload?.error || payload?.code || detail;
+          }
+        } catch {
+          // Keep the function error message if the response body is unavailable.
+        }
+        toast.error(detail);
+        return;
+      }
+
+      if (data?.code === "NO_ACTIVE_SUBSCRIPTION") {
+        toast.error("Nėra aktyvios telefono pranešimų prenumeratos.");
+        return;
+      }
+
+      if (data?.code === "VAPID_CONFIGURATION_ERROR") {
+        toast.error("VAPID nustatymai nesukonfigūruoti serverio Edge Function.");
+        return;
+      }
+
+      if (!data?.ok) {
+        toast.error("Nepavyko išsiųsti bandomojo telefono pranešimo.");
+        return;
+      }
+
+      toast.success(
+        `Bandomasis telefono pranešimas išsiųstas. Įrenginių: ${Number(data.delivered ?? 0)}.`,
+      );
+    } finally {
+      setSending(false);
     }
-    toast.success("Bandomasis pranešimas įtrauktas į eilę. Patikrinkite telefoną.");
   };
 
 
@@ -289,8 +323,8 @@ function AdminNotificationsTab() {
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
         <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
-        <p className="text-sm text-muted-foreground">Šis testas siunčia pranešimą tik prisijungusiam administratoriui, todėl kiti raiteliai nieko negaus.</p>
-        <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti testinį pranešimą man</Button>
+        <p className="text-sm text-muted-foreground">Šis testas siunčia tikrą Web Push pranešimą į jūsų aktyvius įrenginius. Jis nerašo fiktyvios sėkmės ir nerodo sėkmės, jei serveris nepristatė pranešimo.</p>
+        <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti bandomąjį telefono pranešimą</Button>
       </div>
     </section>
   );
