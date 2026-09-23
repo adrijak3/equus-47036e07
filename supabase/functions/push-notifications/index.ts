@@ -145,10 +145,10 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
       await admin
         .from("notification_queue")
         .update({
-          sent_at: new Date().toISOString(),
           last_error: "NO_ACTIVE_SUBSCRIPTIONS",
           processing_at: null,
           processing_token: null,
+          failed_at: new Date().toISOString(),
         })
         .eq("id", item.id)
         .eq("processing_token", item.processing_token);
@@ -158,6 +158,7 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
 
     let delivered = 0;
     let transientFailures = 0;
+    let itemInvalidSubscriptions = 0;
 
     for (const subscription of subscriptions as PushSubscriptionRow[]) {
       const language = subscription.language === "en" ? "en" : "lt";
@@ -185,6 +186,7 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
 
         if (statusCode === 404 || statusCode === 410) {
           invalidSubscriptions++;
+          itemInvalidSubscriptions++;
           await admin.from("push_subscriptions").update({
             active: false,
             invalid_at: new Date().toISOString(),
