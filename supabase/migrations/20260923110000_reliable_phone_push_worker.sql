@@ -315,6 +315,45 @@ FROM PUBLIC, anon, authenticated;
 -- named equus_push_cron_secret and the matching Edge Function secret separately.
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
+CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
+
+CREATE OR REPLACE FUNCTION public.equus_push_cron_tick()
+RETURNS bigint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  cron_secret text;
+  request_id bigint;
+BEGIN
+  SELECT decrypted_secret
+  INTO cron_secret
+  FROM vault.decrypted_secrets
+  WHERE name = 'equus_push_cron_secret'
+  LIMIT 1;
+
+  IF NULLIF(cron_secret, '') IS NULL THEN
+    RAISE LOG 'Equus push worker: cron secret is not configured yet';
+    RETURN NULL;
+  END IF;
+
+  SELECT net.http_post(
+    url := 'https://tkksskpvpartlhpnctzu.supabase.co/functions/v1/push-notifications',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-equus-push-secret', cron_secret
+    ),
+    body := jsonb_build_object('source', 'pg_cron')
+  )
+  INTO request_id;
+
+  RETURN request_id;
+END;
+$;
+
+REVOKE EXECUTE ON FUNCTION public.equus_push_cron_tick()
+FROM PUBLIC, anon, authenticated;
 
 SELECT cron.unschedule(jobid)
 FROM cron.job
@@ -323,21 +362,5 @@ WHERE jobname = 'equus-push-notifications-every-minute';
 SELECT cron.schedule(
   'equus-push-notifications-every-minute',
   '* * * * *',
-  $$
-    SELECT net.http_post(
-      url := 'https://tkksskpvpartlhpnctzu.supabase.co/functions/v1/push-notifications',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'x-equus-push-secret',
-        COALESCE(
-          (SELECT decrypted_secret
-           FROM vault.decrypted_secrets
-           WHERE name = 'equus_push_cron_secret'
-           LIMIT 1),
-          ''
-        )
-      ),
-      body := jsonb_build_object('source', 'pg_cron')
-    ) AS request_id;
-  $$
+  $SELECT public.equus_push_cron_tick();$
 );
