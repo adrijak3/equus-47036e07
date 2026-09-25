@@ -207,6 +207,7 @@ export default function Admin() {
 /* ---------- IMPORTANT NOTIFICATIONS ---------- */
 function AdminNotificationsTab() {
   const [sending, setSending] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
 
   const [globalLt, setGlobalLt] = useState(
     "Svarbus Equus atnaujinimas\nNuo spalio 5 d. keičiasi treniruočių laikai. Prašome pasitikrinti atnaujintą grafiką. 🐴"
@@ -241,12 +242,13 @@ function AdminNotificationsTab() {
   };
 
   const sendTestToMe = async () => {
-    if (!confirm("Siųsti bandomąjį telefono pranešimą tik į jūsų aktyvius įrenginius?")) return;
+    const target = testEmail.trim();
+    if (!confirm(target ? `Siųsti bandomąjį telefono pranešimą į ${target} aktyvius įrenginius?` : "Siųsti bandomąjį telefono pranešimą tik į jūsų aktyvius įrenginius?")) return;
     setSending(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("push-notifications", {
-        body: { action: "test" },
+        body: target ? { action: "test", target_email: target } : { action: "test" },
       });
 
       if (error) {
@@ -265,7 +267,12 @@ function AdminNotificationsTab() {
       }
 
       if (data?.code === "NO_ACTIVE_SUBSCRIPTION") {
-        toast.error("Nėra aktyvios telefono pranešimų prenumeratos.");
+        toast.error(target ? "Šis vartotojas neturi aktyvios telefono pranešimų prenumeratos." : "Nėra aktyvios telefono pranešimų prenumeratos.");
+        return;
+      }
+
+      if (data?.error === "TARGET_USER_NOT_FOUND") {
+        toast.error("Vartotojas pagal šį el. paštą nerastas.");
         return;
       }
 
@@ -323,7 +330,8 @@ function AdminNotificationsTab() {
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
         <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
-        <p className="text-sm text-muted-foreground">Šis testas siunčia tikrą Web Push pranešimą į jūsų aktyvius įrenginius. Jis nerašo fiktyvios sėkmės ir nerodo sėkmės, jei serveris nepristatė pranešimo.</p>
+        <p className="text-sm text-muted-foreground">Šis testas siunčia tikrą Web Push pranešimą į jūsų aktyvius įrenginius arba pasirinktam vartotojui pagal el. paštą. Jis nerašo fiktyvios sėkmės ir nerodo sėkmės, jei serveris nepristatė pranešimo.</p>
+        <Input value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="Tikslinio vartotojo el. paštas (nebūtina)" type="email" />
         <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti bandomąjį telefono pranešimą</Button>
       </div>
     </section>
