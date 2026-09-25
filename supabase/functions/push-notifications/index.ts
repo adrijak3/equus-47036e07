@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey);
 
-  let body: { action?: string } = {};
+  let body: { action?: string; target_email?: string } = {};
   try {
     body = await req.json();
   } catch {
@@ -348,7 +348,15 @@ Deno.serve(async (req) => {
     if (!caller?.isAdmin) return json({ error: "ADMIN_REQUIRED" }, 403);
 
     try {
-      const result = await sendTestPush(admin, caller.callerId);
+      let targetUserId = caller.callerId;
+      if (body.target_email?.trim()) {
+        const { data: usersData, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (usersError) return json({ error: usersError.message }, 502);
+        const target = usersData.users.find((u) => u.email?.toLowerCase() === body.target_email!.trim().toLowerCase());
+        if (!target) return json({ error: "TARGET_USER_NOT_FOUND" }, 404);
+        targetUserId = target.id;
+      }
+      const result = await sendTestPush(admin, targetUserId);
       if (result.code === "NO_ACTIVE_SUBSCRIPTION") return json(result, 404);
       if (result.code === "PUSH_DELIVERY_FAILED") return json(result, 502);
       return json(result);
