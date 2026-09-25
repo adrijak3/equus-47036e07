@@ -957,6 +957,11 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, negative = past
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
+  const copyHistory = async () => {
+    const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
+    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
+    try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
+  };
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const viewMonthStart = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-01`;
@@ -1038,6 +1043,7 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
           <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-gold/5 border border-gold/15">
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o - 1)}>← Ankstesnis</Button>
             <div className="font-display text-base text-gold capitalize">{monthLabel}</div>
+            <Button variant="gold" size="sm" onClick={copyHistory} disabled={loading || visibleRows.length === 0}><Copy className="w-3.5 h-3.5" /> Kopijuoti</Button>
             <Button variant="ghost" size="sm" onClick={() => setMonthOffset((o) => o + 1)} disabled={monthOffset >= 0}>Kitas →</Button>
           </div>
 
