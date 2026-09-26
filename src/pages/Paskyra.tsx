@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight } from "lucide-react";
+import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight, Palette } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -432,7 +432,7 @@ export default function Paskyra() {
 
         {/* PROFILE OVERVIEW */}
         <TabsContent value="profile" className="space-y-5">
-          <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} futureLessons={future.length} totalAttended={monthAttended.length} subscriptions={subs} />
+          <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
@@ -828,15 +828,18 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
 
 /* ───────────── Profile overview ───────────── */
 
-function ProfileOverview({ profile, email, isLinked, activeProfileName, futureLessons, totalAttended, subscriptions }: { profile: AccountProfile | null; email: string | null; isLinked: boolean; activeProfileName: string; futureLessons: number; totalAttended: number; subscriptions: Subscription[] }) {
+function ProfileOverview({ profile, email, isLinked, activeProfileName }: { profile: AccountProfile | null; email: string | null; isLinked: boolean; activeProfileName: string }) {
   const fullName = profile?.full_name?.trim() || activeProfileName || "—";
-  const active = subscriptions.find((x) => new Date(`${x.expires_at}T23:59:59`) >= new Date() && x.lessons_used < x.lessons_total);
-  const lessonsLeft = active ? Math.max(0, active.lessons_total - active.lessons_used) : 0;
   return <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-7">
-    <div className="flex flex-col gap-5"><div className="flex items-center gap-4">
+    <div className="flex items-center gap-4">
       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold sm:h-20 sm:w-20"><Horse size={42} /></div>
-      <div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.22em] text-gold/70">Mano paskyra</p><h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">{fullName}</h2>{isLinked && <p className="text-xs text-muted-foreground">Aktyvus profilis: {activeProfileName}</p>}<p className="truncate text-xs text-muted-foreground">{email || "El. paštas nenurodytas"}</p></div>
-    </div><div className="grid grid-cols-3 gap-2"><ProfileStat label="Artimiausios" value={futureLessons} icon={<CalendarDays className="h-4 w-4" />} /><ProfileStat label="Šį mėnesį" value={totalAttended} icon={<BarChart3 className="h-4 w-4" />} /><ProfileStat label="Liko" value={lessonsLeft} icon={<Wallet className="h-4 w-4" />} /></div></div>
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-gold/70">Mano paskyra</p>
+        <h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">{fullName}</h2>
+        {isLinked && <p className="text-xs text-muted-foreground">Aktyvus profilis: {activeProfileName}</p>}
+        <p className="truncate text-xs text-muted-foreground">{email || "El. paštas nenurodytas"}</p>
+      </div>
+    </div>
   </motion.section>;
 }
 function QuickAction({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) { return <button type="button" onClick={onClick} className="flex min-h-16 items-center justify-between gap-2 rounded-xl border border-gold/15 bg-gradient-card px-3 py-3 text-left hover:border-gold/35 hover:bg-gold/5"><span className="flex items-center gap-2 text-xs sm:text-sm"><span className="text-gold">{icon}</span>{label}</span><ChevronRight className="h-4 w-4 text-muted-foreground" /></button>; }
