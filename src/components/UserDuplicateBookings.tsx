@@ -64,10 +64,15 @@ export function UserDuplicateBookings({ userId }: { userId: string }) {
     void load();
   }, [load]);
 
-  const groupedDates = useMemo(
-    () => new Set(rows.map((row) => row.slot_date)).size,
-    [rows],
-  );
+  const grouped = useMemo(() => {
+    const map = new Map<string, PossibleDuplicate[]>();
+    for (const row of rows) {
+      const list = map.get(row.slot_date) ?? [];
+      list.push(row);
+      map.set(row.slot_date, list);
+    }
+    return Array.from(map.entries());
+  }, [rows]);
 
   const cancelOne = async (row: PossibleDuplicate) => {
     setBusyId(row.suspect_booking_id);
@@ -86,30 +91,6 @@ export function UserDuplicateBookings({ userId }: { userId: string }) {
     }
 
     setBusyId(null);
-  };
-
-  const cancelAll = async () => {
-    setBulkBusy(true);
-
-    const { data, error } = await (supabase as any).rpc(
-      "cancel_all_possible_duplicate_bookings",
-      { _user_id: userId },
-    );
-
-    if (error || data?.ok === false) {
-      toast.error(error?.message || data?.message || "Nepavyko pašalinti senesnių laikų.");
-    } else {
-      const removed = Number(data?.removed_count ?? 0);
-      toast.success(
-        removed === 1
-          ? "Pašalinta 1 sena rezervacija."
-          : `Pašalintos ${removed} senos rezervacijos.`,
-      );
-      setShowBulkConfirm(false);
-      await load();
-    }
-
-    setBulkBusy(false);
   };
 
   return (
@@ -302,6 +283,91 @@ export function UserDuplicateBookings({ userId }: { userId: string }) {
               Patvirtinti ir pašalinti {rows.length}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}      ) : (
+        <>
+          <div className="mt-5 space-y-2">
+            {grouped.map(([date, dateRows]) => (
+              <article
+                key={date}
+                className="rounded-xl border border-border bg-background/40 p-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-medium capitalize text-foreground">{formatDate(date)}</div>
+                  <span className="text-xs text-muted-foreground">
+                    {dateRows.length} galim{dateRows.length === 1 ? "as" : "i"} konflikt{dateRows.length === 1 ? "as" : "ai"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {dateRows.map((row) => (
+                    <button
+                      key={row.suspect_booking_id}
+                      type="button"
+                      onClick={() => setChosen(row)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gold/20 bg-gold/5 px-3 py-2 text-sm hover:border-gold/50 hover:bg-gold/10"
+                    >
+                      <Clock className="h-3.5 w-3.5 text-gold" />
+                      <span className="font-medium">{shortTime(row.suspect_time)}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span>{shortTime(row.permanent_time)}</span>
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            Spustelėk laikų porą, jei nori peržiūrėti arba pašalinti seną rezervaciją.
+          </p>
+        </>
+      )}
+
+      <Dialog open={!!chosen} onOpenChange={(open) => !open && setChosen(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Galimas dublikatas</DialogTitle>
+            <DialogDescription>
+              Patikrink šį vieną atvejį. Nieko nekeisime, kol nepasirinksi pašalinti rezervacijos.
+            </DialogDescription>
+          </DialogHeader>
+
+          {chosen && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm">
+                <p className="font-medium capitalize text-foreground">{formatDate(chosen.slot_date)}</p>
+                <div className="mt-3 flex items-center justify-center gap-3 text-base">
+                  <span className="rounded-lg bg-amber-500/10 px-3 py-2 font-semibold">{shortTime(chosen.suspect_time)}</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="rounded-lg bg-gold/10 px-3 py-2 font-semibold">{shortTime(chosen.permanent_time)}</span>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Kairėje – galimas senas laikas. Dešinėje – dabartinis nuolatinis laikas.
+                </p>
+              </div>
+
+              <Button variant="outline" className="w-full" onClick={() => setChosen(null)}>
+                Palikti abu
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="w-full"
+                disabled={busyId === chosen.suspect_booking_id}
+                onClick={() => void cancelOne(chosen)}
+              >
+                {busyId === chosen.suspect_booking_id ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Pašalinti seną {shortTime(chosen.suspect_time)} rezervaciją
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </section>
