@@ -434,103 +434,11 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* LESSONS */}
-        <TabsContent value="lessons" className="space-y-6">
-          <UnpaidLessonsOverview userId={acting} />
-          {sickReqs.filter((r) => !r.document_url && r.document_deadline).length > 0 && (
-            <Section title="Ligos pažymos" icon={<XCircle className="w-4 h-4" />}>
-              <ul className="divide-y divide-gold/5">
-                {sickReqs.filter((r) => !r.document_url && r.document_deadline).map((r) => {
-                  const overdue = r.document_deadline && r.document_deadline < formatDateISO(new Date());
-                  return (
-                    <li key={r.id} className="px-5 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <div className="font-medium">
-                          Pamoka {r.slot_date} {r.slot_time?.slice(0, 5)}
-                        </div>
-                        <div className={cn("text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
-                          {overdue
-                            ? "Terminas pasibaigęs — laukia administracijos sprendimo"
-                            : `Įkelti pažymą iki: ${r.document_deadline}`}
-                        </div>
-                      </div>
-                      {!overdue && (
-                        <div className="flex flex-wrap gap-2">
-                          <Button size="sm" variant="gold" onClick={() => sendSickDocViaMessage(r)}>
-                            <MessageSquare className="w-4 h-4" /> Žinute administracijai
-                          </Button>
-                          <Button size="sm" variant="outlineGold" onClick={() => sendSickDocViaEmail(r)}>
-                            El. paštu
-                          </Button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </Section>
-          )}
-
-          {/* Lifetime stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Iš viso treniruočių</div>
-              <div className="font-display text-4xl text-gradient-gold tabular-nums mt-1">{totalAttended}</div>
-            </div>
-            <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Atšauktų</div>
-              <div className="font-display text-4xl text-blush tabular-nums mt-1">{totalCancelled}</div>
-            </div>
-          </div>
-
-          <Section title="Užsirašytos treniruotės" icon={<CalendarDays className="w-4 h-4" />}>
-            {future.length === 0 ? (
-              <Empty text="Nėra suplanuotų treniruočių" />
-            ) : (
-              <ul className="divide-y divide-gold/5">
-                {future.map((b) => <BookingRow key={b.id} b={b} />)}
-              </ul>
-            )}
-          </Section>
-
-          <Section title={`${monthLabel} lankomumas`} icon={<CheckCircle2 className="w-4 h-4" />}>
-            <div className="flex items-baseline gap-3 px-5 py-3">
-              <span className="font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</span>
-              <span className="text-sm text-muted-foreground">treniruočių šį mėnesį</span>
-            </div>
-            {monthBookings.length > 0 && (
-              <ul className="divide-y divide-gold/5 border-t border-gold/10">
-                {monthBookings.map((b) => <BookingRow key={b.id} b={b} past />)}
-              </ul>
-            )}
-          </Section>
-
-          {(() => {
-            const pastAttended = past.filter((b) => b.status === "active" || b.status === "completed");
-            const pastCancelled = bookings.filter((b) => b.status === "cancelled");
-            return (
-              <>
-                <Section title="Įvykusios treniruotės" icon={<CheckCircle2 className="w-4 h-4" />}>
-                  {pastAttended.length === 0 ? (
-                    <Empty text="Dar nebuvo įvykusių treniruočių" />
-                  ) : (
-                    <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
-                      {pastAttended.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
-                    </ul>
-                  )}
-                </Section>
-
-                <Section title="Atšauktos treniruotės" icon={<XCircle className="w-4 h-4" />}>
-                  {pastCancelled.length === 0 ? (
-                    <Empty text="Atšauktų treniruočių nėra" />
-                  ) : (
-                    <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
-                      {pastCancelled.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
-                    </ul>
-                  )}
-                </Section>
-              </>
-            );
-          })()}
+        <TabsContent value="lessons" className="space-y-5">
+          <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div><div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Iš viso</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{totalAttended}</div><div className="text-xs text-muted-foreground">pamokų</div></div></div>
+          <Section title="Artimiausios pamokos" icon={<CalendarDays className="w-4 h-4" />}>{future.length === 0 ? <Empty text="Artimiausių pamokų nėra." /> : <ul className="divide-y divide-gold/5">{future.slice(0, 7).map((b) => <BookingRow key={b.id} b={b} />)}</ul>}</Section>
+          <Section title={`Šio mėnesio pamokos · ${monthAttended.length}`} icon={<CheckCircle2 className="w-4 h-4" />}>{monthBookings.length === 0 ? <Empty text="Šį mėnesį pamokų dar nėra." /> : <ul className="divide-y divide-gold/5">{monthBookings.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
+          <Section title="Ankstesnės pamokos" icon={<BarChart3 className="w-4 h-4" />}>{past.filter((b) => b.status === "active" || b.status === "completed").length === 0 ? <Empty text="Ankstesnių pamokų nėra." /> : <ul className="divide-y divide-gold/5 max-h-80 overflow-auto">{past.filter((b) => b.status === "active" || b.status === "completed").slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
@@ -590,57 +498,7 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* MESSAGES */}
-        <TabsContent value="messages" className="space-y-4">
-          <div className="bg-gradient-card border border-gold/15 rounded-lg p-5">
-            <Label htmlFor="msg" className="flex items-center gap-2 mb-2">
-              <MessageSquare className="w-4 h-4 text-gold" /> Žinutė administracijai
-            </Label>
-            <Textarea
-              id="msg"
-              value={msgBody}
-              onChange={(e) => setMsgBody(e.target.value)}
-              maxLength={2000}
-              rows={4}
-              placeholder="Rašykite čia..."
-            />
-            <div className="flex justify-end mt-3">
-              <Button variant="gold" disabled={sending || !msgBody.trim()} onClick={sendMessage}>
-                Siųsti
-              </Button>
-            </div>
-          </div>
-          {messages.length > 0 && (
-            <Section title="Pokalbis su administracija">
-              <p className="px-5 pt-3 text-[11px] text-muted-foreground italic">
-                Pokalbiai automatiškai ištrinami po 3 dienų nuo paskutinės žinutės.
-              </p>
-              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto mt-2">
-                {messages.map((m) => (
-                  <li
-                    key={m.id}
-                    className={cn(
-                      "px-5 py-3",
-                      m.from_admin && "bg-gold/5",
-                    )}
-                  >
-                    <div className="flex items-baseline justify-between gap-2 mb-1">
-                      <span className={cn("text-xs uppercase tracking-wide", m.from_admin ? "text-gold" : "text-muted-foreground")}>
-                        {m.from_admin ? "✦ Administracija" : "Jūs"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
-                    </div>
-                    <div className="text-sm whitespace-pre-wrap">{m.body}</div>
-                    {!m.from_admin && (
-                      <div className="text-[11px] text-muted-foreground mt-1">
-                        {m.read_by_admin ? "✓ Perskaityta" : "Išsiųsta"}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-        </TabsContent>
+        <TabsContent value="messages" className="space-y-4"><Section title="Susisiekti su administracija" icon={<MessageSquare className="w-4 h-4" />}><div className="p-5"><p className="mb-3 text-sm text-muted-foreground">Parašykite klausimą ar informaciją. Administracija atsakys čia.</p><Textarea id="msg" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} maxLength={2000} rows={3} placeholder="Jūsų žinutė…" /><div className="mt-3 flex justify-end"><Button variant="gold" disabled={sending || !msgBody.trim()} onClick={sendMessage}>Siųsti žinutę</Button></div></div></Section>{messages.length > 0 && <Section title="Pokalbis" icon={<Inbox className="w-4 h-4" />}><ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">{messages.map((m) => <li key={m.id} className={cn("px-5 py-3", m.from_admin && "bg-gold/5")}><div className="flex items-baseline justify-between gap-2 mb-1"><span className={cn("text-xs", m.from_admin ? "text-gold" : "text-muted-foreground")}>{m.from_admin ? "Administracija" : "Jūs"}</span><span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span></div><div className="text-sm whitespace-pre-wrap">{m.body}</div></li>)}</ul></Section>}</TabsContent>
 
         {/* PERMANENT SLOTS */}
         <TabsContent value="permanent" className="space-y-4">
