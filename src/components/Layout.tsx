@@ -163,11 +163,12 @@ export default function Layout({
         : NAV_GUEST;
 
   const isLinkActive = (to: string) => {
-    if (to === "/") {
-      return location.pathname === "/";
-    }
-
-    return location.pathname.startsWith(to);
+    const [path, query] = to.split("?");
+    if (path === "/") return location.pathname === "/";
+    if (location.pathname !== path) return false;
+    if (!query) return true;
+    const expected = new URLSearchParams(query).get("tab");
+    return new URLSearchParams(location.search).get("tab") === expected;
   };
 
   return (
