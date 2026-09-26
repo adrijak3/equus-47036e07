@@ -151,8 +151,6 @@ export default function Admin() {
                 </div>
               )}
             </div>
-              )}
-            </div>
           </nav>
         </aside>
 
