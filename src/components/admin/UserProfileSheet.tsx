@@ -252,7 +252,7 @@ export function UserProfileSheet({
 function UserDetailsBody({
   profile, subs, permSlots, vacations, upcoming, past, rosterLevel,
   onSetLevel, onRename, onResetPassword, onDelete, onTogglePaid, onEditLessons, onDeleteSub,
-  onAddPermSlot, onRemovePermSlot, onAddVacation, onRemoveVacation,
+  onAddPermSlot, onChangePermSlotTime, onRemovePermSlot, onAddVacation, onRemoveVacation,
 }: {
   profile: Profile; subs: Sub[]; permSlots: PermSlot[]; vacations: Vacation[];
   upcoming: Booking[]; past: Booking[]; rosterLevel?: string;
