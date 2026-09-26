@@ -181,7 +181,7 @@ export function EquusHelpWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 360, damping: 30 }}
-            className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
+            className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-sm flex-col bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
           >
             <div className="relative overflow-hidden bg-gradient-gold p-4 text-gold-foreground">
               <motion.div
@@ -218,7 +218,7 @@ export function EquusHelpWidget() {
               </div>
             </div>
 
-            <div className="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-background/35">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-background/35">
               <AnimatePresence initial={false} mode="popLayout">
                 {messages.map((msg, idx) => (
                   <motion.div
