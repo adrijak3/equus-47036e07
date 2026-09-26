@@ -42,7 +42,7 @@ export default function PrivatumoPolitika() {
         </p>
         <p>
           Kontaktai duomenų apsaugos klausimais: telefonu{" "}
-          <a href="tel:+37065822872" className="text-gold underline underline-offset-4">
+          <a href="tel:+37062876090" className="text-gold underline underline-offset-4">
             +370 628 76 090
           </a>{" "}
           arba el. paštu{" "}
