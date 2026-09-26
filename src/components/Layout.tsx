@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { InstallMenuAction } from "@/components/InstallPrompt";
 import {
   Calendar,
+  CalendarDays,
   Check,
   ChevronDown,
   Home,
@@ -479,7 +480,7 @@ export default function Layout({
           aria-label="Pagrindinė navigacija"
           className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-gold/15 bg-background/95 backdrop-blur-xl sm:hidden"
         >
-          <div className="mx-auto grid max-w-md grid-cols-4 px-1 pb-[env(safe-area-inset-bottom)]">
+          <div className="mx-auto grid max-w-md grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
             {NAV_USER.map(({ to, label, icon: Icon }) => {
               const basePath = to.split("?")[0];
               const active = location.pathname === basePath && (
