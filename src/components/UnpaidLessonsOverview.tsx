@@ -8,7 +8,7 @@ import { formatTime } from "@/lib/equus";
 
 const MONTHS = ["Sausis", "Vasaris", "Kovas", "Balandis", "Gegužė", "Birželis", "Liepa", "Rugpjūtis", "Rugsėjis", "Spalis", "Lapkritis", "Gruodis"];
 
-type Row = { id: string; user_id: string; slot_date: string; slot_time: string; status: string; subscription_id: string | null; counts_in_subscription: boolean; extra_fee_eur: number; extra_fee_paid: boolean };
+type Row = { id: string; user_id: string; slot_date: string; slot_time: string; status: string; lesson_kind?: string | null; is_individual?: boolean | null; subscription_id: string | null; counts_in_subscription: boolean; extra_fee_eur: number; extra_fee_paid: boolean };
 type Profile = { id: string; full_name: string };
 
 function monthKeys() {
@@ -31,7 +31,7 @@ export function UnpaidLessonsOverview({ userId, staff = false }: { userId?: stri
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + 1, 0);
       const end = endDate.toISOString().slice(0, 10);
-      let q = supabase.from("bookings").select("id,user_id,slot_date,slot_time,status,subscription_id,counts_in_subscription,extra_fee_eur,extra_fee_paid")
+      let q = supabase.from("bookings").select("id,user_id,slot_date,slot_time,status,lesson_kind,is_individual,subscription_id,counts_in_subscription,extra_fee_eur,extra_fee_paid")
         .gte("slot_date", start).lte("slot_date", end)
         .in("status", ["active", "completed"])
         .eq("counts_in_subscription", true)
@@ -101,6 +101,6 @@ function DetailsDialog({ selected, onClose, staff }: { selected: { title: string
     onClose();
   };
   return <Dialog open={!!selected} onOpenChange={(o) => !o && onClose()}><DialogContent className="bg-gradient-card border-gold/20"><DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">{selected?.title}</DialogTitle></DialogHeader>
-    {!selected?.rows.length ? <p className="text-sm italic text-muted-foreground py-3">Šį mėnesį neapmokėtų treniruočių nėra.</p> : <ul className="space-y-2 max-h-80 overflow-auto">{selected.rows.map((r) => <li key={r.id} className="rounded-md border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex items-center gap-3"><CalendarDays className="w-4 h-4 text-gold"/><span className="text-sm">{new Date(String(r.slot_date) + "T12:00:00").toLocaleDateString("lt-LT", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span><span className="ml-auto tabular-nums text-sm text-muted-foreground">{formatTime(r.slot_time)}</span></div>{staff && r.extra_fee_eur > 0 && !r.extra_fee_paid && <div className="mt-2 flex items-center justify-between gap-2 rounded bg-blush/10 px-2 py-1.5 text-xs"><span>Papildomai: <b>{r.extra_fee_eur.toFixed(2).replace(".00","")} €</b></span><Button size="sm" variant="gold" onClick={() => void markExtraPaid(r)} disabled={busyId === r.id}>{busyId === r.id ? "..." : "Apmokėta"}</Button></div>}</li>)}</ul>}
+    {!selected?.rows.length ? <p className="text-sm italic text-muted-foreground py-3">Šį mėnesį neapmokėtų treniruočių nėra.</p> : <ul className="space-y-2 max-h-80 overflow-auto">{selected.rows.map((r) => <li key={r.id} className="rounded-md border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex items-center gap-3"><CalendarDays className="w-4 h-4 text-gold"/><span className="text-sm">{new Date(String(r.slot_date) + "T12:00:00").toLocaleDateString("lt-LT", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span><span className="ml-auto flex items-center gap-2 tabular-nums text-sm text-muted-foreground"><span>{formatTime(r.slot_time)}</span><span className="rounded-full border border-gold/20 bg-gold/5 px-2 py-0.5 text-[10px] text-gold">{r.lesson_kind === "individual" || r.is_individual ? "Individuali" : r.lesson_kind === "po2" ? "Po 2" : "Grupinė"}</span></span></div>{staff && r.extra_fee_eur > 0 && !r.extra_fee_paid && <div className="mt-2 flex items-center justify-between gap-2 rounded bg-blush/10 px-2 py-1.5 text-xs"><span>Papildomai: <b>{r.extra_fee_eur.toFixed(2).replace(".00","")} €</b></span><Button size="sm" variant="gold" onClick={() => void markExtraPaid(r)} disabled={busyId === r.id}>{busyId === r.id ? "..." : "Apmokėta"}</Button></div>}</li>)}</ul>}
   </DialogContent></Dialog>;
 }
