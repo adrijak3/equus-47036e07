@@ -24,7 +24,7 @@ interface Vacation { id: string; user_id: string; starts_on: string; ends_on: st
 interface Booking { id: string; slot_date: string; slot_time: string; status: string; trainer_name: string | null; }
 
 /**
- * Single source-of-truth popup for one user. Self-contained: fetches its own data
+ * Single source-of-truth user panel for one user. Self-contained: fetches its own data
  * from a userId, so it can be opened from anywhere (the Vartotojai table, the
  * top search bar, subscription reminders, etc.) without the caller needing to
  * hand it a pile of props.
@@ -366,7 +366,7 @@ function UserDetailsBody({
           )}
         </TabsContent>
 
-        {/* PERMANENT TIMES + HOLIDAYS, editable right here */}
+        {/* PERMANENT TIMES + HOLIDAYS */}
         <TabsContent value="permanent" className="space-y-5 pt-4">
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5"><CalendarClock className="w-3.5 h-3.5" /> Nuolatiniai laikai</Label>
