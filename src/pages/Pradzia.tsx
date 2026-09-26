@@ -93,6 +93,8 @@ export default function Pradzia() {
   const actingUserId = activeProfileId ?? user?.id ?? null;
   const [nextBooking, setNextBooking] = useState<NextBooking | null>(null);
   const [weekCount, setWeekCount] = useState(0);
+  const [monthCount, setMonthCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [adminSummary, setAdminSummary] = useState<AdminSummary>({
     todayBookings: 0,
     waiting: 0,
@@ -120,6 +122,8 @@ export default function Pradzia() {
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
     const weekEndISO = formatDateISO(weekEnd);
+    const monthStartISO = formatDateISO(new Date(today.getFullYear(), today.getMonth(), 1));
+    const monthEndISO = formatDateISO(new Date(today.getFullYear(), today.getMonth() + 1, 0));
 
     if (isAdmin || isTrainer) {
       const [todayRes, waitingRes, cancelledRes] = await Promise.all([
@@ -158,7 +162,7 @@ export default function Pradzia() {
       .order("slot_time")
       .limit(50);
 
-    const upcoming = (bookingsData ?? []).filter(
+    setMonthCount(monthResult.count ?? 0);\n    setTotalCount(totalResult.count ?? 0);\n\n    const upcoming = (bookingsData ?? []).filter(
       (booking) => slotDateTime(booking.slot_date, booking.slot_time).getTime() >= Date.now(),
     );
 
@@ -389,18 +393,21 @@ export default function Pradzia() {
           >
             <div className="flex items-center gap-3">
               <Sparkles className="h-5 w-5 text-gold" />
-              <h2 className="font-display text-xl text-foreground">
-                Šią savaitę
-              </h2>
+              <h2 className="font-display text-xl text-foreground">Šį mėnesį</h2>
             </div>
-            <div className="mt-5 font-display text-5xl text-gradient-gold">
-              {weekCount}
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div>
+                <div className="font-display text-5xl text-gradient-gold tabular-nums">{monthCount}</div>
+                <p className="mt-1 text-sm text-muted-foreground">pamokos</p>
+              </div>
+              <div>
+                <div className="font-display text-3xl text-foreground/85 tabular-nums">{totalCount}</div>
+                <p className="mt-1 text-xs text-muted-foreground">iš viso</p>
+              </div>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {weekCount === 1
-                ? "suplanuota treniruotė"
-                : "suplanuotos treniruotės"}
-            </p>
+            <Button asChild variant="link" className="mt-3 h-auto px-0 text-gold">
+              <Link to="/paskyra?tab=lessons">Peržiūrėti pamokas <ArrowRight className="h-3.5 w-3.5" /></Link>
+            </Button>
           </motion.section>
 
           <motion.section
