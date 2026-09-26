@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -85,7 +86,9 @@ export default function Paskyra() {
   const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [params] = useSearchParams();
+  const initialTab = params.get("tab") || "profile";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
@@ -239,6 +242,12 @@ export default function Paskyra() {
     return d >= monthStart && d < monthEnd;
   });
   const monthAttended = monthBookings.filter((b) => b.status === "active" || b.status === "completed");
+  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+  const previousMonthAttended = past.filter((b) => {
+    const d = new Date(`${b.slot_date}T${b.slot_time}`);
+    return d >= previousMonthStart && d < previousMonthEnd && (b.status === "active" || b.status === "completed");
+  });
 
   // Lifetime stats
   const totalAttended = past.filter(
@@ -410,7 +419,7 @@ export default function Paskyra() {
       <VacationBanner userId={acting} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+        <TabsList className="hidden sm:grid grid-cols-4 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
           <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
           <TabsTrigger value="subs" className="py-2.5 text-xs sm:text-sm">Abonementas</TabsTrigger>
@@ -435,7 +444,11 @@ export default function Paskyra() {
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-5">
-          <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div><div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Iš viso</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{totalAttended}</div><div className="text-xs text-muted-foreground">pamokų</div></div></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+  <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
+  <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Praėjęs mėnuo</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{previousMonthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
+  <div className="col-span-2 sm:col-span-1 rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Iš viso</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{totalAttended}</div><div className="text-xs text-muted-foreground">pamokų</div></div>
+</div>
           <Section title="Artimiausios pamokos" icon={<CalendarDays className="w-4 h-4" />}>{future.length === 0 ? <Empty text="Artimiausių pamokų nėra." /> : <ul className="divide-y divide-gold/5">{future.slice(0, 7).map((b) => <BookingRow key={b.id} b={b} />)}</ul>}</Section>
           <Section title={`Šio mėnesio pamokos · ${monthAttended.length}`} icon={<CheckCircle2 className="w-4 h-4" />}>{monthBookings.length === 0 ? <Empty text="Šį mėnesį pamokų dar nėra." /> : <ul className="divide-y divide-gold/5">{monthBookings.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
           <Section title="Ankstesnės pamokos" icon={<BarChart3 className="w-4 h-4" />}>{past.filter((b) => b.status === "active" || b.status === "completed").length === 0 ? <Empty text="Ankstesnių pamokų nėra." /> : <ul className="divide-y divide-gold/5 max-h-80 overflow-auto">{past.filter((b) => b.status === "active" || b.status === "completed").slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
