@@ -188,7 +188,7 @@ export function VacationsPanel({ userId, compact }: Props) {
             <span>Aktyvios pamokos atostogų laikotarpiu atšaukiamos automatiškai, o abonementinės pamokos grąžinamos pagal atostogų taisykles.</span>
           </div>
         </div>
-      )}}
+      )}
     </div>
   );
 }
