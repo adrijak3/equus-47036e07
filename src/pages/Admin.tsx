@@ -447,7 +447,7 @@ function VacationsAdminTab() {
 
       <div>
         <button onClick={() => setShowPast((v) => !v)} className="text-xs uppercase tracking-wider text-muted-foreground hover:text-gold">
-          {showPast ? "Slėpti" : "Rodyti"} praeities atostogas ({past.length})
+          {showPast ? "Slėpti" : "Rodyti"} pasibaigusias atostogas ({past.length})
         </button>
         {showPast && (
           <div className="mt-2 space-y-1">
@@ -944,7 +944,8 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const copyHistory = async () => {
     const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
-    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
+    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("
+");
     try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   const now = new Date();
@@ -1728,7 +1729,8 @@ function SubDetailDialog({
       source = await enrichHorses(data ?? []); title = copyMode === "details" ? "🐴 PAMOKOS" : "🐴 EQUUS JOJIMO PAMOKOS";
     }
     const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("🐎 " + r.horse_name); return "* " + bits.join(" — "); });
-    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
+    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("
+");
     try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   return (
@@ -1807,8 +1809,8 @@ function CancellationsTab() {
       .update({ counts_in_subscription: counts }).eq("id", req.booking_id);
     if (e2) { toast.error(e2.message); return; }
     await sendUserMessage(req.user_id, counts
-      ? `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) buvo įskaityta į abonementą.`
-      : `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) NEbus įskaityta į abonementą.`);
+      ? `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) įskaityta į abonementą.`
+      : `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) nebus įskaityta į abonementą.`);
     toast.success(counts ? "Pamoka skaičiuosis" : "Pamoka neskaičiuosis");
     load();
   };
@@ -1850,7 +1852,7 @@ function CancellationsTab() {
             </div>
           </div>
           <p className="text-sm text-foreground/80 mb-4">
-            <span className="text-muted-foreground">Priežastis: </span>{r.reason}
+            <span className="text-muted-foreground">Kodėl atšaukta: </span>{r.reason}
             {r.sickness && <span className="ml-2 px-2 py-0.5 rounded bg-blush/15 text-blush text-xs">Liga</span>}
             {r.sickness && (
               r.document_url
@@ -1864,7 +1866,7 @@ function CancellationsTab() {
           </p>
           <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outlineGold" size="sm" onClick={() => decide(r, false)}>
-              <Check className="w-4 h-4" /> NEskaičiuoti
+              <Check className="w-4 h-4" /> Neįskaičiuoti
             </Button>
             <Button
               variant="ghostGold"
@@ -1873,7 +1875,7 @@ function CancellationsTab() {
               className="border border-gold/40 bg-gold/10"
               title="Pamoką atidirbti iki sekmadienio (tos pačios savaitės)"
             >
-              <Clock className="w-4 h-4" /> Atidirbti šią savaitę
+              <Clock className="w-4 h-4" /> Leisti atidirbti
             </Button>
             <Button variant="gold" size="sm" onClick={() => decide(r, true)}>
               <X className="w-4 h-4" /> Skaičiuoti
@@ -2047,7 +2049,9 @@ function PermanentSlotsAdminTab() {
   useEffect(() => { load(); }, []);
 
   const remove = async (row: PermSlotRow) => {
-    if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?\n\nVisos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos kartotis.`)) return;
+    if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?
+
+Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos kartotis.`)) return;
     // 1) Delete the recurring rule
     const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
     if (e1) { toast.error(e1.message); return; }
