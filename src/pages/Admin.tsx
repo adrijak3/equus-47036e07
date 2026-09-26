@@ -379,7 +379,7 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { sickness: number
 
 /* ---------- ATOSTOGOS (all users) ---------- */
 function VacationsAdminTab() {
-  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string }[]>([]);
+  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; created_at: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPast, setShowPast] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
