@@ -37,7 +37,7 @@ const FAQ_DATA = {
     },
     {
       q: "Kontaktai",
-      a: "Dėl svetainės ar treniruočių informacijos galite skambinti +370 628 76090 arba parašyti per WhatsApp. Taip pat galite susisiekti su Laura telefonu +370 658 22872.",
+      a: "Dėl svetainės ar treniruočių informacijos galite susisiekti su Adrija telefonu +370 628 76090 arba per WhatsApp. Taip pat galite susisiekti su Laura telefonu +370 658 22872.",
     },
   ],
   en: [
@@ -67,7 +67,7 @@ const FAQ_DATA = {
     },
     {
       q: "Contact",
-      a: "For website or training information, call +370 628 76090 or use WhatsApp. You can also contact Laura at +370 658 22872.",
+      a: "For website or training information, contact Adrija at +370 628 76090 or via WhatsApp. You can also contact Laura at +370 658 22872.",
     },
   ],
 };
