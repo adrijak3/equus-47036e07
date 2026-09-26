@@ -18,6 +18,7 @@ import {
   Tag,
   User as UserIcon,
   Users as UsersIcon,
+  Wallet,
   ClipboardPenLine,
   MessageCircleHeart,
   X,
@@ -57,33 +58,10 @@ const NAV_GUEST = [
 ];
 
 const NAV_USER = [
-  {
-    to: "/",
-    label: "Pradžia",
-    icon: Home,
-  },
-  {
-    to: "/grafikas",
-    label: "Grafikas",
-    icon: Calendar,
-  },
-  {
-    to: "/kainos",
-    label: "Kainos",
-    icon: Tag,
-  },
-  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
-  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
-  {
-    to: "/informacija",
-    label: "Informacija",
-    icon: Info,
-  },
-  {
-    to: "/paskyra",
-    label: "Paskyra",
-    icon: UserIcon,
-  },
+  { to: "/", label: "Pagrindinis", icon: Home },
+  { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
+  { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
+  { to: "/paskyra?tab=profile", label: "Paskyra", icon: UserIcon },
 ];
 
 const NAV_ADMIN = [
@@ -495,9 +473,37 @@ export default function Layout({
         </motion.aside>
       </div>
 
+      {user && !isAdmin && !isTrainer && (
+        <nav
+          aria-label="Pagrindinė navigacija"
+          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-gold/15 bg-background/95 backdrop-blur-xl sm:hidden"
+        >
+          <div className="mx-auto grid max-w-md grid-cols-4 px-1 pb-[env(safe-area-inset-bottom)]">
+            {NAV_USER.map(({ to, label, icon: Icon }) => {
+              const basePath = to.split("?")[0];
+              const active = location.pathname === basePath && (
+                basePath === "/" || new URLSearchParams(location.search).get("tab") === to.split("tab=")[1]
+              );
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={cn(
+                    "flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-center transition-colors",
+                    active ? "text-gold" : "text-muted-foreground hover:text-gold",
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="max-w-full truncate text-[10px] font-medium leading-tight">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
       <EquusHelpWidget />
 
-      <main className="flex-1 overflow-x-hidden">
+      <main className="flex-1 overflow-x-hidden pb-20 sm:pb-0">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
