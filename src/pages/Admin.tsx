@@ -379,20 +379,20 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { sickness: number
 
 /* ---------- ATOSTOGOS (all users) ---------- */
 function VacationsAdminTab() {
-  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string }[]>([]);
+  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string; lessonCount: number; cancelledCount: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPast, setShowPast] = useState(false);
   const today = formatDateISO(new Date());
 
   const load = async () => {
     setLoading(true);
-    const [v, p] = await Promise.all([
+    const [v, p, b] = await Promise.all([
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").order("starts_on", { ascending: true }),
       supabase.from("profiles").select("id, full_name"),
     ]);
     const nameMap = new Map<string, string>();
     (p.data ?? []).forEach((x: any) => nameMap.set(x.id, x.full_name));
-    setRows(((v.data ?? []) as any[]).map((r) => ({ ...r, name: nameMap.get(r.user_id) ?? "—" })));
+    const bookings = (b.data ?? []) as any[];\n    setRows(((v.data ?? []) as any[]).map((r) => {\n      const inRange = bookings.filter((x) => x.user_id === r.user_id && x.slot_date >= r.starts_on && x.slot_date <= r.ends_on);\n      return { ...r, name: nameMap.get(r.user_id) ?? "—", lessonCount: inRange.length, cancelledCount: inRange.filter((x) => x.status === "cancelled").length };\n    }));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -429,7 +429,7 @@ function VacationsAdminTab() {
                     <div>
                       <div className="font-display text-base text-gold">{r.name}</div>
                       <div className="text-xs tabular-nums text-foreground/85">{r.starts_on} → {r.ends_on}</div>
-                      {r.note && <div className="text-xs text-muted-foreground mt-0.5 italic">{r.note}</div>}
+                      <div className="text-xs text-muted-foreground mt-0.5">{r.lessonCount} pam. šiame laikotarpyje · {r.cancelledCount} atšaukta</div>\n                      {r.note && <div className="text-xs text-muted-foreground mt-0.5 italic">{r.note}</div>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -447,7 +447,7 @@ function VacationsAdminTab() {
 
       <div>
         <button onClick={() => setShowPast((v) => !v)} className="text-xs uppercase tracking-wider text-muted-foreground hover:text-gold">
-          {showPast ? "Slėpti" : "Rodyti"} praeities atostogas ({past.length})
+          {showPast ? "Slėpti" : "Rodyti"} pasibaigusias atostogas ({past.length})
         </button>
         {showPast && (
           <div className="mt-2 space-y-1">
@@ -1807,8 +1807,8 @@ function CancellationsTab() {
       .update({ counts_in_subscription: counts }).eq("id", req.booking_id);
     if (e2) { toast.error(e2.message); return; }
     await sendUserMessage(req.user_id, counts
-      ? `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) buvo įskaityta į abonementą.`
-      : `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) NEbus įskaityta į abonementą.`);
+      ? `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) įskaityta į abonementą.`
+      : `Jūsų atšaukta pamoka (${req.slot_date} ${req.slot_time?.slice(0, 5)}) nebus įskaityta į abonementą.`);
     toast.success(counts ? "Pamoka skaičiuosis" : "Pamoka neskaičiuosis");
     load();
   };
@@ -1850,7 +1850,7 @@ function CancellationsTab() {
             </div>
           </div>
           <p className="text-sm text-foreground/80 mb-4">
-            <span className="text-muted-foreground">Priežastis: </span>{r.reason}
+            <span className="text-muted-foreground">Kodėl atšaukta: </span>{r.reason}
             {r.sickness && <span className="ml-2 px-2 py-0.5 rounded bg-blush/15 text-blush text-xs">Liga</span>}
             {r.sickness && (
               r.document_url
