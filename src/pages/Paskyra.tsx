@@ -576,6 +576,10 @@ export default function Paskyra() {
                           slot_time: b.slot_time,
                           status: b.status,
                           is_individual: !!b.is_individual,
+                          horse_name: b.horse_name,
+                          slot_capacity: b.slot_capacity,
+                          lesson_price: b.lesson_price,
+                          lesson_kind: b.lesson_kind,
                         }))}
                     />
                   </div>
