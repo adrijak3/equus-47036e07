@@ -1055,7 +1055,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; lessons?: { id: string; slot_date: string; slot_time: string; status: string; horse_name?: string | null; slot_capacity?: number | null; lesson_price?: number | null; lesson_kind?: "individual" | "po2" | "group" }[] }) {
+export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; lessons?: { id: string; slot_date: string; slot_time: string; status: string; horse_name?: string | null; slot_capacity?: number | null; lesson_price?: number | null; lesson_kind?: "individual" | "po2" | "group" }[]; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode }) {
   const used = effectiveUsed ?? s.lessons_used;
   const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
