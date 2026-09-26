@@ -439,7 +439,40 @@ export default function Paskyra() {
             <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
             <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
           </div>
-          <ReadOnlyRecurringCard permanents={permanents} />
+          <ReadOnlyRecurringCard permanents={permanents} />\n          <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
+            <div className="grid gap-3 p-5 sm:grid-cols-2">
+              <a href="tel:+37062876090" className="group rounded-2xl border border-gold/15 bg-gradient-card p-4 transition-colors hover:border-gold/35">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Equus</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Bendri klausimai ir treniruočių informacija</p>
+                    <p className="mt-2 text-sm text-gold">+370 628 76090</p>
+                  </div>
+                  <Phone className="h-4 w-4 text-gold" />
+                </div>
+              </a>
+              <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Laura</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Susisiekti tiesiogiai</p>
+                    <p className="mt-2 text-sm text-gold">+370 658 22872</p>
+                  </div>
+                  <Phone className="h-4 w-4 text-gold" />
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <a href="tel:+37065822872" className="inline-flex min-h-9 items-center rounded-lg border border-gold/20 px-3 text-xs hover:bg-gold/5">Skambinti</a>
+                  <a href="https://wa.me/37065822872" target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center rounded-lg border border-gold/20 px-3 text-xs hover:bg-gold/5">WhatsApp</a>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 sm:col-span-2">
+                <p className="text-xs text-muted-foreground">Parašyti administracijai per svetainę</p>
+                <Button variant="outlineGold" size="sm" className="mt-3" onClick={() => navigate("/paskyra?tab=messages")}>
+                  <MessageSquare className="mr-2 h-4 w-4" /> Susisiekti žinute
+                </Button>
+              </div>
+            </div>
+          </Section>
           <Section title="Spalvų ir šviesumo tema" icon={<Palette className="h-4 w-4" />}><div className="p-5"><ThemeSwitcher /></div></Section>
           <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Mano informacija</DialogTitle></DialogHeader><ProfileSettings onSaved={async () => { await refreshProfile(); await load(); setEditOpen(false); }} /></DialogContent></Dialog>
           <Dialog open={pwOpen} onOpenChange={setPwOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Slaptažodžio keitimas</DialogTitle></DialogHeader><PasswordChange /></DialogContent></Dialog>
