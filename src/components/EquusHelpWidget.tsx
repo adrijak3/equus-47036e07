@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, X, MapPin, Phone, MessageSquare, Send, Sparkles } from "lucide-react";
+import { MessageCircle, X, MapPin, Phone, MessageSquare, Send, Sparkles, CalendarDays, Wallet, Ban, RefreshCw, Palmtree } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
 
 type HelpMessage = {
   type: "bot" | "user";
@@ -93,6 +94,7 @@ const responseDelay = 650;
 
 export function EquusHelpWidget() {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -122,6 +124,15 @@ export function EquusHelpWidget() {
     setMessages((prev) => [...prev, { type: "user", text: faq.q }]);
     sendBotReply(faq.a);
   };
+
+  const quickActions = [
+    { label: language === "lt" ? "Mano pamoka" : "My lesson", icon: CalendarDays, action: () => navigate("/paskyra?tab=lessons") },
+    { label: language === "lt" ? "Abonementas" : "Subscription", icon: Wallet, action: () => navigate("/paskyra?tab=subs") },
+    { label: language === "lt" ? "Noriu atšaukti" : "I want to cancel", icon: Ban, action: () => navigate("/paskyra?tab=lessons") },
+    { label: language === "lt" ? "Noriu pakeisti pamoką" : "I want to change", icon: RefreshCw, action: () => navigate("/grafikas") },
+    { label: language === "lt" ? "Susisiekti" : "Contact", icon: Phone, action: () => navigate("/paskyra?tab=messages") },
+    { label: language === "lt" ? "Atostogos / nedalyvavimas" : "Vacation / absence", icon: Palmtree, action: () => navigate("/paskyra?tab=vacations") },
+  ];
 
   const handleSubmit = () => {
     const value = input.trim();
@@ -252,6 +263,22 @@ export function EquusHelpWidget() {
             </div>
 
             <div className="p-3 bg-card border-t border-border/70 flex flex-col gap-2.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                {quickActions.map(({ label, icon: Icon, action }) => (
+                  <motion.button
+                    key={label}
+                    whileHover={{ y: -1, scale: 1.01 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={action}
+                    disabled={isTyping}
+                    className="flex min-w-0 items-center gap-1.5 rounded-xl border border-gold/15 bg-gold/5 px-2.5 py-2 text-left text-[11px] font-medium hover:bg-gold/10 disabled:opacity-50"
+                  >
+                    <Icon size={13} className="shrink-0 text-gold" />
+                    <span className="min-w-0 break-words">{label}</span>
+                  </motion.button>
+                ))}
+              </div>
+
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                 {faqs.map((faq) => (
                   <motion.button
