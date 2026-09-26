@@ -30,6 +30,9 @@ interface Booking {
   subscription_id?: string | null;
   horse_name?: string | null;
   is_individual?: boolean;
+  slot_capacity?: number | null;
+  lesson_price?: number | null;
+  lesson_kind?: "individual" | "po2" | "group";
 }
 interface Subscription {
   id: string;
@@ -115,7 +118,7 @@ export default function Paskyra() {
     setLoading(true);
     // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
     try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
-    const [b, s, m, p, ts, ap, pr] = await Promise.all([
+    const [b, s, m, p, ts, ap, pr, ov] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", acting).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", acting).order("purchase_date", { ascending: false }),
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
@@ -123,6 +126,7 @@ export default function Paskyra() {
       supabase.from("time_slots").select("id, day_of_week, slot_time, max_capacity").eq("active", true).is("one_off_date", null).order("day_of_week").order("slot_time"),
       supabase.from("profiles").select("id, full_name, phone, display_name").eq("id", acting).maybeSingle(),
       (supabase as any).from("permanent_slot_requests").select("id,day_of_week,slot_time,status,admin_note").eq("user_id", acting).order("created_at", { ascending: false }),
+      (supabase as any).from("slot_overrides").select("slot_date,slot_time,max_capacity").order("slot_date"),
     ]);
     // attach horse names from horse_assignments
     const bs = (b.data ?? []) as any[];
@@ -140,7 +144,22 @@ export default function Paskyra() {
       }
       const haMap: Record<string, string> = {};
       (ha ?? []).forEach((x: any) => { if (x.booking_id) haMap[x.booking_id] = horseMap[x.horse_id]; });
-      setBookings(canonicalBookings(bs.map((x) => ({ ...x, horse_name: haMap[x.id] ?? null }))));
+      const baseSlots = (ts.data ?? []) as any[];
+      const overrides = (ov.data ?? []) as any[];
+      const getCapacity = (date: string, time: string) => {
+        const override = overrides.find((x) => x.slot_date === date && x.slot_time === time);
+        if (override) return Number(override.max_capacity);
+        const dow = dbDayOfWeek(new Date(date + "T12:00:00"));
+        const slot = baseSlots.find((x) => Number(x.day_of_week) === dow && x.slot_time === time);
+        return slot ? Number(slot.max_capacity) : null;
+      };
+      const withMeta = bs.map((x) => {
+        const capacity = getCapacity(x.slot_date, x.slot_time);
+        const kind = x.is_individual ? "individual" : capacity !== null && capacity <= 2 ? "po2" : "group";
+        const price = kind === "individual" ? null : calculateSubPriceByType(1, kind === "po2" ? "sportine_po2" : "sportine");
+        return { ...x, horse_name: haMap[x.id] ?? null, slot_capacity: capacity, lesson_kind: kind, lesson_price: price };
+      });
+      setBookings(canonicalBookings(withMeta));
     } else {
       setBookings([]);
     }
