@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/equus";
-import { History, RotateCcw } from "lucide-react";
+import { History, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Row {
   id: string;
@@ -40,6 +40,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(initialQuery);
   const [role, setRole] = useState<string>("all");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => { setQ(initialQuery); }, [initialQuery]);
 
@@ -97,6 +98,31 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
     );
   }, [rows, q, role]);
 
+  const grouped = useMemo(() => {
+    const result: Array<{ kind: "single" | "group"; key: string; rows: Row[] }> = [];
+    const used = new Set<string>();
+    for (const row of filtered) {
+      if (used.has(row.id)) continue;
+      const created = new Date(row.created_at).getTime();
+      const sameBatch = filtered.filter((candidate) => {
+        if (used.has(candidate.id)) return false;
+        if (candidate.user_id !== row.user_id) return false;
+        if (candidate.cancelled_by_role !== row.cancelled_by_role) return false;
+        if ((candidate.reason ?? "") !== (row.reason ?? "")) return false;
+        if (candidate.slot_time !== row.slot_time) return false;
+        return Math.abs(new Date(candidate.created_at).getTime() - created) <= 5000;
+      });
+      if (sameBatch.length >= 3) {
+        sameBatch.forEach((x) => used.add(x.id));
+        result.push({ kind: "group", key: row.id, rows: sameBatch.sort((a, b) => a.slot_date.localeCompare(b.slot_date)) });
+      } else {
+        used.add(row.id);
+        result.push({ kind: "single", key: row.id, rows: [row] });
+      }
+    }
+    return result;
+  }, [filtered]);
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -135,30 +161,51 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
         </div>
       ) : (
         <ul className="divide-y divide-gold/5 overflow-hidden rounded-lg border border-gold/15 bg-gradient-card">
-          {filtered.map((r) => (
-            <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm">
-              <span className="font-medium text-foreground">{r.name}</span>
-              <span className="tabular-nums text-gold">{formatTime(r.slot_time)}</span>
-              <span className="tabular-nums text-muted-foreground">{r.slot_date}</span>
-              <span className="text-xs text-muted-foreground">
-                Atšaukė: {new Date(r.created_at).toLocaleString("lt-LT")}
-              </span>
-              <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>
-                Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}
-              </span>
-              {r.accidental && (
-                <span className="rounded-full border border-blush/40 bg-blush/10 px-2 py-0.5 text-[11px] text-blush">
-                  per klaidą
-                </span>
-              )}
-              {r.restored_at && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-avail-free/40 bg-avail-free/10 px-2 py-0.5 text-[11px] text-avail-free">
-                  <RotateCcw className="h-3 w-3" /> grąžinta
-                </span>
-              )}
-              {r.reason && <span className="w-full text-xs italic text-muted-foreground">„{r.reason}“</span>}
-            </li>
-          ))}
+          {grouped.map((group) => {
+            const r = group.rows[0];
+            const isOpen = expanded === group.key;
+            if (group.kind === "group") {
+              const dates = group.rows.map((x) => x.slot_date);
+              return (
+                <li key={group.key} className="px-4 py-3 text-sm">
+                  <button type="button" onClick={() => setExpanded(isOpen ? null : group.key)} className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-left">
+                    <span className="font-medium text-foreground">{r.name}</span>
+                    <span className="tabular-nums text-gold">{formatTime(r.slot_time)}</span>
+                    <span className="text-muted-foreground">Kelios pamokos · {group.rows.length}</span>
+                    <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>
+                      Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}
+                    </span>
+                    {isOpen ? <ChevronUp className="ml-auto h-4 w-4 text-muted-foreground" /> : <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />}
+                  </button>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {dates[0]}{dates.length > 1 ? ` → ${dates[dates.length - 1]}` : ""}
+                  </div>
+                  {isOpen && (
+                    <div className="mt-3 rounded-md border border-gold/10 bg-background/30 p-3 space-y-1">
+                      {group.rows.map((x) => (
+                        <div key={x.id} className="flex items-center justify-between gap-3 text-xs">
+                          <span>{x.slot_date}</span>
+                          <span className="text-muted-foreground">{x.reason ? `„${x.reason}“` : "Atšaukta"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              );
+            }
+            return (
+              <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm">
+                <span className="font-medium text-foreground">{r.name}</span>
+                <span className="tabular-nums text-gold">{formatTime(r.slot_time)}</span>
+                <span className="tabular-nums text-muted-foreground">{r.slot_date}</span>
+                <span className="text-xs text-muted-foreground">Atšaukė: {new Date(r.created_at).toLocaleString("lt-LT")}</span>
+                <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}</span>
+                {r.accidental && <span className="rounded-full border border-blush/40 bg-blush/10 px-2 py-0.5 text-[11px] text-blush">per klaidą</span>}
+                {r.restored_at && <span className="inline-flex items-center gap-1 rounded-full border border-avail-free/40 bg-avail-free/10 text-avail-free"><RotateCcw className="h-3 w-3" /> grąžinta</span>}
+                {r.reason && <span className="w-full text-xs italic text-muted-foreground">„{r.reason}“</span>}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
