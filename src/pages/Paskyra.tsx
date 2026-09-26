@@ -89,6 +89,12 @@ export default function Paskyra() {
   const [params] = useSearchParams();
   const initialTab = params.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => {
+    const nextTab = params.get("tab") || "profile";
+    if (["profile", "lessons", "subs", "messages", "permanent", "vacations"].includes(nextTab)) {
+      setActiveTab(nextTab);
+    }
+  }, [params]);
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
