@@ -48,6 +48,7 @@ export default function Admin() {
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [focusUserId, setFocusUserId] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [params] = useSearchParams();
   useEffect(() => {
     const s = params.get("section");
@@ -80,10 +81,10 @@ export default function Admin() {
 
   const navItems: { value: string; label: string; icon: any; badge?: number; badgeCls?: string }[] = [
     { value: "overview", label: "Apžvalga", icon: LayoutDashboard },
-    { value: "schedule", label: "Tvarkaraštis", icon: CalendarCog },
+    { value: "schedule", label: "Grafikas", icon: CalendarCog },
     { value: "permanent", label: "Nuolatiniai", icon: Star },
     { value: "cancels", label: "Atšaukimai", icon: Inbox, badge: cancelAlerts, badgeCls: "bg-blush text-white" },
-    { value: "users", label: "Vartotojai", icon: Users },
+    { value: "users", label: "Klientai", icon: Users },
     { value: "subs", label: "Abonimentai", icon: Wallet },
     { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
     { value: "registrations", label: "Registracijos", icon: ClipboardPenLine, badge: alerts.registrations, badgeCls: "bg-gold text-background" },
@@ -107,7 +108,9 @@ export default function Admin() {
         {/* Sidebar (desktop) */}
         <aside className="hidden lg:block sticky top-6 self-start">
           <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant space-y-0.5">
-            {navItems.map((n) => {
+            {[
+              navItems.find((n) => n.value === "overview"), navItems.find((n) => n.value === "schedule"), navItems.find((n) => n.value === "users"), navItems.find((n) => n.value === "subs"), navItems.find((n) => n.value === "registrations"), navItems.find((n) => n.value === "messages"), navItems.find((n) => n.value === "settings")
+            ].filter(Boolean).map({(n: (typeof navItems)[number]) => {
               const Icon = n.icon;
               const active = section === n.value;
               return (
@@ -123,21 +126,61 @@ export default function Admin() {
                   )}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span className="flex-1">{n.label}</span>
+                  <span className="flex-1 min-w-0">{n.label}</span>
                   {!!n.badge && n.badge > 0 && (
-                    <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center", n.badgeCls)}>
+                    <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", n.badgeCls)}>
                       {n.badge}
                     </span>
                   )}
                 </button>
               );
-            })}
+            }})}
+
+            <div className="my-2 border-t border-gold/10 pt-2">
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-gold"
+              >
+                <span>Daugiau įrankių</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", moreOpen && "rotate-180")} />
+              </button>
+              {moreOpen && (
+                <div className="space-y-0.5">
+                  {navItems.filter((n) => !["overview","schedule","users","subs","registrations","messages","settings"].includes(n.value)).map({(n: (typeof navItems)[number]) => {
+              const Icon = n.icon;
+              const active = section === n.value;
+              return (
+                <button
+                  key={n.value}
+                  type="button"
+                  onClick={() => setSection(n.value)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
+                    active
+                      ? "bg-gold/15 text-gold border border-gold/30"
+                      : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
+                  )}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 min-w-0">{n.label}</span>
+                  {!!n.badge && n.badge > 0 && (
+                    <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", n.badgeCls)}>
+                      {n.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            }})}
+                </div>
+              )}
+            </div>
           </nav>
         </aside>
 
         {/* Mobile nav */}
         <div className="lg:hidden -mt-2 mb-3">
-          <select value={section} onChange={(e) => setSection(e.target.value)} className="flex h-10 w-full rounded-lg border border-gold/20 bg-gradient-card px-3 py-2 text-sm">
+          <select value={section} onChange={(e) => setSection(e.target.value)} className="flex min-h-11 w-full rounded-lg border border-gold/20 bg-gradient-card px-3 py-2 text-sm">
             {navItems.map((n) => <option key={n.value} value={n.value}>{n.label}{n.badge ? ` · ${n.badge}` : ""}</option>)}
           </select>
         </div>
