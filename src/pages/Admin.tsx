@@ -136,29 +136,10 @@ export default function Admin() {
         </aside>
 
         {/* Mobile nav */}
-        <div className="lg:hidden -mt-2 mb-2 overflow-x-auto">
-          <div className="flex gap-1.5 pb-2 min-w-max">
-            {navItems.map((n) => {
-              const Icon = n.icon;
-              const active = section === n.value;
-              return (
-                <button
-                  key={n.value}
-                  onClick={() => setSection(n.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-md text-xs whitespace-nowrap transition-colors relative border",
-                    active ? "bg-gold/15 text-gold border-gold/40" : "bg-background/40 text-foreground/70 border-gold/15",
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {n.label}
-                  {!!n.badge && n.badge > 0 && (
-                    <span className={cn("ml-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center", n.badgeCls)}>{n.badge}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        <div className="lg:hidden -mt-2 mb-3">
+          <select value={section} onChange={(e) => setSection(e.target.value)} className="flex h-10 w-full rounded-lg border border-gold/20 bg-gradient-card px-3 py-2 text-sm">
+            {navItems.map((n) => <option key={n.value} value={n.value}>{n.label}{n.badge ? ` · ${n.badge}` : ""}</option>)}
+          </select>
         </div>
 
         <div className="min-w-0">
@@ -209,12 +190,8 @@ function AdminNotificationsTab() {
   const [sending, setSending] = useState(false);
   const [testEmail, setTestEmail] = useState("");
 
-  const [globalLt, setGlobalLt] = useState(
-    "Svarbus Equus atnaujinimas\nNuo spalio 5 d. keičiasi treniruočių laikai. Prašome pasitikrinti atnaujintą grafiką. 🐴"
-  );
-  const [globalEn, setGlobalEn] = useState(
-    "Important Equus update\nTraining times are changing from October 5. Please check the updated schedule. 🐴"
-  );
+  const [globalLt, setGlobalLt] = useState("");
+  const [globalEn, setGlobalEn] = useState("");
 
 
   const sendGlobal = async () => {
@@ -306,7 +283,7 @@ function AdminNotificationsTab() {
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
         <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
-        <p className="text-sm text-muted-foreground">Skirta bendriems grafiko ar kitiems svarbiems Equus atnaujinimams.</p>
+        <p className="text-sm text-muted-foreground">Parašykite savo pranešimą. Nieko čia neįrašome automatiškai.</p>
         <div>
           <Label>Lietuviškai</Label>
           <textarea value={globalLt} onChange={(e) => setGlobalLt(e.target.value)} rows={4}
@@ -1179,10 +1156,9 @@ function SlotRow({
           </button>
         </div>
       ) : (
-        <button onClick={() => setEditCap(true)} className="text-xs text-muted-foreground hover:text-gold inline-flex items-center gap-1 group">
-          cap {slot.max_capacity}
-          <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
-        </button>
+        <select value={String(slot.max_capacity)} onChange={(e) => onCapacity(Number(e.target.value))} className="h-7 rounded-md border border-gold/15 bg-background px-2 text-xs text-muted-foreground hover:border-gold/40 hover:text-gold" aria-label={`Talpa ${formatTime(slot.slot_time)}`}>
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} vietos</option>)}
+        </select>
       )}
 
       <button onClick={onRemove} className="text-muted-foreground hover:text-destructive" title="Pašalinti">
