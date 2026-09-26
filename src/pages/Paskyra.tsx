@@ -929,151 +929,19 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
 
 /* ───────────── Profile overview ───────────── */
 
-function ProfileOverview({
-  profile,
-  email,
-  isLinked,
-  activeProfileName,
-  futureLessons,
-  totalAttended,
-  subscriptions,
-  onEdit,
-  onPassword,
-}: {
-  profile: AccountProfile | null;
-  email: string | null;
-  isLinked: boolean;
-  activeProfileName: string;
-  futureLessons: number;
-  totalAttended: number;
-  subscriptions: Subscription[];
-  onEdit: () => void;
-  onPassword: () => void;
-}) {
+function ProfileOverview({ profile, email, isLinked, activeProfileName, futureLessons, totalAttended, subscriptions }: { profile: AccountProfile | null; email: string | null; isLinked: boolean; activeProfileName: string; futureLessons: number; totalAttended: number; subscriptions: Subscription[] }) {
   const fullName = profile?.full_name?.trim() || activeProfileName || "—";
-  const nameParts = fullName.split(/\s+/).filter(Boolean);
-  const firstName = nameParts[0] || "—";
-  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "—";
-  const defaultScheduleName =
-    nameParts.length > 1
-      ? `${firstName} ${nameParts[nameParts.length - 1].slice(0, 2)}`
-      : firstName;
-  const scheduleName = profile?.display_name?.trim() || defaultScheduleName || "—";
-  const activeSubscription = subscriptions.find(
-    (subscription) =>
-      new Date(`${subscription.expires_at}T23:59:59`) >= new Date() &&
-      subscription.lessons_used < subscription.lessons_total,
-  );
-  const lessonsLeft = activeSubscription
-    ? Math.max(0, activeSubscription.lessons_total - activeSubscription.lessons_used)
-    : 0;
-
-  const details = [
-    {
-      label: "Vardas",
-      value: firstName,
-      icon: UserIcon,
-    },
-    {
-      label: "Pavardė",
-      value: lastName,
-      icon: IdCard,
-    },
-    {
-      label: "El. paštas",
-      value: email || "Nenurodytas",
-      icon: Mail,
-      hint: isLinked ? "Valdančios paskyros el. paštas" : undefined,
-    },
-    {
-      label: "Telefonas",
-      value: profile?.phone || "Nenurodytas",
-      icon: Phone,
-    },
-    {
-      label: "Grafike rodomas vardas",
-      value: scheduleName,
-      icon: CalendarDays,
-      hint: profile?.display_name
-        ? "Jūsų pasirinktas vardas"
-        : "Sugeneruota automatiškai iš vardo ir pavardės",
-    },
-    {
-      label: "Aktyvus profilis",
-      value: activeProfileName || fullName,
-      icon: Sparkles,
-      hint: isLinked ? "Valdomas susietas profilis" : "Jūsų pagrindinis profilis",
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <motion.section
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-7"
-      >
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold shadow-inner sm:h-20 sm:w-20">
-              <span className="font-display text-3xl uppercase sm:text-4xl">
-                {firstName.charAt(0)}{lastName !== "—" ? lastName.charAt(0) : ""}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-gold/70">
-                Mano paskyra
-              </p>
-              <h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">
-                {fullName}
-              </h2>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
-                Grafike: <span className="font-medium text-foreground">{scheduleName}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button variant="outlineGold" className="w-full sm:w-auto" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
-              Redaguoti informaciją
-            </Button>
-            <Button variant="outlineGold" className="w-full sm:w-auto" onClick={onPassword}>
-              <KeyRound className="h-4 w-4" />
-              Keisti slaptažodį
-            </Button>
-          </div>
-        </div>
-      </motion.section>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <ProfileStat label="Artimiausios treniruotės" value={futureLessons} icon={<CalendarDays className="h-4 w-4" />} />
-        <ProfileStat label="Iš viso lankyta" value={totalAttended} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <ProfileStat label="Liko abonemente" value={lessonsLeft} icon={<Wallet className="h-4 w-4" />} />
-      </div>
-
-      <Section title="Asmeninė informacija" icon={<IdCard className="h-4 w-4" />}>
-        <div className="grid grid-cols-1 gap-px bg-gold/10 sm:grid-cols-2">
-          {details.map(({ label, value, icon: Icon, hint }) => (
-            <div key={label} className="bg-card/95 p-4 sm:p-5">
-              <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                <Icon className="h-3.5 w-3.5 text-gold" />
-                {label}
-              </div>
-              <div className="break-words text-sm font-medium text-foreground sm:text-base">
-                {value}
-              </div>
-              {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-            </div>
-          ))}
-        </div>
-      </Section>
-
-    </div>
-  );
+  const active = subscriptions.find((x) => new Date(`${x.expires_at}T23:59:59`) >= new Date() && x.lessons_used < x.lessons_total);
+  const lessonsLeft = active ? Math.max(0, active.lessons_total - active.lessons_used) : 0;
+  return <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-7">
+    <div className="flex flex-col gap-5"><div className="flex items-center gap-4">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold sm:h-20 sm:w-20"><Horse size={42} /></div>
+      <div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.22em] text-gold/70">Mano paskyra</p><h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">{fullName}</h2>{isLinked && <p className="text-xs text-muted-foreground">Aktyvus profilis: {activeProfileName}</p>}<p className="truncate text-xs text-muted-foreground">{email || "El. paštas nenurodytas"}</p></div>
+    </div><div className="grid grid-cols-3 gap-2"><ProfileStat label="Artimiausios" value={futureLessons} icon={<CalendarDays className="h-4 w-4" />} /><ProfileStat label="Šį mėnesį" value={totalAttended} icon={<BarChart3 className="h-4 w-4" />} /><ProfileStat label="Liko" value={lessonsLeft} icon={<Wallet className="h-4 w-4" />} /></div></div>
+  </motion.section>;
 }
+function QuickAction({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) { return <button type="button" onClick={onClick} className="flex min-h-16 items-center justify-between gap-2 rounded-xl border border-gold/15 bg-gradient-card px-3 py-3 text-left hover:border-gold/35 hover:bg-gold/5"><span className="flex items-center gap-2 text-xs sm:text-sm"><span className="text-gold">{icon}</span>{label}</span><ChevronRight className="h-4 w-4 text-muted-foreground" /></button>; }
+function ReadOnlyRecurringCard({ permanents }: { permanents: PermanentSlot[] }) { return <Section title="Nuolatinis laikas" icon={<Star className="h-4 w-4" />}><div className="px-5 py-4">{permanents.length ? <div className="flex flex-wrap gap-2">{permanents.map((p) => <span key={p.id} className="rounded-full border border-gold/20 bg-gold/5 px-3 py-1.5 text-sm">{WEEKDAYS_LT[p.day_of_week - 1]} · {formatTime(p.slot_time)}</span>) : <p className="text-sm text-muted-foreground">Nuolatinio laiko dar nėra.</p>}<p className="mt-2 text-xs text-muted-foreground">Nuolatinius laikus nustato administracija.</p></div></Section>; }
 
 function ProfileStat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
