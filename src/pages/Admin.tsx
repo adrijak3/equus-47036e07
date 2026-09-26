@@ -379,25 +379,20 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { sickness: number
 
 /* ---------- ATOSTOGOS (all users) ---------- */
 function VacationsAdminTab() {
-  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string; lessonCount: number; cancelledCount: number }[]>([]);
+  const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPast, setShowPast] = useState(false);
   const today = formatDateISO(new Date());
 
   const load = async () => {
     setLoading(true);
-    const [v, p, b] = await Promise.all([
+    const [v, p] = await Promise.all([
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").order("starts_on", { ascending: true }),
       supabase.from("profiles").select("id, full_name"),
-      supabase.from("bookings").select("user_id, slot_date, status"),
     ]);
     const nameMap = new Map<string, string>();
     (p.data ?? []).forEach((x: any) => nameMap.set(x.id, x.full_name));
-    const bookings = (b.data ?? []) as any[];
-    setRows(((v.data ?? []) as any[]).map((r) => {
-      const inRange = bookings.filter((x) => x.user_id === r.user_id && x.slot_date >= r.starts_on && x.slot_date <= r.ends_on);
-      return { ...r, name: nameMap.get(r.user_id) ?? "—", lessonCount: inRange.length, cancelledCount: inRange.filter((x) => x.status === "cancelled").length };
-    }));
+    setRows(((v.data ?? []) as any[]).map((r) => ({ ...r, name: nameMap.get(r.user_id) ?? "—" })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -434,7 +429,6 @@ function VacationsAdminTab() {
                     <div>
                       <div className="font-display text-base text-gold">{r.name}</div>
                       <div className="text-xs tabular-nums text-foreground/85">{r.starts_on} → {r.ends_on}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{r.lessonCount} pam. šiame laikotarpyje · {r.cancelledCount} atšaukta</div>
                       {r.note && <div className="text-xs text-muted-foreground mt-0.5 italic">{r.note}</div>}
                     </div>
                   </div>
