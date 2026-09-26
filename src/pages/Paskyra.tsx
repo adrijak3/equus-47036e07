@@ -1109,6 +1109,9 @@ function BookingRow({ b, past, separatelyPaid }: { b: Booking; past?: boolean; s
         </div>
         <div className="text-muted-foreground tabular-nums">
           {formatTime(b.slot_time)}
+          <span className="ml-2 text-xs text-gold/80 font-medium">
+            {b.lesson_kind === "individual" || b.is_individual ? "· Individuali" : b.lesson_kind === "po2" ? "· Po 2" : "· Grupinė"}
+          </span>
           {b.horse_name && (
             <span className="ml-2 text-xs text-gold/80 font-mono">({b.horse_name})</span>
           )}
