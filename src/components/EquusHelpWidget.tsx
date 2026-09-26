@@ -13,7 +13,7 @@ const FAQ_DATA = {
   lt: [
     {
       q: "Kainos ir pamokos",
-      a: "Kainas rasite „Kainos“ skiltyje. Jei nežinote, kuri treniruotė jums tinka, parašykite, ko ieškote, ir pateiksiu informaciją",
+      a: "Kainas rasite „Kainos“ skiltyje. Jei norite iškart registruotis, paspauskite „Registruotis“ žemiau arba atsidarykite „Grafikas“.",
     },
     {
       q: "Kaip užsiregistruoti?",
@@ -21,11 +21,11 @@ const FAQ_DATA = {
     },
     {
       q: "Kaip atšaukti treniruotę?",
-      a: "Grafike prie savo treniruotės pasirinkite atšaukimo mygtuką ir atlikite nurodytus veiksmus. Jei iki treniruotės liko mažiau nei 3 valandos, susisiekite su Equus.",
+      a: "Grafike prie savo treniruotės pasirinkite atšaukimo mygtuką. Greitam priėjimui galite paspausti „Noriu atšaukti“ žemiau. Jei iki treniruotės liko mažiau nei 3 valandos, susisiekite su Laura.",
     },
     {
       q: "Kaip perkelti treniruotę?",
-      a: "Grafike prie savo treniruotės pasirinkite perkėlimo mygtuką. Galima pasirinkti kitą laisvą laiką tą pačią dieną. Rankiniu būdu laiko įvesti nereikia.",
+      a: "Grafike prie savo treniruotės pasirinkite perkėlimo mygtuką. Galima pasirinkti kitą laisvą laiką tą pačią dieną. Greitam priėjimui paspauskite „Noriu pakeisti pamoką“ žemiau.",
     },
     {
       q: "Kur vyksta treniruotės?",
@@ -43,7 +43,7 @@ const FAQ_DATA = {
   en: [
     {
       q: "Prices and lessons",
-      a: "Prices are listed in the “Prices” section. If you are unsure which lesson is right for you, tell me what you are looking for and I will use the Equus FAQ information.",
+      a: "Prices are listed in the “Prices” section. To register right away, use the “Register” button below or open “Schedule”.",
     },
     {
       q: "How do I register?",
@@ -51,11 +51,11 @@ const FAQ_DATA = {
     },
     {
       q: "How do I cancel?",
-      a: "In the Schedule, use the cancellation action on your training and follow the instructions. If less than 3 hours remain, contact Equus.",
+      a: "In the Schedule, use the cancellation action on your training. For quick access, press “I want to cancel” below. If less than 3 hours remain, contact Laura.",
     },
     {
       q: "How do I move a training?",
-      a: "In the Schedule, use the move action on your training. You can choose another available time on the same day. No manual time entry is needed.",
+      a: "In the Schedule, use the move action on your training. You can choose another available time on the same day. For quick access, press “I want to change” below.",
     },
     {
       q: "Where are the trainings?",
@@ -133,12 +133,13 @@ export function EquusHelpWidget() {
   };
 
   const quickActions = [
+    { label: language === "lt" ? "Registruotis" : "Register", icon: CalendarDays, path: "/registracija" },
     { label: language === "lt" ? "Mano pamoka" : "My lesson", icon: CalendarDays, path: "/paskyra?tab=lessons" },
     { label: language === "lt" ? "Abonementas" : "Subscription", icon: Wallet, path: "/paskyra?tab=subs" },
     { label: language === "lt" ? "Noriu atšaukti" : "I want to cancel", icon: Ban, path: "/paskyra?tab=lessons" },
     { label: language === "lt" ? "Noriu pakeisti pamoką" : "I want to change", icon: RefreshCw, path: "/grafikas" },
-    { label: language === "lt" ? "Susisiekti" : "Contact", icon: Phone, path: "/paskyra?tab=messages" },
     { label: language === "lt" ? "Atostogos / nedalyvavimas" : "Vacation / absence", icon: Palmtree, path: "/paskyra?tab=vacations" },
+    { label: language === "lt" ? "Susisiekti" : "Contact", icon: Phone, path: "/paskyra?tab=messages" },
   ];
 
   const handleSubmit = () => {
