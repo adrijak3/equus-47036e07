@@ -444,7 +444,7 @@ export default function Paskyra() {
               <a href="tel:+37062876090" className="group rounded-2xl border border-gold/15 bg-gradient-card p-4 transition-colors hover:border-gold/35">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold">Equus</p>
+                    <p className="text-sm font-semibold">Adrija</p>
                     <p className="mt-1 text-xs text-muted-foreground">Bendri klausimai ir treniruočių informacija</p>
                     <p className="mt-2 text-sm text-gold">+370 628 76090</p>
                   </div>
