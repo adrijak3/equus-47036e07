@@ -24,7 +24,7 @@ interface Vacation { id: string; user_id: string; starts_on: string; ends_on: st
 interface Booking { id: string; slot_date: string; slot_time: string; status: string; trainer_name: string | null; }
 
 /**
- * Single source-of-truth popup for one user. Self-contained: fetches its own data
+ * Single source-of-truth user panel for one user. Self-contained: fetches its own data
  * from a userId, so it can be opened from anywhere (the Vartotojai table, the
  * top search bar, subscription reminders, etc.) without the caller needing to
  * hand it a pile of props.
@@ -366,7 +366,7 @@ function UserDetailsBody({
           )}
         </TabsContent>
 
-        {/* PERMANENT TIMES + HOLIDAYS, editable right here */}
+        {/* PERMANENT TIMES + HOLIDAYS */}
         <TabsContent value="permanent" className="space-y-5 pt-4">
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5"><CalendarClock className="w-3.5 h-3.5" /> Nuolatiniai laikai</Label>
@@ -473,20 +473,22 @@ function UserDetailsBody({
           </div>
         </TabsContent>
 
-        {/* ACTIONS */}
-        <TabsContent value="actions" className="space-y-3 pt-4">
-          <Button variant="ghostGold" className="w-full justify-start" onClick={onResetPassword}>
-            <KeyRound className="w-4 h-4" /> Atstatyti slaptažodį
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-            disabled={deleting}
-            onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
-          >
-            <Trash2 className="w-4 h-4" /> {deleting ? "Trinama…" : "Ištrinti vartotoją"}
-          </Button>
-        </TabsContent>
+        <div className="pt-4 mt-4 border-t border-gold/10 space-y-2">
+          <Label>Administravimas</Label>
+          <div className="grid sm:grid-cols-2 gap-2">
+            <Button variant="ghostGold" className="justify-start" onClick={onResetPassword}>
+              <KeyRound className="w-4 h-4" /> Atstatyti slaptažodį
+            </Button>
+            <Button
+              variant="ghost"
+              className="justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+              disabled={deleting}
+              onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
+            >
+              <Trash2 className="w-4 h-4" /> {deleting ? "Trinama…" : "Ištrinti vartotoją"}
+            </Button>
+          </div>
+        </div>
       </Tabs>
     </div>
   );
