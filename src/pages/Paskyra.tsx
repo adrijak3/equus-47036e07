@@ -258,6 +258,11 @@ export default function Paskyra() {
     (b) => (b.status === "active" || b.status === "completed") && b.counts_in_subscription === true,
   ).length;
   const totalCancelled = bookings.filter((b) => b.status === "cancelled").length;
+  // Separate-payment lessons are intentionally outside subscription usage.
+  const separatelyPaid = past.filter((b) =>
+    (b.status === "active" || b.status === "completed") &&
+    !b.subscription_id && b.counts_in_subscription === false,
+  );
 
   const effLessons = newSubType === "vienkartine" ? 1 : newSubLessons;
   const newSubPrice = calculateSubPriceByType(effLessons, newSubType);
@@ -445,7 +450,7 @@ export default function Paskyra() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Adrija</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Bendri klausimai ir treniruočių informacija</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Svetainės ir registracijos klausimai</p>
                     <p className="mt-2 text-sm text-gold">+370 628 76090</p>
                   </div>
                   <Phone className="h-4 w-4 text-gold" />
@@ -455,7 +460,7 @@ export default function Paskyra() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Laura</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Susisiekti tiesiogiai</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Treniruočių klausimai ir rezervacijos</p>
                     <p className="mt-2 text-sm text-gold">+370 658 22872</p>
                   </div>
                   <Phone className="h-4 w-4 text-gold" />
@@ -490,6 +495,18 @@ export default function Paskyra() {
           <Section title="Artimiausios pamokos" icon={<CalendarDays className="w-4 h-4" />}>{future.length === 0 ? <Empty text="Artimiausių pamokų nėra." /> : <ul className="divide-y divide-gold/5">{future.slice(0, 7).map((b) => <BookingRow key={b.id} b={b} />)}</ul>}</Section>
           <Section title={`Šio mėnesio pamokos · ${monthAttended.length}`} icon={<CheckCircle2 className="w-4 h-4" />}>{monthBookings.length === 0 ? <Empty text="Šį mėnesį pamokų dar nėra." /> : <ul className="divide-y divide-gold/5">{monthBookings.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
           <Section title="Ankstesnės pamokos" icon={<BarChart3 className="w-4 h-4" />}>{past.filter((b) => b.status === "active" || b.status === "completed").length === 0 ? <Empty text="Ankstesnių pamokų nėra." /> : <ul className="divide-y divide-gold/5 max-h-80 overflow-auto">{past.filter((b) => b.status === "active" || b.status === "completed").slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
+          <Section title="Apmokėta atskirai nuo abonemento" icon={<Wallet className="w-4 h-4" />}>
+            <div className="px-5 py-3 border-b border-gold/10 text-xs text-muted-foreground">
+              Šios pamokos yra apmokamos atskirai ir <span className="text-foreground font-medium">nemažina abonemento</span>.
+            </div>
+            {separatelyPaid.length === 0 ? (
+              <Empty text="Atskirai apmokėtų pamokų nėra." />
+            ) : (
+              <ul className="divide-y divide-gold/5 max-h-64 overflow-auto">
+                {separatelyPaid.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past separatelyPaid />)}
+              </ul>
+            )}
+          </Section>
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
@@ -1082,7 +1099,7 @@ function Empty({ text }: { text: string }) {
   return <p className="px-5 py-8 text-center text-sm text-muted-foreground italic">{text}</p>;
 }
 
-function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
+function BookingRow({ b, past, separatelyPaid }: { b: Booking; past?: boolean; separatelyPaid?: boolean }) {
   const d = new Date(`${b.slot_date}T${b.slot_time}`);
   return (
     <li className="flex items-center justify-between px-5 py-3 text-sm">
@@ -1101,7 +1118,7 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
         {b.status === "cancelled" && <span className="text-xs px-2 py-0.5 rounded bg-destructive/15 text-destructive">Atšaukta</span>}
         {past && (b.status === "completed" || b.status === "active") && (
           <span className="text-xs text-gold/80">
-            ✓ {b.counts_in_subscription === false ? "Įvyko (nesiskaičiuoja)" : "Įvyko"}
+            ✓ {separatelyPaid ? "Apmokėta atskirai" : b.counts_in_subscription === false ? "Įvyko (nesiskaičiuoja)" : "Įvyko"}
           </span>
         )}
       </div>
