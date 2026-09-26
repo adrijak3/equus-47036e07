@@ -1101,3 +1101,71 @@
   --sidebar-border: 96 10% 28%;
   --sidebar-ring: 70 24% 62%;
 }
+
+/* ============================================
+   Responsive/mobile UX foundation
+   ============================================ */
+
+@media (max-width: 639px) {
+  html {
+    font-size: 16px;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  /* Prevent flex/grid children from forcing horizontal overflow. */
+  .min-w-0,
+  main * {
+    min-width: 0;
+  }
+
+  /* Long Lithuanian labels should wrap instead of becoming cramped. */
+  p,
+  label,
+  button,
+  a,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  /* Keep controls comfortable to tap without making them huge. */
+  button,
+  [role="button"] {
+    min-height: 40px;
+  }
+
+  input,
+  textarea,
+  select {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .mobile-bottom-nav a {
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+
+  .mobile-bottom-nav span {
+    overflow-wrap: normal;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-bottom-nav span {
+    font-size: 9px;
+  }
+}
