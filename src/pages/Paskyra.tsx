@@ -1193,136 +1193,14 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode; lessons?: { id: string; slot_date: string; slot_time: string; status: string; is_individual?: boolean }[] }) {
+export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; lessons?: { id: string; slot_date: string; slot_time: string; status: string; horse_name?: string | null; slot_capacity?: number | null; lesson_price?: number | null; lesson_kind?: "individual" | "po2" | "group" }[] }) {
   const used = effectiveUsed ?? s.lessons_used;
   const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
-  const empty = remaining <= 0;
   const [showLessons, setShowLessons] = useState(false);
-  const dots = Array.from({ length: Math.min(s.lessons_total, 20) });
-  return (
-    <div className={cn(
-      "p-5 rounded-lg border bg-gradient-card transition-all",
-      empty ? "border-destructive/40 shadow-[0_0_30px_-8px_hsl(var(--destructive)/0.3)]" : "border-gold/15",
-      expired && "opacity-60",
-    )}>
-      <div className="mb-2 font-display text-lg text-foreground">
-        {s.lessons_total} treniruočių abonementas
-      </div>
-      <div className="flex items-baseline justify-between mb-3">
-        {onEditLessons ? (
-          <button
-            type="button"
-            onClick={() => onEditLessons(s)}
-            className="text-3xl font-display text-gradient-gold tabular-nums hover:opacity-80 transition-opacity"
-            title="Pakeisti treniruočių skaičių"
-          >
-            {used}/{s.lessons_total}
-          </button>
-        ) : (
-          <span className="text-3xl font-display text-gradient-gold tabular-nums">
-            {used}/{s.lessons_total}
-          </span>
-        )}
-        {s.paid ? (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Apmokėta
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onMarkPaid?.(s.id)}
-            className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 flex items-center gap-1 hover:bg-blush/25 transition-colors cursor-pointer"
-            title="Spauskite, kad pažymėtumėte kaip apmokėtą"
-          >
-            <XCircle className="w-3 h-3" /> Neapmokėta · pažymėti
-          </button>
-        )}
-      </div>
-
-      <div className="mb-3">
-        <div className="flex flex-wrap items-center gap-1.5" aria-hidden>
-          {dots.map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                "h-2.5 w-2.5 rounded-full border",
-                i < used ? "border-gold bg-gold" : "border-gold/40 bg-transparent",
-              )}
-            />
-          ))}
-        </div>
-        <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-          {used} / {s.lessons_total} panaudota
-        </p>
-      </div>
-
-      <div className="text-sm space-y-1 text-muted-foreground">
-        {s.lesson_type && (
-          <div>Tipas: <span className="text-foreground">{LESSON_TYPE_LABEL[(s.lesson_type as LessonType)] ?? s.lesson_type}</span></div>
-        )}
-        <div>Pirkta: <span className="text-foreground">{s.purchase_date}</span></div>
-        <div>Galioja iki: <span className={cn("text-foreground", expired && "text-destructive")}>{s.expires_at}</span></div>
-        <div>Suma: <span className="text-foreground tabular-nums">{Number(s.price).toFixed(2)} €</span></div>
-        {(s.sickness_credits ?? 0) > 0 && (
-          <div className="text-blush">+{s.sickness_credits} (liga)</div>
-        )}
-      </div>
-      {empty && !expired && (
-        <p className="mt-3 text-xs text-destructive font-medium">Pamokos baigėsi — pridėkite naują abonementą</p>
-      )}
-      {extra && (
-        <div className="mt-3 pt-3 border-t border-gold/10">{extra}</div>
-      )}
-
-      {lessons && (
-        <div className="mt-3 pt-3 border-t border-gold/10">
-          <button
-            type="button"
-            onClick={() => setShowLessons((v) => !v)}
-            className="text-xs text-gold hover:underline"
-          >
-            {showLessons ? "Slėpti treniruotes" : "Peržiūrėti treniruotes"}
-          </button>
-          {showLessons && (
-            lessons.length === 0 ? (
-              <p className="mt-2 text-xs text-muted-foreground">Šiam abonementui dar nepriskirta treniruočių.</p>
-            ) : (
-              <ul className="mt-2 space-y-1 text-xs">
-                {lessons.map((l) => (
-                  <li key={l.id} className="flex items-center justify-between gap-2 tabular-nums">
-                    <span className="text-foreground/85">{l.slot_date} · {l.slot_time.slice(0, 5)}</span>
-                    <span className={cn("text-muted-foreground", l.status === "cancelled" && "text-destructive")}>
-                      {l.status === "cancelled"
-                        ? "atšaukta"
-                        : l.status === "completed"
-                          ? l.is_individual
-                            ? "įvykusi · individuali"
-                            : "įvykusi"
-                          : l.is_individual
-                            ? "suplanuota · individuali"
-                            : "suplanuota"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )
-          )}
-        </div>
-      )}
-      {onDelete && (
-        <div className="mt-4 pt-3 border-t border-gold/10 flex justify-end">
-          <button
-            type="button"
-            onClick={() => onDelete(s.id)}
-            className="text-xs text-muted-foreground hover:text-destructive transition-colors inline-flex items-center gap-1"
-            title="Ištrinti šį abonementą"
-          >
-            <Trash2 className="w-3 h-3" /> Ištrinti
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  return <div className={cn("rounded-2xl border bg-gradient-card p-5", remaining <= 0 ? "border-destructive/40" : "border-gold/15", expired && "opacity-60")}>
+    <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Aktyvus abonementas</p><div className="mt-1 font-display text-xl">{s.lessons_total} pamokos</div></div>{s.paid ? <span className="text-xs px-2 py-1 rounded-full bg-gold/15 text-gold border border-gold/30"><CheckCircle2 className="inline h-3 w-3 mr-1" />Apmokėta</span> : <button type="button" onClick={() => onMarkPaid?.(s.id)} className="text-xs px-2 py-1 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</button>}</div>
+    <div className="mt-4 flex items-end justify-between gap-4"><div><div className="font-display text-4xl text-gradient-gold">{remaining}</div><div className="text-xs text-muted-foreground">liko iš {s.lessons_total}</div></div><div className="text-right text-xs text-muted-foreground">Galioja iki <span className="text-foreground">{s.expires_at}</span><div className="mt-1">{Number(s.price).toFixed(2)} €</div></div></div>
+    {lessons && <div className="mt-4 border-t border-gold/10 pt-3"><button type="button" onClick={() => setShowLessons(v => !v)} className="flex w-full items-center justify-between text-sm font-medium"><span>Pamokos šiame abonemente</span><ChevronRight className={cn("h-4 w-4 text-gold", showLessons && "rotate-90")} /></button>{showLessons && <ul className="mt-3 space-y-2">{lessons.map((l) => { const kind = l.lesson_kind === "individual" ? "Individuali" : l.lesson_kind === "po2" ? "Po 2" : "Grupinė"; const extra = l.lesson_kind === "individual" || (l.lesson_kind === "po2" && s.lesson_type !== "sportine_po2"); return <li key={l.id} className="rounded-xl border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex justify-between gap-3"><div><div className="text-sm">{l.slot_date} · {formatTime(l.slot_time)}</div><div className="text-xs text-muted-foreground">{kind}{l.horse_name ? " · 🐎 " + l.horse_name : ""}{l.slot_capacity ? " · talpa " + l.slot_capacity : ""}</div></div><div className="text-right">{l.lesson_price != null ? <div className="text-sm font-semibold text-gold">{l.lesson_price.toFixed(2)} €</div> : <div className="text-xs font-semibold text-blush">Individualus tarifas</div>}<div className="text-[10px] text-muted-foreground">{extra ? "mokama atskirai" : l.status === "cancelled" ? "atšaukta" : "įskaičiuota"}</div></div></div></li>; })}</ul>}</div>}
+  </div>;
 }
-
