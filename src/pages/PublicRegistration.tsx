@@ -121,6 +121,17 @@ export default function PublicRegistration() {
     [service],
   );
 
+  // Sportinė price depends on the slot: group €40, pair (po 2) €45.
+  // Before a slot is selected, keep the range visible.
+  const selectedPrice =
+    service === "sportine"
+      ? selected
+        ? selected.max_capacity === 2
+          ? 45
+          : 40
+        : null
+      : selectedService?.price ?? null;
+
   useEffect(() => {
     if (!token) return;
     void (async () => {
