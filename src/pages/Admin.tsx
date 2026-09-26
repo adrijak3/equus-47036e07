@@ -1542,7 +1542,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
           <Button variant="ghost" size="sm" onClick={onClearFocus}>Rodyti visus</Button>
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-2 mb-2">
+      <div className="grid grid-cols-3 gap-2 mb-3">\n        <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{activeCount}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Aktyvūs</div></div>\n        <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{usersWithSubs}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Su abonementu</div></div>\n        <div className={cn("rounded-lg border px-3 py-2", unpaidCount > 0 ? "border-blush/30 bg-blush/5" : "border-gold/15 bg-gradient-card")}><div className="text-2xl font-display text-gradient-gold">{unpaidCount}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Neapmokėti</div></div>\n      </div>\n      <div className="flex flex-wrap items-center gap-2 mb-3">
         <Input
           placeholder="Ieškoti vartotojo..."
           value={filter}
@@ -1560,7 +1560,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
         </select>
         <label className="flex items-center gap-1.5 text-sm cursor-pointer">
           <input type="checkbox" checked={showOnlyUnpaid} onChange={(e) => setShowOnlyUnpaid(e.target.checked)} className="accent-gold" />
-          Tik su neapmokėtais
+          Neapmokėti
         </label>
         <div className="flex-1" />
         <Button variant="gold" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Naujas abonementas</Button>
@@ -1574,7 +1574,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
             <details
               key={p.id}
               className="bg-gradient-card border border-gold/15 rounded-lg"
-              open={focusUserId === p.id || (us.length > 0 && unpaid)}
+              open={focusUserId === p.id}
             >
               <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
                 <div>
@@ -1591,11 +1591,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                     type="button"
                     onClick={(e) => { e.preventDefault(); setUncoveredFor(p); }}
                     className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-gold/25 bg-background/40 text-xs text-foreground/80 hover:text-gold hover:border-gold/50 hover:bg-gold/5 transition-colors"
-                    title="Įvykusios pamokos, neįskaičiuotos į apmokėtą abonementą"
+                    title="Pamokų istorija"
                   >
                     <AlertCircle className="w-3.5 h-3.5 text-blush" />
-                    <span className="hidden sm:inline">Pamokų istorija</span>
-                    <span className="sm:hidden">Istorija</span>
+                    <span className="hidden sm:inline">Istorija</span>
+                    <span className="sm:hidden">Ist.</span>
                   </button>
                   <button
                     type="button"
@@ -1628,9 +1628,9 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                                 type="button"
                                 onClick={() => setDetailSub(s)}
                                 className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
-                                title="Žiūrėti, kurios pamokos įskaičiuotos"
+                                title="Abonemento pamokos"
                               >
-                                <ListTree className="w-3 h-3" /> Įvykusios treniruotės
+                                <ListTree className="w-3 h-3" /> Pamokos
                               </button>
                               {s.paid && (
                                 <button
