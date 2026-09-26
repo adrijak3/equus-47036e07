@@ -1,4 +1,4 @@
-// Admin-only: reset a user's password to "<firstname>_equus123".
+// Admin-only: reset a user's password to a cryptographically random temporary password.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -7,9 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const slug = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 24) || "user";
+const generateTemporaryPassword = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -34,9 +36,7 @@ Deno.serve(async (req) => {
     if (!user_id) return json({ error: "user_id required" }, 400);
 
     const admin = createClient(supabaseUrl, serviceKey);
-    const { data: prof } = await admin.from("profiles").select("full_name").eq("id", user_id).maybeSingle();
-    const first = (prof?.full_name ?? "user").trim().split(/\s+/)[0];
-    const newPassword = `${slug(first)}_equus123`;
+    const newPassword = generateTemporaryPassword();
 
     const { error: updErr } = await admin.auth.admin.updateUserById(user_id, { password: newPassword });
     if (updErr) return json({ error: updErr.message }, 500);
