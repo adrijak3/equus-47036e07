@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Palmtree } from "lucide-react";
+import { Plus, Trash2, Palmtree, CalendarDays, Info } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateISO } from "@/lib/equus";
 
@@ -28,6 +28,7 @@ export function VacationsPanel({ userId, compact }: Props) {
   const [to, setTo] = useState(formatDateISO(new Date()));
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [affectedByVacation, setAffectedByVacation] = useState<Record<string, number>>({});
 
   const today = formatDateISO(new Date());
 
@@ -45,6 +46,21 @@ export function VacationsPanel({ userId, compact }: Props) {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [userId]);
+
+  const formatDate = (value: string) => new Intl.DateTimeFormat("lt-LT", { day: "numeric", month: "long", year: "numeric" }).format(new Date(value + "T12:00:00"));
+  const getDays = (start: string, end: string) => Math.round((new Date(end + "T12:00:00").getTime() - new Date(start + "T12:00:00").getTime()) / 86400000) + 1;
+
+  useEffect(() => {
+    if (!userId || items.length === 0) { setAffectedByVacation({}); return; }
+    (async () => {
+      const { data } = await (supabase as any).from("bookings").select("slot_date, status").eq("user_id", userId);
+      const counts: Record<string, number> = {};
+      for (const vacation of items) {
+        counts[vacation.id] = (data ?? []).filter((b: any) => b.slot_date >= vacation.starts_on && b.slot_date <= vacation.ends_on && !["cancelled", "canceled"].includes(String(b.status).toLowerCase())).length;
+      }
+      setAffectedByVacation(counts);
+    })();
+  }, [userId, items]);
 
   const add = async () => {
     if (!userId) return;
@@ -115,45 +131,64 @@ export function VacationsPanel({ userId, compact }: Props) {
       {loading ? (
         <p className="text-xs text-muted-foreground italic">Kraunama…</p>
       ) : items.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">Nėra užregistruotų atostogų.</p>
+        <div className="rounded-2xl border border-dashed border-gold/20 bg-gold/5 p-5 text-center">
+          <Palmtree className="mx-auto h-8 w-8 text-gold/60" />
+          <p className="mt-2 text-sm font-medium">Atostogų dar neužregistruota</p>
+          <p className="mt-1 text-xs text-muted-foreground">Praneškite apie laikotarpį, kuriuo nedalyvausite, ir sistema pasirūpins susijusiomis pamokomis.</p>
+        </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-3">
           {upcoming.map((v) => {
             const active = v.starts_on <= today && v.ends_on >= today;
+            const days = getDays(v.starts_on, v.ends_on);
+            const affected = affectedByVacation[v.id] ?? 0;
             return (
-              <div key={v.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded border text-sm ${active ? "border-gold/50 bg-gold/10" : "border-gold/20 bg-background/40"}`}>
-                <div>
-                  <div className="tabular-nums font-medium">
-                    {v.starts_on} → {v.ends_on}
-                    {active && <span className="ml-2 text-[10px] uppercase tracking-wider text-gold">Vyksta</span>}
+              <div key={v.id} className={`rounded-2xl border p-4 ${active ? "border-gold/50 bg-gold/10" : "border-gold/20 bg-background/40"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Palmtree className="h-4 w-4 shrink-0 text-gold" />
+                      <span className="font-medium">{active ? "Atostogos vyksta" : "Planuojamos atostogos"}</span>
+                      {active && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-wider text-gold">Dabar</span>}
+                    </div>
+                    <p className="mt-2 flex items-center gap-1.5 text-sm text-foreground/85">
+                      <CalendarDays className="h-3.5 w-3.5 text-gold/70" />
+                      {formatDate(v.starts_on)} – {formatDate(v.ends_on)}
+                    </p>
+                    <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>{days} {days === 1 ? "diena" : days < 10 ? "dienos" : "dienų"}</span>
+                      <span>{affected} {affected === 1 ? "pamoka" : affected < 10 ? "pamokos" : "pamokų"} laikotarpyje</span>
+                    </p>
+                    {v.note && <p className="mt-2 rounded-lg bg-background/40 px-3 py-2 text-xs text-muted-foreground">{v.note}</p>}
                   </div>
-                  {v.note && <div className="text-xs text-muted-foreground mt-0.5">{v.note}</div>}
+                  <Button size="sm" variant="ghost" aria-label="Pašalinti atostogas" onClick={() => remove(v.id)} className="shrink-0 text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => remove(v.id)} className="text-destructive hover:text-destructive">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
               </div>
             );
           })}
           {past.length > 0 && (
             <details className="pt-2">
-              <summary className="text-[11px] uppercase tracking-wider text-muted-foreground cursor-pointer hover:text-gold">
-                Praeitos ({past.length})
-              </summary>
-              <div className="mt-2 space-y-1.5">
+              <summary className="cursor-pointer text-[11px] uppercase tracking-wider text-muted-foreground hover:text-gold">Praeitos atostogos ({past.length})</summary>
+              <div className="mt-2 space-y-2">
                 {past.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between gap-2 px-3 py-1.5 rounded border border-muted/20 bg-background/20 text-xs text-muted-foreground">
-                    <span className="tabular-nums">{v.starts_on} → {v.ends_on}</span>
-                    <Button size="sm" variant="ghost" onClick={() => remove(v.id)} className="text-destructive hover:text-destructive h-6 w-6 p-0">
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                  <div key={v.id} className="rounded-xl border border-muted/20 bg-background/20 px-3 py-2 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{formatDate(v.starts_on)} – {formatDate(v.ends_on)}</span>
+                      <Button size="sm" variant="ghost" aria-label="Pašalinti atostogas" onClick={() => remove(v.id)} className="h-7 w-7 p-0 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                    </div>
                   </div>
                 ))}
               </div>
             </details>
           )}
+          <div className="flex gap-2 rounded-xl border border-gold/10 bg-gold/5 px-3 py-2.5 text-xs text-muted-foreground">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold/70" />
+            <span>Aktyvios pamokos atostogų laikotarpiu atšaukiamos automatiškai, o abonementinės pamokos grąžinamos pagal atostogų taisykles.</span>
+          </div>
         </div>
-      )}
+      )}}
     </div>
   );
 }
