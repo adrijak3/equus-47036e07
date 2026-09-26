@@ -125,13 +125,20 @@ export function EquusHelpWidget() {
     sendBotReply(faq.a);
   };
 
+  const handleQuickAction = (path: string, label: string) => {
+    if (isTyping) return;
+    setMessages((prev) => [...prev, { type: "user", text: label }]);
+    setIsOpen(false);
+    navigate(path);
+  };
+
   const quickActions = [
-    { label: language === "lt" ? "Mano pamoka" : "My lesson", icon: CalendarDays, action: () => navigate("/paskyra?tab=lessons") },
-    { label: language === "lt" ? "Abonementas" : "Subscription", icon: Wallet, action: () => navigate("/paskyra?tab=subs") },
-    { label: language === "lt" ? "Noriu atšaukti" : "I want to cancel", icon: Ban, action: () => navigate("/paskyra?tab=lessons") },
-    { label: language === "lt" ? "Noriu pakeisti pamoką" : "I want to change", icon: RefreshCw, action: () => navigate("/grafikas") },
-    { label: language === "lt" ? "Susisiekti" : "Contact", icon: Phone, action: () => navigate("/paskyra?tab=messages") },
-    { label: language === "lt" ? "Atostogos / nedalyvavimas" : "Vacation / absence", icon: Palmtree, action: () => navigate("/paskyra?tab=vacations") },
+    { label: language === "lt" ? "Mano pamoka" : "My lesson", icon: CalendarDays, path: "/paskyra?tab=lessons" },
+    { label: language === "lt" ? "Abonementas" : "Subscription", icon: Wallet, path: "/paskyra?tab=subs" },
+    { label: language === "lt" ? "Noriu atšaukti" : "I want to cancel", icon: Ban, path: "/paskyra?tab=lessons" },
+    { label: language === "lt" ? "Noriu pakeisti pamoką" : "I want to change", icon: RefreshCw, path: "/grafikas" },
+    { label: language === "lt" ? "Susisiekti" : "Contact", icon: Phone, path: "/paskyra?tab=messages" },
+    { label: language === "lt" ? "Atostogos / nedalyvavimas" : "Vacation / absence", icon: Palmtree, path: "/paskyra?tab=vacations" },
   ];
 
   const handleSubmit = () => {
@@ -218,7 +225,7 @@ export function EquusHelpWidget() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-background/35">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-background/35 overscroll-contain">
               <AnimatePresence initial={false} mode="popLayout">
                 {messages.map((msg, idx) => (
                   <motion.div
@@ -264,12 +271,12 @@ export function EquusHelpWidget() {
 
             <div className="p-3 bg-card border-t border-border/70 flex flex-col gap-2.5">
               <div className="grid grid-cols-2 gap-1.5">
-                {quickActions.map(({ label, icon: Icon, action }) => (
+                {quickActions.map(({ label, icon: Icon, path }) => (
                   <motion.button
                     key={label}
                     whileHover={{ y: -1, scale: 1.01 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={action}
+                    onClick={() => handleQuickAction(path, label)}
                     disabled={isTyping}
                     className="flex min-w-0 items-center gap-1.5 rounded-xl border border-gold/15 bg-gold/5 px-2.5 py-2 text-left text-[11px] font-medium hover:bg-gold/10 disabled:opacity-50"
                   >
