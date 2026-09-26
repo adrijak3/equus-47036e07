@@ -12,7 +12,7 @@ import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { WEEKDAYS_LT, formatTime, formatDateISO, isValidTime } from "@/lib/equus";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { TimeInput } from "@/components/TimeInput";
-import { KeyRound, Trash2, Plus, Palmtree, CalendarClock, History } from "lucide-react";
+import { KeyRound, Trash2, Plus, Palmtree, CalendarClock, History, Pencil } from "lucide-react";
 
 interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; experience_text?: string | null; phone_is_parent?: boolean | null; }
 interface Sub {
@@ -176,7 +176,7 @@ export function UserProfileSheet({
     notifyAndReload();
   };
 
-  const removePermSlot = async (row: PermSlot) => {
+  const changePermSlotTime = async (row: PermSlot, newTime: string) => {\n    if (!isValidTime(newTime)) { toast.error("Įveskite laiką formatu HH:MM"); return; }\n    if (newTime.slice(0, 5) === row.slot_time.slice(0, 5)) return;\n    const { data, error } = await (supabase as any).rpc("admin_apply_recurring_time_change", { _slot_id: row.id, _new_time: newTime });\n    if (error) {\n      const msg = error.message?.includes("RECURRING_MOVE_CONFLICT") ? "Pakeitimas sukeltų rezervacijų konfliktą." : error.message?.includes("TARGET_TIME_EXISTS") ? "Šis laikas jau naudojamas tame pačiame trenerio grafike." : error.message;\n      toast.error(msg); return;\n    }\n    toast.success(`Laikas pakeistas. Perkeltos ${Number((data as any)?.bookings_moved ?? 0)} rezervacijos.`);\n    notifyAndReload();\n  };\n\n  const removePermSlot = async (row: PermSlot) => {
     if (!confirm(`Pašalinti nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?\n\nVisos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
     const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
     if (e1) { toast.error(e1.message); return; }
