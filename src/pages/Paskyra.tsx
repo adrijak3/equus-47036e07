@@ -163,7 +163,7 @@ export default function Paskyra() {
       const withMeta = bs.map((x) => {
         const capacity = getCapacity(x.slot_date, x.slot_time);
         const kind = x.is_individual ? "individual" : capacity !== null && capacity <= 2 ? "po2" : "group";
-        const price = kind === "individual" ? null : calculateSubPriceByType(1, kind === "po2" ? "sportine_po2" : "sportine");
+        const price = kind === "individual" ? 50 : calculateSubPriceByType(1, kind === "po2" ? "sportine_po2" : "sportine");
         return { ...x, horse_name: haMap[x.id] ?? null, slot_capacity: capacity, lesson_kind: kind, lesson_price: price };
       });
       setBookings(canonicalBookings(withMeta));
@@ -1118,7 +1118,8 @@ function BookingRow({ b, past, separatelyPaid }: { b: Booking; past?: boolean; s
         {b.status === "cancelled" && <span className="text-xs px-2 py-0.5 rounded bg-destructive/15 text-destructive">Atšaukta</span>}
         {past && (b.status === "completed" || b.status === "active") && (
           <span className="text-xs text-gold/80">
-            ✓ {separatelyPaid ? "Apmokėta atskirai" : b.counts_in_subscription === false ? "Įvyko (nesiskaičiuoja)" : "Įvyko"}
+            {separatelyPaid && b.lesson_price != null && <span className="mr-2 text-xs font-semibold text-gold">{b.lesson_price.toFixed(2)} €</span>}
+          ✓ {separatelyPaid ? "Apmokėta atskirai" : b.counts_in_subscription === false ? "Įvyko (nesiskaičiuoja)" : "Įvyko"}
           </span>
         )}
       </div>
