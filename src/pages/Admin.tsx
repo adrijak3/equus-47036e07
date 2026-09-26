@@ -190,12 +190,8 @@ function AdminNotificationsTab() {
   const [sending, setSending] = useState(false);
   const [testEmail, setTestEmail] = useState("");
 
-  const [globalLt, setGlobalLt] = useState(
-    "Svarbus Equus atnaujinimas\nNuo spalio 5 d. keičiasi treniruočių laikai. Prašome pasitikrinti atnaujintą grafiką. 🐴"
-  );
-  const [globalEn, setGlobalEn] = useState(
-    "Important Equus update\nTraining times are changing from October 5. Please check the updated schedule. 🐴"
-  );
+  const [globalLt, setGlobalLt] = useState("");
+  const [globalEn, setGlobalEn] = useState("");
 
 
   const sendGlobal = async () => {
@@ -287,7 +283,7 @@ function AdminNotificationsTab() {
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
         <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
-        <p className="text-sm text-muted-foreground">Skirta bendriems grafiko ar kitiems svarbiems Equus atnaujinimams.</p>
+        <p className="text-sm text-muted-foreground">Parašykite savo pranešimą. Nieko čia neįrašome automatiškai.</p>
         <div>
           <Label>Lietuviškai</Label>
           <textarea value={globalLt} onChange={(e) => setGlobalLt(e.target.value)} rows={4}
