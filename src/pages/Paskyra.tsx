@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
+import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -85,6 +85,8 @@ export default function Paskyra() {
   const [activeTab, setActiveTab] = useState("profile");
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
+  const [pushOpen, setPushOpen] = useState(false);
+  const [vacationOpen, setVacationOpen] = useState(false);
   const { language } = useLanguage();
   useEffect(() => {
     void syncPushLanguage(language);
@@ -389,66 +391,27 @@ export default function Paskyra() {
       <VacationBanner userId={acting} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-6 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
-          <TabsTrigger value="profile" aria-label="Profilis" title="Profilis" className="py-2">
-            <UserIcon className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="lessons" aria-label="Treniruotės" title="Treniruotės" className="py-2">
-            <Horse size={18} />
-          </TabsTrigger>
-          <TabsTrigger value="subs" aria-label="Abonementai" title="Abonementai" className="py-2">
-            <Wallet className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="permanent" aria-label="Nuolatiniai" title="Nuolatiniai laikai" className="py-2">
-            <Star className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="messages" aria-label="Žinutės" title="Žinutės" className="py-2">
-            <Inbox className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="vacations" aria-label="Atostogos" title="Atostogos" className="py-2">
-            <CalendarDays className="w-[18px] h-[18px]" />
-          </TabsTrigger>
+        <TabsList className="grid grid-cols-4 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+          <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
+          <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
+          <TabsTrigger value="subs" className="py-2.5 text-xs sm:text-sm">Abonementas</TabsTrigger>
+          <TabsTrigger value="messages" className="py-2.5 text-xs sm:text-sm">Žinutės</TabsTrigger>
         </TabsList>
 
         {/* PROFILE OVERVIEW */}
-        <TabsContent value="profile" className="space-y-6">
-          <ProfileOverview
-            profile={accountProfile}
-            email={user?.email ?? null}
-            isLinked={isLinked}
-            activeProfileName={activeProfileName}
-            futureLessons={future.length}
-            totalAttended={totalAttended}
-            subscriptions={subs}
-            onEdit={() => setEditOpen(true)}
-            onPassword={() => setPwOpen(true)}
-          />
-
-          <PushNotificationSettings language={language} />
-
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{language === "lt" ? "Asmeninė informacija" : "Personal information"}</DialogTitle>
-              </DialogHeader>
-              <ProfileSettings
-                onSaved={async () => {
-                  await refreshProfile();
-                  await load();
-                  setEditOpen(false);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={pwOpen} onOpenChange={setPwOpen}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{language === "lt" ? "Slaptažodžio keitimas" : "Change password"}</DialogTitle>
-              </DialogHeader>
-              <PasswordChange />
-            </DialogContent>
-          </Dialog>
+        <TabsContent value="profile" className="space-y-5">
+          <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} futureLessons={future.length} totalAttended={monthAttended.length} subscriptions={subs} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
+            <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
+            <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
+            <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
+          </div>
+          <ReadOnlyRecurringCard permanents={permanents} />
+          <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Mano informacija</DialogTitle></DialogHeader><ProfileSettings onSaved={async () => { await refreshProfile(); await load(); setEditOpen(false); }} /></DialogContent></Dialog>
+          <Dialog open={pwOpen} onOpenChange={setPwOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Slaptažodžio keitimas</DialogTitle></DialogHeader><PasswordChange /></DialogContent></Dialog>
+          <Dialog open={pushOpen} onOpenChange={setPushOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Telefono pranešimai</DialogTitle></DialogHeader><PushNotificationSettings language={language} /></DialogContent></Dialog>
+          <Dialog open={vacationOpen} onOpenChange={setVacationOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Atostogos / nedalyvavimas</DialogTitle></DialogHeader><VacationsPanel userId={acting} /></DialogContent></Dialog>
         </TabsContent>
 
         {/* LESSONS */}
