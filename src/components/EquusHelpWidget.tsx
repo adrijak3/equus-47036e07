@@ -145,7 +145,7 @@ export function EquusHelpWidget() {
             transition={{ type: "spring", stiffness: 420, damping: 24 }}
             onClick={() => setIsOpen(true)}
             aria-label={language === "lt" ? "Equus pagalba" : "Equus help"}
-            className="fixed bottom-6 right-4 sm:right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-gold flex items-center justify-center border border-gold/30 overflow-hidden"
+            className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-gold flex items-center justify-center border border-gold/30 overflow-hidden"
           >
             <motion.span
               animate={{ rotate: [0, -8, 8, 0] }}
@@ -170,7 +170,7 @@ export function EquusHelpWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 360, damping: 30 }}
-            className="fixed bottom-4 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
+            className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
           >
             <div className="relative overflow-hidden bg-gradient-gold p-4 text-gold-foreground">
               <motion.div
