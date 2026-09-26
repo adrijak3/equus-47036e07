@@ -152,17 +152,34 @@ export default function Pradzia() {
       });
     }
 
-    const { data: bookingsData } = await supabase
-      .from("bookings")
-      .select("id, slot_date, slot_time, status")
-      .eq("user_id", actingUserId)
-      .eq("status", "active")
-      .gte("slot_date", todayISO)
-      .order("slot_date")
-      .order("slot_time")
-      .limit(50);
+    const [upcomingResult, monthResult, totalResult] = await Promise.all([
+      supabase
+        .from("bookings")
+        .select("id, slot_date, slot_time, status")
+        .eq("user_id", actingUserId)
+        .eq("status", "active")
+        .gte("slot_date", todayISO)
+        .order("slot_date")
+        .order("slot_time")
+        .limit(50),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", actingUserId)
+        .in("status", ["active", "completed"])
+        .gte("slot_date", monthStartISO)
+        .lte("slot_date", monthEndISO),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", actingUserId)
+        .in("status", ["active", "completed"]),
+    ]);
+    const bookingsData = upcomingResult.data;
+    setMonthCount(monthResult.count ?? 0);
+    setTotalCount(totalResult.count ?? 0);
 
-    setMonthCount(monthResult.count ?? 0);\n    setTotalCount(totalResult.count ?? 0);\n\n    const upcoming = (bookingsData ?? []).filter(
+    const upcoming = (bookingsData ?? []).filter(
       (booking) => slotDateTime(booking.slot_date, booking.slot_time).getTime() >= Date.now(),
     );
 
