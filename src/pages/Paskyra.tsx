@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,15 +87,12 @@ export default function Paskyra() {
   const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
-  const [params] = useSearchParams();
-  const initialTab = params.get("tab") || "profile";
-  const [activeTab, setActiveTab] = useState(initialTab);
-  useEffect(() => {
-    const nextTab = params.get("tab") || "profile";
-    if (["profile", "lessons", "subs", "messages", "permanent", "vacations"].includes(nextTab)) {
-      setActiveTab(nextTab);
-    }
-  }, [params]);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const requestedTab = new URLSearchParams(location.search).get("tab") || "profile";
+  const activeTab = ["profile", "lessons", "subs", "messages", "permanent", "vacations"].includes(requestedTab)
+    ? requestedTab
+    : "profile";
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
