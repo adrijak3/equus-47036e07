@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
-import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles } from "lucide-react";
+import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,9 @@ interface Booking {
   subscription_id?: string | null;
   horse_name?: string | null;
   is_individual?: boolean;
+  slot_capacity?: number | null;
+  lesson_price?: number | null;
+  lesson_kind?: "individual" | "po2" | "group";
 }
 interface Subscription {
   id: string;
@@ -85,6 +88,8 @@ export default function Paskyra() {
   const [activeTab, setActiveTab] = useState("profile");
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
+  const [pushOpen, setPushOpen] = useState(false);
+  const [vacationOpen, setVacationOpen] = useState(false);
   const { language } = useLanguage();
   useEffect(() => {
     void syncPushLanguage(language);
@@ -113,7 +118,7 @@ export default function Paskyra() {
     setLoading(true);
     // Auto-process past lessons (Vilnius TZ) so subscription counters are fresh
     try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
-    const [b, s, m, p, ts, ap, pr] = await Promise.all([
+    const [b, s, m, p, ts, ap, pr, ov] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", acting).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", acting).order("purchase_date", { ascending: false }),
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
@@ -121,6 +126,7 @@ export default function Paskyra() {
       supabase.from("time_slots").select("id, day_of_week, slot_time, max_capacity").eq("active", true).is("one_off_date", null).order("day_of_week").order("slot_time"),
       supabase.from("profiles").select("id, full_name, phone, display_name").eq("id", acting).maybeSingle(),
       (supabase as any).from("permanent_slot_requests").select("id,day_of_week,slot_time,status,admin_note").eq("user_id", acting).order("created_at", { ascending: false }),
+      (supabase as any).from("slot_overrides").select("slot_date,slot_time,max_capacity").order("slot_date"),
     ]);
     // attach horse names from horse_assignments
     const bs = (b.data ?? []) as any[];
@@ -138,7 +144,22 @@ export default function Paskyra() {
       }
       const haMap: Record<string, string> = {};
       (ha ?? []).forEach((x: any) => { if (x.booking_id) haMap[x.booking_id] = horseMap[x.horse_id]; });
-      setBookings(canonicalBookings(bs.map((x) => ({ ...x, horse_name: haMap[x.id] ?? null }))));
+      const baseSlots = (ts.data ?? []) as any[];
+      const overrides = (ov.data ?? []) as any[];
+      const getCapacity = (date: string, time: string) => {
+        const override = overrides.find((x) => x.slot_date === date && x.slot_time === time);
+        if (override) return Number(override.max_capacity);
+        const dow = dbDayOfWeek(new Date(date + "T12:00:00"));
+        const slot = baseSlots.find((x) => Number(x.day_of_week) === dow && x.slot_time === time);
+        return slot ? Number(slot.max_capacity) : null;
+      };
+      const withMeta = bs.map((x) => {
+        const capacity = getCapacity(x.slot_date, x.slot_time);
+        const kind = x.is_individual ? "individual" : capacity !== null && capacity <= 2 ? "po2" : "group";
+        const price = kind === "individual" ? null : calculateSubPriceByType(1, kind === "po2" ? "sportine_po2" : "sportine");
+        return { ...x, horse_name: haMap[x.id] ?? null, slot_capacity: capacity, lesson_kind: kind, lesson_price: price };
+      });
+      setBookings(canonicalBookings(withMeta));
     } else {
       setBookings([]);
     }
@@ -389,166 +410,35 @@ export default function Paskyra() {
       <VacationBanner userId={acting} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-6 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
-          <TabsTrigger value="profile" aria-label="Profilis" title="Profilis" className="py-2">
-            <UserIcon className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="lessons" aria-label="Treniruotės" title="Treniruotės" className="py-2">
-            <Horse size={18} />
-          </TabsTrigger>
-          <TabsTrigger value="subs" aria-label="Abonementai" title="Abonementai" className="py-2">
-            <Wallet className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="permanent" aria-label="Nuolatiniai" title="Nuolatiniai laikai" className="py-2">
-            <Star className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="messages" aria-label="Žinutės" title="Žinutės" className="py-2">
-            <Inbox className="w-[18px] h-[18px]" />
-          </TabsTrigger>
-          <TabsTrigger value="vacations" aria-label="Atostogos" title="Atostogos" className="py-2">
-            <CalendarDays className="w-[18px] h-[18px]" />
-          </TabsTrigger>
+        <TabsList className="grid grid-cols-4 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+          <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
+          <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
+          <TabsTrigger value="subs" className="py-2.5 text-xs sm:text-sm">Abonementas</TabsTrigger>
+          <TabsTrigger value="messages" className="py-2.5 text-xs sm:text-sm">Žinutės</TabsTrigger>
         </TabsList>
 
         {/* PROFILE OVERVIEW */}
-        <TabsContent value="profile" className="space-y-6">
-          <ProfileOverview
-            profile={accountProfile}
-            email={user?.email ?? null}
-            isLinked={isLinked}
-            activeProfileName={activeProfileName}
-            futureLessons={future.length}
-            totalAttended={totalAttended}
-            subscriptions={subs}
-            onEdit={() => setEditOpen(true)}
-            onPassword={() => setPwOpen(true)}
-          />
-
-          <PushNotificationSettings language={language} />
-
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{language === "lt" ? "Asmeninė informacija" : "Personal information"}</DialogTitle>
-              </DialogHeader>
-              <ProfileSettings
-                onSaved={async () => {
-                  await refreshProfile();
-                  await load();
-                  setEditOpen(false);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={pwOpen} onOpenChange={setPwOpen}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{language === "lt" ? "Slaptažodžio keitimas" : "Change password"}</DialogTitle>
-              </DialogHeader>
-              <PasswordChange />
-            </DialogContent>
-          </Dialog>
+        <TabsContent value="profile" className="space-y-5">
+          <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} futureLessons={future.length} totalAttended={monthAttended.length} subscriptions={subs} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
+            <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
+            <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
+            <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
+          </div>
+          <ReadOnlyRecurringCard permanents={permanents} />
+          <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Mano informacija</DialogTitle></DialogHeader><ProfileSettings onSaved={async () => { await refreshProfile(); await load(); setEditOpen(false); }} /></DialogContent></Dialog>
+          <Dialog open={pwOpen} onOpenChange={setPwOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Slaptažodžio keitimas</DialogTitle></DialogHeader><PasswordChange /></DialogContent></Dialog>
+          <Dialog open={pushOpen} onOpenChange={setPushOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Telefono pranešimai</DialogTitle></DialogHeader><PushNotificationSettings language={language} /></DialogContent></Dialog>
+          <Dialog open={vacationOpen} onOpenChange={setVacationOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Atostogos / nedalyvavimas</DialogTitle></DialogHeader><VacationsPanel userId={acting} /></DialogContent></Dialog>
         </TabsContent>
 
         {/* LESSONS */}
-        <TabsContent value="lessons" className="space-y-6">
-          <UnpaidLessonsOverview userId={acting} />
-          {sickReqs.filter((r) => !r.document_url && r.document_deadline).length > 0 && (
-            <Section title="Ligos pažymos" icon={<XCircle className="w-4 h-4" />}>
-              <ul className="divide-y divide-gold/5">
-                {sickReqs.filter((r) => !r.document_url && r.document_deadline).map((r) => {
-                  const overdue = r.document_deadline && r.document_deadline < formatDateISO(new Date());
-                  return (
-                    <li key={r.id} className="px-5 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <div className="font-medium">
-                          Pamoka {r.slot_date} {r.slot_time?.slice(0, 5)}
-                        </div>
-                        <div className={cn("text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
-                          {overdue
-                            ? "Terminas pasibaigęs — laukia administracijos sprendimo"
-                            : `Įkelti pažymą iki: ${r.document_deadline}`}
-                        </div>
-                      </div>
-                      {!overdue && (
-                        <div className="flex flex-wrap gap-2">
-                          <Button size="sm" variant="gold" onClick={() => sendSickDocViaMessage(r)}>
-                            <MessageSquare className="w-4 h-4" /> Žinute administracijai
-                          </Button>
-                          <Button size="sm" variant="outlineGold" onClick={() => sendSickDocViaEmail(r)}>
-                            El. paštu
-                          </Button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </Section>
-          )}
-
-          {/* Lifetime stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Iš viso treniruočių</div>
-              <div className="font-display text-4xl text-gradient-gold tabular-nums mt-1">{totalAttended}</div>
-            </div>
-            <div className="bg-gradient-card border border-gold/15 rounded-lg p-5 text-center shadow-elegant">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Atšauktų</div>
-              <div className="font-display text-4xl text-blush tabular-nums mt-1">{totalCancelled}</div>
-            </div>
-          </div>
-
-          <Section title="Užsirašytos treniruotės" icon={<CalendarDays className="w-4 h-4" />}>
-            {future.length === 0 ? (
-              <Empty text="Nėra suplanuotų treniruočių" />
-            ) : (
-              <ul className="divide-y divide-gold/5">
-                {future.map((b) => <BookingRow key={b.id} b={b} />)}
-              </ul>
-            )}
-          </Section>
-
-          <Section title={`${monthLabel} lankomumas`} icon={<CheckCircle2 className="w-4 h-4" />}>
-            <div className="flex items-baseline gap-3 px-5 py-3">
-              <span className="font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</span>
-              <span className="text-sm text-muted-foreground">treniruočių šį mėnesį</span>
-            </div>
-            {monthBookings.length > 0 && (
-              <ul className="divide-y divide-gold/5 border-t border-gold/10">
-                {monthBookings.map((b) => <BookingRow key={b.id} b={b} past />)}
-              </ul>
-            )}
-          </Section>
-
-          {(() => {
-            const pastAttended = past.filter((b) => b.status === "active" || b.status === "completed");
-            const pastCancelled = bookings.filter((b) => b.status === "cancelled");
-            return (
-              <>
-                <Section title="Įvykusios treniruotės" icon={<CheckCircle2 className="w-4 h-4" />}>
-                  {pastAttended.length === 0 ? (
-                    <Empty text="Dar nebuvo įvykusių treniruočių" />
-                  ) : (
-                    <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
-                      {pastAttended.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
-                    </ul>
-                  )}
-                </Section>
-
-                <Section title="Atšauktos treniruotės" icon={<XCircle className="w-4 h-4" />}>
-                  {pastCancelled.length === 0 ? (
-                    <Empty text="Atšauktų treniruočių nėra" />
-                  ) : (
-                    <ul className="divide-y divide-gold/5 max-h-96 overflow-auto">
-                      {pastCancelled.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}
-                    </ul>
-                  )}
-                </Section>
-              </>
-            );
-          })()}
+        <TabsContent value="lessons" className="space-y-5">
+          <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div><div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Iš viso</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{totalAttended}</div><div className="text-xs text-muted-foreground">pamokų</div></div></div>
+          <Section title="Artimiausios pamokos" icon={<CalendarDays className="w-4 h-4" />}>{future.length === 0 ? <Empty text="Artimiausių pamokų nėra." /> : <ul className="divide-y divide-gold/5">{future.slice(0, 7).map((b) => <BookingRow key={b.id} b={b} />)}</ul>}</Section>
+          <Section title={`Šio mėnesio pamokos · ${monthAttended.length}`} icon={<CheckCircle2 className="w-4 h-4" />}>{monthBookings.length === 0 ? <Empty text="Šį mėnesį pamokų dar nėra." /> : <ul className="divide-y divide-gold/5">{monthBookings.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
+          <Section title="Ankstesnės pamokos" icon={<BarChart3 className="w-4 h-4" />}>{past.filter((b) => b.status === "active" || b.status === "completed").length === 0 ? <Empty text="Ankstesnių pamokų nėra." /> : <ul className="divide-y divide-gold/5 max-h-80 overflow-auto">{past.filter((b) => b.status === "active" || b.status === "completed").slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
@@ -594,6 +484,10 @@ export default function Paskyra() {
                           slot_time: b.slot_time,
                           status: b.status,
                           is_individual: !!b.is_individual,
+                          horse_name: b.horse_name,
+                          slot_capacity: b.slot_capacity,
+                          lesson_price: b.lesson_price,
+                          lesson_kind: b.lesson_kind,
                         }))}
                     />
                   </div>
@@ -604,57 +498,7 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* MESSAGES */}
-        <TabsContent value="messages" className="space-y-4">
-          <div className="bg-gradient-card border border-gold/15 rounded-lg p-5">
-            <Label htmlFor="msg" className="flex items-center gap-2 mb-2">
-              <MessageSquare className="w-4 h-4 text-gold" /> Žinutė administracijai
-            </Label>
-            <Textarea
-              id="msg"
-              value={msgBody}
-              onChange={(e) => setMsgBody(e.target.value)}
-              maxLength={2000}
-              rows={4}
-              placeholder="Rašykite čia..."
-            />
-            <div className="flex justify-end mt-3">
-              <Button variant="gold" disabled={sending || !msgBody.trim()} onClick={sendMessage}>
-                Siųsti
-              </Button>
-            </div>
-          </div>
-          {messages.length > 0 && (
-            <Section title="Pokalbis su administracija">
-              <p className="px-5 pt-3 text-[11px] text-muted-foreground italic">
-                Pokalbiai automatiškai ištrinami po 3 dienų nuo paskutinės žinutės.
-              </p>
-              <ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto mt-2">
-                {messages.map((m) => (
-                  <li
-                    key={m.id}
-                    className={cn(
-                      "px-5 py-3",
-                      m.from_admin && "bg-gold/5",
-                    )}
-                  >
-                    <div className="flex items-baseline justify-between gap-2 mb-1">
-                      <span className={cn("text-xs uppercase tracking-wide", m.from_admin ? "text-gold" : "text-muted-foreground")}>
-                        {m.from_admin ? "✦ Administracija" : "Jūs"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
-                    </div>
-                    <div className="text-sm whitespace-pre-wrap">{m.body}</div>
-                    {!m.from_admin && (
-                      <div className="text-[11px] text-muted-foreground mt-1">
-                        {m.read_by_admin ? "✓ Perskaityta" : "Išsiųsta"}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-        </TabsContent>
+        <TabsContent value="messages" className="space-y-4"><Section title="Susisiekti su administracija" icon={<MessageSquare className="w-4 h-4" />}><div className="p-5"><p className="mb-3 text-sm text-muted-foreground">Parašykite klausimą ar informaciją. Administracija atsakys čia.</p><Textarea id="msg" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} maxLength={2000} rows={3} placeholder="Jūsų žinutė…" /><div className="mt-3 flex justify-end"><Button variant="gold" disabled={sending || !msgBody.trim()} onClick={sendMessage}>Siųsti žinutę</Button></div></div></Section>{messages.length > 0 && <Section title="Pokalbis" icon={<Inbox className="w-4 h-4" />}><ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">{messages.map((m) => <li key={m.id} className={cn("px-5 py-3", m.from_admin && "bg-gold/5")}><div className="flex items-baseline justify-between gap-2 mb-1"><span className={cn("text-xs", m.from_admin ? "text-gold" : "text-muted-foreground")}>{m.from_admin ? "Administracija" : "Jūs"}</span><span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span></div><div className="text-sm whitespace-pre-wrap">{m.body}</div></li>)}</ul></Section>}</TabsContent>
 
         {/* PERMANENT SLOTS */}
         <TabsContent value="permanent" className="space-y-4">
@@ -966,151 +810,19 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
 
 /* ───────────── Profile overview ───────────── */
 
-function ProfileOverview({
-  profile,
-  email,
-  isLinked,
-  activeProfileName,
-  futureLessons,
-  totalAttended,
-  subscriptions,
-  onEdit,
-  onPassword,
-}: {
-  profile: AccountProfile | null;
-  email: string | null;
-  isLinked: boolean;
-  activeProfileName: string;
-  futureLessons: number;
-  totalAttended: number;
-  subscriptions: Subscription[];
-  onEdit: () => void;
-  onPassword: () => void;
-}) {
+function ProfileOverview({ profile, email, isLinked, activeProfileName, futureLessons, totalAttended, subscriptions }: { profile: AccountProfile | null; email: string | null; isLinked: boolean; activeProfileName: string; futureLessons: number; totalAttended: number; subscriptions: Subscription[] }) {
   const fullName = profile?.full_name?.trim() || activeProfileName || "—";
-  const nameParts = fullName.split(/\s+/).filter(Boolean);
-  const firstName = nameParts[0] || "—";
-  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "—";
-  const defaultScheduleName =
-    nameParts.length > 1
-      ? `${firstName} ${nameParts[nameParts.length - 1].slice(0, 2)}`
-      : firstName;
-  const scheduleName = profile?.display_name?.trim() || defaultScheduleName || "—";
-  const activeSubscription = subscriptions.find(
-    (subscription) =>
-      new Date(`${subscription.expires_at}T23:59:59`) >= new Date() &&
-      subscription.lessons_used < subscription.lessons_total,
-  );
-  const lessonsLeft = activeSubscription
-    ? Math.max(0, activeSubscription.lessons_total - activeSubscription.lessons_used)
-    : 0;
-
-  const details = [
-    {
-      label: "Vardas",
-      value: firstName,
-      icon: UserIcon,
-    },
-    {
-      label: "Pavardė",
-      value: lastName,
-      icon: IdCard,
-    },
-    {
-      label: "El. paštas",
-      value: email || "Nenurodytas",
-      icon: Mail,
-      hint: isLinked ? "Valdančios paskyros el. paštas" : undefined,
-    },
-    {
-      label: "Telefonas",
-      value: profile?.phone || "Nenurodytas",
-      icon: Phone,
-    },
-    {
-      label: "Grafike rodomas vardas",
-      value: scheduleName,
-      icon: CalendarDays,
-      hint: profile?.display_name
-        ? "Jūsų pasirinktas vardas"
-        : "Sugeneruota automatiškai iš vardo ir pavardės",
-    },
-    {
-      label: "Aktyvus profilis",
-      value: activeProfileName || fullName,
-      icon: Sparkles,
-      hint: isLinked ? "Valdomas susietas profilis" : "Jūsų pagrindinis profilis",
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <motion.section
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-7"
-      >
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold shadow-inner sm:h-20 sm:w-20">
-              <span className="font-display text-3xl uppercase sm:text-4xl">
-                {firstName.charAt(0)}{lastName !== "—" ? lastName.charAt(0) : ""}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-gold/70">
-                Mano paskyra
-              </p>
-              <h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">
-                {fullName}
-              </h2>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
-                Grafike: <span className="font-medium text-foreground">{scheduleName}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button variant="outlineGold" className="w-full sm:w-auto" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
-              Redaguoti informaciją
-            </Button>
-            <Button variant="outlineGold" className="w-full sm:w-auto" onClick={onPassword}>
-              <KeyRound className="h-4 w-4" />
-              Keisti slaptažodį
-            </Button>
-          </div>
-        </div>
-      </motion.section>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <ProfileStat label="Artimiausios treniruotės" value={futureLessons} icon={<CalendarDays className="h-4 w-4" />} />
-        <ProfileStat label="Iš viso lankyta" value={totalAttended} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <ProfileStat label="Liko abonemente" value={lessonsLeft} icon={<Wallet className="h-4 w-4" />} />
-      </div>
-
-      <Section title="Asmeninė informacija" icon={<IdCard className="h-4 w-4" />}>
-        <div className="grid grid-cols-1 gap-px bg-gold/10 sm:grid-cols-2">
-          {details.map(({ label, value, icon: Icon, hint }) => (
-            <div key={label} className="bg-card/95 p-4 sm:p-5">
-              <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                <Icon className="h-3.5 w-3.5 text-gold" />
-                {label}
-              </div>
-              <div className="break-words text-sm font-medium text-foreground sm:text-base">
-                {value}
-              </div>
-              {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-            </div>
-          ))}
-        </div>
-      </Section>
-
-    </div>
-  );
+  const active = subscriptions.find((x) => new Date(`${x.expires_at}T23:59:59`) >= new Date() && x.lessons_used < x.lessons_total);
+  const lessonsLeft = active ? Math.max(0, active.lessons_total - active.lessons_used) : 0;
+  return <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-7">
+    <div className="flex flex-col gap-5"><div className="flex items-center gap-4">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold sm:h-20 sm:w-20"><Horse size={42} /></div>
+      <div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.22em] text-gold/70">Mano paskyra</p><h2 className="truncate font-display text-2xl text-gradient-gold sm:text-3xl">{fullName}</h2>{isLinked && <p className="text-xs text-muted-foreground">Aktyvus profilis: {activeProfileName}</p>}<p className="truncate text-xs text-muted-foreground">{email || "El. paštas nenurodytas"}</p></div>
+    </div><div className="grid grid-cols-3 gap-2"><ProfileStat label="Artimiausios" value={futureLessons} icon={<CalendarDays className="h-4 w-4" />} /><ProfileStat label="Šį mėnesį" value={totalAttended} icon={<BarChart3 className="h-4 w-4" />} /><ProfileStat label="Liko" value={lessonsLeft} icon={<Wallet className="h-4 w-4" />} /></div></div>
+  </motion.section>;
 }
+function QuickAction({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) { return <button type="button" onClick={onClick} className="flex min-h-16 items-center justify-between gap-2 rounded-xl border border-gold/15 bg-gradient-card px-3 py-3 text-left hover:border-gold/35 hover:bg-gold/5"><span className="flex items-center gap-2 text-xs sm:text-sm"><span className="text-gold">{icon}</span>{label}</span><ChevronRight className="h-4 w-4 text-muted-foreground" /></button>; }
+function ReadOnlyRecurringCard({ permanents }: { permanents: PermanentSlot[] }) { return <Section title="Nuolatinis laikas" icon={<Star className="h-4 w-4" />}><div className="px-5 py-4">{permanents.length ? <div className="flex flex-wrap gap-2">{permanents.map((p) => <span key={p.id} className="rounded-full border border-gold/20 bg-gold/5 px-3 py-1.5 text-sm">{WEEKDAYS_LT[p.day_of_week - 1]} · {formatTime(p.slot_time)}</span>)}</div> : <p className="text-sm text-muted-foreground">Nuolatinio laiko dar nėra.</p>}<p className="mt-2 text-xs text-muted-foreground">Nuolatinius laikus nustato administracija.</p></div></Section>; }
 
 function ProfileStat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
@@ -1343,136 +1055,16 @@ function BookingRow({ b, past }: { b: Booking; past?: boolean }) {
   );
 }
 
-export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode; lessons?: { id: string; slot_date: string; slot_time: string; status: string; is_individual?: boolean }[] }) {
+export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEditLessons, extra, lessons }: { s: Subscription; effectiveUsed?: number; onMarkPaid?: (id: string) => void; lessons?: { id: string; slot_date: string; slot_time: string; status: string; horse_name?: string | null; slot_capacity?: number | null; lesson_price?: number | null; lesson_kind?: "individual" | "po2" | "group" }[]; onDelete?: (id: string) => void; onEditLessons?: (s: Subscription) => void; extra?: React.ReactNode }) {
   const used = effectiveUsed ?? s.lessons_used;
   const remaining = s.lessons_total - used;
   const expired = new Date(s.expires_at) < new Date();
-  const empty = remaining <= 0;
   const [showLessons, setShowLessons] = useState(false);
-  const dots = Array.from({ length: Math.min(s.lessons_total, 20) });
-  return (
-    <div className={cn(
-      "p-5 rounded-lg border bg-gradient-card transition-all",
-      empty ? "border-destructive/40 shadow-[0_0_30px_-8px_hsl(var(--destructive)/0.3)]" : "border-gold/15",
-      expired && "opacity-60",
-    )}>
-      <div className="mb-2 font-display text-lg text-foreground">
-        {s.lessons_total} treniruočių abonementas
-      </div>
-      <div className="flex items-baseline justify-between mb-3">
-        {onEditLessons ? (
-          <button
-            type="button"
-            onClick={() => onEditLessons(s)}
-            className="text-3xl font-display text-gradient-gold tabular-nums hover:opacity-80 transition-opacity"
-            title="Pakeisti treniruočių skaičių"
-          >
-            {used}/{s.lessons_total}
-          </button>
-        ) : (
-          <span className="text-3xl font-display text-gradient-gold tabular-nums">
-            {used}/{s.lessons_total}
-          </span>
-        )}
-        {s.paid ? (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Apmokėta
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onMarkPaid?.(s.id)}
-            className="text-xs px-2 py-0.5 rounded-full bg-blush/15 text-blush border border-blush/30 flex items-center gap-1 hover:bg-blush/25 transition-colors cursor-pointer"
-            title="Spauskite, kad pažymėtumėte kaip apmokėtą"
-          >
-            <XCircle className="w-3 h-3" /> Neapmokėta · pažymėti
-          </button>
-        )}
-      </div>
-
-      <div className="mb-3">
-        <div className="flex flex-wrap items-center gap-1.5" aria-hidden>
-          {dots.map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                "h-2.5 w-2.5 rounded-full border",
-                i < used ? "border-gold bg-gold" : "border-gold/40 bg-transparent",
-              )}
-            />
-          ))}
-        </div>
-        <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-          {used} / {s.lessons_total} panaudota
-        </p>
-      </div>
-
-      <div className="text-sm space-y-1 text-muted-foreground">
-        {s.lesson_type && (
-          <div>Tipas: <span className="text-foreground">{LESSON_TYPE_LABEL[(s.lesson_type as LessonType)] ?? s.lesson_type}</span></div>
-        )}
-        <div>Pirkta: <span className="text-foreground">{s.purchase_date}</span></div>
-        <div>Galioja iki: <span className={cn("text-foreground", expired && "text-destructive")}>{s.expires_at}</span></div>
-        <div>Suma: <span className="text-foreground tabular-nums">{Number(s.price).toFixed(2)} €</span></div>
-        {(s.sickness_credits ?? 0) > 0 && (
-          <div className="text-blush">+{s.sickness_credits} (liga)</div>
-        )}
-      </div>
-      {empty && !expired && (
-        <p className="mt-3 text-xs text-destructive font-medium">Pamokos baigėsi — pridėkite naują abonementą</p>
-      )}
-      {extra && (
-        <div className="mt-3 pt-3 border-t border-gold/10">{extra}</div>
-      )}
-
-      {lessons && (
-        <div className="mt-3 pt-3 border-t border-gold/10">
-          <button
-            type="button"
-            onClick={() => setShowLessons((v) => !v)}
-            className="text-xs text-gold hover:underline"
-          >
-            {showLessons ? "Slėpti treniruotes" : "Peržiūrėti treniruotes"}
-          </button>
-          {showLessons && (
-            lessons.length === 0 ? (
-              <p className="mt-2 text-xs text-muted-foreground">Šiam abonementui dar nepriskirta treniruočių.</p>
-            ) : (
-              <ul className="mt-2 space-y-1 text-xs">
-                {lessons.map((l) => (
-                  <li key={l.id} className="flex items-center justify-between gap-2 tabular-nums">
-                    <span className="text-foreground/85">{l.slot_date} · {l.slot_time.slice(0, 5)}</span>
-                    <span className={cn("text-muted-foreground", l.status === "cancelled" && "text-destructive")}>
-                      {l.status === "cancelled"
-                        ? "atšaukta"
-                        : l.status === "completed"
-                          ? l.is_individual
-                            ? "įvykusi · individuali"
-                            : "įvykusi"
-                          : l.is_individual
-                            ? "suplanuota · individuali"
-                            : "suplanuota"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )
-          )}
-        </div>
-      )}
-      {onDelete && (
-        <div className="mt-4 pt-3 border-t border-gold/10 flex justify-end">
-          <button
-            type="button"
-            onClick={() => onDelete(s.id)}
-            className="text-xs text-muted-foreground hover:text-destructive transition-colors inline-flex items-center gap-1"
-            title="Ištrinti šį abonementą"
-          >
-            <Trash2 className="w-3 h-3" /> Ištrinti
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  return <div className={cn("rounded-2xl border bg-gradient-card p-5", remaining <= 0 ? "border-destructive/40" : "border-gold/15", expired && "opacity-60")}>
+    <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Aktyvus abonementas</p><div className="mt-1 font-display text-xl">{s.lessons_total} pamokos</div></div>{s.paid ? <span className="text-xs px-2 py-1 rounded-full bg-gold/15 text-gold border border-gold/30"><CheckCircle2 className="inline h-3 w-3 mr-1" />Apmokėta</span> : <button type="button" onClick={() => onMarkPaid?.(s.id)} className="text-xs px-2 py-1 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</button>}</div>
+    <div className="mt-4 flex items-end justify-between gap-4"><div><div className="font-display text-4xl text-gradient-gold">{remaining}</div>{onEditLessons && <button type="button" onClick={() => onEditLessons(s)} className="mt-1 text-[10px] text-muted-foreground hover:text-gold">Keisti skaičių</button>}<div className="text-xs text-muted-foreground">liko iš {s.lessons_total}</div></div><div className="text-right text-xs text-muted-foreground">Galioja iki <span className="text-foreground">{s.expires_at}</span><div className="mt-1">{Number(s.price).toFixed(2)} €</div></div></div>
+    {extra && <div className="mt-4 border-t border-gold/10 pt-3">{extra}</div>}
+    {onDelete && <div className="mt-4 flex justify-end border-t border-gold/10 pt-3"><button type="button" onClick={() => onDelete(s.id)} className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"><Trash2 className="h-3 w-3" /> Ištrinti</button></div>}
+    {lessons && <div className="mt-4 border-t border-gold/10 pt-3"><button type="button" onClick={() => setShowLessons(v => !v)} className="flex w-full items-center justify-between text-sm font-medium"><span>Pamokos šiame abonemente</span><ChevronRight className={cn("h-4 w-4 text-gold", showLessons && "rotate-90")} /></button>{showLessons && <ul className="mt-3 space-y-2">{lessons.map((l) => { const kind = l.lesson_kind === "individual" ? "Individuali" : l.lesson_kind === "po2" ? "Po 2" : "Grupinė"; const extra = l.lesson_kind === "individual" || (l.lesson_kind === "po2" && s.lesson_type !== "sportine_po2"); return <li key={l.id} className="rounded-xl border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex justify-between gap-3"><div><div className="text-sm">{l.slot_date} · {formatTime(l.slot_time)}</div><div className="text-xs text-muted-foreground">{kind}{l.horse_name ? " · 🐎 " + l.horse_name : ""}{l.slot_capacity ? " · talpa " + l.slot_capacity : ""}</div></div><div className="text-right">{l.lesson_price != null ? <div className="text-sm font-semibold text-gold">{l.lesson_price.toFixed(2)} €</div> : <div className="text-xs font-semibold text-blush">Individualus tarifas</div>}<div className="text-[10px] text-muted-foreground">{extra ? "mokama atskirai" : l.status === "cancelled" ? "atšaukta" : "įskaičiuota"}</div></div></div></li>; })}</ul>}</div>}
+  </div>;
 }
-
