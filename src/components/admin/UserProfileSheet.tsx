@@ -473,20 +473,22 @@ function UserDetailsBody({
           </div>
         </TabsContent>
 
-        {/* ACTIONS */}
-        <TabsContent value="actions" className="space-y-3 pt-4">
-          <Button variant="ghostGold" className="w-full justify-start" onClick={onResetPassword}>
-            <KeyRound className="w-4 h-4" /> Atstatyti slaptažodį
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-            disabled={deleting}
-            onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
-          >
-            <Trash2 className="w-4 h-4" /> {deleting ? "Trinama…" : "Ištrinti vartotoją"}
-          </Button>
-        </TabsContent>
+        <div className="pt-4 mt-4 border-t border-gold/10 space-y-2">
+          <Label>Administravimas</Label>
+          <div className="grid sm:grid-cols-2 gap-2">
+            <Button variant="ghostGold" className="justify-start" onClick={onResetPassword}>
+              <KeyRound className="w-4 h-4" /> Atstatyti slaptažodį
+            </Button>
+            <Button
+              variant="ghost"
+              className="justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+              disabled={deleting}
+              onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
+            >
+              <Trash2 className="w-4 h-4" /> {deleting ? "Trinama…" : "Ištrinti vartotoją"}
+            </Button>
+          </div>
+        </div>
       </Tabs>
     </div>
   );
