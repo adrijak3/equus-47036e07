@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FloralAccent } from "@/components/Decorations";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
@@ -424,7 +425,7 @@ export default function Paskyra() {
 
       <VacationBanner userId={acting} />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(value) => navigate(`/paskyra?tab=${value}`)}>
         <TabsList className="hidden sm:grid grid-cols-4 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
           <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
@@ -442,6 +443,7 @@ export default function Paskyra() {
             <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
           </div>
           <ReadOnlyRecurringCard permanents={permanents} />
+          <Section title="Spalvų ir šviesumo tema" icon={<Palette className="h-4 w-4" />}><div className="p-5"><ThemeSwitcher /></div></Section>
           <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Mano informacija</DialogTitle></DialogHeader><ProfileSettings onSaved={async () => { await refreshProfile(); await load(); setEditOpen(false); }} /></DialogContent></Dialog>
           <Dialog open={pwOpen} onOpenChange={setPwOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Slaptažodžio keitimas</DialogTitle></DialogHeader><PasswordChange /></DialogContent></Dialog>
           <Dialog open={pushOpen} onOpenChange={setPushOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Telefono pranešimai</DialogTitle></DialogHeader><PushNotificationSettings language={language} /></DialogContent></Dialog>
