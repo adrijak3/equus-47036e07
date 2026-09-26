@@ -96,6 +96,32 @@ export default function Admin() {
   ];
   const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
 
+  const renderNavItem = (n: (typeof navItems)[number]) => {
+    const Icon = n.icon;
+    const active = section === n.value;
+    return (
+      <button
+        key={n.value}
+        type="button"
+        onClick={() => setSection(n.value)}
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
+          active
+            ? "bg-gold/15 text-gold border border-gold/30"
+            : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
+        )}
+      >
+        <Icon className="w-4 h-4 shrink-0" />
+        <span className="flex-1 min-w-0">{n.label}</span>
+        {!!n.badge && n.badge > 0 && (
+          <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", n.badgeCls)}>
+            {n.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="container max-w-7xl py-8 sm:py-14">
       <header className="mb-6 animate-fade-up">
@@ -108,33 +134,7 @@ export default function Admin() {
         {/* Sidebar (desktop) */}
         <aside className="hidden lg:block sticky top-6 self-start">
           <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant space-y-0.5">
-            {[
-              navItems.find((n) => n.value === "overview"), navItems.find((n) => n.value === "schedule"), navItems.find((n) => n.value === "users"), navItems.find((n) => n.value === "subs"), navItems.find((n) => n.value === "registrations"), navItems.find((n) => n.value === "messages"), navItems.find((n) => n.value === "settings")
-            ].filter(Boolean).map({(n: (typeof navItems)[number]) => {
-              const Icon = n.icon;
-              const active = section === n.value;
-              return (
-                <button
-                  key={n.value}
-                  type="button"
-                  onClick={() => setSection(n.value)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
-                    active
-                      ? "bg-gold/15 text-gold border border-gold/30"
-                      : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
-                  )}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span className="flex-1 min-w-0">{n.label}</span>
-                  {!!n.badge && n.badge > 0 && (
-                    <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", n.badgeCls)}>
-                      {n.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            }})}
+            {navItems.filter((n) => ["overview","schedule","users","subs","registrations","messages","settings"].includes(n.value)).map(renderNavItem)}
 
             <div className="my-2 border-t border-gold/10 pt-2">
               <button
@@ -147,32 +147,10 @@ export default function Admin() {
               </button>
               {moreOpen && (
                 <div className="space-y-0.5">
-                  {navItems.filter((n) => !["overview","schedule","users","subs","registrations","messages","settings"].includes(n.value)).map({(n: (typeof navItems)[number]) => {
-              const Icon = n.icon;
-              const active = section === n.value;
-              return (
-                <button
-                  key={n.value}
-                  type="button"
-                  onClick={() => setSection(n.value)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
-                    active
-                      ? "bg-gold/15 text-gold border border-gold/30"
-                      : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
-                  )}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span className="flex-1 min-w-0">{n.label}</span>
-                  {!!n.badge && n.badge > 0 && (
-                    <span className={cn("min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", n.badgeCls)}>
-                      {n.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            }})}
+                  {navItems.filter((n) => !["overview","schedule","users","subs","registrations","messages","settings"].includes(n.value)).map(renderNavItem)}
                 </div>
+              )}
+            </div>
               )}
             </div>
           </nav>
