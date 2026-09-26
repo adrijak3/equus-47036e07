@@ -1179,10 +1179,9 @@ function SlotRow({
           </button>
         </div>
       ) : (
-        <button onClick={() => setEditCap(true)} className="text-xs text-muted-foreground hover:text-gold inline-flex items-center gap-1 group">
-          cap {slot.max_capacity}
-          <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
-        </button>
+        <select value={String(slot.max_capacity)} onChange={(e) => onCapacity(Number(e.target.value))} className="h-7 rounded-md border border-gold/15 bg-background px-2 text-xs text-muted-foreground hover:border-gold/40 hover:text-gold" aria-label={`Talpa ${formatTime(slot.slot_time)}`}>
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} vietos</option>)}
+        </select>
       )}
 
       <button onClick={onRemove} className="text-muted-foreground hover:text-destructive" title="Pašalinti">
