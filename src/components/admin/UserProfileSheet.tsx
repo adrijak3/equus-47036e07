@@ -12,7 +12,7 @@ import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { WEEKDAYS_LT, formatTime, formatDateISO, isValidTime } from "@/lib/equus";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { TimeInput } from "@/components/TimeInput";
-import { KeyRound, Trash2, Plus, Palmtree, CalendarClock, History, Pencil } from "lucide-react";
+import { KeyRound, Trash2, Plus, Palmtree, CalendarClock, History, Pencil, Phone, Clock, Wallet, CalendarDays } from "lucide-react";
 
 interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; experience_text?: string | null; phone_is_parent?: boolean | null; }
 interface Sub {
@@ -222,9 +222,10 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
     if (!profile) return;
     if (!starts || !ends) { toast.error("Nurodykite abi datas"); return; }
     if (ends < starts) { toast.error("Pabaigos data turi būti po pradžios"); return; }
-    const { error } = await (supabase as any).from("vacations").insert({ user_id: profile.id, starts_on: starts, ends_on: ends });
+    const { data, error } = await (supabase as any).rpc("add_vacation_and_cancel", { _user_id: profile.id, _starts_on: starts, _ends_on: ends, _note: null });
     if (error) { toast.error(error.message); return; }
-    toast.success("Atostogos pridėtos");
+    const cancelled = Number((data as any)?.cancelled_bookings ?? 0);
+    toast.success(cancelled > 0 ? "Atostogos pridėtos — atšaukta " + cancelled + " treniruočių" : "Atostogos pridėtos");
     notifyAndReload();
   };
 
@@ -313,8 +314,26 @@ function UserDetailsBody({
         <SheetTitle className="font-display text-gradient-gold text-2xl">{profile.full_name}</SheetTitle>
       </SheetHeader>
 
+      <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/25 bg-gold/10 font-display text-lg text-gold">
+            {profile.full_name.trim().charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="font-medium truncate">{profile.full_name}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground"><Phone className="h-3 w-3" /> {profile.phone || "Telefono nėra"}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-xl bg-background/40 p-2.5 text-center"><Wallet className="mx-auto h-3.5 w-3.5 text-gold" /><p className="mt-1 text-lg font-semibold tabular-nums">{subs.filter(s => s.paid && new Date(s.expires_at) >= new Date()).reduce((n,s) => n + Math.max(0, s.lessons_total - s.lessons_used), 0)}</p><p className="text-[10px] text-muted-foreground">liko</p></div>
+          <div className="rounded-xl bg-background/40 p-2.5 text-center"><CalendarDays className="mx-auto h-3.5 w-3.5 text-gold" /><p className="mt-1 text-lg font-semibold tabular-nums">{upcoming.length}</p><p className="text-[10px] text-muted-foreground">būsimos</p></div>
+          <div className="rounded-xl bg-background/40 p-2.5 text-center"><Clock className="mx-auto h-3.5 w-3.5 text-gold" /><p className="mt-1 text-lg font-semibold tabular-nums">{permSlots.length}</p><p className="text-[10px] text-muted-foreground">nuolat.</p></div>
+          <div className="rounded-xl bg-background/40 p-2.5 text-center"><Palmtree className="mx-auto h-3.5 w-3.5 text-gold" /><p className="mt-1 text-lg font-semibold tabular-nums">{vacations.filter(v => v.ends_on >= formatDateISO(new Date())).length}</p><p className="text-[10px] text-muted-foreground">atostogos</p></div>
+        </div>
+      </div>
+
       <Tabs defaultValue="profile">
-        <TabsList className="grid grid-cols-5 w-full text-xs">
+        <TabsList className="grid grid-cols-5 w-full text-xs overflow-x-auto">
           <TabsTrigger value="profile">Profilis</TabsTrigger>
           <TabsTrigger value="subs">Abon.</TabsTrigger>
           <TabsTrigger value="permanent">Laikai</TabsTrigger>
