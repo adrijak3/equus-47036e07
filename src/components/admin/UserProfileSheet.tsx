@@ -21,7 +21,7 @@ interface Sub {
 }
 interface PermSlot { id: string; user_id: string; day_of_week: number; slot_time: string; }
 interface Vacation { id: string; user_id: string; starts_on: string; ends_on: string; note?: string | null; }
-interface Booking { id: string; slot_date: string; slot_time: string; status: string; trainer_name: string | null; }
+interface Booking { id: string; slot_date: string; slot_time: string; status: string; trainer_name: string | null; is_individual?: boolean | null; counts_in_subscription?: boolean | null; subscription_id?: string | null; lesson_price?: number | null; }
 
 /**
  * Single source-of-truth user panel for one user. Self-contained: fetches its own data
@@ -56,8 +56,8 @@ export function UserProfileSheet({
       supabase.from("subscriptions").select("*").eq("user_id", id).order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time").eq("user_id", id).order("day_of_week").order("slot_time"),
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").eq("user_id", id).order("starts_on", { ascending: false }),
-      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name").eq("user_id", id).eq("status", "active").gte("slot_date", today).order("slot_date").order("slot_time").limit(20),
-      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name").eq("user_id", id).or(`slot_date.lt.${today},status.neq.active`).order("slot_date", { ascending: false }).limit(20),
+      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id, lesson_price").eq("user_id", id).eq("status", "active").gte("slot_date", today).order("slot_date").order("slot_time").limit(20),
+      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id, lesson_price").eq("user_id", id).or(`slot_date.lt.${today},status.neq.active`).order("slot_date", { ascending: false }).limit(20),
       supabase.from("trainer_riders").select("trainer_user_id, rider_user_id, level").eq("rider_user_id", id),
       supabase.from("user_roles").select("user_id").eq("role", "trainer"),
     ]);
@@ -483,8 +483,14 @@ function UserDetailsBody({
               <ul className="space-y-1.5">
                 {upcoming.map((b) => (
                   <li key={b.id} className="text-sm bg-background/40 border border-gold/10 rounded px-3 py-2 flex items-center justify-between">
-                    <span>{b.slot_date} · {formatTime(b.slot_time)}</span>
-                    {b.trainer_name && <span className="text-xs text-muted-foreground">{b.trainer_name}</span>}
+                    <div className="min-w-0">
+                      <div>{b.slot_date} · {formatTime(b.slot_time)}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {b.is_individual ? "Individuali" : "Grupinė"}
+                        {b.trainer_name ? " · " + b.trainer_name : ""}
+                        {b.lesson_price != null ? " · " + Number(b.lesson_price).toFixed(2).replace(".00", "") + " €" : ""}
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -498,7 +504,15 @@ function UserDetailsBody({
               <ul className="space-y-1.5">
                 {past.map((b) => (
                   <li key={b.id} className="text-sm bg-background/40 border border-gold/10 rounded px-3 py-2 flex items-center justify-between">
-                    <span>{b.slot_date} · {formatTime(b.slot_time)}</span>
+                    <div className="min-w-0">
+                      <div>{b.slot_date} · {formatTime(b.slot_time)}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {b.is_individual ? "Individuali" : "Grupinė"}
+                        {b.trainer_name ? " · " + b.trainer_name : ""}
+                        {b.lesson_price != null ? " · " + Number(b.lesson_price).toFixed(2).replace(".00", "") + " €" : ""}
+                        {b.counts_in_subscription === false ? " · apmokėta atskirai" : ""}
+                      </div>
+                    </div>
                     <span className={cn(
                       "text-[10px] px-2 py-0.5 rounded-full border",
                       b.status === "cancelled" ? "bg-blush/15 text-blush border-blush/30" : "bg-background/40 border-gold/15 text-muted-foreground",
