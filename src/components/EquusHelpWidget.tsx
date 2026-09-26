@@ -37,7 +37,7 @@ const FAQ_DATA = {
     },
     {
       q: "Kontaktai",
-      a: "Dėl svetainės ar treniruočių informacijos galite susisiekti su Adrija telefonu +370 628 76090 arba per WhatsApp. Taip pat galite susisiekti su Laura telefonu +370 658 22872.",
+      a: "Dėl svetainės ar registracijos klausimų rašykite Adrijai per WhatsApp (+370 628 76090). Dėl treniruočių ir rezervacijų skambinkite arba rašykite Laurai (+370 658 22872).",
     },
   ],
   en: [
@@ -67,7 +67,7 @@ const FAQ_DATA = {
     },
     {
       q: "Contact",
-      a: "For website or training information, contact Adrija at +370 628 76090 or via WhatsApp. You can also contact Laura at +370 658 22872.",
+      a: "For website or registration questions, WhatsApp Adrija at +370 628 76090. For training and booking questions, call or WhatsApp Laura at +370 658 22872.",
     },
   ],
 };
@@ -324,34 +324,18 @@ export function EquusHelpWidget() {
                 </motion.button>
               </div>
 
-              <div className="flex gap-1.5 pt-2 border-t border-border/60">
-                <motion.a
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  href="https://maps.app.goo.gl/Tjd1rUUVSabq52ip6"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors"
-                >
+              <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-border/60">
+                <motion.a href="https://maps.app.goo.gl/Tjd1rUUVSabq52ip6" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
                   <MapPin size={13} /> {language === "lt" ? "Kaip atvykti" : "Directions"}
                 </motion.a>
-                <motion.a
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  href="https://wa.me/37062876090"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors"
-                >
-                  <MessageSquare size={13} /> WhatsApp
+                <motion.a href="tel:+37065822872" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
+                  <Phone size={13} /> {language === "lt" ? "Laura · skambinti" : "Call Laura"}
                 </motion.a>
-                <motion.a
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  href="tel:+37062876090"
-                  className="flex-1 flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors"
-                >
-                  <Phone size={13} /> {language === "lt" ? "Skambinti" : "Call"}
+                <motion.a href="https://wa.me/37065822872" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
+                  <MessageSquare size={13} /> {language === "lt" ? "Laura · WhatsApp" : "WhatsApp Laura"}
+                </motion.a>
+                <motion.a href="https://wa.me/37062876090" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
+                  <MessageSquare size={13} /> {language === "lt" ? "Adrija · svetainė" : "Adrija · website"}
                 </motion.a>
               </div>
             </div>
