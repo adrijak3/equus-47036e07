@@ -28,7 +28,7 @@ export const MONTHS_LT_NOM = [
 export function startOfWeek(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0=Sun..6=Sat
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d;
@@ -81,14 +81,10 @@ export function canonicalBookings<T extends {
 }
 
 export function formatTime(t: string): string {
-  // "16:00:00" → "16:00"
   return t.slice(0, 5);
 }
 
-/** Format full name → "Vardas Pav" (first 3 letters of surname) */
 export function formatBookedName(fullName: string, displayName?: string | null): string {
-  // Display rule (forced for everyone): "Vardas Pa" — first 2 letters of surname.
-  // displayName is intentionally ignored to keep the schedule consistent.
   void displayName;
   const name = (fullName ?? "").trim();
   if (!name) return "—";
@@ -99,40 +95,32 @@ export function formatBookedName(fullName: string, displayName?: string | null):
   return `${first} ${surname.slice(0, 2)}`;
 }
 
-/** Half-hour time slot options for admin pickers (08:00 → 22:00) */
 export const TIME_SLOT_OPTIONS: string[] = (() => {
   const out: string[] = [];
   for (let h = 8; h <= 22; h++) {
-    for (const m of [0, 30]) {
-      out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    }
+    for (const m of [0, 30]) out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
   }
   return out;
 })();
 
-/** Quarter-hour suggestions for admin pickers (08:00 → 22:00, every 15 min) */
 export const TIME_SLOT_OPTIONS_FINE: string[] = (() => {
   const out: string[] = [];
   for (let h = 8; h <= 22; h++) {
-    for (const m of [0, 15, 30, 45]) {
-      out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    }
+    for (const m of [0, 15, 30, 45]) out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
   }
   return out;
 })();
 
-/** Validate any HH:MM string admin types in. */
 export function isValidTime(s: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
 }
 
-/** Auto-pricing: <8 → 35€/lesson, >=8 → 30€/lesson */
+/** Legacy generic auto-pricing kept for compatibility with older callers. */
 export function calculateSubscriptionPrice(lessons: number): number {
   if (lessons <= 0) return 0;
   return lessons >= 8 ? lessons * 30 : lessons * 35;
 }
 
-/** Lesson types for subscriptions */
 export type LessonType = "sportine" | "nesportine" | "vienkartine" | "sportine_po2" | "nuosavu_zirgu";
 
 export const LESSON_TYPE_LABEL: Record<LessonType, string> = {
@@ -143,43 +131,42 @@ export const LESSON_TYPE_LABEL: Record<LessonType, string> = {
   nuosavu_zirgu: "Jojant nuosavu žirgu",
 };
 
-/** Returns total price for a given lesson count + type. */
+/** Returns total price for a given lesson count + type using the current published price list. */
 export function calculateSubPriceByType(lessons: number, type: LessonType): number {
   if (lessons <= 0) return 0;
-  if (type === "vienkartine") return 35; // single lesson, fixed
+
+  if (type === "vienkartine") return 40;
+
   if (type === "nesportine") {
-    // Tiered: 8-card 200€, 4-card 120€, 1 lesson 35€; otherwise per-lesson 35€
     if (lessons === 8) return 200;
     if (lessons === 4) return 120;
     if (lessons === 1) return 35;
     return lessons * 35;
   }
+
   if (type === "sportine_po2") {
-    // Tiered: 4-card 160€, 8-card 320€; otherwise per-lesson 40€
     if (lessons === 4) return 160;
     if (lessons === 8) return 320;
-    return lessons * 40;
+    return lessons * 45;
   }
+
   if (type === "nuosavu_zirgu") {
-    // Tiered: 4-card 140€, 8-card 240€, 12-card 340€; otherwise per-lesson 35€
     if (lessons === 4) return 140;
     if (lessons === 8) return 240;
     if (lessons === 12) return 340;
     return lessons * 35;
   }
-  // sportine (grupinė): 4-card 140€, 8-card 280€, 12-card 400€; otherwise per-lesson 35€
+
   if (lessons === 4) return 140;
   if (lessons === 8) return 280;
   if (lessons === 12) return 400;
-  return lessons * 35;
+  return lessons * 40;
 }
 
-/** Build a Date in local TZ from slot_date (YYYY-MM-DD) + slot_time (HH:MM[:SS]) */
 export function slotDateTime(slot_date: string, slot_time: string): Date {
   return new Date(`${slot_date}T${slot_time.length === 5 ? slot_time + ":00" : slot_time}`);
 }
 
-/** Hours until slot starts (negative if in past) */
 export function hoursUntil(slot_date: string, slot_time: string): number {
   const slot = slotDateTime(slot_date, slot_time);
   return (slot.getTime() - Date.now()) / 36e5;
