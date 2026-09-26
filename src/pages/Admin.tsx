@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, calculateSubPriceByType, expiryFromPurchase, formatDateISO, LESSON_TYPE_LABEL, type LessonType } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
@@ -382,12 +382,15 @@ function VacationsAdminTab() {
   const [rows, setRows] = useState<{ id: string; user_id: string; starts_on: string; ends_on: string; note: string | null; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPast, setShowPast] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [cancelledByVacation, setCancelledByVacation] = useState<Record<string, { slot_date: string; slot_time: string; reason: string | null }[]>>({});
+  const [loadingCancelled, setLoadingCancelled] = useState<string | null>(null);
   const today = formatDateISO(new Date());
 
   const load = async () => {
     setLoading(true);
     const [v, p] = await Promise.all([
-      (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").order("starts_on", { ascending: true }),
+      (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note, created_at").order("starts_on", { ascending: true }),
       supabase.from("profiles").select("id, full_name"),
     ]);
     const nameMap = new Map<string, string>();
@@ -399,6 +402,25 @@ function VacationsAdminTab() {
 
   const upcoming = rows.filter((r) => r.ends_on >= today);
   const past = rows.filter((r) => r.ends_on < today).reverse();
+
+  const toggleDetails = async (r: (typeof rows)[number]) => {
+    if (expanded === r.id) { setExpanded(null); return; }
+    setExpanded(r.id);
+    if (cancelledByVacation[r.id]) return;
+    setLoadingCancelled(r.id);
+    const { data, error } = await (supabase as any)
+      .from("booking_cancellations")
+      .select("slot_date, slot_time, reason")
+      .eq("user_id", r.user_id)
+      .gte("slot_date", r.starts_on)
+      .lte("slot_date", r.ends_on)
+      .gte("created_at", r.created_at)
+      .order("slot_date", { ascending: true })
+      .order("slot_time", { ascending: true });
+    setLoadingCancelled(null);
+    if (error) { toast.error(error.message); return; }
+    setCancelledByVacation((prev) => ({ ...prev, [r.id]: (data ?? []) as { slot_date: string; slot_time: string; reason: string | null }[] }));
+  };
 
   const remove = async (id: string) => {
     if (!confirm("Ištrinti atostogų įrašą?")) return;
@@ -419,25 +441,48 @@ function VacationsAdminTab() {
           <div className="space-y-2">
             {upcoming.map((r) => {
               const active = r.starts_on <= today && r.ends_on >= today;
+              const details = cancelledByVacation[r.id] ?? [];
+              const isOpen = expanded === r.id;
               return (
-                <div key={r.id} className={cn(
-                  "flex items-center justify-between gap-3 p-3 rounded-lg border",
-                  active ? "border-gold/50 bg-gold/10 shadow-gold" : "border-gold/20 bg-gradient-card",
-                )}>
-                  <div className="flex items-start gap-3">
-                    <Palmtree className={cn("w-4 h-4 mt-0.5", active ? "text-gold" : "text-gold/60")} />
-                    <div>
-                      <div className="font-display text-base text-gold">{r.name}</div>
-                      <div className="text-xs tabular-nums text-foreground/85">{r.starts_on} → {r.ends_on}</div>
-                      {r.note && <div className="text-xs text-muted-foreground mt-0.5 italic">{r.note}</div>}
+                <div key={r.id} className={cn("rounded-lg border overflow-hidden", active ? "border-gold/50 bg-gold/10 shadow-gold" : "border-gold/20 bg-gradient-card")}>
+                  <div className="flex items-center justify-between gap-3 p-3">
+                    <button type="button" onClick={() => toggleDetails(r)} className="flex min-w-0 items-start gap-3 text-left">
+                      <Palmtree className={cn("w-4 h-4 mt-0.5 shrink-0", active ? "text-gold" : "text-gold/60")} />
+                      <div className="min-w-0">
+                        <div className="font-display text-base text-gold">{r.name}</div>
+                        <div className="text-xs tabular-nums text-foreground/85">{r.starts_on} → {r.ends_on}</div>
+                        {r.note && <div className="text-xs text-muted-foreground mt-0.5 italic">{r.note}</div>}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {active && <span className="text-[10px] uppercase tracking-wider text-gold px-2 py-0.5 rounded-full border border-gold/40 bg-gold/10">Vyksta</span>}
+                      <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => toggleDetails(r)}>
+                        {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => remove(r.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {active && <span className="text-[10px] uppercase tracking-wider text-gold px-2 py-0.5 rounded-full border border-gold/40 bg-gold/10">Vyksta</span>}
-                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => remove(r.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                  {isOpen && (
+                    <div className="border-t border-gold/15 px-3 py-3 bg-background/20">
+                      {loadingCancelled === r.id ? (
+                        <p className="text-xs text-muted-foreground italic">Kraunamos atšauktos treniruotės…</p>
+                      ) : details.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Šiuo laikotarpiu atšauktų rezervacijų nerasta.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <div className="text-[11px] uppercase tracking-wider text-gold/70">Atšauktos treniruotės · {details.length}</div>
+                          {details.map((x, i) => (
+                            <div key={x.slot_date + "-" + x.slot_time + "-" + i} className="flex items-center justify-between gap-3 text-xs">
+                              <span className="tabular-nums">{x.slot_date} · {x.slot_time.slice(0,5)}</span>
+                              <span className="text-muted-foreground text-right">{x.reason || "Atšaukta dėl atostogų"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
