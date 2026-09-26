@@ -1560,7 +1560,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
           <Button variant="ghost" size="sm" onClick={onClearFocus}>Rodyti visus</Button>
         </div>
       )}
-      <div className="grid grid-cols-3 gap-2 mb-3">\n        <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{activeCount}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Aktyvūs</div></div>\n        <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{usersWithSubs}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Su abonementu</div></div>\n        <div className={cn("rounded-lg border px-3 py-2", unpaidCount > 0 ? "border-blush/30 bg-blush/5" : "border-gold/15 bg-gradient-card")}><div className="text-2xl font-display text-gradient-gold">{unpaidCount}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Neapmokėti</div></div>\n      </div>\n      <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{subs.filter((s) => new Date(s.expires_at) >= new Date() && s.lessons_used < s.lessons_total).length}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Aktyvūs</div></div>
+        <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{new Set(subs.map((s) => s.user_id)).size}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Su abonementu</div></div>
+        <div className={cn("rounded-lg border px-3 py-2", subs.filter((s) => !s.paid).length > 0 ? "border-blush/30 bg-blush/5" : "border-gold/15 bg-gradient-card")}><div className="text-2xl font-display text-gradient-gold">{subs.filter((s) => !s.paid).length}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Neapmokėti</div></div>
+      </div>\n      <div className="flex flex-wrap items-center gap-2 mb-3">
         <Input
           placeholder="Ieškoti vartotojo..."
           value={filter}
