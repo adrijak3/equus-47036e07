@@ -238,8 +238,7 @@ export function UserProfileSheet({
             onTogglePaid={togglePaid}
             onEditLessons={editLessons}
             onDeleteSub={deleteSub}
-            onAddPermSlot={addPermSlot}
-            onRemovePermSlot={removePermSlot}
+            onAddPermSlot={addPermSlot}\n            onChangePermSlotTime={changePermSlotTime}\n            onRemovePermSlot={removePermSlot}
             onAddVacation={addVacation}
             onRemoveVacation={removeVacation}
           />
@@ -263,8 +262,7 @@ function UserDetailsBody({
   onTogglePaid: (subId: string, paid: boolean) => void;
   onEditLessons: (s: Sub) => void;
   onDeleteSub: (s: Sub) => void;
-  onAddPermSlot: (day: number, time: string) => void;
-  onRemovePermSlot: (row: PermSlot) => void;
+  onAddPermSlot: (day: number, time: string) => void;\n  onChangePermSlotTime: (row: PermSlot, newTime: string) => void;\n  onRemovePermSlot: (row: PermSlot) => void;
   onAddVacation: (starts: string, ends: string) => void;
   onRemoveVacation: (id: string) => void;
 }) {
