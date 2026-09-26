@@ -68,7 +68,7 @@ const SERVICES = [
   {
     value: "sportine",
     title: "Sportinė jojimo treniruotė",
-    description: "Porinė (45e.) arba grupinė (40e.) treniruotė.  Minimalus amžius – 10 metų.",
+    description: "Porinė – 45 € arba grupinė – 40 €. Minimalus amžius – 10 metų.",
     price: 40,
     duration: 45,
     minAge: 10,
@@ -412,7 +412,7 @@ export default function PublicRegistration() {
         </h1>
         <p className="mt-3 text-muted-foreground">
           Administracija peržiūrės prašymą ir susisieks su jumis.
-          {selectedService && ` Kaina – ${selectedService.price} €.`}
+          {selectedService && ` Kaina – ${selectedPrice ?? (service === "sportine" ? "40–45" : selectedService.price)} €.`}
         </p>
         <Link
           to="/atsiliepimai"
@@ -523,7 +523,7 @@ export default function PublicRegistration() {
                           {item.description}
                         </p>
                         <p className="mt-2 text-sm font-medium text-gold">
-                          {item.price} € · nuo {item.minAge} m.
+                          {item.value === "sportine" ? "40–45 €" : `${item.price} €`} · nuo {item.minAge} m.
                         </p>
                       </div>
                     </div>
@@ -820,7 +820,7 @@ export default function PublicRegistration() {
                 <b>Trukmė:</b> {selectedService.duration} min.
               </p>
               <p>
-                <b>Kaina:</b> {selectedService.price} €
+                <b>Kaina:</b> {selectedPrice ?? (service === "sportine" ? "40–45" : selectedService.price)} €
               </p>
             </div>
 
