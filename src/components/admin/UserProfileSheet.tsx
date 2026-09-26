@@ -125,7 +125,11 @@ export function UserProfileSheet({
   const deleteUser = async () => {
     if (!profile) return;
     const txt = prompt(
-      `Visiškai ištrinti vartotoją "${profile.full_name}"?\n\nVisi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negrįžtamai pašalinti.\n\nĮrašykite vartotojo vardą patvirtinti:`
+      `Visiškai ištrinti vartotoją "${profile.full_name}"?
+
+Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negrįžtamai pašalinti.
+
+Įrašykite vartotojo vardą patvirtinti:`
     );
     if (txt !== profile.full_name) { if (txt !== null) toast.error("Vardas nesutampa — atšaukta"); return; }
     const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: profile.id } });
@@ -176,8 +180,22 @@ export function UserProfileSheet({
     notifyAndReload();
   };
 
-  const changePermSlotTime = async (row: PermSlot, newTime: string) => {\n    if (!isValidTime(newTime)) { toast.error("Įveskite laiką formatu HH:MM"); return; }\n    if (newTime.slice(0, 5) === row.slot_time.slice(0, 5)) return;\n    const { data, error } = await (supabase as any).rpc("admin_apply_recurring_time_change", { _slot_id: row.id, _new_time: newTime });\n    if (error) {\n      const msg = error.message?.includes("RECURRING_MOVE_CONFLICT") ? "Pakeitimas sukeltų rezervacijų konfliktą." : error.message?.includes("TARGET_TIME_EXISTS") ? "Šis laikas jau naudojamas tame pačiame trenerio grafike." : error.message;\n      toast.error(msg); return;\n    }\n    toast.success(`Laikas pakeistas. Perkeltos ${Number((data as any)?.bookings_moved ?? 0)} rezervacijos.`);\n    notifyAndReload();\n  };\n\n  const removePermSlot = async (row: PermSlot) => {
-    if (!confirm(`Pašalinti nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?\n\nVisos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
+  const changePermSlotTime = async (row: PermSlot, newTime: string) => {
+    if (!isValidTime(newTime)) { toast.error("Įveskite laiką formatu HH:MM"); return; }
+    if (newTime.slice(0, 5) === row.slot_time.slice(0, 5)) return;
+    const { data, error } = await (supabase as any).rpc("admin_apply_recurring_time_change", { _slot_id: row.id, _new_time: newTime });
+    if (error) {
+      const msg = error.message?.includes("RECURRING_MOVE_CONFLICT") ? "Pakeitimas sukeltų rezervacijų konfliktą." : error.message?.includes("TARGET_TIME_EXISTS") ? "Šis laikas jau naudojamas tame pačiame trenerio grafike." : error.message;
+      toast.error(msg); return;
+    }
+    toast.success(`Laikas pakeistas. Perkeltos ${Number((data as any)?.bookings_moved ?? 0)} rezervacijos.`);
+    notifyAndReload();
+  };
+
+  const removePermSlot = async (row: PermSlot) => {
+    if (!confirm(`Pašalinti nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?
+
+Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
     const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
     if (e1) { toast.error(e1.message); return; }
     const todayISO = formatDateISO(new Date());
@@ -238,7 +256,9 @@ export function UserProfileSheet({
             onTogglePaid={togglePaid}
             onEditLessons={editLessons}
             onDeleteSub={deleteSub}
-            onAddPermSlot={addPermSlot}\n            onChangePermSlotTime={changePermSlotTime}\n            onRemovePermSlot={removePermSlot}
+            onAddPermSlot={addPermSlot}
+            onChangePermSlotTime={changePermSlotTime}
+            onRemovePermSlot={removePermSlot}
             onAddVacation={addVacation}
             onRemoveVacation={removeVacation}
           />
@@ -262,7 +282,9 @@ function UserDetailsBody({
   onTogglePaid: (subId: string, paid: boolean) => void;
   onEditLessons: (s: Sub) => void;
   onDeleteSub: (s: Sub) => void;
-  onAddPermSlot: (day: number, time: string) => void;\n  onChangePermSlotTime: (row: PermSlot, newTime: string) => void;\n  onRemovePermSlot: (row: PermSlot) => void;
+  onAddPermSlot: (day: number, time: string) => void;
+  onChangePermSlotTime: (row: PermSlot, newTime: string) => void;
+  onRemovePermSlot: (row: PermSlot) => void;
   onAddVacation: (starts: string, ends: string) => void;
   onRemoveVacation: (id: string) => void;
 }) {
