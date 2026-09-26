@@ -1935,7 +1935,8 @@ function CancellationsTab() {
 /* ---------- MESSAGES (threaded) ---------- */
 function MessagesTab() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [replyOpen, setReplyOpen] = useState<string | null>(null); // user_id being replied to
+  const [replyOpen, setReplyOpen] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -1955,12 +1956,9 @@ function MessagesTab() {
   };
   useEffect(() => { load(); }, []);
 
-  // Group by user_id, show newest thread first
   const threads = (() => {
     const byUser: Record<string, Msg[]> = {};
-    for (const m of msgs) {
-      (byUser[m.user_id] ||= []).push(m);
-    }
+    for (const m of msgs) (byUser[m.user_id] ||= []).push(m);
     return Object.entries(byUser)
       .map(([uid, list]) => ({
         user_id: uid,
@@ -1979,6 +1977,11 @@ function MessagesTab() {
     load();
   };
 
+  const openThread = (userId: string, hasUnread: boolean) => {
+    setExpanded((current) => current === userId ? null : userId);
+    if (hasUnread) markRead(userId);
+  };
+
   const sendReply = async (userId: string) => {
     const body = replyBody.trim();
     if (!body) return;
@@ -1995,66 +1998,121 @@ function MessagesTab() {
     toast.success("Atsakymas išsiųstas");
     setReplyBody("");
     setReplyOpen(null);
+    setExpanded(userId);
     load();
   };
 
-  if (threads.length === 0) return <p className="text-center text-muted-foreground italic py-12">Nėra žinučių</p>;
+  if (threads.length === 0) {
+    return (
+      <div className="rounded-xl border border-gold/15 bg-gradient-card p-8 text-center">
+        <MessageSquare className="w-8 h-8 mx-auto text-gold/50 mb-2" />
+        <p className="font-display text-lg">Žinučių nėra</p>
+        <p className="text-sm text-muted-foreground mt-1">Kai raitelis parašys, jo pokalbis atsiras čia.</p>
+      </div>
+    );
+  }
 
   return (
-    <ul className="space-y-3">
-      {threads.map((t) => (
-        <li
-          key={t.user_id}
-          className={`bg-gradient-card border rounded-lg overflow-hidden ${t.hasUnread ? "border-gold/40 shadow-gold" : "border-gold/15"}`}
-        >
-          <div className="flex items-baseline justify-between gap-2 px-5 pt-4 pb-2">
-            <span className="font-display text-gold text-lg">{t.name}</span>
-            <span className="text-xs text-muted-foreground">{new Date(t.last.created_at).toLocaleString("lt-LT")}</span>
-          </div>
-          <ul className="divide-y divide-gold/5 max-h-64 overflow-auto">
-            {t.list.map((m) => (
-              <li key={m.id} className={`px-5 py-2.5 ${m.from_admin ? "bg-gold/5" : ""}`}>
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-0.5">
-                  {m.from_admin ? "✦ Jūs (admin)" : t.name}
-                </div>
-                <p className="text-sm whitespace-pre-wrap">{m.body}</p>
-              </li>
-            ))}
-          </ul>
-          <div className="border-t border-gold/10 px-5 py-3 flex flex-wrap gap-2 justify-end">
-            {t.hasUnread && (
-              <Button variant="ghostGold" size="sm" onClick={() => markRead(t.user_id)}>Pažymėti perskaityta</Button>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <p className="text-sm font-medium">Pokalbiai</p>
+          <p className="text-xs text-muted-foreground">Naujausias pokalbis rodomas viršuje.</p>
+        </div>
+        <span className="text-xs text-muted-foreground">{threads.length} pokalbiai</span>
+      </div>
+
+      {threads.map((t) => {
+        const isOpen = expanded === t.user_id;
+        return (
+          <div
+            key={t.user_id}
+            className={cn(
+              "rounded-xl border bg-gradient-card overflow-hidden transition-colors",
+              t.hasUnread ? "border-gold/40 shadow-gold" : "border-gold/15",
             )}
-            <Button variant="gold" size="sm" onClick={() => { setReplyOpen(t.user_id); setReplyBody(""); markRead(t.user_id); }}>
-              Atsakyti
-            </Button>
-          </div>
-          {replyOpen === t.user_id && (
-            <div className="border-t border-gold/10 p-4 space-y-2 bg-background/40">
-              <Label htmlFor={`reply-${t.user_id}`}>Atsakymas {t.name}</Label>
-              <textarea
-                id={`reply-${t.user_id}`}
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                rows={3}
-                maxLength={2000}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder="Rašykite atsakymą..."
-              />
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setReplyOpen(null)}>Atšaukti</Button>
-                <Button variant="gold" size="sm" disabled={sending || !replyBody.trim()} onClick={() => sendReply(t.user_id)}>
-                  Siųsti
-                </Button>
+          >
+            <button
+              type="button"
+              onClick={() => openThread(t.user_id, t.hasUnread)}
+              className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gold/5"
+            >
+              <div className={cn(
+                "w-9 h-9 rounded-full flex items-center justify-center shrink-0 border",
+                t.hasUnread ? "border-gold/50 bg-gold/10 text-gold" : "border-gold/15 text-muted-foreground",
+              )}>
+                <MessageSquare className="w-4 h-4" />
               </div>
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-gold">{t.name}</span>
+                  {t.hasUnread && <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gold text-background">Nauja</span>}
+                </div>
+                <p className="text-sm text-foreground/75 truncate mt-0.5">{t.last.body}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-[11px] text-muted-foreground">{new Date(t.last.created_at).toLocaleDateString("lt-LT")}</div>
+                <ChevronDown className={cn("w-4 h-4 ml-auto mt-1 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
+              </div>
+            </button>
+
+            {isOpen && (
+              <div className="border-t border-gold/10">
+                <div className="max-h-72 overflow-auto divide-y divide-gold/5">
+                  {t.list.map((m) => (
+                    <div key={m.id} className={cn("px-4 py-3", m.from_admin && "bg-gold/5")}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {m.from_admin ? "✦ Jūs (admin)" : t.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-gold/10 px-4 py-3 flex flex-wrap gap-2 justify-end">
+                  {t.hasUnread && (
+                    <Button variant="ghostGold" size="sm" onClick={() => markRead(t.user_id)}>Pažymėti perskaityta</Button>
+                  )}
+                  <Button
+                    variant="gold"
+                    size="sm"
+                    onClick={() => { setReplyOpen(t.user_id); setReplyBody(""); markRead(t.user_id); }}
+                  >
+                    Atsakyti
+                  </Button>
+                </div>
+
+                {replyOpen === t.user_id && (
+                  <div className="border-t border-gold/10 p-4 space-y-2 bg-background/40">
+                    <Label htmlFor={`reply-${t.user_id}`}>Atsakymas {t.name}</Label>
+                    <textarea
+                      id={`reply-${t.user_id}`}
+                      value={replyBody}
+                      onChange={(e) => setReplyBody(e.target.value)}
+                      rows={3}
+                      maxLength={2000}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Rašykite atsakymą..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setReplyOpen(null)}>Atšaukti</Button>
+                      <Button variant="gold" size="sm" disabled={sending || !replyBody.trim()} onClick={() => sendReply(t.user_id)}>
+                        Siųsti
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
-
 /* ---------- PERMANENT SLOTS (admin: view + add + remove) ---------- */
 interface PermSlotRow { id: string; user_id: string; day_of_week: number; slot_time: string; profile_name?: string; }
 interface TimeSlotLite { id: string; day_of_week: number; slot_time: string; }
