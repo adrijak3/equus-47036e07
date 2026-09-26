@@ -63,6 +63,7 @@ const NAV_USER = [
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
   { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
   { to: "/paskyra?tab=profile", label: "Paskyra", icon: UserIcon },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
 ];
 
 const NAV_ADMIN = [
