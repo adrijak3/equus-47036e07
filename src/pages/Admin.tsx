@@ -136,29 +136,10 @@ export default function Admin() {
         </aside>
 
         {/* Mobile nav */}
-        <div className="lg:hidden -mt-2 mb-2 overflow-x-auto">
-          <div className="flex gap-1.5 pb-2 min-w-max">
-            {navItems.map((n) => {
-              const Icon = n.icon;
-              const active = section === n.value;
-              return (
-                <button
-                  key={n.value}
-                  onClick={() => setSection(n.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-md text-xs whitespace-nowrap transition-colors relative border",
-                    active ? "bg-gold/15 text-gold border-gold/40" : "bg-background/40 text-foreground/70 border-gold/15",
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {n.label}
-                  {!!n.badge && n.badge > 0 && (
-                    <span className={cn("ml-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center", n.badgeCls)}>{n.badge}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        <div className="lg:hidden -mt-2 mb-3">
+          <select value={section} onChange={(e) => setSection(e.target.value)} className="flex h-10 w-full rounded-lg border border-gold/20 bg-gradient-card px-3 py-2 text-sm">
+            {navItems.map((n) => <option key={n.value} value={n.value}>{n.label}{n.badge ? ` · ${n.badge}` : ""}</option>)}
+          </select>
         </div>
 
         <div className="min-w-0">
