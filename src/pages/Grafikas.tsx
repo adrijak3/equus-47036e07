@@ -3032,7 +3032,7 @@ export default function Grafikas() {
                                   6,
                                 );
                               }}
-                              className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
+                              className="mt-2 w-full sm:w-auto inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
                             >
                               <Plus className="w-3 h-3" />
                               {t(
@@ -3361,8 +3361,8 @@ export default function Grafikas() {
                                 )}
                               >
                                 {/* Slot header */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-gold/10">
-                                  <div className="flex flex-wrap items-center justify-end gap-1.5 min-w-0">
+                                <div className="flex flex-col items-stretch gap-2 px-3 py-2 border-b border-gold/10 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5">
                                     <Clock className="w-4 h-4 text-gold/60" />
 
                                     <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
@@ -3381,7 +3381,7 @@ export default function Grafikas() {
                                     )}
                                   </div>
 
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex flex-wrap items-center justify-start gap-1.5 sm:justify-end">
                                     <AvailabilityBadge
                                       taken={
                                         group.taken
@@ -3603,7 +3603,7 @@ export default function Grafikas() {
                                               duration: 0.25,
                                             }}
                                             className={cn(
-                                              "flex items-center gap-1.5 text-base leading-snug",
+                                              "flex items-start gap-1.5 text-sm sm:text-base leading-snug min-w-0",
                                               mine
                                                 ? "text-gold"
                                                 : "text-foreground/85",
@@ -3639,7 +3639,7 @@ export default function Grafikas() {
 
                                             <span
                                               className={cn(
-                                                "truncate",
+                                                "min-w-0 flex-1 break-words",
                                                 (isAdmin ||
                                                   isTrainer) &&
                                                   "cursor-pointer rounded px-0.5 underline-offset-4 hover:underline",
