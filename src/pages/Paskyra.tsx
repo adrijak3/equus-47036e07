@@ -109,8 +109,7 @@ export default function Paskyra() {
   const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
   const [newSubPaid, setNewSubPaid] = useState(false);
   const [newSubType, setNewSubType] = useState<LessonType>("sportine");
-  const [newSubAlreadyUsed, setNewSubAlreadyUsed] = useState(0);
-  /** Past bookings without a subscription (offered to attribute when buying) */
+  /** Past bookings without a subscription (offered to optionally attribute when buying) */
   const [unattributedPast, setUnattributedPast] = useState<Booking[]>([]);
   const [attributeIds, setAttributeIds] = useState<Set<string>>(new Set());
 
@@ -267,23 +266,21 @@ export default function Paskyra() {
   const effLessons = newSubType === "vienkartine" ? 1 : newSubLessons;
   const newSubPrice = calculateSubPriceByType(effLessons, newSubType);
 
-  // When subscription dialog opens, pre-load past bookings that aren't tied to any subscription.
+  // Offer only older lessons that are not already assigned to any subscription.
+  // Lessons on/after the purchase date are handled automatically by process-lessons.
   useEffect(() => {
     if (!subDialog || !acting) return;
     (async () => {
-      // Offer lessons from the last 14 days (and today) — user chooses which ones this subscription covers
-      const since = new Date();
-      since.setDate(since.getDate() - 14);
       const { data } = await supabase
         .from("bookings")
         .select("id, slot_date, slot_time, status, counts_in_subscription, subscription_id")
         .eq("user_id", acting)
         .is("subscription_id", null)
-        .lte("slot_date", formatDateISO(new Date()))
+        .lt("slot_date", newSubDate)
         .neq("status", "cancelled")
-        .gte("slot_date", formatDateISO(since))
         .order("slot_date", { ascending: false })
-        .limit(30);
+        .order("slot_time", { ascending: false })
+        .limit(100);
       setUnattributedPast(canonicalBookings((data ?? []) as any) as any);
       setAttributeIds(new Set());
     })();
@@ -292,16 +289,17 @@ export default function Paskyra() {
   const addSubscription = async () => {
     if (!user || !acting) return;
     if (effLessons < 1 || effLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
+
     const fromAttribution = attributeIds.size;
-    const totalUsed = newSubAlreadyUsed + fromAttribution;
-    if (totalUsed > effLessons) {
-      toast.error(`Panaudota (${totalUsed}) negali viršyti pamokų sk. (${effLessons})`);
+    if (fromAttribution > effLessons) {
+      toast.error(`Pasirinkta (${fromAttribution}) negali viršyti pamokų sk. (${effLessons})`);
       return;
     }
+
     const { data: ins, error } = await supabase.from("subscriptions").insert({
       user_id: acting,
       lessons_total: effLessons,
-      lessons_used: totalUsed,
+      lessons_used: fromAttribution,
       lesson_type: newSubType,
       price: newSubPrice,
       purchase_date: newSubDate,
@@ -309,18 +307,24 @@ export default function Paskyra() {
       paid: newSubPaid,
     } as any).select("id").maybeSingle();
     if (error) { toast.error(error.message); return; }
-    // Attribute selected past bookings to this new subscription
+
+    // Optionally attach selected older, previously-unassigned lessons.
+    // Lessons from the purchase date onward are picked up automatically.
     if (ins?.id && attributeIds.size > 0) {
-      await supabase.from("bookings")
+      const { error: attachError } = await supabase.from("bookings")
         .update({ subscription_id: ins.id, counts_in_subscription: true } as any)
         .in("id", Array.from(attributeIds));
+      if (attachError) {
+        toast.error("Abonementas sukurtas, bet ankstesnių pamokų nepavyko priskirti.");
+        return;
+      }
     }
+
     toast.success("Abonementas pridėtas");
     setSubDialog(false);
     setNewSubLessons(8);
     setNewSubPaid(false);
     setNewSubType("sportine");
-    setNewSubAlreadyUsed(0);
     setAttributeIds(new Set());
     load();
   };
@@ -526,8 +530,8 @@ export default function Paskyra() {
                   b.status !== "cancelled" &&
                   b.counts_in_subscription !== false,
                 ).length;
-                // Honor manually-entered "already used" baseline stored in lessons_used
-                const actualUsed = Math.max(attributedUsed, s.lessons_used ?? 0);
+                // Usage is derived from bookings assigned to this subscription.
+                const actualUsed = attributedUsed;
                 const remaining = s.lessons_total - actualUsed;
                 const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
                 const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
@@ -620,27 +624,13 @@ export default function Paskyra() {
               </p>
             </div>
             )}
-            <div>
-              <Label htmlFor="sub-used">Jau panaudota treniruočių</Label>
-              <Input
-                id="sub-used"
-                type="number"
-                min={0}
-                max={effLessons}
-                value={newSubAlreadyUsed}
-                onChange={(e) => setNewSubAlreadyUsed(Math.max(0, parseInt(e.target.value) || 0))}
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Jeigu šio abonemento jau buvote panaudoję — įrašykite kiek. Naujam abonementui palikite 0.
-              </p>
-            </div>
             {unattributedPast.length > 0 && (
               <div className="border border-gold/15 rounded-md p-3 bg-background/30">
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Įtraukti į šį abonementą (nuo pirkimo dienos)
+                  Ankstesnės neįtrauktos pamokos
                 </Label>
                 <p className="text-[11px] text-muted-foreground mt-1 mb-2">
-                  Pažymėkite jau įvykusias treniruotes (įsk. šiandienos), kurios turėtų skaičiuotis šiame abonemente.
+                  Šios pamokos buvo iki abonemento pirkimo datos ir dar nepriskirtos jokiam abonementui. Pasirinkite tik tas, kurias norite įtraukti.
                 </p>
                 <ul className="space-y-1 max-h-44 overflow-auto">
                   {unattributedPast.map((b) => {
