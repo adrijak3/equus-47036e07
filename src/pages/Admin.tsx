@@ -1509,6 +1509,18 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     toast.success("Atnaujinta"); load();
   };
 
+  const extendExpiry = async (s: Sub, days: number) => {
+    const current = new Date(`${s.expires_at}T12:00:00`);
+    current.setDate(current.getDate() + days);
+    const newExpiry = formatDateISO(current);
+    const { error } = await supabase.from("subscriptions")
+      .update({ expires_at: newExpiry }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Galiojimas pratęstas iki ${newExpiry}`);
+    load();
+    if (detailSub?.id === s.id) setDetailSub({ ...s, expires_at: newExpiry });
+  };
+
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
     const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
@@ -1654,6 +1666,19 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                               >
                                 <ListTree className="w-3 h-3" /> Pamokos
                               </button>
+                              <div className="flex flex-wrap items-center gap-1.5 w-full">
+                                <span className="text-[11px] text-muted-foreground">Pratęsti:</span>
+                                {[{ days: 1, label: "+1 d." }, { days: 7, label: "+1 sav." }, { days: 14, label: "+2 sav." }].map((opt) => (
+                                  <button
+                                    key={opt.days}
+                                    type="button"
+                                    onClick={() => extendExpiry(s, opt.days)}
+                                    className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
                               {s.paid && (
                                 <button
                                   onClick={() => togglePaid(s.id, false)}
