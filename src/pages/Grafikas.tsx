@@ -2892,7 +2892,7 @@ export default function Grafikas() {
                         "relative flex flex-col gap-2",
                         calendarView ===
                           "week" &&
-                          "min-w-[86vw] snap-center sm:min-w-0",
+                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none",
                         calendarView ===
                           "list" &&
                           "rounded-3xl border border-gold/10 bg-card/25 p-3 shadow-sm sm:p-4",
