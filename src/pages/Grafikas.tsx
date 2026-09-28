@@ -276,6 +276,7 @@ export default function Grafikas() {
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
+  const [adminOneOffTime, setAdminOneOffTime] = useState("");
 
   const [forcePrompt, setForcePrompt] = useState<{
     date: Date;
@@ -1829,28 +1830,166 @@ export default function Grafikas() {
     await loadData();
   };
 
-  const adminRemoveOverride = async (
+  const adminChangeOneSeat = async (
     date: Date,
     time: string,
+    currentCap: number,
+    delta: 1 | -1,
   ) => {
     const dateISO = formatDateISO(date);
+    const existing = overrides.find(
+      (o) => o.slot_date === dateISO && o.slot_time === time,
+    );
+    const nextCap = (existing?.max_capacity ?? currentCap) + delta;
 
+    if (nextCap < 1) {
+      toast.error("Talpa negali būti mažesnė nei 1.");
+      return;
+    }
+
+    if (existing) {
+      const { error } = await supabase
+        .from("slot_overrides")
+        .update({ max_capacity: nextCap })
+        .eq("id", (existing as any).id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("slot_overrides")
+        .insert({ slot_date: dateISO, slot_time: time, max_capacity: nextCap });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+    }
+
+    toast.success(delta > 0 ? "Vieta pridėta (+1)" : "Vieta sumažinta (-1)");
+    await loadData();
+  };
+
+  const adminResetSeatOverride = async (date: Date, time: string) => {
+    const dateISO = formatDateISO(date);
     const { error } = await supabase
       .from("slot_overrides")
       .delete()
       .eq("slot_date", dateISO)
       .eq("slot_time", time);
-
     if (error) {
       toast.error(error.message);
       return;
     }
-
-    toast.success(
-      "Papildoma vieta pašalinta",
-    );
-
+    toast.success("Grąžinta į įprastą talpą");
     await loadData();
+  };
+
+  const adminChangeTimeOneDay = async (date: Date, slot: TimeSlot, newTimeRaw: string) => {
+    const dateISO = formatDateISO(date);
+    const newTime = newTimeRaw.trim().slice(0, 5);
+    const oldTime = slot.slot_time.slice(0, 5);
+
+    if (!isValidTime(newTime)) {
+      toast.error("Įveskite laiką HH:MM formatu.");
+      return;
+    }
+    if (newTime === oldTime) {
+      toast.info("Laikas nepasikeitė.");
+      return;
+    }
+
+    setAdminBusy(true);
+    try {
+      const targetSlots = slots.filter((s) =>
+        s.slot_time.slice(0, 5) === newTime &&
+        s.active !== false &&
+        (s.one_off_date === dateISO || (!s.one_off_date && s.day_of_week === dbDayOfWeek(date)))
+      );
+      const targetSlot = targetSlots.find((s) => s.trainer_name === slot.trainer_name) ?? targetSlots[0] ?? null;
+
+      const { data: targetBookings, error: targetErr } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("slot_date", dateISO)
+        .eq("slot_time", `${newTime}:00`)
+        .in("status", ["active", "pending_cancel"]);
+      if (targetErr) throw targetErr;
+
+      const { data: movingBookings, error: movingErr } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("slot_date", dateISO)
+        .eq("slot_time", slot.slot_time)
+        .in("status", ["active", "pending_cancel"]);
+      if (movingErr) throw movingErr;
+
+      const movingCount = (movingBookings ?? []).length;
+      if (targetSlot && (targetBookings ?? []).length + movingCount > getCapacity(date, newTime, targetSlot.max_capacity)) {
+        toast.error("Šiuo laiku nepakanka vietų.");
+        return;
+      }
+
+      if (slot.one_off_date === dateISO) {
+        const { error } = await supabase
+          .from("time_slots")
+          .update({ slot_time: `${newTime}:00` })
+          .eq("id", slot.id);
+        if (error) throw error;
+      } else {
+        if (!targetSlot) {
+          const { error } = await supabase.from("time_slots").insert({
+            day_of_week: dbDayOfWeek(date),
+            slot_time: `${newTime}:00`,
+            max_capacity: getCapacity(date, oldTime, slot.max_capacity),
+            active: true,
+            one_off_date: dateISO,
+            trainer_name: slot.trainer_name ?? null,
+          } as any);
+          if (error && error.code !== "23505") throw error;
+        }
+
+        const { data: existingOverride } = await supabase
+          .from("slot_overrides")
+          .select("id")
+          .eq("slot_date", dateISO)
+          .eq("slot_time", slot.slot_time)
+          .maybeSingle();
+
+        if (existingOverride?.id) {
+          const { error } = await supabase
+            .from("slot_overrides")
+            .update({ max_capacity: 0 })
+            .eq("id", existingOverride.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("slot_overrides").insert({
+            slot_date: dateISO,
+            slot_time: slot.slot_time,
+            max_capacity: 0,
+          });
+          if (error) throw error;
+        }
+      }
+
+      if (movingCount > 0) {
+        const { error } = await supabase
+          .from("bookings")
+          .update({ slot_time: `${newTime}:00` })
+          .eq("slot_date", dateISO)
+          .eq("slot_time", slot.slot_time)
+          .in("status", ["active", "pending_cancel"]);
+        if (error) throw error;
+      }
+
+      toast.success(`Laikas pakeistas tik ${dateISO}: ${oldTime} → ${newTime}`);
+      setAdminSlotDialog(null);
+      await loadData();
+    } catch (error: any) {
+      toast.error(error?.message ?? "Nepavyko pakeisti laiko.");
+    } finally {
+      setAdminBusy(false);
+    }
   };
 
   const adminCreateCustomSlot =
@@ -3459,30 +3598,29 @@ export default function Grafikas() {
                                         </button>
                                       )}
 
-                                    {isAdmin &&
-                                      !slotPast &&
-                                      overrides.some(
-                                        (o) =>
-                                          o.slot_date ===
-                                            formatDateISO(
-                                              date,
-                                            ) &&
-                                          o.slot_time ===
-                                            slot.slot_time,
-                                      ) && (
+                                    {isAdmin && !slotPast && (
+                                      <>
                                         <button
                                           type="button"
-                                          onClick={() =>
-                                            adminRemoveOverride(
-                                              date,
-                                              slot.slot_time,
-                                            )
-                                          }
-                                          className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-blush/40 text-blush hover:bg-blush/10 transition-colors text-[11px] leading-none"
+                                          onClick={() => adminChangeOneSeat(date, slot.slot_time, cap, -1)}
+                                          disabled={cap <= 1}
+                                          title="Sumažinti tik šios dienos talpą"
+                                          className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-blush/40 text-blush hover:bg-blush/10 disabled:opacity-30 transition-colors text-[11px] leading-none"
                                         >
                                           −1
                                         </button>
-                                      )}
+                                        {overrides.some((o) => o.slot_date === formatDateISO(date) && o.slot_time === slot.slot_time) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => adminResetSeatOverride(date, slot.slot_time)}
+                                            title="Grąžinti į įprastą talpą"
+                                            className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                                          >
+                                            ↺
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
 
                                     {isAdmin &&
                                       !slotPast && (
@@ -3497,9 +3635,8 @@ export default function Grafikas() {
                                               },
                                             );
 
-                                            setAdminAddUserId(
-                                              "",
-                                            );
+                                            setAdminAddUserId("");
+                                            setAdminOneOffTime(slot.slot_time.slice(0, 5));
                                           }}
                                           className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                         >
@@ -4645,6 +4782,27 @@ export default function Grafikas() {
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="rounded-lg border border-gold/15 bg-background/30 p-3">
+              <div className="font-medium">Tik šios dienos laikas</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pakeičia tik pasirinktą datą. Nuolatinis grafikas ir kitos savaitės neliečiami.
+              </p>
+              <div className="mt-3 flex items-end gap-2">
+                <div className="flex-1">
+                  <Label htmlFor="admin-one-off-time">Naujas laikas</Label>
+                  <TimeInput value={adminOneOffTime} onChange={setAdminOneOffTime} />
+                </div>
+                <Button
+                  variant="gold"
+                  size="sm"
+                  disabled={adminBusy || !adminOneOffTime}
+                  onClick={() => adminSlotDialog && void adminChangeTimeOneDay(adminSlotDialog.date, adminSlotDialog.slot, adminOneOffTime)}
+                >
+                  Keisti
+                </Button>
+              </div>
+            </div>
+
             <div>
               <Label>
                 Užsiregistravę
