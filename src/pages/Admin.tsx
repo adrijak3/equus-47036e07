@@ -123,7 +123,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="container max-w-7xl py-8 sm:py-14">
+    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-14">
       <header className="mb-6 animate-fade-up">
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
         <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">Valdymas</h1>
@@ -155,10 +155,34 @@ export default function Admin() {
         </aside>
 
         {/* Mobile nav */}
-        <div className="lg:hidden -mt-2 mb-3">
-          <select value={section} onChange={(e) => setSection(e.target.value)} className="flex min-h-11 w-full rounded-lg border border-gold/20 bg-gradient-card px-3 py-2 text-sm">
-            {navItems.map((n) => <option key={n.value} value={n.value}>{n.label}{n.badge ? ` · ${n.badge}` : ""}</option>)}
-          </select>
+        <div className="lg:hidden -mt-2 mb-4 overflow-x-auto pb-1">
+          <div className="flex min-w-max gap-2">
+            {navItems.map((n) => {
+              const Icon = n.icon;
+              const active = section === n.value;
+              return (
+                <button
+                  key={n.value}
+                  type="button"
+                  onClick={() => setSection(n.value)}
+                  className={cn(
+                    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors",
+                    active
+                      ? "border-gold/40 bg-gold/10 text-gold"
+                      : "border-gold/15 bg-gradient-card text-foreground/70 hover:border-gold/30 hover:text-gold",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{n.label}</span>
+                  {!!n.badge && n.badge > 0 && (
+                    <span className="min-w-4 h-4 rounded-full bg-gold px-1 text-[9px] font-bold text-background">
+                      {n.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="min-w-0">
