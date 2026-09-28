@@ -420,21 +420,16 @@ export default function Grafikas() {
     (waitingRes.data ?? []).forEach((w) => userIds.add(w.user_id));
 
     let nameMap: Record<string, string> = {};
-    let displayMap: Record<string, string | null> = {};
     let levelMap: Record<string, string | null> = {};
 
     if (userIds.size > 0) {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id, full_name, display_name, riding_level")
+        .select("id, full_name, riding_level")
         .in("id", Array.from(userIds));
 
       nameMap = Object.fromEntries(
         (profs ?? []).map((p) => [p.id, p.full_name]),
-      );
-
-      displayMap = Object.fromEntries(
-        (profs ?? []).map((p: any) => [p.id, p.display_name]),
       );
 
       levelMap = Object.fromEntries(
