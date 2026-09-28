@@ -133,13 +133,7 @@ export function EquusHelpWidget() {
   };
 
   const quickActions = [
-    { label: language === "lt" ? "Registruotis" : "Register", icon: CalendarDays, path: "/registracija" },
-    { label: language === "lt" ? "Mano pamoka" : "My lesson", icon: CalendarDays, path: "/paskyra?tab=lessons" },
-    { label: language === "lt" ? "Abonementas" : "Subscription", icon: Wallet, path: "/paskyra?tab=subs" },
-    { label: language === "lt" ? "Noriu atšaukti" : "I want to cancel", icon: Ban, path: "/paskyra?tab=lessons" },
-    { label: language === "lt" ? "Noriu pakeisti pamoką" : "I want to change", icon: RefreshCw, path: "/grafikas" },
-    { label: language === "lt" ? "Atostogos / nedalyvavimas" : "Vacation / absence", icon: Palmtree, path: "/paskyra?tab=vacations" },
-    { label: language === "lt" ? "Susisiekti" : "Contact", icon: Phone, path: "/paskyra?tab=messages" },
+    { label: language === "lt" ? "Noriu prisijungti" : "I want to join", icon: CalendarDays, path: "/registracija" },
   ];
 
   const handleSubmit = () => {
@@ -189,7 +183,7 @@ export function EquusHelpWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 360, damping: 30 }}
-            className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-sm flex-col bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
+            className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex h-[min(34rem,calc(100dvh-7rem))] max-h-[calc(100dvh-7rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
           >
             <div className="relative overflow-hidden bg-gradient-gold p-4 text-gold-foreground">
               <motion.div
@@ -270,8 +264,8 @@ export function EquusHelpWidget() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-3 bg-card border-t border-border/70 flex flex-col gap-2.5">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="p-3 bg-card border-t border-border/70 flex flex-col gap-2">
+              <div className="grid grid-cols-1 gap-1.5">
                 {quickActions.map(({ label, icon: Icon, path }) => (
                   <motion.button
                     key={label}
@@ -287,7 +281,7 @@ export function EquusHelpWidget() {
                 ))}
               </div>
 
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
                 {faqs.map((faq) => (
                   <motion.button
                     key={faq.q}
@@ -332,11 +326,11 @@ export function EquusHelpWidget() {
                 <motion.a href="tel:+37065822872" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
                   <Phone size={13} /> {language === "lt" ? "Laura · skambinti" : "Call Laura"}
                 </motion.a>
-                <motion.a href="https://wa.me/37065822872" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
-                  <MessageSquare size={13} /> {language === "lt" ? "Laura · WhatsApp" : "WhatsApp Laura"}
+                <motion.a href="sms:+37065822872" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
+                  <MessageSquare size={13} /> {language === "lt" ? "Laura · SMS" : "Text Laura"}
                 </motion.a>
-                <motion.a href="https://wa.me/37062876090" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
-                  <MessageSquare size={13} /> {language === "lt" ? "Adrija · svetainė" : "Adrija · website"}
+                <motion.a href="sms:+37062876090" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
+                  <MessageSquare size={13} /> {language === "lt" ? "Adrija · SMS" : "Text Adrija"}
                 </motion.a>
               </div>
             </div>
