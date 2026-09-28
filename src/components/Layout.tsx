@@ -157,8 +157,12 @@ export default function Layout({
     if (path === "/") return location.pathname === "/";
     if (location.pathname !== path) return false;
     if (!query) return true;
-    const expected = new URLSearchParams(query).get("tab");
-    return new URLSearchParams(location.search).get("tab") === expected;
+    const expected = new URLSearchParams(query);
+    const current = new URLSearchParams(location.search);
+    for (const [key, value] of expected.entries()) {
+      if (current.get(key) !== value) return false;
+    }
+    return true;
   };
 
   return (
