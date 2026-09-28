@@ -125,15 +125,32 @@ export function EquusHelpWidget() {
     sendBotReply(faq.a);
   };
 
-  const handleQuickAction = (path: string, label: string) => {
+  const handleRegistrationChoice = (isNewClient: boolean) => {
     if (isTyping) return;
+    const label = isNewClient
+      ? (language === "lt" ? "Taip, esu naujas klientas" : "Yes, I am a new client")
+      : (language === "lt" ? "Ne, jau esu klientas" : "No, I am already a client");
     setMessages((prev) => [...prev, { type: "user", text: label }]);
     setIsOpen(false);
-    navigate(path);
+    navigate(isNewClient ? "/registracija" : "/grafikas");
+  };
+
+  const handleQuickAction = (label: string) => {
+    if (isTyping) return;
+    setMessages((prev) => [
+      ...prev,
+      { type: "user", text: label },
+      {
+        type: "bot",
+        text: language === "lt"
+          ? "Ar esate naujas Equus klientas?"
+          : "Are you a new Equus client?",
+      },
+    ]);
   };
 
   const quickActions = [
-    { label: language === "lt" ? "Noriu prisijungti" : "I want to join", icon: CalendarDays, path: "/registracija" },
+    { label: language === "lt" ? "Noriu registruotis" : "I want to register", icon: CalendarDays },
   ];
 
   const handleSubmit = () => {
@@ -266,12 +283,12 @@ export function EquusHelpWidget() {
 
             <div className="p-3 bg-card border-t border-border/70 flex flex-col gap-2">
               <div className="grid grid-cols-1 gap-1.5">
-                {quickActions.map(({ label, icon: Icon, path }) => (
+                {quickActions.map(({ label, icon: Icon }) => (
                   <motion.button
                     key={label}
                     whileHover={{ y: -1, scale: 1.01 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => handleQuickAction(path, label)}
+                    onClick={() => handleQuickAction(label)}
                     disabled={isTyping}
                     className="flex min-w-0 items-center gap-1.5 rounded-xl border border-gold/15 bg-gold/5 px-2.5 py-2 text-left text-[11px] font-medium hover:bg-gold/10 disabled:opacity-50"
                   >
@@ -280,6 +297,32 @@ export function EquusHelpWidget() {
                   </motion.button>
                 ))}
               </div>
+
+              {messages.some((msg) =>
+                msg.type === "bot" &&
+                msg.text === (language === "lt"
+                  ? "Ar esate naujas Equus klientas?"
+                  : "Are you a new Equus client?")
+              ) && (
+                <div className="grid grid-cols-2 gap-1.5">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleRegistrationChoice(true)}
+                    disabled={isTyping}
+                    className="rounded-xl border border-gold/20 bg-gold/5 px-2.5 py-2 text-[11px] font-medium hover:bg-gold/10 disabled:opacity-50"
+                  >
+                    {language === "lt" ? "Taip, naujas klientas" : "Yes, new client"}
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleRegistrationChoice(false)}
+                    disabled={isTyping}
+                    className="rounded-xl border border-border/60 bg-muted px-2.5 py-2 text-[11px] font-medium hover:bg-accent disabled:opacity-50"
+                  >
+                    {language === "lt" ? "Ne, jau klientas" : "No, existing client"}
+                  </motion.button>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
                 {faqs.map((faq) => (
