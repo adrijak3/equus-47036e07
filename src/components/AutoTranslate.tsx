@@ -529,8 +529,6 @@ const PHRASES: Array<[string, string]> = [
   ["Atnaujinta", "Updated"],
 ];
 
-];
-
 const originalText = new WeakMap<Text, string>();
 const renderedText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
