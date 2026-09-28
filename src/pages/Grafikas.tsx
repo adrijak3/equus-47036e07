@@ -2969,7 +2969,7 @@ export default function Grafikas() {
                 "gap-4 sm:gap-3",
                 calendarView ===
                   "week"
-                  ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-7"
+                  ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-x-auto sm:px-0 sm:pb-3 lg:flex lg:min-w-max lg:overflow-x-auto lg:gap-3 lg:[scrollbar-width:thin]"
                   : "mx-auto grid w-full max-w-5xl grid-cols-1 lg:grid-cols-2",
               )}
             >
@@ -3024,7 +3024,7 @@ export default function Grafikas() {
                         "relative flex flex-col gap-2",
                         calendarView ===
                           "week" &&
-                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none",
+                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none lg:w-[220px] lg:min-w-[220px] lg:max-w-[220px]",
                         calendarView ===
                           "list" &&
                           "rounded-3xl border border-gold/10 bg-card/25 p-3 shadow-sm sm:p-4",
@@ -3091,30 +3091,17 @@ export default function Grafikas() {
                           )}
                         </div>
 
-                        <div className="flex items-baseline justify-between gap-2 mt-1.5">
-                          <div className="font-display text-2xl text-gradient-gold leading-none tabular-nums">
-                            {String(
-                              date.getMonth() +
-                                1,
-                            ).padStart(
-                              2,
-                              "0",
+                        <div className="flex items-center justify-between gap-2 mt-1.5">
+                          <div
+                            className={cn(
+                              "inline-flex items-center rounded-lg border px-2.5 py-1 font-display text-2xl font-bold leading-none tabular-nums",
+                              isToday
+                                ? "border-gold bg-gold/15 text-gold shadow-sm"
+                                : "border-gold/25 bg-gold/5 text-gradient-gold",
                             )}
-                            .
-                            {String(
-                              date.getDate(),
-                            ).padStart(
-                              2,
-                              "0",
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[11px] sm:text-[10px] uppercase tracking-wider text-foreground/70">
-                              {MONTHS_LT[date.getMonth()]}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground tabular-nums">
-                              {date.getFullYear()}
-                            </div>
+                          >
+                            {String(date.getMonth() + 1).padStart(2, "0")}.
+                            {String(date.getDate()).padStart(2, "0")}
                           </div>
 
                           <button
@@ -3760,7 +3747,7 @@ export default function Grafikas() {
                                               duration: 0.25,
                                             }}
                                             className={cn(
-                                              "flex items-start gap-1.5 text-sm sm:text-base leading-snug min-w-0",
+                                              "flex items-start gap-1.5 text-xs sm:text-sm leading-tight min-w-0",
                                               mine
                                                 ? "text-gold"
                                                 : "text-foreground/85",
@@ -3796,7 +3783,7 @@ export default function Grafikas() {
 
                                             <span
                                               className={cn(
-                                                "min-w-0 flex-1 break-words",
+                                                "min-w-0 flex-1 break-words leading-tight",
                                                 (isAdmin ||
                                                   isTrainer) &&
                                                   "cursor-pointer rounded px-0.5 underline-offset-4 hover:underline",
