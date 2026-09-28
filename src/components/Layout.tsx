@@ -63,6 +63,7 @@ const NAV_GUEST = [
 
 const NAV_USER = [
   { to: "/", label: "Pagrindinis", icon: Home },
+  { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
   { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
   { to: "/paskyra?tab=profile", label: "Paskyra", icon: UserIcon },
@@ -71,6 +72,7 @@ const NAV_USER = [
 
 const NAV_ADMIN = [
   { to: "/admin", label: "Pagrindinis", icon: Home },
+  { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
   { to: "/admin?section=subs", label: "Abonementai", icon: Wallet },
