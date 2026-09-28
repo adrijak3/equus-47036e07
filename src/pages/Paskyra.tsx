@@ -71,7 +71,6 @@ interface AccountProfile {
   id: string;
   full_name: string | null;
   phone: string | null;
-  display_name: string | null;
 }
 
 export default function Paskyra() {
@@ -130,7 +129,7 @@ export default function Paskyra() {
       supabase.from("messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(200),
       supabase.from("permanent_slots").select("*").eq("user_id", acting).order("day_of_week").order("slot_time"),
       supabase.from("time_slots").select("id, day_of_week, slot_time, max_capacity").eq("active", true).is("one_off_date", null).order("day_of_week").order("slot_time"),
-      supabase.from("profiles").select("id, full_name, phone, display_name").eq("id", acting).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, phone").eq("id", acting).maybeSingle(),
       (supabase as any).from("permanent_slot_requests").select("id,day_of_week,slot_time,status,admin_note").eq("user_id", acting).order("created_at", { ascending: false }),
       (supabase as any).from("slot_overrides").select("slot_date,slot_time,max_capacity").order("slot_date"),
     ]);
@@ -908,20 +907,12 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const { user, profile } = useAuth();
   const [name, setName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [displayName, setDisplayName] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
   }, [profile]);
-
-  // Load display_name separately (not in AuthContext profile shape)
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
-      .then(({ data }) => setDisplayName((data as any)?.display_name ?? ""));
-  }, [user]);
 
   const save = async () => {
     if (!user) return;
@@ -931,7 +922,6 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
       .update({
         full_name: name.trim(),
         phone: phone.trim() || null,
-        display_name: displayName.trim() || null,
       } as any)
       .eq("id", user.id);
     setSaving(false);
@@ -946,16 +936,6 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
         <div>
           <Label htmlFor="pf-name">Vardas ir pavardė</Label>
           <Input id="pf-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-        </div>
-        <div>
-          <Label htmlFor="pf-display">Vardas tvarkaraštyje</Label>
-          <Input
-            id="pf-display"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            maxLength={40}
-            placeholder="Palikite tuščią, jei nenorite nieko keisti:)"
-          />
         </div>
         <div>
           <Label htmlFor="pf-phone">Telefonas</Label>
