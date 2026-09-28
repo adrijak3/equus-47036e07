@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Chrome } from "lucide-react";
 
 const signUpSchema = z.object({
   full_name: z.string().trim().min(2, "Vardas per trumpas").max(80),
@@ -86,6 +86,15 @@ export default function Auth() {
     }
     toast.success("Sveiki atvykę į Equus!");
     navigate("/");
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) { setLoading(false); toast.error(error.message); }
   };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -172,6 +181,13 @@ export default function Auth() {
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Jungiamasi…" : "Prisijungti"}
               </Button>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gold/10" /></div>
+                <div className="relative flex justify-center"><span className="bg-gradient-card px-3 text-xs text-muted-foreground">arba</span></div>
+              </div>
+              <Button type="button" variant="outlineGold" className="w-full" onClick={handleGoogle} disabled={loading}>
+                <Chrome className="h-4 w-4" /> Tęsti su Google
+              </Button>
               <button
                 type="button"
                 onClick={() => setForgotOpen(true)}
@@ -245,6 +261,13 @@ export default function Auth() {
               </p>
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Kuriama…" : "Sukurti paskyrą"}
+              </Button>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gold/10" /></div>
+                <div className="relative flex justify-center"><span className="bg-gradient-card px-3 text-xs text-muted-foreground">arba</span></div>
+              </div>
+              <Button type="button" variant="outlineGold" className="w-full" onClick={handleGoogle} disabled={loading}>
+                <Chrome className="h-4 w-4" /> Registruotis su Google
               </Button>
             </form>
           </TabsContent>
