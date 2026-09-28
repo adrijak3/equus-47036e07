@@ -1870,19 +1870,56 @@ function CancellationsTab() {
   const [reqs, setReqs] = useState<CancelReq[]>([]);
 
   const load = async () => {
-    const { data } = await supabase.from("cancellation_requests")
-      .select("*, bookings(slot_date, slot_time)")
+    const { data, error } = await supabase
+      .from("cancellation_requests")
+      .select("*")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
-    const userIds = (data ?? []).map((r: any) => r.user_id);
+
+    if (error) {
+      console.error("Failed to load cancellation requests:", error);
+      toast.error("Nepavyko įkelti atšaukimo prašymų.");
+      setReqs([]);
+      return;
+    }
+
+    const requests = (data ?? []) as any[];
+    const userIds = requests.map((r) => r.user_id);
+    const bookingIds = requests.map((r) => r.booking_id);
+
     let nameMap: Record<string, string> = {};
     if (userIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
       nameMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p.full_name]));
     }
-    setReqs((data ?? []).map((r: any) => ({
-      ...r, profile_name: nameMap[r.user_id],
-      slot_date: r.bookings?.slot_date, slot_time: r.bookings?.slot_time,
+
+    let bookingMap: Record<string, { slot_date: string; slot_time: string }> = {};
+    if (bookingIds.length) {
+      const { data: bookings, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("id, slot_date, slot_time")
+        .in("id", bookingIds);
+
+      if (bookingsError) {
+        console.error("Failed to load cancellation booking details:", bookingsError);
+      } else {
+        bookingMap = Object.fromEntries(
+          (bookings ?? []).map((b) => [
+            b.id,
+            { slot_date: b.slot_date, slot_time: b.slot_time },
+          ]),
+        );
+      }
+    }
+
+    setReqs(requests.map((r) => ({
+      ...r,
+      profile_name: nameMap[r.user_id],
+      slot_date: bookingMap[r.booking_id]?.slot_date,
+      slot_time: bookingMap[r.booking_id]?.slot_time,
     })));
   };
 
