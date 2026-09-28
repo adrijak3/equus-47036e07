@@ -1099,6 +1099,20 @@ export default function Grafikas() {
     return true;
   };
 
+  const requestClosedSlot = async (date: Date, time: string) => {
+    if (!user) return;
+    const dateLabel = formatDateISO(date);
+    const body = language === "lt"
+      ? `Norėčiau užsiregistruoti į treniruotę ${dateLabel} ${time.slice(0, 5)}, tačiau registracija jau uždaryta. Jei įmanoma, prašau administracijos priimti mano prašymą.`
+      : `I would like to register for the training on ${dateLabel} at ${time.slice(0, 5)}, but registration is already closed. If possible, please let the administration consider my request.`;
+    const { error } = await supabase.from("messages").insert({ user_id: user.id, body });
+    if (error) {
+      toast.error(language === "lt" ? "Nepavyko išsiųsti prašymo." : "Could not send the request.");
+      return;
+    }
+    toast.success(language === "lt" ? "Prašymas išsiųstas administracijai 🐴" : "Request sent to administration 🐴");
+  };
+
   const handleBook = async (date: Date, time: string) => {
     if (!user) { toast.error("Prisijunkite, kad užsiregistruotumėte"); return; }
     if (date.getTime() < new Date().setHours(0, 0, 0, 0)) { toast.error("Negalima registruotis į praeities pamokas"); return; }
@@ -3959,14 +3973,13 @@ export default function Grafikas() {
                                           >
                                             🔒 {language === "lt" ? "Registracija uždaryta" : "Registration closed"}
                                           </Button>
-                                          <a
-                                            href="https://wa.me/37062876090?text=Nor%C4%8Diau%20u%C5%BEsiregistruoti%20%C4%AF%20Equus%20treniruot%C4%99."
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block text-center text-[10px] text-gold hover:underline"
+                                          <button
+                                            type="button"
+                                            onClick={() => void requestClosedSlot(date, slot.slot_time)}
+                                            className="block w-full text-center text-[10px] text-gold hover:underline"
                                           >
-                                            {language === "lt" ? "Parašyti Equus" : "Contact Equus"}
-                                          </a>
+                                            {language === "lt" ? "Prašyti Equus" : "Request Equus"}
+                                          </button>
                                         </div>
                                       ) : !isFull ? (
                                         <Button
