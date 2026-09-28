@@ -192,6 +192,7 @@ export default function Grafikas() {
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const calendarScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
 
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -339,10 +340,20 @@ export default function Grafikas() {
       const idx = days.findIndex((d) => d.getTime() === todayMs);
 
       if (idx >= 0) {
-        dayRefs.current[idx]?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        const day = dayRefs.current[idx];
+        const scroller = calendarScrollRef.current;
+
+        if (calendarView === "week" && day && scroller) {
+          scroller.scrollTo({
+            left: Math.max(0, day.offsetLeft - 16),
+            behavior: "smooth",
+          });
+        } else {
+          day?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
       }
 
       setPendingScrollToToday(false);
@@ -2965,6 +2976,7 @@ export default function Grafikas() {
             }}
           >
             <div
+              ref={calendarScrollRef}
               className={cn(
                 "gap-4 sm:gap-3",
                 calendarView ===
@@ -3024,7 +3036,7 @@ export default function Grafikas() {
                         "relative flex flex-col gap-2",
                         calendarView ===
                           "week" &&
-                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none lg:w-[220px] lg:min-w-[220px] lg:max-w-[220px]",
+                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none lg:w-[290px] lg:min-w-[290px] lg:max-w-[290px]",
                         calendarView ===
                           "list" &&
                           "rounded-3xl border border-gold/10 bg-card/25 p-3 shadow-sm sm:p-4",
@@ -3747,7 +3759,7 @@ export default function Grafikas() {
                                               duration: 0.25,
                                             }}
                                             className={cn(
-                                              "flex items-start gap-1.5 text-xs sm:text-sm leading-tight min-w-0",
+                                              "flex items-start gap-1.5 text-sm sm:text-base leading-tight min-w-0",
                                               mine
                                                 ? "text-gold"
                                                 : "text-foreground/85",
