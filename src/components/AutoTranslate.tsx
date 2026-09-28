@@ -315,13 +315,6 @@ const PHRASES: Array<[string, string]> = [
   ["Talpa", "Capacity"], ["Laisvos vietos", "Available places"], ["Pilna", "Full"], ["Liko vietų", "Places left"],
   ["Individuali", "Individual"], ["Grupinė", "Group"], ["Nuolatinė", "Recurring"], ["Vienkartinė", "One-time"],
   ["Apmokėta", "Paid"], ["Neapmokėta", "Unpaid"], ["Aktyvus", "Active"], ["Neaktyvus", "Inactive"],
-];
-
-const originalText = new WeakMap<Text, string>();
-const renderedText = new WeakMap<Text, string>();
-const originalAttributes = new WeakMap<Element, Map<string, string>>();
-const ATTRIBUTES = ["placeholder", "title", "aria-label"];
-
   ["Pagrindinis", "Dashboard"],
   ["Grafikas", "Schedule"],
   ["Atšaukimų istorija", "Cancellation history"],
@@ -536,6 +529,12 @@ const ATTRIBUTES = ["placeholder", "title", "aria-label"];
   ["Atnaujinta", "Updated"],
 ];
 
+];
+
+const originalText = new WeakMap<Text, string>();
+const renderedText = new WeakMap<Text, string>();
+const originalAttributes = new WeakMap<Element, Map<string, string>>();
+const ATTRIBUTES = ["placeholder", "title", "aria-label"];
 function translate(input: string): string {
   let output = input;
   // Match longer phrases first so a generic translation such as "Atšaukti"
