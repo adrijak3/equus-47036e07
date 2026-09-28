@@ -90,7 +90,6 @@ interface Booking {
   slot_time: string;
   status: string;
   profile_name?: string;
-  display_name?: string | null;
   riding_level?: string | null;
   is_guest?: boolean;
   guest_name?: string | null;
@@ -475,7 +474,6 @@ export default function Grafikas() {
         profile_name: b.guest_rider_id
           ? guestNameMap[b.guest_rider_id]
           : nameMap[b.user_id],
-        display_name: b.user_id ? displayMap[b.user_id] : null,
         is_newcomer: b.guest_rider_id
           ? !!guestNewcomerMap[b.guest_rider_id]
           : undefined,
@@ -3834,7 +3832,6 @@ export default function Grafikas() {
                                                 : formatBookedName(
                                                     b.profile_name ??
                                                       "—",
-                                                    b.display_name,
                                                   )}
 
                                               {b.is_individual && (
