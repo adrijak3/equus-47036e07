@@ -3060,7 +3060,7 @@ export default function Grafikas() {
                           "relative rounded-2xl border px-4 py-3.5 bg-gradient-card shadow-sm",
                           isToday
                             ? "border-gold/60 shadow-gold sm:shadow-none"
-                            : "border-gold/15",
+                            : "border-gold/25",
                         )}
                       >
                         <div className="flex items-baseline justify-between gap-1">
@@ -3114,6 +3114,14 @@ export default function Grafikas() {
                               2,
                               "0",
                             )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[11px] sm:text-[10px] uppercase tracking-wider text-foreground/70">
+                              {MONTHS_LT[date.getMonth()]}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground tabular-nums">
+                              {date.getFullYear()}
+                            </div>
                           </div>
 
                           <button
