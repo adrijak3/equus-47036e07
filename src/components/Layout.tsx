@@ -22,6 +22,9 @@ import {
   Wallet,
   ClipboardPenLine,
   MessageCircleHeart,
+  History,
+  Settings,
+  Inbox,
   X,
 } from "lucide-react";
 
@@ -67,28 +70,13 @@ const NAV_USER = [
 ];
 
 const NAV_ADMIN = [
-  {
-    to: "/",
-    label: "Pradžia",
-    icon: Home,
-  },
-  {
-    to: "/grafikas",
-    label: "Grafikas",
-    icon: Calendar,
-  },
-  {
-    to: "/kainos",
-    label: "Kainos",
-    icon: Tag,
-  },
-  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
-  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
-  {
-    to: "/informacija",
-    label: "Informacija",
-    icon: Info,
-  },
+  { to: "/admin", label: "Pagrindinis", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
+  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
+  { to: "/admin?section=subs", label: "Abonementai", icon: Wallet },
+  { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
+  { to: "/admin?section=cancelHistory", label: "Atšaukimų istorija", icon: History },
+  { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
 ];
 
 const NAV_TRAINER = [
@@ -476,17 +464,14 @@ export default function Layout({
         </motion.aside>
       </div>
 
-      {user && !isAdmin && !isTrainer && (
+      {user && (isAdmin || (!isAdmin && !isTrainer)) && (
         <nav
           aria-label="Pagrindinė navigacija"
           className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-gold/15 bg-background/95 backdrop-blur-xl sm:hidden"
         >
           <div className="mx-auto grid max-w-md grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
-            {NAV_USER.map(({ to, label, icon: Icon }) => {
-              const basePath = to.split("?")[0];
-              const active = location.pathname === basePath && (
-                basePath === "/" || new URLSearchParams(location.search).get("tab") === to.split("tab=")[1]
-              );
+            {(isAdmin ? NAV_ADMIN.slice(0, 5) : NAV_USER).map(({ to, label, icon: Icon }) => {
+              const active = isLinkActive(to);
               return (
                 <Link
                   key={to}
