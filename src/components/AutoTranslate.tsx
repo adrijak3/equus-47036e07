@@ -537,7 +537,10 @@ const ATTRIBUTES = ["placeholder", "title", "aria-label"
 
 function translate(input: string): string {
   let output = input;
-  for (const [lt, en] of PHRASES) {
+  // Match longer phrases first so a generic translation such as "Atšaukti"
+  // cannot partially consume a more specific phrase such as "Atšaukti rezervaciją".
+  const phrases = [...PHRASES].sort((a, b) => b[0].length - a[0].length);
+  for (const [lt, en] of phrases) {
     if (output.includes(lt)) output = output.split(lt).join(en);
   }
   return output;
