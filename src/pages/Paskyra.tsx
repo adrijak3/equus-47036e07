@@ -447,7 +447,8 @@ export default function Paskyra() {
             <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
             <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
           </div>
-          <ReadOnlyRecurringCard permanents={permanents} />\n          <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
+          <ReadOnlyRecurringCard permanents={permanents} />
+          <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">
               <a href="tel:+37062876090" className="group rounded-2xl border border-gold/15 bg-gradient-card p-4 transition-colors hover:border-gold/35">
                 <div className="flex items-start justify-between gap-3">
