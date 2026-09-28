@@ -409,7 +409,7 @@ export default function Paskyra() {
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
-    <div className="container max-w-4xl py-8 sm:py-14 relative">
+    <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14 relative">
       <FloralAccent className="absolute -top-4 -right-12 hidden md:block" size={140} delay={0.3} rotate={25} />
 
       <motion.header
