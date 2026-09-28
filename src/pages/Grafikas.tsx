@@ -3505,10 +3505,29 @@ export default function Grafikas() {
                                   <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5">
                                     <Clock className="w-4 h-4 text-gold/60" />
 
-                                    <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground">
-                                      {formatTime(
-                                        slot.slot_time,
+                                    <span
+                                      role={isAdmin && !slotPast ? "button" : undefined}
+                                      tabIndex={isAdmin && !slotPast ? 0 : undefined}
+                                      onClick={isAdmin && !slotPast ? () => {
+                                        setAdminSlotDialog({ date, time: slot.slot_time, slot });
+                                        setAdminAddUserId("");
+                                        setAdminOneOffTime(slot.slot_time.slice(0, 5));
+                                      } : undefined}
+                                      onKeyDown={isAdmin && !slotPast ? (e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                          e.preventDefault();
+                                          setAdminSlotDialog({ date, time: slot.slot_time, slot });
+                                          setAdminAddUserId("");
+                                          setAdminOneOffTime(slot.slot_time.slice(0, 5));
+                                        }
+                                      } : undefined}
+                                      title={isAdmin && !slotPast ? "Spustelėkite, jei norite valdyti šį laiką" : undefined}
+                                      className={cn(
+                                        "font-display text-xl sm:text-2xl tabular-nums text-foreground",
+                                        isAdmin && !slotPast && "cursor-pointer rounded px-1 -mx-1 hover:bg-gold/10 focus:outline-none focus:ring-1 focus:ring-gold/50",
                                       )}
+                                    >
+                                      {formatTime(slot.slot_time)}
                                     </span>
 
                                     {slot.trainer_name && (
