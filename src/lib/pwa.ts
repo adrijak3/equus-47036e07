@@ -1,8 +1,4 @@
-/**
- * Guarded service-worker registration.
- * Never registers in dev, iframes or Lovable preview hosts, and supports ?sw=off.
- * The worker only caches static build assets — Supabase data is never cached.
- */
+/** Guarded service-worker registration for the Equus PWA. */
 const SW_URL = "/sw.js";
 
 function isRefusedContext(): boolean {
@@ -15,11 +11,7 @@ function isRefusedContext(): boolean {
   }
   const host = window.location.hostname;
   if (host.startsWith("id-preview--") || host.startsWith("preview--")) return true;
-  if (host === "lovableproject.com" || host.endsWith(".lovableproject.com")) return true;
-  if (host === "lovableproject-dev.com" || host.endsWith(".lovableproject-dev.com")) return true;
-  if (host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev")) return true;
-  if (new URLSearchParams(window.location.search).has("sw") &&
-      new URLSearchParams(window.location.search).get("sw") === "off") return true;
+  if (new URLSearchParams(window.location.search).get("sw") === "off") return true;
   return false;
 }
 
