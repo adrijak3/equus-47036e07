@@ -996,40 +996,41 @@ function PermanentSlotsSection({
 }
 
 function PasswordChange() {
-  const { user, profile } = useAuth();
-  const [phone, setPhone] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (!user?.email) return;
-    if (pw.length < 8) { toast.error("Slaptažodis turi būti bent 8 simbolių"); return; }
-    if (pw !== pw2) { toast.error("Slaptažodžiai nesutampa"); return; }
-    if (!phone.trim()) { toast.error("Įveskite telefono numerį"); return; }
-    setBusy(true);
-    const { data, error } = await supabase.functions.invoke("reset-password-by-phone", {
-      body: { email: user.email, phone: phone.trim(), new_password: pw },
-    });
-    setBusy(false);
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Klaida");
+    if (pw.length < 8) {
+      toast.error("Slaptažodis turi būti bent 8 simbolių");
       return;
     }
+    if (pw !== pw2) {
+      toast.error("Slaptažodžiai nesutampa");
+      return;
+    }
+
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    setBusy(false);
+
+    if (error) {
+      toast.error(error.message || "Nepavyko pakeisti slaptažodžio");
+      return;
+    }
+
     toast.success("Slaptažodis pakeistas");
-    setPhone(""); setPw(""); setPw2("");
+    setPw("");
+    setPw2("");
   };
 
   return (
     <Section title="Pakeisti slaptažodį" icon={<KeyRound className="w-4 h-4" />}>
       <div className="p-5 space-y-3">
         <p className="text-sm text-muted-foreground">
-          Įveskite savo telefono numerį (turi sutapti su paskyroje nurodytu — <span className="text-foreground/80">{profile?.phone ?? "nenurodytas"}</span>) ir naują slaptažodį.
+          Kadangi jau esate prisijungę, slaptažodį galite pakeisti tiesiogiai.
+          Telefono numerio papildomai tikrinti nereikia.
         </p>
-        <div>
-          <Label htmlFor="pc-phone">Telefonas patvirtinimui</Label>
-          <Input id="pc-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </div>
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <Label htmlFor="pc-pw">Naujas slaptažodis</Label>
@@ -1041,7 +1042,9 @@ function PasswordChange() {
           </div>
         </div>
         <div className="flex justify-end pt-1">
-          <Button variant="gold" onClick={submit} disabled={busy}>{busy ? "Keičiama…" : "Pakeisti"}</Button>
+          <Button variant="gold" onClick={submit} disabled={busy}>
+            {busy ? "Keičiama…" : "Pakeisti"}
+          </Button>
         </div>
       </div>
     </Section>
