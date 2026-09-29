@@ -1,6 +1,6 @@
 # Equus Jojimo Mokykla
 
-Production booking and rider-management web app for **Equus Jojimo Mokykla / Pilaitės Žirgynas**.
+Production booking and rider-management web app for **Equus Jojimo Mokykla**.
 
 Built and maintained by Adrija Kalikaitė.
 
