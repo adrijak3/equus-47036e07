@@ -716,6 +716,17 @@ export default function Grafikas() {
     return slots.filter((s) => {
       if (s.day_of_week !== dow) return false;
 
+      if (s.one_off_date && s.one_off_date !== dateISO) {
+        return false;
+      }
+
+      // A 0-capacity override means this recurring slot was removed
+      // for this specific date. Do not render it at all.
+      const override = overrides.find(
+        (o) => o.slot_date === dateISO && o.slot_time === s.slot_time,
+      );
+      if (override?.max_capacity === 0) return false;
+
       if (s.one_off_date) {
         return s.one_off_date === dateISO;
       }
@@ -2005,6 +2016,87 @@ export default function Grafikas() {
       await loadData();
     } catch (error: any) {
       toast.error(error?.message ?? "Nepavyko pakeisti laiko.");
+    } finally {
+      setAdminBusy(false);
+    }
+  };
+
+  const adminRemoveSlotForOneDay = async (date: Date, slot: TimeSlot) => {
+    const dateISO = formatDateISO(date);
+    const time = slot.slot_time;
+
+    setAdminBusy(true);
+    try {
+      const { data: bookingsForSlot, error: bookingsErr } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("slot_date", dateISO)
+        .eq("slot_time", time)
+        .in("status", ["active", "pending_cancel"]);
+
+      if (bookingsErr) throw bookingsErr;
+
+      const bookingCount = bookingsForSlot?.length ?? 0;
+      if (bookingCount > 0) {
+        toast.error("Šio laiko pašalinti negalima, kol jame yra užsiregistravusių.");
+        return;
+      }
+
+      const { data: waitingForSlot, error: waitingErr } = await supabase
+        .from("waiting_list")
+        .select("id")
+        .eq("slot_date", dateISO)
+        .eq("slot_time", time);
+
+      if (waitingErr) throw waitingErr;
+
+      if ((waitingForSlot?.length ?? 0) > 0) {
+        toast.error("Šio laiko pašalinti negalima, kol yra laukiančiųjų sąraše.");
+        return;
+      }
+
+      if (!confirm(`Pašalinti ${formatTime(time)} tik ${dateISO}? Šis laikas kitomis savaitėmis liks.`)) {
+        return;
+      }
+
+      if (slot.one_off_date === dateISO) {
+        const { error } = await supabase
+          .from("time_slots")
+          .update({ active: false })
+          .eq("id", slot.id);
+
+        if (error) throw error;
+      } else {
+        const { data: existingOverride } = await supabase
+          .from("slot_overrides")
+          .select("id")
+          .eq("slot_date", dateISO)
+          .eq("slot_time", time)
+          .maybeSingle();
+
+        if (existingOverride?.id) {
+          const { error } = await supabase
+            .from("slot_overrides")
+            .update({ max_capacity: 0 })
+            .eq("id", existingOverride.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("slot_overrides")
+            .insert({
+              slot_date: dateISO,
+              slot_time: time,
+              max_capacity: 0,
+            });
+          if (error) throw error;
+        }
+      }
+
+      toast.success(`Laikas ${formatTime(time)} pašalintas tik ${dateISO}.`);
+      setAdminSlotDialog(null);
+      await loadData();
+    } catch (error: any) {
+      toast.error(error?.message ?? "Nepavyko pašalinti laiko.");
     } finally {
       setAdminBusy(false);
     }
@@ -4832,6 +4924,23 @@ export default function Grafikas() {
                   Keisti
                 </Button>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+              <div className="font-medium text-destructive">Pašalinti tik šią dieną</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pašalins ${adminSlotDialog ? formatTime(adminSlotDialog.time) : "šį laiką"} tik pasirinktai datai. Nuolatinis grafikas ir kitos savaitės nesikeis.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 text-destructive hover:text-destructive"
+                disabled={adminBusy}
+                onClick={() => adminSlotDialog && void adminRemoveSlotForOneDay(adminSlotDialog.date, adminSlotDialog.slot)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Pašalinti laiką šiai dienai
+              </Button>
             </div>
 
             <div>
