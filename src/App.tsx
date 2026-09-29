@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -37,9 +38,23 @@ const queryClient = new QueryClient();
 
 const HomeRoute = () => {
   const { user, loading } = useAuth();
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
-  if (loading) return <EquusLoadingScreen />;
+  useEffect(() => {
+    if (!loading) {
+      setShowLoadingScreen(false);
+      return;
+    }
 
+    // Never make the branded splash screen block the app for a long auth request.
+    const timer = window.setTimeout(() => setShowLoadingScreen(true), 1000);
+    return () => window.clearTimeout(timer);
+  }, [loading]);
+
+  if (loading && showLoadingScreen) return <EquusLoadingScreen />;
+
+  // Let the public schedule render immediately while auth finishes in the background.
+  // If the user is already known, show their normal home page instead.
   return user ? <Pradzia /> : <Grafikas />;
 };
 
