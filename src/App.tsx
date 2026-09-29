@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,21 +18,22 @@ import { AutoTranslate } from "@/components/AutoTranslate";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ImportantUpdatePopup } from "@/components/ImportantUpdatePopup";
 import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
+import { PageLoader } from "@/components/PageLoader";
 
-import Grafikas from "./pages/Grafikas";
-import Pradzia from "./pages/Pradzia";
-import Kainos from "./pages/Kainos";
-import Paskyra from "./pages/Paskyra";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import Trener from "./pages/Trener";
-import Informacija from "./pages/Informacija";
-import NotFound from "./pages/NotFound";
-import PublicRegistration from "./pages/PublicRegistration";
-import Reviews from "./pages/Reviews";
-import PrivatumoPolitika from "./pages/PrivatumoPolitika";
-import TaisyklesIrSalygos from "./pages/TaisyklesIrSalygos";
-import SlapukuPolitika from "./pages/SlapukuPolitika";
+const Grafikas = lazy(() => import("./pages/Grafikas"));
+const Pradzia = lazy(() => import("./pages/Pradzia"));
+const Kainos = lazy(() => import("./pages/Kainos"));
+const Paskyra = lazy(() => import("./pages/Paskyra"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Trener = lazy(() => import("./pages/Trener"));
+const Informacija = lazy(() => import("./pages/Informacija"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PublicRegistration = lazy(() => import("./pages/PublicRegistration"));
+const Reviews = lazy(() => import("./pages/Reviews"));
+const PrivatumoPolitika = lazy(() => import("./pages/PrivatumoPolitika"));
+const TaisyklesIrSalygos = lazy(() => import("./pages/TaisyklesIrSalygos"));
+const SlapukuPolitika = lazy(() => import("./pages/SlapukuPolitika"));
 
 const queryClient = new QueryClient();
 
@@ -62,7 +63,7 @@ const HomeRoute = () => {
 const PaskyraRoute = () => {
   const { isAdmin, loading } = useAuth();
 
-  if (loading) return <EquusLoadingScreen />;
+  if (loading) return <PageLoader />;
 
   if (isAdmin) {
     return <Navigate to="/admin" replace />;
@@ -91,6 +92,7 @@ const App = () => (
                 <InstallPrompt />
                 <ImportantUpdatePopup />
 
+                <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
@@ -133,6 +135,7 @@ const App = () => (
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </Suspense>
               </Layout>
               </MaintenanceGate>
             </AuthProvider>
