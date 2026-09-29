@@ -45,16 +45,29 @@
     <script>
       (() => {
         try {
-          const saved = localStorage.getItem("equus_theme");
-          const map = { blue: "ocean", dark: "midnight", light: "pearl" };
-          const theme = map[saved] || (
-            saved === "ocean" || saved === "midnight" || saved === "pearl" || saved === "stable"
-              ? saved
-              : "ocean"
-          );
+          const themes = ["spring","summer","autumn","winter","ocean","lavender","midnight","forest","goldleaf","sage"];
+          const lightThemes = ["spring","summer","ocean","lavender","sage"];
+          const savedTheme = localStorage.getItem("equus_seasonal_theme");
+          const savedMode = localStorage.getItem("equus_appearance_mode");
+          const month = new Date().getMonth();
+          const seasonal = [2,3,4].includes(month)
+            ? "spring"
+            : [5,6,7].includes(month)
+              ? "summer"
+              : [8,9,10].includes(month)
+                ? "autumn"
+                : "winter";
+          const theme = savedTheme && themes.includes(savedTheme) && savedTheme !== "automatic"
+            ? savedTheme
+            : seasonal;
+          const mode = savedMode === "light" || savedMode === "dark"
+            ? savedMode
+            : (lightThemes.includes(theme) ? "light" : "dark");
+
           document.documentElement.dataset.theme = theme;
-          document.documentElement.classList.toggle("dark", theme !== "pearl");
-          document.documentElement.style.colorScheme = theme === "pearl" ? "light" : "dark";
+          document.documentElement.dataset.mode = mode;
+          document.documentElement.classList.toggle("dark", mode === "dark");
+          document.documentElement.style.colorScheme = mode;
         } catch {}
       })();
     </script>
