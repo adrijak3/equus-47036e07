@@ -36,6 +36,20 @@ BEGIN
     RETURN 0;
   END IF;
 
+  -- Only the one-subscription-duplicate case is eligible. If the rider has
+  -- multiple subscription bookings that day, leave everything untouched.
+  IF (
+    SELECT count(*)
+    FROM public.bookings b
+    WHERE b.user_id = _user_id
+      AND b.slot_date = _slot_date
+      AND b.status IN ('active', 'pending_cancel')
+      AND b.subscription_id IS NOT NULL
+      AND b.counts_in_subscription = true
+  ) <> 1 THEN
+    RETURN 0;
+  END IF;
+
   -- Find each subscription-linked booking that does not already have a horse.
   -- Only a single matching horse booking within 15 minutes is considered safe.
   FOR v_subscription_booking_id, v_subscription_id, v_subscription_counts,
