@@ -533,11 +533,14 @@ const originalText = new WeakMap<Text, string>();
 const renderedText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const ATTRIBUTES = ["placeholder", "title", "aria-label"];
+// Sort once at module load instead of on every text node.
+const SORTED_PHRASES = [...PHRASES].sort((a, b) => b[0].length - a[0].length);
+
 function translate(input: string): string {
   let output = input;
-  // Match longer phrases first so a generic translation such as "Atšaukti"
-  // cannot partially consume a more specific phrase such as "Atšaukti rezervaciją".
-  const phrases = [...PHRASES].sort((a, b) => b[0].length - a[0].length);
+  // Match longer phrases first so a generic translation cannot consume a
+  // more specific phrase.
+  const phrases = SORTED_PHRASES;
   for (const [lt, en] of phrases) {
     if (output.includes(lt)) output = output.split(lt).join(en);
   }
@@ -597,15 +600,36 @@ export function AutoTranslate() {
     const english = language === "en";
     applyTree(document.body, english);
 
-    const observer = new MutationObserver((mutations) => {
+    let frame = 0;
+    let pending: MutationRecord[] = [];
+
+    const flush = () => {
+      frame = 0;
+      const mutations = pending;
+      pending = [];
+
       for (const mutation of mutations) {
-        if (mutation.type === "characterData") applyTextNode(mutation.target as Text, english);
-        for (const node of mutation.addedNodes) applyTree(node, english);
+        if (mutation.type === "characterData") {
+          applyTextNode(mutation.target as Text, english);
+        }
+        for (const node of mutation.addedNodes) {
+          applyTree(node, english);
+        }
       }
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      pending.push(...mutations);
+      // Batch rapid React DOM changes into one pass per animation frame.
+      if (!frame) frame = window.requestAnimationFrame(flush);
     });
 
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      pending = [];
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, [language]);
 
   return null;
