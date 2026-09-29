@@ -218,8 +218,8 @@ export default function Auth() {
                   maxLength={20}
                   value={phone}
                   onChange={(e) => {
-                    const next = e.target.value.replace(/[^0-9+]/g, "");
-                    setPhone(next.startsWith("+370") ? next : next.replace(/^\+?370/, "+370").replace(/^\+?/, "+370"));
+                    const digits = e.target.value.replace(/\D/g, "");
+                    setPhone(digits.startsWith("370") ? "+" + digits : digits.startsWith("8") ? "+370" + digits.slice(1) : "+370" + digits);
                   }}
                   placeholder="+370 6…"
                 />
