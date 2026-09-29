@@ -18,11 +18,11 @@ SET search_path = ''
 AS $$
 DECLARE
   v_subscription_id uuid;
-  v_v_subscription_booking_id uuid;
-  v_v_horse_booking_id uuid;
+  v_subscription_booking_id uuid;
+  v_horse_booking_id uuid;
   v_subscription_counts boolean;
-  v_v_subscription_extra_fee numeric;
-  v_v_subscription_extra_paid boolean;
+  v_subscription_extra_fee numeric;
+  v_subscription_extra_paid boolean;
   candidate_count integer;
   removed_count integer := 0;
 BEGIN
@@ -38,8 +38,8 @@ BEGIN
 
   -- Find each subscription-linked booking that does not already have a horse.
   -- Only a single matching horse booking within 15 minutes is considered safe.
-  FOR v_v_subscription_booking_id, v_subscription_id, v_subscription_counts,
-      v_v_subscription_extra_fee, v_v_subscription_extra_paid IN
+  FOR v_subscription_booking_id, v_subscription_id, v_subscription_counts,
+      v_subscription_extra_fee, v_subscription_extra_paid IN
     SELECT
       b.id,
       b.subscription_id,
