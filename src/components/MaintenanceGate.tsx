@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/PageLoader";
@@ -7,14 +8,17 @@ import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 /**
  * Global maintenance gate.
  *
- * - Fetches the single `site_settings` row (maintenance_mode) from the backend.
+ * - Fetches the single site_settings row (maintenance_mode) from the backend.
  * - Never renders the normal app before the state is known (no flash for visitors).
- * - While ON: non-admin visitors see <MaintenanceScreen />; admins keep full access.
- * - Subscribes to realtime changes and refetches on window focus so the state
- *   updates without a manual refresh. The value is never cached in localStorage.
+ * - While ON: non-admin visitors see MaintenanceScreen.
+ * - The normal /auth route remains reachable so an administrator can authenticate
+ *   and then pass the gate. Authentication and the admin role check are still
+ *   enforced by Supabase + RequireAuth; this route does not bypass maintenance.
+ * - Subscribes to realtime changes and refetches on window focus.
  */
 export function MaintenanceGate({ children }: { children: ReactNode }) {
   const { isAdmin } = useAuth();
+  const { pathname } = useLocation();
   const [maintenance, setMaintenance] = useState<boolean | null>(null);
 
   const fetchMode = useCallback(async () => {
@@ -23,6 +27,7 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
       .select("maintenance_mode")
       .eq("id", 1)
       .maybeSingle();
+
     if (!error && data) setMaintenance(Boolean((data as any).maintenance_mode));
     else if (error?.code === "PGRST116" || !data) setMaintenance(false);
     // On transient network errors keep the previous state (or loading) rather
@@ -32,7 +37,6 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchMode();
 
-    // Realtime: reflect changes without a refresh.
     const channel = (supabase as any)
       .channel("site-settings-changes")
       .on(
@@ -42,7 +46,6 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
       )
       .subscribe();
 
-    // Safety net: refetch when the tab regains focus/visibility.
     const onFocus = () => fetchMode();
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
@@ -54,10 +57,13 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
     };
   }, [fetchMode]);
 
-  // Still checking — small Equus loading state, no app flash.
   if (maintenance === null) return <PageLoader fullScreen />;
 
-  if (maintenance && !isAdmin) return <MaintenanceScreen />;
+  // The login page must remain reachable while maintenance is active.
+  // Once an admin authenticates, isAdmin becomes true and the normal app renders.
+  if (maintenance && !isAdmin && pathname !== "/auth") {
+    return <MaintenanceScreen />;
+  }
 
   return <>{children}</>;
 }
