@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -66,12 +65,13 @@ export function MaintenanceScreen() {
             </section>
 
             <div className="pt-2">
-              <Link
-                to="/auth?tab=signin"
+              <button
+                type="button"
+                onClick={() => { window.location.assign("/auth?tab=signin"); }}
                 className="inline-flex items-center justify-center rounded-full border border-gold/15 px-4 py-2 text-xs text-muted-foreground/65 transition-colors hover:border-gold/35 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
               >
                 {language === "en" ? "Administrator login" : "Administratoriaus prisijungimas"}
-              </Link>
+              </button>
             </div>
           </main>
 
