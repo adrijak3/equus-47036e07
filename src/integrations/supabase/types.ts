@@ -1151,6 +1151,14 @@ export type Database = {
           suspect_time: string
         }[]
       }
+      get_schedule_rider_directory: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          display_name: string
+          id: string
+          riding_level: string | null
+        }[]
+      }
       get_public_registration_request: {
         Args: { _token: string }
         Returns: {
