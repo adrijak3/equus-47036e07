@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
+import { PageLoader } from "@/components/PageLoader";
 import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 
 /**
@@ -55,7 +55,7 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
   }, [fetchMode]);
 
   // Still checking — small Equus loading state, no app flash.
-  if (maintenance === null) return <EquusLoadingScreen />;
+  if (maintenance === null) return <PageLoader fullScreen />;
 
   if (maintenance && !isAdmin) return <MaintenanceScreen />;
 
