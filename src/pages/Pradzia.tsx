@@ -7,6 +7,7 @@ import {
   Clock3,
   MapPin,
   RefreshCw,
+  AlertCircle,
   Sparkles,
   Users,
   XCircle,
@@ -17,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Horse } from "@/components/icons/Horse";
 import { cn } from "@/lib/utils";
+import { PageLoader } from "@/components/PageLoader";
 import {
   MONTHS_LT,
   WEEKDAYS_LT,
@@ -102,6 +104,7 @@ export default function Pradzia() {
     uniqueRiders: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [now, setNow] = useState(new Date());
 
   const name = activeProfileName || profile?.full_name || user?.email || "";
@@ -116,6 +119,7 @@ export default function Pradzia() {
     if (!user || !actingUserId) return;
 
     setLoading(true);
+    setLoadError(false);
 
     const today = new Date();
     const todayISO = formatDateISO(today);
@@ -175,6 +179,13 @@ export default function Pradzia() {
         .eq("user_id", actingUserId)
         .in("status", ["active", "completed"]),
     ]);
+    if (upcomingResult.error || monthResult.error || totalResult.error) {
+      console.error("Pagrindinio puslapio duomenų įkėlimo klaida:", upcomingResult.error ?? monthResult.error ?? totalResult.error);
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+
     const bookingsData = upcomingResult.data;
     setMonthCount(monthResult.count ?? 0);
     setTotalCount(totalResult.count ?? 0);
@@ -240,13 +251,21 @@ export default function Pradzia() {
     return hours >= 0 && hours <= 24;
   }, [nextBooking, now]);
 
-  if (loading) {
+  if (loading) return <PageLoader />;
+
+  if (loadError) {
     return (
-      <div className="container flex min-h-[65vh] items-center justify-center">
-        <div className="flex items-center gap-3 text-gold">
-          <RefreshCw className="h-5 w-5 animate-spin" />
-          <span className="text-sm">Kraunamas pagrindinis puslapis…</span>
-        </div>
+      <div className="container flex min-h-[65vh] flex-col items-center justify-center px-4 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <h1 className="mt-3 font-display text-2xl text-foreground">
+          Nepavyko įkelti pagrindinio puslapio
+        </h1>
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">
+          Patikrinkite interneto ryšį ir pabandykite dar kartą.
+        </p>
+        <Button variant="outlineGold" className="mt-5" onClick={() => void loadDashboard()}>
+          Bandyti dar kartą
+        </Button>
       </div>
     );
   }
