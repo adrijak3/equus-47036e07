@@ -97,6 +97,9 @@ export function EquusHelpWidget() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<HelpMessage[]>([
     {
@@ -110,6 +113,43 @@ export function EquusHelpWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("equus-help-position");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Number.isFinite(parsed?.x) && Number.isFinite(parsed?.y)) setDragOffset({ x: parsed.x, y: parsed.y });
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const move = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const x = Math.max(-240, Math.min(240, drag.baseX + event.clientX - drag.startX));
+      const y = Math.max(-320, Math.min(320, drag.baseY + event.clientY - drag.startY));
+      setDragOffset({ x, y });
+    };
+    const end = () => { setIsDragging(false); dragRef.current = null; };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); };
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      try { window.localStorage.setItem("equus-help-position", JSON.stringify(dragOffset)); } catch {}
+    }
+  }, [dragOffset, isDragging]);
+
+  const startDrag = (event: React.PointerEvent) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    dragRef.current = { startX: event.clientX, startY: event.clientY, baseX: dragOffset.x, baseY: dragOffset.y };
+    setIsDragging(true);
+  };
 
   const sendBotReply = (answer: string) => {
     setIsTyping(true);
@@ -173,8 +213,10 @@ export function EquusHelpWidget() {
             whileHover={{ scale: 1.06, y: -2 }}
             whileTap={{ scale: 0.94 }}
             transition={{ type: "spring", stiffness: 420, damping: 24 }}
-            onClick={() => setIsOpen(true)}
-            aria-label={language === "lt" ? "Equus pagalba" : "Equus help"}
+            onClick={() => { if (!isDragging) setIsOpen(true); }}
+            onPointerDown={startDrag}
+            aria-label={language === "lt" ? "Equus pagalba — galima perkelti" : "Equus help — draggable"}
+            style={{ transform: "translate(" + dragOffset.x + "px, " + dragOffset.y + "px)", touchAction: "none" }}
             className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-gold flex items-center justify-center border border-gold/30 overflow-hidden"
           >
             <motion.span
@@ -200,6 +242,7 @@ export function EquusHelpWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 360, damping: 30 }}
+            style={{ transform: "translate(" + dragOffset.x + "px, " + dragOffset.y + "px)" }}
             className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex h-[min(34rem,calc(100dvh-7rem))] max-h-[calc(100dvh-7rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col bg-card text-card-foreground rounded-2xl shadow-elegant border border-border/70 overflow-hidden backdrop-blur-xl"
           >
             <div className="relative overflow-hidden bg-gradient-gold p-4 text-gold-foreground">
@@ -220,6 +263,7 @@ export function EquusHelpWidget() {
                   </motion.div>
                   <div>
                     <div className="font-semibold leading-tight">Equus pagalba</div>
+                    <div className="text-[10px] opacity-70 mt-0.5">{language === "lt" ? "Tempkite langą" : "Drag to move"}</div>
                     <div className="text-[11px] opacity-80 flex items-center gap-1 mt-0.5">
                       <Sparkles size={11} /> {language === "lt" ? "Greita pagalba" : "Quick help"}
                     </div>
@@ -228,6 +272,7 @@ export function EquusHelpWidget() {
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setIsOpen(false)}
                   aria-label={language === "lt" ? "Uždaryti" : "Close"}
                   className="rounded-full p-1.5 hover:bg-white/10 transition-colors"
