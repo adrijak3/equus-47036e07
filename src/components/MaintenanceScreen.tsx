@@ -1,11 +1,13 @@
+import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
 /**
  * Full-screen technical maintenance page shown to all non-admin visitors
- * while maintenance mode is enabled. Themed entirely with the existing
- * Equus design tokens so it adapts to every theme (Vandenynas, Levanda,
- * Vidurnaktis, …) and both light/dark modes.
+ * while maintenance mode is enabled.
+ *
+ * The admin login link only opens the normal authenticated login flow.
+ * Maintenance access itself is still enforced by MaintenanceGate + auth role checks.
  */
 export function MaintenanceScreen() {
   const { language } = useLanguage();
@@ -35,7 +37,7 @@ export function MaintenanceScreen() {
             {/* Lithuanian — always first */}
             <section lang="lt" className="space-y-4">
               <h1 className="font-display text-[clamp(1.7rem,5.5vw,2.6rem)] leading-snug text-gradient-gold">
-               Svetainė trumpam išjojo į techninę pertrauką
+                Svetainė trumpam išjojo į techninę pertrauką
               </h1>
               <p className="text-[clamp(0.95rem,2.8vw,1.05rem)] leading-relaxed text-foreground/85 max-w-prose mx-auto md:mx-0">
                 Šiuo metu svetainėje atliekami techniniai atnaujinimai, kad Jūsų patirtis būtų dar patogesnė.
@@ -62,6 +64,15 @@ export function MaintenanceScreen() {
                 We&rsquo;ll be back soon! ♡
               </p>
             </section>
+
+            <div className="pt-2">
+              <Link
+                to="/auth?tab=signin"
+                className="inline-flex items-center justify-center rounded-full border border-gold/15 px-4 py-2 text-xs text-muted-foreground/65 transition-colors hover:border-gold/35 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
+              >
+                {language === "en" ? "Administrator login" : "Administratoriaus prisijungimas"}
+              </Link>
+            </div>
           </main>
 
           {/* Artwork column */}
@@ -94,7 +105,7 @@ export function MaintenanceScreen() {
 
 function Horseshoe({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className} aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
       <path d="M5 21c-1.5-3-2-5.5-2-8a9 9 0 0 1 18 0c0 2.5-.5 5-2 8" />
       <path d="M8.5 3.5 9 6.5M15.5 3.5 15 6.5M4.2 9.5l2.6 1M19.8 9.5l-2.6 1M4.6 15l2.7.3M19.4 15l-2.7.3" />
     </svg>
