@@ -194,6 +194,34 @@ END;
 $$;
 
 
+-- Trigger wrappers.
+CREATE OR REPLACE FUNCTION public.trg_dedupe_subscription_day_booking()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+BEGIN
+  PERFORM public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
+  RETURN NEW;
+END;
+$;
+
+CREATE OR REPLACE FUNCTION public.trg_dedupe_subscription_after_horse()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+BEGIN
+  IF NEW.user_id IS NOT NULL THEN
+    PERFORM public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+
 -- Future booking creation/changes.
 DROP TRIGGER IF EXISTS trg_dedupe_subscription_day_booking
   ON public.bookings;
@@ -203,7 +231,7 @@ AFTER INSERT OR UPDATE OF user_id, slot_date, status, subscription_id, counts_in
 ON public.bookings
 FOR EACH ROW
 WHEN (NEW.status IN ('active', 'pending_cancel'))
-EXECUTE FUNCTION public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
+EXECUTE FUNCTION public.trg_dedupe_subscription_day_booking();
 
 
 -- A horse is often assigned after the booking is created, so run the same
@@ -216,4 +244,4 @@ AFTER INSERT OR UPDATE OF booking_id, horse_id
 ON public.horse_assignments
 FOR EACH ROW
 WHEN (NEW.booking_id IS NOT NULL)
-EXECUTE FUNCTION public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
+EXECUTE FUNCTION public.trg_dedupe_subscription_after_horse();
