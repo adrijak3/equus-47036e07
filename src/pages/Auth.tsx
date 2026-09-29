@@ -19,8 +19,8 @@ const signUpSchema = z.object({
   experience_text: z
     .string()
     .trim()
-    .min(50, "Aprašykite patirtį bent 50 simbolių")
-    .max(1000, "Per ilgas aprašymas"),
+    .min(30, "Aprašykite patirtį bent 30 simbolių")
+    .max(30, "Aprašymas gali būti iki 30 simbolių"),
 });
 
 const EXPERIENCE_PLACEHOLDER =
@@ -49,6 +49,7 @@ export default function Auth() {
 
   // Sign-up extras
   const [parentPhone, setParentPhone] = useState(false);
+  const [phone, setPhone] = useState("+370");
   const [experience, setExperience] = useState("");
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -56,7 +57,7 @@ export default function Auth() {
     const fd = new FormData(e.currentTarget);
     const parsed = signUpSchema.safeParse({
       full_name: fd.get("full_name"),
-      phone: fd.get("phone"),
+      phone: phone.trim(),
       email: fd.get("email"),
       password: fd.get("password"),
       experience_text: fd.get("experience_text"),
@@ -209,7 +210,19 @@ export default function Auth() {
               </div>
               <div>
                 <Label htmlFor="su-phone">Telefono numeris</Label>
-                <Input id="su-phone" name="phone" type="tel" required maxLength={20} placeholder="+370" />
+                <Input
+                  id="su-phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  maxLength={20}
+                  value={phone}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/[^0-9+]/g, "");
+                    setPhone(next.startsWith("+370") ? next : next.replace(/^\+?370/, "+370").replace(/^\+?/, "+370"));
+                  }}
+                  placeholder="+370 6…"
+                />
                 <p className="mt-1 text-xs text-muted-foreground">
                   Nurodykite <strong>tikrą</strong> numerį – juo susisieksime dėl pakeitimų ar nenumatytų atvejų.
                 </p>
@@ -229,16 +242,15 @@ export default function Auth() {
                   id="su-exp"
                   name="experience_text"
                   required
-                  minLength={50}
-                  maxLength={1000}
+                  minLength={30}
+                  maxLength={30}
                   rows={4}
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
                   placeholder={EXPERIENCE_PLACEHOLDER}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Trumpai aprašykite: kiek laiko jodinėjate, ar jojate žingsniu, risčia, šuoliais, ar patys pasibalnojate
-                  ir pasivaldote žirgą, ar turite varžybų patirties. Bent 50 simbolių ({experience.trim().length}/50).
+                  Trumpai aprašykite savo jojimo patirtį. Bent 30 simbolių ({experience.trim().length}/30).
                 </p>
               </div>
               <div>
