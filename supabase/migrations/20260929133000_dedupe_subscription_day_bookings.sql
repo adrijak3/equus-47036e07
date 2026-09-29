@@ -17,12 +17,12 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  subscription_id uuid;
-  subscription_booking_id uuid;
-  horse_booking_id uuid;
-  subscription_counts boolean;
-  subscription_extra_fee numeric;
-  subscription_extra_paid boolean;
+  v_subscription_id uuid;
+  v_v_subscription_booking_id uuid;
+  v_v_horse_booking_id uuid;
+  v_subscription_counts boolean;
+  v_v_subscription_extra_fee numeric;
+  v_v_subscription_extra_paid boolean;
   candidate_count integer;
   removed_count integer := 0;
 BEGIN
@@ -38,8 +38,8 @@ BEGIN
 
   -- Find each subscription-linked booking that does not already have a horse.
   -- Only a single matching horse booking within 15 minutes is considered safe.
-  FOR subscription_booking_id, subscription_id, subscription_counts,
-      subscription_extra_fee, subscription_extra_paid IN
+  FOR v_subscription_booking_id, v_subscription_id, v_subscription_counts,
+      v_subscription_extra_fee, v_subscription_extra_paid IN
     SELECT
       b.id,
       b.subscription_id,
@@ -112,7 +112,7 @@ BEGIN
     -- before deleting the duplicate row.
     UPDATE public.bookings
     SET
-      subscription_id = subscription_id,
+      subscription_id = v_subscription_id,
       counts_in_subscription = true,
       extra_fee_eur = COALESCE(subscription_extra_fee, 0),
       extra_fee_paid = COALESCE(subscription_extra_paid, false)
@@ -126,7 +126,7 @@ BEGIN
     DELETE FROM public.bookings
     WHERE id = subscription_booking_id;
 
-    GET DIAGNOSTICS removed_count = removed_count + ROW_COUNT;
+    removed_count := removed_count + 1;
 
     -- Keep the package counter aligned with the surviving booking.
     UPDATE public.subscriptions s
@@ -140,7 +140,7 @@ BEGIN
           AND b.status <> 'cancelled'
       )
     )
-    WHERE s.id = subscription_id;
+    WHERE s.id = v_subscription_id;
   END LOOP;
 
   RETURN removed_count;
