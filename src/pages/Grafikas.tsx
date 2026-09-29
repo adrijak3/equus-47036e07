@@ -208,6 +208,7 @@ export default function Grafikas() {
   const [horses, setHorses] = useState<HorseOption[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
   const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
@@ -366,6 +367,7 @@ export default function Grafikas() {
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError(false);
 
     const startISO = formatDateISO(weekStart);
     const endISO = formatDateISO(weekEnd);
@@ -420,6 +422,13 @@ export default function Grafikas() {
         .gte("note_date", startISO)
         .lte("note_date", endISO),
     ]);
+
+    if (slotsRes.error || bookingsRes.error) {
+      console.error("Grafiko duomenų įkėlimo klaida:", slotsRes.error ?? bookingsRes.error);
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
 
     const userIds = new Set<string>();
 
@@ -2984,7 +2993,22 @@ export default function Grafikas() {
         </div>
       )}
 
-      {loading ? (
+      {loadError ? (
+        <div className="flex min-h-[45vh] flex-col items-center justify-center rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center">
+          <AlertCircle className="mb-3 h-8 w-8 text-destructive" />
+          <h2 className="font-display text-2xl text-foreground">
+            {language === "lt" ? "Nepavyko įkelti grafiko" : "Could not load the schedule"}
+          </h2>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            {language === "lt"
+              ? "Patikrinkite interneto ryšį ir pabandykite dar kartą."
+              : "Check your connection and try again."}
+          </p>
+          <Button variant="outlineGold" className="mt-5" onClick={() => void loadData()}>
+            {language === "lt" ? "Bandyti dar kartą" : "Try again"}
+          </Button>
+        </div>
+      ) : loading ? (
         <div
           className="space-y-5"
           aria-label={
