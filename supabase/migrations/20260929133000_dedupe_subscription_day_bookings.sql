@@ -200,26 +200,26 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $trigger$
 BEGIN
   PERFORM public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
   RETURN NEW;
 END;
-$;
+$trigger$;
 
 CREATE OR REPLACE FUNCTION public.trg_dedupe_subscription_after_horse()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $trigger$
 BEGIN
   IF NEW.user_id IS NOT NULL THEN
     PERFORM public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
   END IF;
   RETURN NEW;
 END;
-$;
+$trigger$;
 
 
 -- Future booking creation/changes.
