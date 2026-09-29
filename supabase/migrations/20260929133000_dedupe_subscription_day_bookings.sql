@@ -38,8 +38,8 @@ BEGIN
 
   -- Find each subscription-linked booking that does not already have a horse.
   -- Only a single matching horse booking within 15 minutes is considered safe.
-  FOR v_subscription_booking_id, v_subscription_id, v_subscription_counts,
-      v_subscription_extra_fee, v_subscription_extra_paid IN
+  FOR v_v_subscription_booking_id, v_subscription_id, v_subscription_counts,
+      v_v_subscription_extra_fee, v_v_subscription_extra_paid IN
     SELECT
       b.id,
       b.subscription_id,
@@ -78,12 +78,12 @@ BEGIN
       )
   LOOP
     SELECT count(*), min(h.id)
-      INTO candidate_count, horse_booking_id
+      INTO candidate_count, v_horse_booking_id
     FROM public.bookings h
     WHERE h.user_id = _user_id
       AND h.slot_date = _slot_date
       AND h.status IN ('active', 'pending_cancel')
-      AND h.id <> subscription_booking_id
+      AND h.id <> v_subscription_booking_id
       AND EXISTS (
         SELECT 1
         FROM public.horse_assignments ha
@@ -92,7 +92,7 @@ BEGIN
       AND abs(extract(epoch FROM (h.slot_time - (
         SELECT b.slot_time
         FROM public.bookings b
-        WHERE b.id = subscription_booking_id
+        WHERE b.id = v_subscription_booking_id
       )))) <= 900
       AND COALESCE(h.lesson_kind::text,
         CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
@@ -101,10 +101,10 @@ BEGIN
           CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
         )
         FROM public.bookings b
-        WHERE b.id = subscription_booking_id
+        WHERE b.id = v_subscription_booking_id
       );
 
-    IF candidate_count <> 1 OR horse_booking_id IS NULL THEN
+    IF candidate_count <> 1 OR v_horse_booking_id IS NULL THEN
       CONTINUE;
     END IF;
 
@@ -114,9 +114,9 @@ BEGIN
     SET
       subscription_id = v_subscription_id,
       counts_in_subscription = true,
-      extra_fee_eur = COALESCE(subscription_extra_fee, 0),
-      extra_fee_paid = COALESCE(subscription_extra_paid, false)
-    WHERE id = horse_booking_id
+      extra_fee_eur = COALESCE(v_subscription_extra_fee, 0),
+      extra_fee_paid = COALESCE(v_subscription_extra_paid, false)
+    WHERE id = v_horse_booking_id
       AND subscription_id IS NULL;
 
     IF NOT FOUND THEN
@@ -124,7 +124,7 @@ BEGIN
     END IF;
 
     DELETE FROM public.bookings
-    WHERE id = subscription_booking_id;
+    WHERE id = v_subscription_booking_id;
 
     removed_count := removed_count + 1;
 
