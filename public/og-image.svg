@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1524"/>
+      <stop offset="1" stop-color="#182438"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b88a3b"/>
+      <stop offset="0.5" stop-color="#f0d28a"/>
+      <stop offset="1" stop-color="#b88a3b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1030" cy="90" r="260" fill="#c7a35b" opacity=".07"/>
+  <circle cx="160" cy="600" r="320" fill="#c7a35b" opacity=".05"/>
+  <path d="M111 428 C145 363 193 328 252 326 C285 325 315 339 336 359 C313 362 294 371 280 386 C305 382 329 385 348 396 C327 407 309 425 298 448 C278 432 257 425 234 425 C204 425 180 439 158 463 C145 478 127 475 111 468 C126 451 135 438 143 425 C131 430 121 432 111 428Z" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+  <path d="M178 368 C174 337 184 310 207 287 C230 264 256 252 286 251 C270 271 262 294 264 318" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="259" cy="300" r="5" fill="#f0d28a"/>
+  <text x="420" y="270" fill="#f0d28a" font-family="Georgia, serif" font-size="96" font-weight="600" letter-spacing="4">EQUUS</text>
+  <text x="425" y="330" fill="#e7e9ed" font-family="Arial, sans-serif" font-size="31" letter-spacing="7">JOJIMO MOKYKLA</text>
+  <line x1="425" y1="365" x2="805" y2="365" stroke="#c7a35b" stroke-width="2" opacity=".55"/>
+  <text x="425" y="418" fill="#cbd2dc" font-family="Arial, sans-serif" font-size="25">Jojimo treniruotės · registracija · grafikas</text>
+  <text x="425" y="462" fill="#8f9aaa" font-family="Arial, sans-serif" font-size="20">Pakamšės g. 7 · Daučionys</text>
+</svg>
