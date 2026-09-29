@@ -433,13 +433,17 @@ export default function Grafikas() {
     let levelMap: Record<string, string | null> = {};
 
     if (userIds.size > 0) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, full_name, riding_level")
-        .in("id", Array.from(userIds));
+      const { data: profs, error: profileDirectoryError } = await supabase.rpc(
+        "get_schedule_rider_directory",
+        { _user_ids: Array.from(userIds) },
+      );
+
+      if (profileDirectoryError) {
+        console.error("Nepavyko įkelti grafikui skirtų raitelių vardų:", profileDirectoryError);
+      }
 
       nameMap = Object.fromEntries(
-        (profs ?? []).map((p) => [p.id, p.full_name]),
+        (profs ?? []).map((p: any) => [p.id, p.display_name]),
       );
 
       levelMap = Object.fromEntries(
