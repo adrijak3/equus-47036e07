@@ -49,10 +49,10 @@ export function WelcomeOnboarding(){
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">Google pateikė jūsų vardą ir el. paštą. Dar reikia kelių Equus registracijai reikalingų duomenų.</p>
       <div><label className="text-sm font-medium">Vardas ir pavardė</label><Input value={completionName} onChange={e=>setCompletionName(e.target.value)} maxLength={80} /></div>
-      <div><label className="text-sm font-medium">Telefono numeris</label><Input type="tel" value={completionPhone} onChange={e=>setCompletionPhone(e.target.value)} placeholder="+370" maxLength={20} />
+      <div><label className="text-sm font-medium">Telefono numeris</label><Input type="tel" value={completionPhone} onChange={e=>{const next=e.target.value.replace(/[^0-9+]/g,"");setCompletionPhone(next.startsWith("+370")?next:next.replace(/^\+?370/,"+370").replace(/^\+?/,"+370"));}} placeholder="+370 6…" maxLength={20} />
         <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={completionParentPhone} onChange={e=>setCompletionParentPhone(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[hsl(var(--gold))]" /><span>Tai tėvų / globėjo numeris (raitelis – vaikas)</span></label>
       </div>
-      <div><label className="text-sm font-medium">Jojimo patirtis</label><textarea value={completionExperience} onChange={e=>setCompletionExperience(e.target.value)} minLength={30} maxLength={30} rows={5} className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Kiek laiko jodinėjate, ką mokate, ar turite varžybų patirties…" /><p className="mt-1 text-xs text-muted-foreground">{completionExperience.trim().length}/50</p></div>
+      <div><label className="text-sm font-medium">Jojimo patirtis</label><textarea value={completionExperience} onChange={e=>setCompletionExperience(e.target.value)} minLength={30} maxLength={30} rows={5} className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Kiek laiko jodinėjate, ką mokate, ar turite varžybų patirties…" /><p className="mt-1 text-xs text-muted-foreground">{completionExperience.trim().length}/30</p></div>
     </div>
     <div className="flex justify-end pt-2"><Button variant="gold" onClick={saveProfileCompletion} disabled={completionBusy}>{completionBusy?"Saugoma…":"Tęsti"}</Button></div>
   </DialogContent>
