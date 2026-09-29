@@ -1,15 +1,11 @@
--- Automatically clean up accidental duplicate subscription bookings for the same rider/day.
+-- Automatically resolve the specific accidental duplicate pattern:
+--   same rider + same date + same lesson purpose/type
+--   + times within 15 minutes
+--   + one subscription-linked booking without a horse
+--   + one separate horse-assigned booking without the subscription.
 --
--- Rule:
--- * Only consider days where the rider has at least one booking linked to a subscription
---   and marked to count toward that subscription.
--- * If exactly one of that day's active/pending bookings has a horse assignment,
---   keep the horse-assigned booking and remove the other duplicate booking(s).
--- * If the horse-assigned booking is the one without the subscription, move the
---   subscription link/counting fields to the horse booking before deleting the duplicate.
--- * If there is no horse assignment, or more than one horse-assigned booking,
---   leave the data alone because the bookings may be intentional.
--- * Completed historical bookings are never deleted.
+-- It deliberately does NOT delete every other booking on the rider's date.
+-- Legitimate multiple lessons remain untouched.
 
 CREATE OR REPLACE FUNCTION public.dedupe_subscription_day_bookings(
   _user_id uuid,
@@ -18,145 +14,121 @@ CREATE OR REPLACE FUNCTION public.dedupe_subscription_day_bookings(
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
-  keeper_id uuid;
-  keeper_has_subscription boolean;
-  keeper_subscription_id uuid;
-  keeper_counts boolean;
-  keeper_extra_fee numeric;
-  keeper_extra_paid boolean;
-  booking_count integer;
-  subscription_booking_count integer;
-  horse_booking_count integer;
+  subscription_id uuid;
+  subscription_booking_id uuid;
+  horse_booking_id uuid;
+  subscription_counts boolean;
+  subscription_extra_fee numeric;
+  subscription_extra_paid boolean;
+  candidate_count integer;
   removed_count integer := 0;
-  affected_subscriptions uuid[] := ARRAY[]::uuid[];
 BEGIN
-  SELECT count(*)
-    INTO booking_count
-  FROM public.bookings b
-  WHERE b.user_id = _user_id
-    AND b.slot_date = _slot_date
-    AND b.status IN ('active', 'pending_cancel');
-
-  IF booking_count <= 1 THEN
+  IF _user_id IS NULL OR _slot_date IS NULL THEN
     RETURN 0;
   END IF;
 
-  SELECT count(*)
-    INTO subscription_booking_count
-  FROM public.bookings b
-  WHERE b.user_id = _user_id
-    AND b.slot_date = _slot_date
-    AND b.status IN ('active', 'pending_cancel')
-    AND b.subscription_id IS NOT NULL
-    AND b.counts_in_subscription = true;
-
-  IF subscription_booking_count = 0 THEN
+  -- Never recurse through the booking/horse triggers that this function itself
+  -- can fire while moving the subscription onto the surviving booking.
+  IF pg_trigger_depth() > 1 THEN
     RETURN 0;
   END IF;
 
-  SELECT count(*)
-    INTO horse_booking_count
-  FROM public.bookings b
-  WHERE b.user_id = _user_id
-    AND b.slot_date = _slot_date
-    AND b.status IN ('active', 'pending_cancel')
-    AND EXISTS (
-      SELECT 1
-      FROM public.horse_assignments ha
-      WHERE ha.booking_id = b.id
-    );
-
-  -- Only auto-resolve the unambiguous "one horse + one/no-horse duplicate" case.
-  IF horse_booking_count <> 1 THEN
-    RETURN 0;
-  END IF;
-
-  SELECT
-    b.id,
-    b.subscription_id IS NOT NULL,
-    b.subscription_id,
-    b.counts_in_subscription,
-    b.extra_fee_eur,
-    b.extra_fee_paid
-  INTO
-    keeper_id,
-    keeper_has_subscription,
-    keeper_subscription_id,
-    keeper_counts,
-    keeper_extra_fee,
-    keeper_extra_paid
-  FROM public.bookings b
-  WHERE b.user_id = _user_id
-    AND b.slot_date = _slot_date
-    AND b.status IN ('active', 'pending_cancel')
-    AND EXISTS (
-      SELECT 1
-      FROM public.horse_assignments ha
-      WHERE ha.booking_id = b.id
-    )
-  LIMIT 1;
-
-  -- If the horse booking is not the subscription-linked row, move the
-  -- subscription linkage to the horse booking before removing the duplicate.
-  IF NOT keeper_has_subscription THEN
+  -- Find each subscription-linked booking that does not already have a horse.
+  -- Only a single matching horse booking within 15 minutes is considered safe.
+  FOR subscription_booking_id, subscription_id, subscription_counts,
+      subscription_extra_fee, subscription_extra_paid IN
     SELECT
+      b.id,
       b.subscription_id,
       b.counts_in_subscription,
       b.extra_fee_eur,
       b.extra_fee_paid
-    INTO
-      keeper_subscription_id,
-      keeper_counts,
-      keeper_extra_fee,
-      keeper_extra_paid
     FROM public.bookings b
     WHERE b.user_id = _user_id
       AND b.slot_date = _slot_date
       AND b.status IN ('active', 'pending_cancel')
-      AND b.id <> keeper_id
       AND b.subscription_id IS NOT NULL
       AND b.counts_in_subscription = true
-    ORDER BY b.created_at ASC
-    LIMIT 1;
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.horse_assignments ha
+        WHERE ha.booking_id = b.id
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM public.bookings h
+        WHERE h.user_id = b.user_id
+          AND h.slot_date = b.slot_date
+          AND h.status IN ('active', 'pending_cancel')
+          AND h.id <> b.id
+          AND EXISTS (
+            SELECT 1
+            FROM public.horse_assignments ha2
+            WHERE ha2.booking_id = h.id
+          )
+          AND abs(extract(epoch FROM (h.slot_time - b.slot_time))) <= 900
+          AND COALESCE(h.lesson_kind::text,
+            CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
+          ) = COALESCE(b.lesson_kind::text,
+            CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
+          )
+      )
+  LOOP
+    SELECT count(*), min(h.id)
+      INTO candidate_count, horse_booking_id
+    FROM public.bookings h
+    WHERE h.user_id = _user_id
+      AND h.slot_date = _slot_date
+      AND h.status IN ('active', 'pending_cancel')
+      AND h.id <> subscription_booking_id
+      AND EXISTS (
+        SELECT 1
+        FROM public.horse_assignments ha
+        WHERE ha.booking_id = h.id
+      )
+      AND abs(extract(epoch FROM (h.slot_time - (
+        SELECT b.slot_time
+        FROM public.bookings b
+        WHERE b.id = subscription_booking_id
+      )))) <= 900
+      AND COALESCE(h.lesson_kind::text,
+        CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
+      ) = (
+        SELECT COALESCE(b.lesson_kind::text,
+          CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
+        )
+        FROM public.bookings b
+        WHERE b.id = subscription_booking_id
+      );
 
-    IF keeper_subscription_id IS NULL THEN
-      RETURN 0;
+    IF candidate_count <> 1 OR horse_booking_id IS NULL THEN
+      CONTINUE;
     END IF;
 
+    -- The horse booking is the survivor. Move the subscription attribution
+    -- before deleting the duplicate row.
     UPDATE public.bookings
     SET
-      subscription_id = keeper_subscription_id,
+      subscription_id = subscription_id,
       counts_in_subscription = true,
-      extra_fee_eur = COALESCE(keeper_extra_fee, 0),
-      extra_fee_paid = COALESCE(keeper_extra_paid, false)
-    WHERE id = keeper_id;
-  END IF;
+      extra_fee_eur = COALESCE(subscription_extra_fee, 0),
+      extra_fee_paid = COALESCE(subscription_extra_paid, false)
+    WHERE id = horse_booking_id
+      AND subscription_id IS NULL;
 
-  -- Remember affected subscription ids before deleting duplicate rows.
-  SELECT ARRAY(
-    SELECT DISTINCT b.subscription_id
-    FROM public.bookings b
-    WHERE b.user_id = _user_id
-      AND b.slot_date = _slot_date
-      AND b.status IN ('active', 'pending_cancel')
-      AND b.subscription_id IS NOT NULL
-  )
-  INTO affected_subscriptions;
+    IF NOT FOUND THEN
+      CONTINUE;
+    END IF;
 
-  -- Delete all other active/pending bookings for this rider on this date.
-  DELETE FROM public.bookings b
-  WHERE b.user_id = _user_id
-    AND b.slot_date = _slot_date
-    AND b.status IN ('active', 'pending_cancel')
-    AND b.id <> keeper_id;
+    DELETE FROM public.bookings
+    WHERE id = subscription_booking_id;
 
-  GET DIAGNOSTICS removed_count = ROW_COUNT;
+    GET DIAGNOSTICS removed_count = removed_count + ROW_COUNT;
 
-  -- Keep the subscription's stored counter aligned with the surviving bookings.
-  IF affected_subscriptions IS NOT NULL THEN
+    -- Keep the package counter aligned with the surviving booking.
     UPDATE public.subscriptions s
     SET lessons_used = LEAST(
       s.lessons_total,
@@ -168,15 +140,15 @@ BEGIN
           AND b.status <> 'cancelled'
       )
     )
-    WHERE s.id = ANY(affected_subscriptions);
-  END IF;
+    WHERE s.id = subscription_id;
+  END LOOP;
 
   RETURN removed_count;
 END;
 $$;
 
 
--- Clean up existing accidental duplicates once, using the same safe rule.
+-- Clean up existing accidental duplicates using the same narrow rule.
 DO $$
 DECLARE
   r record;
@@ -194,14 +166,17 @@ END;
 $$;
 
 
--- Trigger wrappers.
 CREATE OR REPLACE FUNCTION public.trg_dedupe_subscription_day_booking()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $trigger$
 BEGIN
+  IF pg_trigger_depth() > 1 THEN
+    RETURN NEW;
+  END IF;
+
   PERFORM public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
   RETURN NEW;
 END;
@@ -211,9 +186,13 @@ CREATE OR REPLACE FUNCTION public.trg_dedupe_subscription_after_horse()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $trigger$
 BEGIN
+  IF pg_trigger_depth() > 1 THEN
+    RETURN NEW;
+  END IF;
+
   IF NEW.user_id IS NOT NULL THEN
     PERFORM public.dedupe_subscription_day_bookings(NEW.user_id, NEW.slot_date);
   END IF;
@@ -222,7 +201,6 @@ END;
 $trigger$;
 
 
--- Future booking creation/changes.
 DROP TRIGGER IF EXISTS trg_dedupe_subscription_day_booking
   ON public.bookings;
 
@@ -234,8 +212,6 @@ WHEN (NEW.status IN ('active', 'pending_cancel'))
 EXECUTE FUNCTION public.trg_dedupe_subscription_day_booking();
 
 
--- A horse is often assigned after the booking is created, so run the same
--- cleanup when staff assigns a horse.
 DROP TRIGGER IF EXISTS trg_dedupe_subscription_after_horse
   ON public.horse_assignments;
 
