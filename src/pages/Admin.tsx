@@ -1483,6 +1483,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [saving, setSaving] = useState(false);
   const [subscriptionPrices, setSubscriptionPrices] = useState<Record<string, number>>({});
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
+  const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
   const load = async () => {
     const [p, s, priceRows] = await Promise.all([
       supabase.from("profiles").select("id, full_name, phone").order("full_name"),
