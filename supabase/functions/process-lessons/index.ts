@@ -66,9 +66,9 @@ Deno.serve(async (req) => {
 
     const { data: subs } = await supabase
       .from("subscriptions")
-      .select("id, lessons_total, lessons_used, expires_at, purchase_date")
+      .select("id, lessons_total, lessons_used, expires_at, purchase_date, start_from_date")
       .eq("user_id", b.user_id)
-      .order("purchase_date", { ascending: true });
+      .order("start_from_date", { ascending: true, nullsFirst: true })\n      .order("purchase_date", { ascending: true });
 
     const usableSub = (subs ?? []).find(
       (s) =>
