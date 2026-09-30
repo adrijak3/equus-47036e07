@@ -1548,6 +1548,24 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     toast.success("Atnaujinta"); load();
   };
 
+  const editUsed = async (s: Sub) => {
+    const txt = prompt(`Kiek treniruočių jau panaudota (dabar ${s.lessons_used} iš ${s.lessons_total}):`, String(s.lessons_used));
+    if (txt === null) return;
+    const n = parseInt(txt);
+    if (!Number.isFinite(n) || n < 0 || n > s.lessons_total) {
+      toast.error(`Įveskite skaičių nuo 0 iki ${s.lessons_total}`);
+      return;
+    }
+    const { error } = await (supabase as any).rpc("admin_adjust_subscription_used", {
+      _subscription_id: s.id,
+      _new_lessons_used: n,
+      _reason: "Pakeitė administracija abonementų lange",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Panaudotų treniruočių skaičius atnaujintas");
+    load();
+  };
+
   const extendExpiry = async (s: Sub, days: number) => {
     const current = new Date(`${s.expires_at}T12:00:00`);
     current.setDate(current.getDate() + days);
@@ -1737,6 +1755,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                           effectiveUsed={actual}
                           onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
                           onEditLessons={() => editLessons(s)}
+                          onEditUsed={() => editUsed(s)}
                           onDelete={() => deleteSub(s)}
                           extra={
                             <div className="flex flex-wrap items-center justify-between gap-2">
