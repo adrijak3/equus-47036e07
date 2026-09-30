@@ -1814,8 +1814,10 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
               const count = Number(lessons);
               const tier = count >= 12 ? 12 : count >= 8 ? 8 : 4;
               const tierPrice = subscriptionPrices[`${tier}|${packageType}|${horseType}`];
+              // Pricing is tier-based: any quantity in the tier uses the full tier price.
+              // This must match admin_purchase_subscription(), which stores v_price directly.
               const total = Number.isInteger(count) && count > 0 && tierPrice != null
-                ? Math.round((count * tierPrice / tier) * 100) / 100
+                ? tierPrice
                 : null;
 
               return (
