@@ -105,11 +105,6 @@ const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLi
     label: "Informacija",
     icon: Info,
   },
-  {
-    to: "/admin/skenuoti",
-    label: "Skenuoti QR",
-    icon: ScanLine,
-  },
 ];
 
 export default function Layout({
