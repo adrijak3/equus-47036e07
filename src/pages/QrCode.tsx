@@ -157,7 +157,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
     if (error) {
       toast.error(
         error.message?.includes("STAFF_ONLY")
-          ? "Šią funkciją gali naudoti tik administracija arba treneris."
+          ? "Tik admin"
           : "QR kodas neatpažintas arba nebegalioja.",
       );
       return;
@@ -229,7 +229,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
             </div>
             <h2 className="mt-5 text-2xl font-display">Paruošta skenuoti</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Klientas parodo savo QR kodą. Jūs jį nuskenuojate telefonu — daugiau nieko įvesti nereikia.
+              Klientas parodo savo QR kodą. Jūs jį nuskenuojate telefonu.
             </p>
             <Button variant="gold" size="lg" className="mt-6" onClick={() => void startScanner()}>
               <Camera className="mr-2 h-5 w-5" /> Skenuoti QR
@@ -252,7 +252,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
 
         {!client && (
           <div className="mt-4 rounded-2xl border border-gold/10 bg-card/50 p-4">
-            <p className="text-sm font-medium">Testavimui galima įklijuoti QR turinį</p>
+            <p className="text-sm font-medium">QR turinys (testavimas)</p>
             <div className="mt-3 flex gap-2">
               <Input
                 value={manual}
@@ -302,7 +302,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70">Mano paskyra</p>
         <h1 className="mt-2 text-4xl font-display text-gradient-gold">Mano QR kodas</h1>
         <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
-          Parodykite šį kodą administratoriui ar treneriui, kai norite greitai atidaryti savo Equus informaciją.
+          Parodykite šį kodą Laurai, jei norite įsigyti abonementą.
         </p>
       </div>
 
@@ -336,8 +336,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-gold/10 bg-background/40 p-4 text-left">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            QR kode nėra Jūsų vardo, el. pašto ar telefono. Jis naudoja atsitiktinį techninį raktą.
-            Regeneravus senasis kodas iš karto nustoja galioti.
+            Parodyti šį kodą trenerei.
           </p>
         </div>
       </div>
@@ -393,12 +392,12 @@ function ClientResultCard({
               asChild
             >
               <Link to={`/admin?section=users&uid=${result.client.id}`}>
-                <Settings2 className="mr-2 h-5 w-5" /> Valdyti klientą
+                <Settings2 className="mr-2 h-5 w-5" /> Valdyti kliento informaciją
               </Link>
             </Button>
           ) : (
             <Button variant="outlineGold" size="lg" className="h-14" onClick={onRescan}>
-              <ScanLine className="mr-2 h-5 w-5" /> Skenuoti kitą
+              <ScanLine className="mr-2 h-5 w-5" /> Skenuoti kitą QR kodą
             </Button>
           )}
         </div>
@@ -598,7 +597,7 @@ function SubscriptionPurchaseDialog({
             Naujas abonementas
           </DialogTitle>
           <DialogDescription>
-            {client.client.full_name || "Klientui"} · kainą nustato Equus kainynas.
+            {client.client.full_name || "Klientui"} · kainas galite rasti "Kainos" meniu skiltyje.
           </DialogDescription>
         </DialogHeader>
 
