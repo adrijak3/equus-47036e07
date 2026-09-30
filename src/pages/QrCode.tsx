@@ -54,6 +54,7 @@ function extractToken(value: string) {
 export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
   const { user, isAdmin, isTrainer } = useAuth();
   const [token, setToken] = useState<string | null>(null);
+  const [scannedToken, setScannedToken] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [manual, setManual] = useState("");
@@ -89,6 +90,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
   const resolve = useCallback(async (raw: string) => {
     const extracted = extractToken(raw);
     if (!extracted) return;
+    setScannedToken(extracted);
     setResolving(true);
     await stopScanner();
     setScannerOpen(false);
@@ -108,7 +110,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
     if (!client) return;
     setConfirmingBookingId(bookingId);
     const { data, error } = await (supabase as any).rpc("confirm_client_qr_attendance", {
-      _token: extractToken(token ?? ""),
+      _token: scannedToken ?? "",
       _booking_id: bookingId,
     });
     setConfirmingBookingId(null);
@@ -127,6 +129,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
 
   const startScanner = async () => {
     setClient(null);
+    setScannedToken(null);
     setScannerOpen(true);
     await new Promise((r) => setTimeout(r, 50));
     const instance = new Html5Qrcode("equus-qr-reader", {
