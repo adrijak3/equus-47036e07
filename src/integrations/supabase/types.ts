@@ -742,6 +742,239 @@ export type Database = {
         }
         Relationships: []
       }
+
+      subscription_prices: {
+        Row: {
+          id: string
+          lessons_total: number
+          package_type: string
+          horse_type: string
+          price_eur: number
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          lessons_total: number
+          package_type: string
+          horse_type: string
+          price_eur: number
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          lessons_total?: number
+          package_type?: string
+          horse_type?: string
+          price_eur?: number
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_payments: {
+        Row: {
+          id: string
+          subscription_id: string
+          user_id: string
+          amount_eur: number
+          payment_method: string
+          paid_at: string
+          recorded_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          subscription_id: string
+          user_id: string
+          amount_eur: number
+          payment_method?: string
+          paid_at?: string
+          recorded_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          subscription_id?: string
+          user_id?: string
+          amount_eur?: number
+          payment_method?: string
+          paid_at?: string
+          recorded_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      subscription_allocations: {
+        Row: {
+          id: string
+          subscription_id: string
+          booking_id: string
+          allocation_number: number
+          status: string
+          allocated_at: string
+          consumed_at: string | null
+          released_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          subscription_id: string
+          booking_id: string
+          allocation_number: number
+          status?: string
+          allocated_at?: string
+          consumed_at?: string | null
+          released_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          subscription_id?: string
+          booking_id?: string
+          allocation_number?: number
+          status?: string
+          allocated_at?: string
+          consumed_at?: string | null
+          released_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      email_events: {
+        Row: {
+          id: string
+          event_key: string
+          event_type: string
+          user_id: string | null
+          email: string | null
+          subscription_id: string | null
+          booking_id: string | null
+          status: string
+          resend_message_id: string | null
+          attempts: number
+          last_error: string | null
+          created_at: string
+          processing_started_at: string | null
+          sent_at: string | null
+          delivered_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_key: string
+          event_type: string
+          user_id?: string | null
+          email?: string | null
+          subscription_id?: string | null
+          booking_id?: string | null
+          status?: string
+          resend_message_id?: string | null
+          attempts?: number
+          last_error?: string | null
+          created_at?: string
+          processing_started_at?: string | null
+          sent_at?: string | null
+          delivered_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_key?: string
+          event_type?: string
+          user_id?: string | null
+          email?: string | null
+          subscription_id?: string | null
+          booking_id?: string | null
+          status?: string
+          resend_message_id?: string | null
+          attempts?: number
+          last_error?: string | null
+          created_at?: string
+          processing_started_at?: string | null
+          sent_at?: string | null
+          delivered_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_webhook_events: {
+        Row: {
+          id: string
+          provider: string
+          provider_event_id: string
+          event_type: string
+          resend_message_id: string | null
+          payload: Json
+          received_at: string
+        }
+        Insert: {
+          id?: string
+          provider?: string
+          provider_event_id: string
+          event_type: string
+          resend_message_id?: string | null
+          payload?: Json
+          received_at?: string
+        }
+        Update: {
+          id?: string
+          provider?: string
+          provider_event_id?: string
+          event_type?: string
+          resend_message_id?: string | null
+          payload?: Json
+          received_at?: string
+        }
+        Relationships: []
+      }
+      subscription_audit_log: {
+        Row: {
+          id: string
+          actor_user_id: string | null
+          target_user_id: string | null
+          subscription_id: string | null
+          payment_id: string | null
+          booking_id: string | null
+          action: string
+          old_value: Json | null
+          new_value: Json | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_user_id?: string | null
+          target_user_id?: string | null
+          subscription_id?: string | null
+          payment_id?: string | null
+          booking_id?: string | null
+          action: string
+          old_value?: Json | null
+          new_value?: Json | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_user_id?: string | null
+          target_user_id?: string | null
+          subscription_id?: string | null
+          payment_id?: string | null
+          booking_id?: string | null
+          action?: string
+          old_value?: Json | null
+          new_value?: Json | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+
       site_settings: {
         Row: {
           id: number
@@ -1036,6 +1269,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_purchase_subscription: {
+        Args: {
+          _user_id: string
+          _lessons_total: number
+          _package_type: string
+          _horse_type: string
+          _allocation_mode?: string
+        }
+        Returns: Json
+      }
       add_vacation_and_cancel: {
         Args: {
           _ends_on: string
