@@ -168,8 +168,18 @@ Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negr�
   };
 
   const deleteSub = async (s: Sub) => {
-    if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
-    toast.error("Šio abonemento trinti nebegalima tiesiogiai. Jei reikia anuliuoti pirkimą, tai atliksime per atskirą administravimo veiksmą.");
+    if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})? Šis veiksmas negrįžtamas.`)) return;
+
+    const { error } = await supabase.rpc("admin_delete_subscription", {
+      _subscription_id: s.id,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Abonementas ištrintas");
     notifyAndReload();
   };
 
