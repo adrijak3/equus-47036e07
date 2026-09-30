@@ -558,6 +558,7 @@ function VacationsAdminTab() {
 function ScheduleTab() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [open, setOpen] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<{ name: string; price: number; lessons: number; emailOk: boolean } | null>(null);
   const [newDay, setNewDay] = useState(1);
   const [newTime, setNewTime] = useState("17:00");
   const [newCap, setNewCap] = useState<string>("5");
@@ -1616,9 +1617,29 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     }
 
     const price = Number(data.price_eur);
-    toast.success(
-      `Abonementas pridėtas · ${Number.isFinite(price) ? price.toFixed(2) : "0.00"} €`
-    );
+    const purchasedName = profiles.find((p) => p.id === selUser)?.full_name ?? "klientui";
+
+    // The purchase RPC queues the email. Kick the worker immediately so the client
+    // does not have to wait for a separate scheduler.
+    let emailOk = false;
+    try {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke("send-subscription-email", {
+        body: {},
+      });
+      emailOk = !emailError && emailData?.ok === true;
+      if (!emailOk) {
+        console.warn("Subscription email worker did not complete:", emailError ?? emailData);
+      }
+    } catch (emailError) {
+      console.warn("Subscription email worker invocation failed:", emailError);
+    }
+
+    setPurchaseSuccess({
+      name: purchasedName,
+      price: Number.isFinite(price) ? price : 0,
+      lessons: lessonCount,
+      emailOk,
+    });
 
     setOpen(false);
     setSelUser("");
@@ -1859,6 +1880,53 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {purchaseSuccess && (
+        <Dialog open={true} onOpenChange={() => setPurchaseSuccess(null)}>
+          <DialogContent className="max-w-md overflow-hidden rounded-3xl border-gold/25 bg-gradient-card p-0 shadow-2xl">
+            <div className="relative px-6 pb-6 pt-7 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-3xl shadow-gold">
+                🐴
+              </div>
+              <DialogTitle className="font-display text-3xl text-gradient-gold">
+                Viskas patvirtinta! ✨
+              </DialogTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Abonementas sėkmingai sukurtas.
+              </p>
+
+              <div className="mt-5 rounded-2xl border border-gold/15 bg-background/30 p-4 text-left">
+                <div className="font-display text-xl text-gold">{purchaseSuccess.name}</div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Pamokos</div>
+                    <div className="font-medium">{purchaseSuccess.lessons}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Suma</div>
+                    <div className="font-medium">{purchaseSuccess.price.toFixed(2)} €</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={cn(
+                "mt-4 rounded-xl border px-3 py-2 text-xs",
+                purchaseSuccess.emailOk
+                  ? "border-avail-free/30 bg-avail-free/10 text-avail-free"
+                  : "border-gold/20 bg-gold/5 text-muted-foreground",
+              )}>
+                {purchaseSuccess.emailOk
+                  ? "📧 Patvirtinimo laiškas išsiuntimo procesui paleistas."
+                  : "📧 Abonementas sukurtas, bet laiško siuntimo procesas dar nepatvirtintas."}
+              </div>
+
+              <Button variant="gold" className="mt-5 w-full" onClick={() => setPurchaseSuccess(null)}>
+                Gerai 💛
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {detailSub && (
         <SubDetailDialog
