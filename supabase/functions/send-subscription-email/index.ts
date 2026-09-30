@@ -45,7 +45,14 @@ function packageLabel(value: string | null | undefined) {
   return value || "—";
 }
 
-function paymentLabel(value: string | null | undefined) {\n  if (value === "cash") return "Grynais";\n  if (value === "bank_transfer") return "Bankiniu pavedimu";\n  if (value === "other") return "Kita";\n  return value || "—";\n}\n\nfunction horseLabel(value: string | null | undefined) {
+function paymentLabel(value: string | null | undefined) {
+  if (value === "cash") return "Grynais";
+  if (value === "bank_transfer") return "Bankiniu pavedimu";
+  if (value === "other") return "Kita";
+  return value || "—";
+}
+
+function horseLabel(value: string | null | undefined) {
   if (value === "school") return "Mokyklos žirgais";
   if (value === "own") return "Nuosavais žirgais";
   if (value === "private") return "Nuosavais žirgais";
