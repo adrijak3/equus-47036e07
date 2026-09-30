@@ -129,19 +129,6 @@ BEGIN
     AND COALESCE(s.paid, false) = true
     AND COALESCE(s.cancelled_at IS NULL, true)
     AND s.lessons_used < s.lessons_total
-    AND s.id <> COALESCE(
-      (
-        SELECT s2.id
-        FROM public.subscriptions s2
-        WHERE s2.user_id = _user_id
-          AND s2.paid = true
-          AND s2.lessons_used < s2.lessons_total
-          AND COALESCE(s2.cancelled_at IS NULL, true)
-        ORDER BY s2.start_from_date NULLS FIRST, s2.purchase_date, s2.purchased_at
-        LIMIT 1
-      ),
-      '00000000-0000-0000-0000-000000000000'::uuid
-    )
   ORDER BY s.start_from_date NULLS FIRST, s.purchase_date, s.purchased_at
   LIMIT 1;
 
