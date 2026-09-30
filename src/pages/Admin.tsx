@@ -558,7 +558,6 @@ function VacationsAdminTab() {
 function ScheduleTab() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [open, setOpen] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState<{ name: string; price: number; lessons: number; emailOk: boolean } | null>(null);
   const [newDay, setNewDay] = useState(1);
   const [newTime, setNewTime] = useState("17:00");
   const [newCap, setNewCap] = useState<string>("5");
@@ -1476,6 +1475,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
   // Add dialog
   const [open, setOpen] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<{ name: string; price: number; lessons: number; emailOk: boolean } | null>(null);
   const [selUser, setSelUser] = useState("");
   const [packageType, setPackageType] = useState<"group" | "po2">("group");
   const [horseType, setHorseType] = useState<"school" | "own">("school");
