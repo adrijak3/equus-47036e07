@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import {
   Camera,
-  CheckCircle2,
   Copy,
   RefreshCw,
   ShieldCheck,
