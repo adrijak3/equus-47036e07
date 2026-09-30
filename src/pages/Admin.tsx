@@ -1476,10 +1476,9 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   // Add dialog
   const [open, setOpen] = useState(false);
   const [selUser, setSelUser] = useState("");
-  const [lessonType, setLessonType] = useState<LessonType>("sportine");
+  const [packageType, setPackageType] = useState<"group" | "po2">("group");
+  const [horseType, setHorseType] = useState<"school" | "private" | "own">("school");
   const [lessons, setLessons] = useState(8);
-  const [purchaseDate, setPurchaseDate] = useState(formatDateISO(new Date()));
-  const [paid, setPaid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, number>>({});
@@ -1559,26 +1558,43 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     toast.error("Šio abonemento trinti nebegalima tiesiogiai. Jei reikia anuliuoti pirkimą, tai atliksime per atskirą administravimo veiksmą.");
   };
 
-  const newPrice = calculateSubPriceByType(lessons, lessonType);
-
   const addSub = async () => {
     if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
-    const lt = lessonType === "vienkartine" ? 1 : lessons;
+    if (!Number.isInteger(lessons) || lessons < 1) {
+      toast.error("Pamokų skaičius turi būti bent 1");
+      return;
+    }
+
     setSaving(true);
-    const { error } = await supabase.from("subscriptions").insert({
-      user_id: selUser,
-      lessons_total: lt,
-      lesson_type: lessonType,
-      price: newPrice,
-      purchase_date: purchaseDate,
-      expires_at: expiryFromPurchase(purchaseDate),
-      paid,
-    } as any);
+
+    const { data, error } = await (supabase as any).rpc("admin_purchase_subscription", {
+      _user_id: selUser,
+      _lessons_total: lessons,
+      _package_type: packageType,
+      _horse_type: horseType,
+      _allocation_mode: "none",
+    });
+
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Pridėta");
+
+    if (error) {
+      toast.error(
+        error.message?.includes("PRICE_NOT_CONFIGURED")
+          ? "Šio kainų varianto dar nesukonfigūravome."
+          : error.message
+      );
+      return;
+    }
+
+    toast.success(
+      `Abonementas pridėtas · ${Number(data?.price_eur ?? 0).toFixed(2)} €`
+    );
+
     setOpen(false);
-    setSelUser(""); setLessons(8); setPaid(false); setLessonType("sportine");
+    setSelUser("");
+    setLessons(8);
+    setPackageType("group");
+    setHorseType("school");
     load();
   };
 
@@ -1744,35 +1760,38 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
               </select>
             </div>
             <div>
-              <Label>Tipas</Label>
-              <select value={lessonType} onChange={(e) => setLessonType(e.target.value as LessonType)}
+              <Label>Treniruočių tipas</Label>
+              <select value={packageType} onChange={(e) => setPackageType(e.target.value as "group" | "po2")}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="sportine">Sportinė grupinė (4=140€, 8=280€, 12=400€)</option>
-                <option value="sportine_po2">Sportinė po 2 (4=160€, 8=320€)</option>
-                <option value="nuosavu_zirgu">Jojant nuosavu žirgu (4=140€, 8=240€, 12=340€)</option>
-                <option value="nesportine">Nesportinė (1=35€, 4=120€, 8=200€)</option>
-                <option value="vienkartine">Vienkartinė (40€)</option>
+                <option value="group">Grupinė</option>
+                <option value="po2">Po 2</option>
               </select>
             </div>
-            {lessonType !== "vienkartine" && (
-              <div>
-                <Label>Pamokų sk.</Label>
-                <Input type="number" min={1} max={999} value={lessons}
-                  onChange={(e) => setLessons(parseInt(e.target.value) || 0)} />
-              </div>
-            )}
             <div>
-              <Label>Pirkimo data</Label>
-              <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
+              <Label>Žirgas</Label>
+              <select value={horseType} onChange={(e) => setHorseType(e.target.value as "school" | "private" | "own")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="school">Mokyklos žirgais</option>
+                <option value="private">Privačiu žirgu</option>
+                <option value="own">Nuosavu žirgu</option>
+              </select>
             </div>
-            <div className="flex items-baseline justify-between p-3 rounded-md bg-gold/5 border border-gold/15">
-              <span className="text-sm">Iš viso</span>
-              <span className="text-2xl font-display text-gradient-gold tabular-nums">{newPrice} €</span>
+            <div>
+              <Label>Pamokų sk.</Label>
+              <Input
+                type="number"
+                min={1}
+                max={999}
+                value={lessons}
+                onChange={(e) => setLessons(parseInt(e.target.value) || 0)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                1–7 pamokos → 4 pamokų tarifas · 8–11 → 8 pamokų tarifas · 12+ → 12 pamokų tarifas.
+              </p>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} className="accent-gold" />
-              Jau apmokėta
-            </label>
+            <div className="rounded-md border border-gold/15 bg-gold/5 p-3 text-sm text-muted-foreground">
+              Kaina bus apskaičiuota pagal šiuo metu administracijoje nustatytus 4, 8 ir 12 pamokų tarifus.
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
