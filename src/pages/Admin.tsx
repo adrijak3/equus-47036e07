@@ -1480,6 +1480,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [horseType, setHorseType] = useState<"school" | "own">("school");
   const [lessons, setLessons] = useState("");
   const [saving, setSaving] = useState(false);
+  const [subscriptionPrices, setSubscriptionPrices] = useState<Record<string, number>>({});
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, number>>({});
   const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
@@ -1505,12 +1506,21 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   }, [subs]);
 
   const load = async () => {
-    const [p, s] = await Promise.all([
+    const [p, s, priceRows] = await Promise.all([
       supabase.from("profiles").select("id, full_name, phone").order("full_name"),
       supabase.from("subscriptions").select("*").order("purchase_date", { ascending: false }),
+      supabase.from("subscription_prices").select("lessons_total, package_type, horse_type, price_eur").eq("active", true),
     ]);
     setProfiles(p.data ?? []);
     setSubs((s.data ?? []) as any);
+    setSubscriptionPrices(
+      Object.fromEntries(
+        ((priceRows.data ?? []) as any[]).map((x: any) => [
+          `${x.lessons_total}|${x.package_type}|${x.horse_type}`,
+          Number(x.price_eur),
+        ]),
+      ),
+    );
   };
   useEffect(() => { load(); }, []);
 
@@ -1784,7 +1794,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
               <select value={horseType} onChange={(e) => setHorseType(e.target.value as "school" | "own")}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="school">Mokyklos žirgais</option>
-                <option value="own">Nuosavu žirgu</option>
+                <option value="own">Nuosavais žirgais</option>
               </select>
             </div>
             <div>
@@ -1800,9 +1810,30 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                 1–7 pamokos → 4 pamokų tarifas · 8–11 → 8 pamokų tarifas · 12+ → 12 pamokų tarifas.
               </p>
             </div>
-            <div className="rounded-md border border-gold/15 bg-gold/5 p-3 text-sm text-muted-foreground">
-              Kaina bus apskaičiuota pagal šiuo metu administracijoje nustatytus 4, 8 ir 12 pamokų tarifus.
-            </div>
+            {(() => {
+              const count = Number(lessons);
+              const tier = count >= 12 ? 12 : count >= 8 ? 8 : 4;
+              const tierPrice = subscriptionPrices[`${tier}|${packageType}|${horseType}`];
+              const total = Number.isInteger(count) && count > 0 && tierPrice != null
+                ? Math.round((count * tierPrice / tier) * 100) / 100
+                : null;
+
+              return (
+                <div className="rounded-md border border-gold/20 bg-gold/5 p-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">Mokėtina suma</span>
+                    <span className="text-2xl font-display text-gold tabular-nums">
+                      {total != null ? `${total.toFixed(2)} €` : "—"}
+                    </span>
+                  </div>
+                  {total != null && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {count} pam. · taikomas {tier} pam. tarifas ({tierPrice.toFixed(2)} € / {tier})
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
