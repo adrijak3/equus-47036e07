@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
+import { SINGLE_LESSON_PRICE, calculateSubPriceByType, canonicalBookings, dbDayOfWeek, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
 import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight, Palette } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -149,7 +149,7 @@ export default function Paskyra() {
       const withMeta = bs.map((x) => {
         const capacity = getCapacity(x.slot_date, x.slot_time);
         const kind = x.is_individual ? "individual" : capacity !== null && capacity <= 2 ? "po2" : "group";
-        const price = kind === "individual" ? 50 : calculateSubPriceByType(1, kind === "po2" ? "sportine_po2" : "sportine");
+        const price = kind === "individual" ? SINGLE_LESSON_PRICE.individual : kind === "po2" ? SINGLE_LESSON_PRICE.po2 : SINGLE_LESSON_PRICE.group;
         return { ...x, horse_name: haMap[x.id] ?? null, slot_capacity: capacity, lesson_kind: kind, lesson_price: price };
       });
       setBookings(canonicalBookings(withMeta));
