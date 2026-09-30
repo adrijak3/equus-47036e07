@@ -131,36 +131,28 @@ export const LESSON_TYPE_LABEL: Record<LessonType, string> = {
   nuosavu_zirgu: "Jojant nuosavu žirgu",
 };
 
-/** Returns total price for a given lesson count + type using the current published price list. */
+/** Prices for ordinary one-off lessons. These are separate from subscription pricing. */
+export const SINGLE_LESSON_PRICE = {
+  group: 40,
+  po2: 45,
+  individual: 50,
+} as const;
+
+/** Returns total price for a subscription purchase using the current package tiers. */
 export function calculateSubPriceByType(lessons: number, type: LessonType): number {
   if (lessons <= 0) return 0;
 
-  if (type === "vienkartine") return 40;
+  const tiers: Record<string, Record<number, number>> = {
+    sportine: { 4: 150, 8: 280, 12: 400 },
+    sportine_po2: { 4: 170, 8: 320, 12: 480 },
+    nuosavu_zirgu: { 4: 140, 8: 260, 12: 360 },
+    nesportine: { 4: 140, 8: 260, 12: 360 },
+  };
 
-  if (type === "nesportine") {
-    if (lessons === 8) return 200;
-    if (lessons === 4) return 120;
-    if (lessons === 1) return 35;
-    return lessons * 35;
-  }
-
-  if (type === "sportine_po2") {
-    if (lessons === 4) return 160;
-    if (lessons === 8) return 320;
-    return lessons * 45;
-  }
-
-  if (type === "nuosavu_zirgu") {
-    if (lessons === 4) return 140;
-    if (lessons === 8) return 240;
-    if (lessons === 12) return 340;
-    return lessons * 35;
-  }
-
-  if (lessons === 4) return 140;
-  if (lessons === 8) return 280;
-  if (lessons === 12) return 400;
-  return lessons * 40;
+  const tierPrices = tiers[type] ?? tiers.sportine;
+  const tier = lessons <= 7 ? 4 : lessons <= 11 ? 8 : 12;
+  const tierPrice = tierPrices[tier];
+  return Math.round((lessons * tierPrice / tier) * 100) / 100;
 }
 
 export function slotDateTime(slot_date: string, slot_time: string): Date {
