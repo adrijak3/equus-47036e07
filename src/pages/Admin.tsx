@@ -1032,8 +1032,7 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const copyHistory = async () => {
     const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
-    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("
-");
+    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
     try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   const now = new Date();
