@@ -82,7 +82,9 @@ const NAV_ADMIN = [
   { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
 ];
 
-const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };\n\nconst NAV_TRAINER = [
+const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };
+
+const NAV_TRAINER = [
   {
     to: "/",
     label: "Pradžia",
