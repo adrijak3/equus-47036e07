@@ -1582,8 +1582,8 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const addSub = async () => {
     if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
     const lessonCount = Number(lessons);
-    if (!lessons || !Number.isInteger(lessonCount) || lessonCount < 1 || lessonCount > 999) {
-      toast.error("Pamokų skaičius turi būti bent 1");
+    if (!lessons || !Number.isInteger(lessonCount) || lessonCount < 1 || lessonCount > 12) {
+      toast.error("Pamokų skaičius turi būti nuo 1 iki 12");
       return;
     }
 
@@ -1802,12 +1802,12 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
               <Input
                 type="number"
                 min={1}
-                max={999}
+                max={12}
                 value={lessons}
                 onChange={(e) => setLessons(e.target.value)}
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                1–7 pamokos → 4 pamokų tarifas · 8–11 → 8 pamokų tarifas · 12+ → 12 pamokų tarifas.
+                Kainos pateikiamos tiksliai pagal pasirinktą 1–12 pamokų abonemento variantą.
               </p>
             </div>
             {(() => {
@@ -1817,21 +1817,13 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
               let total: number | null = null;
               let description = "";
 
-              if (isValidCount) {
-                if (count <= 3) {
-                  // 1–3 lessons use normal single-lesson pricing.
-                  const singlePrice = packageType === "group" ? 40 : 45;
-                  total = count * singlePrice;
-                  description = `${count} pam. · ${packageType === "group" ? "grupinės" : "po 2"} kaina (${singlePrice.toFixed(2)} € / pam.)`;
-                } else {
-                  // 4–7 => 4-pack rate, 8–11 => 8-pack rate, 12+ => 12-pack rate.
-                  const tier = count >= 12 ? 12 : count >= 8 ? 8 : 4;
-                  const tierPrice = subscriptionPrices[`${tier}|${packageType}|${horseType}`];
+              if (isValidCount && count <= 12) {
+                // Every quantity 1–12 has its own exact configured price.
+                const exactPrice = subscriptionPrices[count + "|" + packageType + "|" + horseType];
 
-                  if (tierPrice != null) {
-                    total = Number((count * tierPrice / tier).toFixed(2));
-                    description = `${count} pam. · taikomas ${tier} pam. tarifas (${tierPrice.toFixed(2)} € / ${tier})`;
-                  }
+                if (exactPrice != null) {
+                  total = exactPrice;
+                  description = count + " pam. · tiksli abonemento kaina";
                 }
               }
 
