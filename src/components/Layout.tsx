@@ -76,7 +76,7 @@ const NAV_ADMIN = [
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
   { to: "/admin?section=subs", label: "Abonementai", icon: Wallet },
-  { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
+  { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },\n  { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine },
   { to: "/admin?section=cancelHistory", label: "Atšaukimų istorija", icon: History },
   { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
 ];
