@@ -1600,16 +1600,29 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     setSaving(false);
 
     if (error) {
+      console.error("admin_purchase_subscription failed", error);
       toast.error(
         error.message?.includes("PRICE_NOT_CONFIGURED")
           ? "Šio kainų varianto dar nesukonfigūravome."
-          : error.message
+          : error.message?.includes("NOT_AUTHENTICATED")
+            ? "Jūsų administravimo sesija nebegalioja. Prisijunkite iš naujo."
+            : error.message?.includes("NOT_ALLOWED")
+              ? "Neturite teisės kurti abonementų."
+              : error.message
       );
       return;
     }
 
+    // Never show a successful purchase unless the RPC returned a complete success payload.
+    if (!data?.ok || !data?.subscription_id) {
+      console.error("admin_purchase_subscription returned unexpected payload", data);
+      toast.error("Abonementas nebuvo sukurtas. Serveris negrąžino patvirtinto pirkimo.");
+      return;
+    }
+
+    const price = Number(data.price_eur);
     toast.success(
-      `Abonementas pridėtas · ${Number(data?.price_eur ?? 0).toFixed(2)} €`
+      `Abonementas pridėtas · ${Number.isFinite(price) ? price.toFixed(2) : "0.00"} €`
     );
 
     setOpen(false);
