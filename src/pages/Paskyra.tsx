@@ -333,7 +333,8 @@ export default function Paskyra() {
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
-            <QuickAction label="Mano QR" icon={<QrCode className="h-4 w-4" />} onClick={() => navigate("/mano-qr")} />\n            <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
+            <QuickAction label="Mano QR" icon={<QrCode className="h-4 w-4" />} onClick={() => navigate("/mano-qr")} />
+            <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
             <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
             <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
           </div>
@@ -405,6 +406,19 @@ export default function Paskyra() {
 
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
+          <Section title="Greitas atvykimas" icon={<QrCode className="h-4 w-4" />}>
+            <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium">Mano QR kodas</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Parodykite QR treneriui arba administratoriui prieš treniruotę, kad Jus greitai atpažintų.
+                </p>
+              </div>
+              <Button variant="outlineGold" onClick={() => navigate("/mano-qr")} className="shrink-0">
+                <QrCode className="mr-2 h-4 w-4" /> Atidaryti QR
+              </Button>
+            </div>
+          </Section>
 {subs.length === 0 ? (
             <Empty text="Nėra abonementų" />
           ) : (
