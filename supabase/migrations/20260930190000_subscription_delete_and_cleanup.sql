@@ -114,12 +114,12 @@ BEGIN
     SELECT s.id
     FROM public.subscriptions s
     WHERE s.lessons_used >= s.lessons_total
-      AND s.purchase_date <= CURRENT_DATE - INTERVAL '7 days'
       AND EXISTS (
         SELECT 1
         FROM public.subscriptions newer
         WHERE newer.user_id = s.user_id
           AND newer.purchase_date > s.purchase_date
+          AND newer.purchase_date <= CURRENT_DATE - INTERVAL '7 days'
       )
     ORDER BY s.purchase_date ASC
   LOOP
