@@ -143,7 +143,11 @@ Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negr�
   };
 
   const togglePaid = async (subId: string, paid: boolean) => {
-    const { error } = await supabase.from("subscriptions").update({ paid }).eq("id", subId);
+    const fn = paid ? "admin_mark_subscription_paid" : "admin_mark_subscription_unpaid";
+    const { error } = await (supabase as any).rpc(fn, {
+      _subscription_id: subId,
+      _reason: "Pakeitė administracija kliento profilyje",
+    });
     if (error) { toast.error(error.message); return; }
     notifyAndReload();
   };
@@ -153,18 +157,19 @@ Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negr�
     if (txt === null) return;
     const n = parseInt(txt);
     if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    const newUsed = Math.min(s.lessons_used, n);
-    const { error } = await supabase.from("subscriptions").update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
+    const { error: totalError } = await (supabase as any).rpc("admin_adjust_subscription_total", {
+      _subscription_id: s.id,
+      _new_lessons_total: n,
+      _reason: "Pakeitė administracija kliento profilyje",
+    });
+    if (totalError) { toast.error(totalError.message); return; }
     toast.success("Atnaujinta");
     notifyAndReload();
   };
 
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
-    const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ištrinta");
+    toast.error("Šio abonemento trinti nebegalima tiesiogiai. Jei reikia anuliuoti pirkimą, tai atliksime per atskirą administravimo veiksmą.");
     notifyAndReload();
   };
 
