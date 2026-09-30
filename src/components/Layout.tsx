@@ -78,12 +78,11 @@ const NAV_ADMIN = [
   { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
   { to: "/admin?section=subs", label: "Abonementai", icon: Wallet },
   { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
-  { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine },
   { to: "/admin?section=cancelHistory", label: "Atšaukimų istorija", icon: History },
   { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
 ];
 
-const NAV_TRAINER = [
+const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };\n\nconst NAV_TRAINER = [
   {
     to: "/",
     label: "Pradžia",
@@ -482,21 +481,22 @@ export default function Layout({
           aria-label="Pagrindinė navigacija"
           className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-gold/15 bg-background/95 backdrop-blur-xl sm:hidden"
         >
-          <div className="mx-auto grid max-w-md grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
+          <div className={cn("mx-auto px-1 pb-[env(safe-area-inset-bottom)]", isAdmin ? "grid max-w-2xl grid-cols-6" : "grid max-w-md grid-cols-5")}>
             {(isAdmin
               ? [
                   NAV_ADMIN[0],
+                  NAV_ADMIN[1],
                   NAV_ADMIN[2],
-                  NAV_ADMIN[6],
-                  NAV_ADMIN[5],
                   NAV_ADMIN[3],
+                  NAV_ADMIN[4],
+                  STAFF_QR_NAV,
                 ]
               : isTrainer
                 ? [
                     NAV_TRAINER[0],
                     NAV_TRAINER[1],
-                    NAV_TRAINER[NAV_TRAINER.length - 1],
                     NAV_TRAINER[2],
+                    STAFF_QR_NAV,
                     { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
                   ]
                 : NAV_USER
