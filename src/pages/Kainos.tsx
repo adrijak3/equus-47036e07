@@ -21,9 +21,10 @@ export default function Kainos() {
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
           <h2 className="text-2xl font-display text-gold mb-6">4 kartų abonementai (1 treniruotė per savaitę)</h2>
           <ul className="space-y-4 font-body">
-            <Row label="Sportinės grupinės" price="140 €" />
-            <Row label="Sportinių po 2" price="160 €" />
-            <Row label="Jojant nuosavu žirgu" price="140 €" />
+            <Row label="Grupinės · mokyklos žirgais" price="150 €" />
+            <Row label="Grupinės · nuosavais žirgais" price="140 €" />
+            <Row label="Po 2 · mokyklos žirgais" price="170 €" />
+            <Row label="Po 2 · nuosavais žirgais" price="160 €" />
           </ul>
         </section>
 
@@ -31,9 +32,10 @@ export default function Kainos() {
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
           <h2 className="text-2xl font-display text-gold mb-6">8 kartų abonementai (2 treniruotės per savaitę)</h2>
           <ul className="space-y-4 font-body">
-            <Row label="Sportinės grupinės" price="280 €" />
-            <Row label="Sportinės po 2" price="320 €" />
-            <Row label="Jojant nuosavu žirgu" price="240 €" />
+            <Row label="Grupinės · mokyklos žirgais" price="280 €" />
+            <Row label="Grupinės · nuosavais žirgais" price="260 €" />
+            <Row label="Po 2 · mokyklos žirgais" price="320 €" />
+            <Row label="Po 2 · nuosavais žirgais" price="300 €" />
           </ul>
         </section>
 
@@ -41,8 +43,10 @@ export default function Kainos() {
         <section className="bg-gradient-card border border-gold/15 rounded-lg p-8 shadow-elegant animate-fade-up">
           <h2 className="text-2xl font-display text-gold mb-6">12 kartų abonementai (3 treniruotės per savaitę)</h2>
           <ul className="space-y-4 font-body">
-            <Row label="Sportinės grupinės" price="400 €" />
-            <Row label="Jojant nuosavu žirgu" price="340 €" />
+            <Row label="Grupinės · mokyklos žirgais" price="400 €" />
+            <Row label="Grupinės · nuosavais žirgais" price="360 €" />
+            <Row label="Po 2 · mokyklos žirgais" price="480 €" />
+            <Row label="Po 2 · nuosavais žirgais" price="450 €" />
           </ul>
         </section>
 
