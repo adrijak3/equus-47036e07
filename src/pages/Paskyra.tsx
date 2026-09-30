@@ -407,12 +407,12 @@ export default function Paskyra() {
 
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
-          <Section title="Greitas atvykimas" icon={<QrCode className="h-4 w-4" />}>
+          <Section title="Mano QR kodas" icon={<QrCode className="h-4 w-4" />}>
             <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium">Mano QR kodas</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Parodykite QR treneriui arba administratoriui prieš treniruotę, kad Jus greitai atpažintų.
+                  Parodykite QR administratoriui arba treneriui, kad Jus greitai rastų ir galėtų tvarkyti abonementą.
                 </p>
               </div>
               <Button variant="outlineGold" onClick={() => navigate("/mano-qr")} className="shrink-0">
