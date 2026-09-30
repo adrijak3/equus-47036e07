@@ -32,7 +32,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const PublicRegistration = lazy(() => import("./pages/PublicRegistration"));
 const Reviews = lazy(() => import("./pages/Reviews"));
 const PrivatumoPolitika = lazy(() => import("./pages/PrivatumoPolitika"));
-const TaisyklesIrSalygos = lazy(() => import("./pages/TaisyklesIrSalygos"));
+const TaisyklesIrSalygos = lazy(() => import("./pages/TaisyklesIrSalygos"));\nconst QrCodePage = lazy(() => import("./pages/QrCode"));
 const SlapukuPolitika = lazy(() => import("./pages/SlapukuPolitika"));
 
 const queryClient = new QueryClient();
@@ -104,7 +104,7 @@ const App = () => (
                   <Route path="/atsiliepimai" element={<Reviews />} />
                   <Route path="/privatumo-politika" element={<PrivatumoPolitika />} />
                   <Route path="/taisykles-ir-salygos" element={<TaisyklesIrSalygos />} />
-                  <Route path="/slapuku-politika" element={<SlapukuPolitika />} />
+                  <Route path="/slapuku-politika" element={<SlapukuPolitika />} />\n                  <Route path="/mano-qr" element={<RequireAuth><QrCodePage /></RequireAuth>} />\n                  <Route path="/admin/skenuoti" element={<RequireAuth><QrCodePage scanner /></RequireAuth>} />
 
                   <Route
                     path="/paskyra"
