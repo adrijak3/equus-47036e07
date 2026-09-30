@@ -1516,7 +1516,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   useEffect(() => { load(); }, []);
 
   const togglePaid = async (subId: string, p: boolean) => {
-    const { error } = await supabase.from("subscriptions").update({ paid: p }).eq("id", subId);
+    const fn = p ? "admin_mark_subscription_paid" : "admin_mark_subscription_unpaid";
+    const { error } = await (supabase as any).rpc(fn, {
+      _subscription_id: subId,
+      _reason: "Pakeitė administracija abonementų lange",
+    });
     if (error) { toast.error(error.message); return; }
     load();
   };
@@ -1526,9 +1530,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     if (txt === null) return;
     const n = parseInt(txt);
     if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Skaičius turi būti 1–100"); return; }
-    const newUsed = Math.min(s.lessons_used, n);
-    const { error } = await supabase.from("subscriptions")
-      .update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
+    const { error } = await (supabase as any).rpc("admin_adjust_subscription_total", {
+      _subscription_id: s.id,
+      _new_lessons_total: n,
+      _reason: "Pakeitė administracija abonementų lange",
+    });
     if (error) { toast.error(error.message); return; }
     toast.success("Atnaujinta"); load();
   };
@@ -1537,8 +1543,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     const current = new Date(`${s.expires_at}T12:00:00`);
     current.setDate(current.getDate() + days);
     const newExpiry = formatDateISO(current);
-    const { error } = await supabase.from("subscriptions")
-      .update({ expires_at: newExpiry }).eq("id", s.id);
+    const { error } = await (supabase as any).rpc("admin_extend_subscription", {
+      _subscription_id: s.id,
+      _new_expires_at: newExpiry,
+      _reason: "Pratęsė administracija abonementų lange",
+    });
     if (error) { toast.error(error.message); return; }
     toast.success(`Galiojimas pratęstas iki ${newExpiry}`);
     load();
@@ -1547,9 +1556,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti abonementą (${s.lessons_used}/${s.lessons_total})?`)) return;
-    const { error } = await supabase.from("subscriptions").delete().eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ištrinta"); load();
+    toast.error("Šio abonemento trinti nebegalima tiesiogiai. Jei reikia anuliuoti pirkimą, tai atliksime per atskirą administravimo veiksmą.");
   };
 
   const newPrice = calculateSubPriceByType(lessons, lessonType);
