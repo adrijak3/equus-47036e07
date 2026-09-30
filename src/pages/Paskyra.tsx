@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, expiryFromPurchase, formatDateISO, formatTime, LESSON_TYPE_LABEL, MONTHS_LT_NOM, WEEKDAYS_LT, type LessonType } from "@/lib/equus";
+import { calculateSubPriceByType, canonicalBookings, dbDayOfWeek, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
 import { CalendarDays, Clock, Bell, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight, Palette } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -100,18 +100,6 @@ export default function Paskyra() {
   useEffect(() => {
     void syncPushLanguage(language);
   }, [language]);
-
-
-  // Add subscription dialog
-  const [subDialog, setSubDialog] = useState(false);
-  const [newSubLessons, setNewSubLessons] = useState(8);
-  const [newSubDate, setNewSubDate] = useState(formatDateISO(new Date()));
-  const [newSubPaid, setNewSubPaid] = useState(false);
-  const [newSubType, setNewSubType] = useState<LessonType>("sportine");
-  /** Past bookings without a subscription (offered to optionally attribute when buying) */
-  const [unattributedPast, setUnattributedPast] = useState<Booking[]>([]);
-  const [attributeIds, setAttributeIds] = useState<Set<string>>(new Set());
-
 
 
   // Message
@@ -261,72 +249,6 @@ export default function Paskyra() {
     (b.status === "active" || b.status === "completed") &&
     !b.subscription_id && b.counts_in_subscription === false,
   );
-
-  const effLessons = newSubType === "vienkartine" ? 1 : newSubLessons;
-  const newSubPrice = calculateSubPriceByType(effLessons, newSubType);
-
-  // Offer only older lessons that are not already assigned to any subscription.
-  // Lessons on/after the purchase date are handled automatically by process-lessons.
-  useEffect(() => {
-    if (!subDialog || !acting) return;
-    (async () => {
-      const { data } = await supabase
-        .from("bookings")
-        .select("id, slot_date, slot_time, status, counts_in_subscription, subscription_id")
-        .eq("user_id", acting)
-        .is("subscription_id", null)
-        .lt("slot_date", newSubDate)
-        .neq("status", "cancelled")
-        .order("slot_date", { ascending: false })
-        .order("slot_time", { ascending: false })
-        .limit(100);
-      setUnattributedPast(canonicalBookings((data ?? []) as any) as any);
-      setAttributeIds(new Set());
-    })();
-  }, [subDialog, acting, newSubDate]);
-
-  const addSubscription = async () => {
-    if (!user || !acting) return;
-    if (effLessons < 1 || effLessons > 50) { toast.error("Pamokų skaičius 1–50"); return; }
-
-    const fromAttribution = attributeIds.size;
-    if (fromAttribution > effLessons) {
-      toast.error(`Pasirinkta (${fromAttribution}) negali viršyti pamokų sk. (${effLessons})`);
-      return;
-    }
-
-    const { data: ins, error } = await supabase.from("subscriptions").insert({
-      user_id: acting,
-      lessons_total: effLessons,
-      lessons_used: fromAttribution,
-      lesson_type: newSubType,
-      price: newSubPrice,
-      purchase_date: newSubDate,
-      expires_at: expiryFromPurchase(newSubDate),
-      paid: newSubPaid,
-    } as any).select("id").maybeSingle();
-    if (error) { toast.error(error.message); return; }
-
-    // Optionally attach selected older, previously-unassigned lessons.
-    // Lessons from the purchase date onward are picked up automatically.
-    if (ins?.id && attributeIds.size > 0) {
-      const { error: attachError } = await supabase.from("bookings")
-        .update({ subscription_id: ins.id, counts_in_subscription: true } as any)
-        .in("id", Array.from(attributeIds));
-      if (attachError) {
-        toast.error("Abonementas sukurtas, bet ankstesnių pamokų nepavyko priskirti.");
-        return;
-      }
-    }
-
-    toast.success("Abonementas pridėtas");
-    setSubDialog(false);
-    setNewSubLessons(8);
-    setNewSubPaid(false);
-    setNewSubType("sportine");
-    setAttributeIds(new Set());
-    load();
-  };
 
   const sendMessage = async () => {
     if (!user || msgBody.trim().length < 1) return;
@@ -515,12 +437,7 @@ export default function Paskyra() {
 
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
-          <div className="flex justify-end">
-            <Button variant="gold" onClick={() => setSubDialog(true)}>
-              <Plus className="w-4 h-4" /> Pridėti abonementą
-            </Button>
-          </div>
-          {subs.length === 0 ? (
+{subs.length === 0 ? (
             <Empty text="Nėra abonementų" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -545,7 +462,7 @@ export default function Paskyra() {
                     <SubscriptionCard
                       s={s}
                       effectiveUsed={actualUsed}
-                      onMarkPaid={markSubPaid}
+                      onMarkPaid={undefined}
                       onDelete={undefined}
                       onEditLessons={undefined}
                       lessons={bookings
@@ -592,90 +509,7 @@ export default function Paskyra() {
         </TabsContent>
       </Tabs>
 
-      {/* Add subscription dialog */}
-      <Dialog open={subDialog} onOpenChange={setSubDialog}>
-        <DialogContent className="bg-gradient-card border-gold/20">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold">Naujas abonementas</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="sub-date">Pirkimo data</Label>
-              <Input id="sub-date" type="date" value={newSubDate} onChange={(e) => setNewSubDate(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="sub-type">Tipas</Label>
-              <select id="sub-type" value={newSubType} onChange={(e) => setNewSubType(e.target.value as LessonType)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="sportine">Sportinė (grupinė)</option>
-                <option value="sportine_po2">Sportinė (po 2)</option>
-                <option value="nuosavu_zirgu">Jojant nuosavu žirgu</option>
-                <option value="nesportine">Nesportinė</option>
-                <option value="vienkartine">Vienkartinė (1 pamoka)</option>
-              </select>
-            </div>
-            {newSubType !== "vienkartine" && (
-            <div>
-              <Label htmlFor="sub-lessons">Pamokų skaičius</Label>
-              <Input id="sub-lessons" type="number" min={1} max={50} value={newSubLessons}
-                onChange={(e) => setNewSubLessons(parseInt(e.target.value) || 0)} />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Galioja 30 dienų
-              </p>
-            </div>
-            )}
-            {unattributedPast.length > 0 && (
-              <div className="border border-gold/15 rounded-md p-3 bg-background/30">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Ankstesnės neįtrauktos pamokos
-                </Label>
-                <p className="text-[11px] text-muted-foreground mt-1 mb-2">
-                  Šios pamokos buvo iki abonemento pirkimo datos ir dar nepriskirtos jokiam abonementui. Pasirinkite tik tas, kurias norite įtraukti.
-                </p>
-                <ul className="space-y-1 max-h-44 overflow-auto">
-                  {unattributedPast.map((b) => {
-                    const checked = attributeIds.has(b.id);
-                    const isToday = b.slot_date === formatDateISO(new Date());
-                    return (
-                      <li key={b.id}>
-                        <label className="flex items-center gap-2 text-sm cursor-pointer rounded px-2 py-1 hover:bg-gold/5">
-                          <input
-                            type="checkbox"
-                            className="accent-gold"
-                            checked={checked}
-                            onChange={(e) => {
-                              setAttributeIds((prev) => {
-                                const next = new Set(prev);
-                                if (e.target.checked) next.add(b.id);
-                                else next.delete(b.id);
-                                return next;
-                              });
-                            }}
-                          />
-                          <span className="tabular-nums">{b.slot_date} · {formatTime(b.slot_time)}</span>
-                          {isToday && <span className="text-[10px] uppercase tracking-wider text-gold">šiandien</span>}
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-            <div className="flex items-baseline justify-between p-4 rounded-md bg-gold/5 border border-gold/15">
-              <span className="text-sm">Iš viso</span>
-              <span className="text-3xl font-display text-gradient-gold tabular-nums">{newSubPrice} €</span>
-            </div>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={newSubPaid} onChange={(e) => setNewSubPaid(e.target.checked)} className="accent-gold" />
-              Jau apmokėta
-            </label>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setSubDialog(false)}>Atšaukti</Button>
-            <Button variant="gold" onClick={addSubscription}>Pridėti</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
