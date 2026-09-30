@@ -19,6 +19,7 @@ interface Row {
   created_at: string;
   accidental?: boolean | null;
   name?: string;
+  cancelled_by_name?: string | null;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -54,13 +55,17 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
         .limit(400);
       const list = ((data ?? []) as Row[]);
       const ids = [...new Set(list.map((r) => r.user_id).filter(Boolean))] as string[];
+      const actorIds = [...new Set(list.map((r: any) => r.cancelled_by).filter(Boolean))] as string[];
       const guestIds = [
         ...new Set(list.map((r: any) => r.guest_rider_id).filter(Boolean)),
       ] as string[];
 
-      const [{ data: profs }, { data: guests }] = await Promise.all([
+      const [{ data: profs }, { data: actors }, { data: guests }] = await Promise.all([
         ids.length
           ? supabase.from("profiles").select("id, full_name").in("id", ids)
+          : Promise.resolve({ data: [] as any[] } as any),
+        actorIds.length
+          ? supabase.from("profiles").select("id, full_name").in("id", actorIds)
           : Promise.resolve({ data: [] as any[] } as any),
         guestIds.length
           ? (supabase as any)
@@ -71,6 +76,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
       ]);
 
       const map = new Map((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      const actorMap = new Map((actors ?? []).map((p: any) => [p.id, p.full_name]));
       const guestMap = new Map(
         (guests ?? []).map((g: any) => [g.id, `${g.first_name} ${g.last_name}`.trim()]),
       );
@@ -83,6 +89,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
             r.guest_name ??
             (r.guest_rider_id ? guestMap.get(r.guest_rider_id) : null) ??
             "—",
+          cancelled_by_name: r.cancelled_by ? (actorMap.get(r.cancelled_by) ?? null) : null,
         })),
       );
       setLoading(false);
@@ -173,7 +180,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
                     <span className="tabular-nums text-gold">{formatTime(r.slot_time)}</span>
                     <span className="text-muted-foreground">Kelios pamokos · {group.rows.length}</span>
                     <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>
-                      Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}
+                      Atšaukė: {r.cancelled_by_name ?? ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}
                     </span>
                     {isOpen ? <ChevronUp className="ml-auto h-4 w-4 text-muted-foreground" /> : <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />}
                   </button>
