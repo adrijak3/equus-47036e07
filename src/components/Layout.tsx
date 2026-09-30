@@ -106,6 +106,11 @@ const NAV_TRAINER = [
     label: "Informacija",
     icon: Info,
   },
+  {
+    to: "/admin/skenuoti",
+    label: "Skenuoti QR",
+    icon: ScanLine,
+  },
 ];
 
 export default function Layout({
@@ -472,13 +477,30 @@ export default function Layout({
         </motion.aside>
       </div>
 
-      {user && (isAdmin || (!isAdmin && !isTrainer)) && (
+      {user && (
         <nav
           aria-label="Pagrindinė navigacija"
           className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-gold/15 bg-background/95 backdrop-blur-xl sm:hidden"
         >
           <div className="mx-auto grid max-w-md grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
-            {(isAdmin ? NAV_ADMIN.slice(0, 5) : NAV_USER).map(({ to, label, icon: Icon }) => {
+            {(isAdmin
+              ? [
+                  NAV_ADMIN[0],
+                  NAV_ADMIN[2],
+                  NAV_ADMIN[6],
+                  NAV_ADMIN[5],
+                  NAV_ADMIN[3],
+                ]
+              : isTrainer
+                ? [
+                    NAV_TRAINER[0],
+                    NAV_TRAINER[1],
+                    NAV_TRAINER[NAV_TRAINER.length - 1],
+                    NAV_TRAINER[2],
+                    { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
+                  ]
+                : NAV_USER
+            ).map(({ to, label, icon: Icon }) => {
               const active = isLinkActive(to);
               return (
                 <Link
