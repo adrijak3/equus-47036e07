@@ -1477,8 +1477,8 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [open, setOpen] = useState(false);
   const [selUser, setSelUser] = useState("");
   const [packageType, setPackageType] = useState<"group" | "po2">("group");
-  const [horseType, setHorseType] = useState<"school" | "private" | "own">("school");
-  const [lessons, setLessons] = useState(8);
+  const [horseType, setHorseType] = useState<"school" | "own">("school");
+  const [lessons, setLessons] = useState("");
   const [saving, setSaving] = useState(false);
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, number>>({});
@@ -1560,7 +1560,8 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
   const addSub = async () => {
     if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
-    if (!Number.isInteger(lessons) || lessons < 1) {
+    const lessonCount = Number(lessons);
+    if (!lessons || !Number.isInteger(lessonCount) || lessonCount < 1 || lessonCount > 999) {
       toast.error("Pamokų skaičius turi būti bent 1");
       return;
     }
@@ -1569,7 +1570,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
     const { data, error } = await (supabase as any).rpc("admin_purchase_subscription", {
       _user_id: selUser,
-      _lessons_total: lessons,
+      _lessons_total: lessonCount,
       _package_type: packageType,
       _horse_type: horseType,
       _allocation_mode: "none",
@@ -1592,7 +1593,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
     setOpen(false);
     setSelUser("");
-    setLessons(8);
+    setLessons("");
     setPackageType("group");
     setHorseType("school");
     load();
@@ -1769,10 +1770,9 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
             </div>
             <div>
               <Label>Žirgas</Label>
-              <select value={horseType} onChange={(e) => setHorseType(e.target.value as "school" | "private" | "own")}
+              <select value={horseType} onChange={(e) => setHorseType(e.target.value as "school" | "own")}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="school">Mokyklos žirgais</option>
-                <option value="private">Privačiu žirgu</option>
                 <option value="own">Nuosavu žirgu</option>
               </select>
             </div>
@@ -1783,7 +1783,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                 min={1}
                 max={999}
                 value={lessons}
-                onChange={(e) => setLessons(parseInt(e.target.value) || 0)}
+                onChange={(e) => setLessons(e.target.value)}
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 1–7 pamokos → 4 pamokų tarifas · 8–11 → 8 pamokų tarifas · 12+ → 12 pamokų tarifas.
