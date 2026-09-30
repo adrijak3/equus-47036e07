@@ -36,7 +36,7 @@ type ClientResult = {
     package_type?: string | null;
     horse_type?: string | null;
   } | null;
-  reservations: Array<{ id: string; slot_date: string; slot_time: string; status: string }>;
+  reservations: Array<{ id: string; slot_date: string; slot_time: string; status: string; checked_in_at?: string | null }>;
 };
 
 function extractToken(value: string) {
@@ -59,6 +59,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
   const [manual, setManual] = useState("");
   const [client, setClient] = useState<ClientResult | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [confirmingBookingId, setConfirmingBookingId] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   const stopScanner = useCallback(async () => {
@@ -102,6 +103,27 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
     if (!scanner && user) void loadOwnQr();
     return () => { void stopScanner(); };
   }, [scanner, user, loadOwnQr, stopScanner]);
+
+  const confirmAttendance = async (bookingId: string) => {
+    if (!client) return;
+    setConfirmingBookingId(bookingId);
+    const { data, error } = await (supabase as any).rpc("confirm_client_qr_attendance", {
+      _token: extractToken(token ?? ""),
+      _booking_id: bookingId,
+    });
+    setConfirmingBookingId(null);
+    if (error || !data?.ok) {
+      toast.error(error?.message ?? "Nepavyko patvirtinti atvykimo.");
+      return;
+    }
+    setClient((current) => current ? ({
+      ...current,
+      reservations: current.reservations.map((b) =>
+        b.id === bookingId ? { ...b, checked_in_at: data.checked_in_at ?? new Date().toISOString() } : b
+      ),
+    }) : current);
+    toast.success("Atvykimas patvirtintas ✓");
+  };
 
   const startScanner = async () => {
     setClient(null);
@@ -172,7 +194,14 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
           </div>
         )}
 
-        {client && <ClientResultCard result={client} onReset={() => setClient(null)} />}
+        {client && (
+          <ClientResultCard
+            result={client}
+            onReset={() => setClient(null)}
+            onConfirm={confirmAttendance}
+            confirmingBookingId={confirmingBookingId}
+          />
+        )}
       </div>
     );
   }
@@ -215,7 +244,17 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
   );
 }
 
-function ClientResultCard({ result, onReset }: { result: ClientResult; onReset: () => void }) {
+function ClientResultCard({
+  result,
+  onReset,
+  onConfirm,
+  confirmingBookingId,
+}: {
+  result: ClientResult;
+  onReset: () => void;
+  onConfirm: (bookingId: string) => void;
+  confirmingBookingId: string | null;
+}) {
   const sub = result.subscription;
   const remaining = sub ? Math.max(0, Number(sub.lessons_total) - Number(sub.lessons_used)) : 0;
   const formatDate = (value: string) => new Date(value + (value.length === 10 ? "T12:00:00" : "")).toLocaleDateString("lt-LT");
@@ -251,9 +290,32 @@ function ClientResultCard({ result, onReset }: { result: ClientResult; onReset: 
         {result.reservations.length ? (
           <div className="mt-4 space-y-2">
             {result.reservations.map((booking) => (
-              <div key={booking.id} className="flex items-center justify-between rounded-2xl border border-gold/10 bg-background/30 p-3 text-sm">
-                <span>{formatDate(booking.slot_date)}</span>
-                <span className="font-medium text-gold">{booking.slot_time.slice(0,5)}</span>
+              <div key={booking.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/10 bg-background/30 p-3 text-sm">
+                <div>
+                  <div>{formatDate(booking.slot_date)}</div>
+                  <div className="font-medium text-gold">{booking.slot_time.slice(0,5)}</div>
+                </div>
+                {booking.checked_in_at ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-500">
+                    <CheckCircle2 className="h-4 w-4" /> Atvykimas patvirtintas
+                  </span>
+                ) : (
+                  (() => {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const canConfirm = booking.status === "active" && booking.slot_date === today;
+                    return canConfirm ? (
+                      <Button
+                        size="sm"
+                        variant="gold"
+                        onClick={() => onConfirm(booking.id)}
+                        disabled={confirmingBookingId === booking.id}
+                      >
+                        <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                        {confirmingBookingId === booking.id ? "Tvirtinama…" : "Patvirtinti atvykimą"}
+                      </Button>
+                    ) : null;
+                  })()
+                )}
               </div>
             ))}
           </div>
