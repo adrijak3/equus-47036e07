@@ -27,7 +27,6 @@ import { UsersSection } from "@/components/admin/UsersSection";
 import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders";
 import { History } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
-import { ResendTestCard } from "@/components/admin/ResendTestCard";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; trainer_name?: string | null; }
 interface CancelReq {
@@ -221,7 +220,6 @@ export default function Admin() {
             <TabsContent value="settings" className="space-y-6">
               <AdminNotificationsTab />
               <MaintenanceSettings />
-              <ResendTestCard />
             </TabsContent>
           </Tabs>
         </div>
