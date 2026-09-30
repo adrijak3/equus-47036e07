@@ -45,7 +45,7 @@ function packageLabel(value: string | null | undefined) {
   return value || "—";
 }
 
-function horseLabel(value: string | null | undefined) {
+function paymentLabel(value: string | null | undefined) {\n  if (value === "cash") return "Grynais";\n  if (value === "bank_transfer") return "Bankiniu pavedimu";\n  if (value === "other") return "Kita";\n  return value || "—";\n}\n\nfunction horseLabel(value: string | null | undefined) {
   if (value === "school") return "Mokyklos žirgais";
   if (value === "own") return "Nuosavais žirgais";
   if (value === "private") return "Nuosavais žirgais";
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
       const { data: subscription, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select(
-          "id,user_id,lessons_total,lessons_used,price,purchase_date,expires_at,paid,lesson_type,package_type,horse_type,purchase_method,purchased_at",
+          "id,user_id,lessons_total,lessons_used,price,purchase_date,start_from_date,expires_at,paid,lesson_type,package_type,horse_type,purchase_method,purchased_at",
         )
         .eq("id", event.subscription_id)
         .maybeSingle();
