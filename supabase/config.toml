@@ -11,3 +11,7 @@ verify_jwt = false
 
 [functions.push-notifications]
 verify_jwt = false
+
+
+[functions.send-test-resend-email]
+verify_jwt = false
