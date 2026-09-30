@@ -167,6 +167,24 @@ Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negr�
     notifyAndReload();
   };
 
+  const editUsed = async (s: Sub) => {
+    const txt = prompt(`Kiek treniruočių jau panaudota (dabar ${s.lessons_used} iš ${s.lessons_total}):`, String(s.lessons_used));
+    if (txt === null) return;
+    const n = parseInt(txt);
+    if (!Number.isFinite(n) || n < 0 || n > s.lessons_total) {
+      toast.error(`Įveskite skaičių nuo 0 iki ${s.lessons_total}`);
+      return;
+    }
+    const { error } = await (supabase as any).rpc("admin_adjust_subscription_used", {
+      _subscription_id: s.id,
+      _new_lessons_used: n,
+      _reason: "Pakeitė administracija kliento profilyje",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Panaudotų treniruočių skaičius atnaujintas");
+    notifyAndReload();
+  };
+
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})? Šis veiksmas negrįžtamas.`)) return;
 
@@ -404,6 +422,7 @@ function UserDetailsBody({
                 effectiveUsed={s.lessons_used ?? 0}
                 onMarkPaid={!s.paid ? () => onTogglePaid(s.id, true) : undefined}
                 onEditLessons={() => onEditLessons(s)}
+                onEditUsed={() => editUsed(s)}
                 onDelete={() => onDeleteSub(s)}
                 extra={s.paid ? (
                   <div className="flex justify-end">
