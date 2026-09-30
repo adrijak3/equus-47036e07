@@ -1482,29 +1482,6 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [saving, setSaving] = useState(false);
   const [subscriptionPrices, setSubscriptionPrices] = useState<Record<string, number>>({});
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
-  const [usageMap, setUsageMap] = useState<Record<string, number>>({});
-  const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
-
-  // Compute actual usage = count of bookings attributed to each sub (active/completed and counts_in_subscription)
-  useEffect(() => {
-    if (subs.length === 0) { setUsageMap({}); return; }
-    (async () => {
-      const ids = subs.map((s) => s.id);
-      const { data } = await supabase
-        .from("bookings")
-        .select("subscription_id, status, counts_in_subscription")
-        .in("subscription_id", ids);
-      const m: Record<string, number> = {};
-      (data ?? []).forEach((b: any) => {
-        if (!b.subscription_id) return;
-        if (b.counts_in_subscription === false) return;
-        if (b.status === "cancelled") return;
-        m[b.subscription_id] = (m[b.subscription_id] ?? 0) + 1;
-      });
-      setUsageMap(m);
-    })();
-  }, [subs]);
-
   const load = async () => {
     const [p, s, priceRows] = await Promise.all([
       supabase.from("profiles").select("id, full_name, phone").order("full_name"),
@@ -1747,7 +1724,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                 ) : (
                   <div className="grid sm:grid-cols-2 gap-3">
                     {us.map((s) => {
-                      const actual = Math.max(usageMap[s.id] ?? 0, s.lessons_used ?? 0);
+                      const actual = s.lessons_used ?? 0;
                       return (
                         <SubscriptionCard
                           key={s.id}
