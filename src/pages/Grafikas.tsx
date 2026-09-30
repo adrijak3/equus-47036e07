@@ -1146,9 +1146,9 @@ export default function Grafikas() {
     const slotForBooking = getSlotsAtTime(date, time)[0];
     if (slotForBooking?.max_capacity === 2) {
       const today = formatDateISO(new Date());
-      const { data: subscriptions, error: subError } = await supabase.from("subscriptions").select("id, lessons_total, lessons_used, price, lesson_type").eq("user_id", user.id).eq("paid", true).gte("expires_at", today).order("purchase_date", { ascending: false });
+      const { data: subscriptions, error: subError } = await supabase.from("subscriptions").select("id, lessons_total, lessons_used, price, lesson_type, start_from_date, purchase_date").eq("user_id", user.id).eq("paid", true).gte("expires_at", today).order("start_from_date", { ascending: true, nullsFirst: true }).order("purchase_date", { ascending: true });
       if (subError) { toast.error(subError.message); return; }
-      const usable = (subscriptions ?? []).filter((s: any) => Number(s.lessons_total) > Number(s.lessons_used) && ["sportine", "sportine_po2"].includes(String(s.lesson_type)));
+      const usable = (subscriptions ?? []).filter((s: any) => Number(s.lessons_total) > Number(s.lessons_used) && ["sportine", "sportine_po2"].includes(String(s.lesson_type)) && (s.start_from_date ?? s.purchase_date) <= formatDateISO(date));
       if (usable.length > 0) { setPo2Choice({ date, time, subscriptions: usable as any }); return; }
       await createBooking(date, time, { countsInSubscription: false });
       return;
