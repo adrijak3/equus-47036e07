@@ -1812,13 +1812,28 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
             </div>
             {(() => {
               const count = Number(lessons);
-              const tier = count >= 12 ? 12 : count >= 8 ? 8 : 4;
-              const tierPrice = subscriptionPrices[`${tier}|${packageType}|${horseType}`];
-              // Pricing is tier-based: any quantity in the tier uses the full tier price.
-              // This must match admin_purchase_subscription(), which stores v_price directly.
-              const total = Number.isInteger(count) && count > 0 && tierPrice != null
-                ? tierPrice
-                : null;
+              const isValidCount = Number.isInteger(count) && count > 0;
+
+              let total: number | null = null;
+              let description = "";
+
+              if (isValidCount) {
+                if (count <= 3) {
+                  // 1–3 lessons use normal single-lesson pricing.
+                  const singlePrice = packageType === "group" ? 40 : 45;
+                  total = count * singlePrice;
+                  description = `${count} pam. · ${packageType === "group" ? "grupinės" : "po 2"} kaina (${singlePrice.toFixed(2)} € / pam.)`;
+                } else {
+                  // 4–7 => 4-pack rate, 8–11 => 8-pack rate, 12+ => 12-pack rate.
+                  const tier = count >= 12 ? 12 : count >= 8 ? 8 : 4;
+                  const tierPrice = subscriptionPrices[`${tier}|${packageType}|${horseType}`];
+
+                  if (tierPrice != null) {
+                    total = Number((count * tierPrice / tier).toFixed(2));
+                    description = `${count} pam. · taikomas ${tier} pam. tarifas (${tierPrice.toFixed(2)} € / ${tier})`;
+                  }
+                }
+              }
 
               return (
                 <div className="rounded-md border border-gold/20 bg-gold/5 p-3">
@@ -1830,7 +1845,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                   </div>
                   {total != null && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {count} pam. · taikomas {tier} pam. tarifas ({tierPrice.toFixed(2)} € / {tier})
+                      {description}
                     </p>
                   )}
                 </div>
