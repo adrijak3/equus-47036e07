@@ -205,7 +205,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
                 <span className="font-medium text-foreground">{r.name}</span>
                 <span className="tabular-nums text-gold">{formatTime(r.slot_time)}</span>
                 <span className="tabular-nums text-muted-foreground">{r.slot_date}</span>
-                <span className="text-xs text-muted-foreground">Atšaukė: {new Date(r.created_at).toLocaleString("lt-LT")}</span>
+                <span className="text-xs text-muted-foreground">Atšaukta: {new Date(r.created_at).toLocaleString("lt-LT")}</span>
                 <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}</span>
                 {r.accidental && <span className="rounded-full border border-blush/40 bg-blush/10 px-2 py-0.5 text-[11px] text-blush">per klaidą</span>}
                 {r.restored_at && <span className="inline-flex items-center gap-1 rounded-full border border-avail-free/40 bg-avail-free/10 text-avail-free"><RotateCcw className="h-3 w-3" /> grąžinta</span>}
