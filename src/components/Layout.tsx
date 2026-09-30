@@ -26,6 +26,7 @@ import {
   Settings,
   Inbox,
   X,
+  ScanLine,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
