@@ -1620,27 +1620,15 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     const price = Number(data.price_eur);
     const purchasedName = profiles.find((p) => p.id === selUser)?.full_name ?? "klientui";
 
-    // The purchase RPC queues the email. Kick the worker immediately so the client
-    // does not have to wait for a separate scheduler.
-    let emailOk = false;
-    try {
-      const { data: emailData, error: emailError } = await supabase.functions.invoke("send-subscription-email", {
-        body: {},
-      });
-      emailOk = !emailError && emailData?.ok === true;
-      if (!emailOk) {
-        console.warn("Subscription email worker did not complete:", emailError ?? emailData);
-      }
-    } catch (emailError) {
-      console.warn("Subscription email worker invocation failed:", emailError);
-    }
-
-    setPurchaseSuccess({
+    // Show the confirmation immediately after the purchase RPC succeeds.
+    // Email delivery is a separate worker step and must never block the confirmation UI.
+    const purchaseInfo = {
       name: purchasedName,
       price: Number.isFinite(price) ? price : 0,
       lessons: lessonCount,
-      emailOk,
-    });
+      emailOk: false,
+    };
+    setPurchaseSuccess(purchaseInfo);
 
     setOpen(false);
     setSelUser("");
@@ -1648,6 +1636,21 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     setPackageType("group");
     setHorseType("school");
     load();
+
+    // Kick the email worker in the background. Update the popup when the worker responds.
+    try {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke("send-subscription-email", {
+        body: {},
+      });
+      const emailOk = !emailError && emailData?.ok === true;
+      if (!emailOk) {
+        console.warn("Subscription email worker did not complete:", emailError ?? emailData);
+      }
+      setPurchaseSuccess((current) => current ? { ...current, emailOk } : current);
+    } catch (emailError) {
+      console.warn("Subscription email worker invocation failed:", emailError);
+      setPurchaseSuccess((current) => current ? { ...current, emailOk: false } : current);
+    }
   };
 
   const filteredProfiles = profiles.filter((p) => {
