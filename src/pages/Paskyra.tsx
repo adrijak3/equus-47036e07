@@ -296,38 +296,6 @@ export default function Paskyra() {
     load();
   };
 
-  const markSubPaid = async (subId: string) => {
-    if (!confirm("Pažymėti šį abonementą kaip APMOKĖTĄ?")) return;
-    const { error } = await supabase.from("subscriptions").update({ paid: true }).eq("id", subId);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Pažymėta apmokėta. Administracija patvirtins.");
-    load();
-  };
-
-  const deleteSub = async (subId: string) => {
-    if (!confirm("Ar tikrai norite ištrinti šį abonementą? Šio veiksmo atšaukti negalėsite.")) return;
-    const { error } = await supabase.from("subscriptions").delete().eq("id", subId);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Abonementas ištrintas");
-    load();
-  };
-
-  const editSubLessons = async (s: Subscription) => {
-    const txt = prompt(
-      `Pakeisti treniruočių skaičių abonemente.\n\nDabar: ${s.lessons_used}/${s.lessons_total}\nGalima padidinti arba sumažinti. Jei sumažinsite mažiau už panaudotų, panaudotų skaičius bus automatiškai sumažintas.`,
-      String(s.lessons_total),
-    );
-    if (txt === null) return;
-    const n = parseInt(txt);
-    if (!Number.isFinite(n) || n < 1 || n > 100) { toast.error("Įveskite skaičių 1–100"); return; }
-    const newUsed = Math.min(s.lessons_used, n);
-    const { error } = await supabase.from("subscriptions")
-      .update({ lessons_total: n, lessons_used: newUsed }).eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Atnaujinta");
-    load();
-  };
-
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
 
   return (
