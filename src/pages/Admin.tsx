@@ -1032,7 +1032,8 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const copyHistory = async () => {
     const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
-    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
+    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("
+");
     try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   const now = new Date();
@@ -1674,7 +1675,8 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
         <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{subs.filter((s) => new Date(s.expires_at) >= new Date() && s.lessons_used < s.lessons_total).length}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Aktyvūs</div></div>
         <div className="rounded-lg border border-gold/15 bg-gradient-card px-3 py-2"><div className="text-2xl font-display text-gradient-gold">{new Set(subs.map((s) => s.user_id)).size}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Su abonementu</div></div>
         <div className={cn("rounded-lg border px-3 py-2", subs.filter((s) => !s.paid).length > 0 ? "border-blush/30 bg-blush/5" : "border-gold/15 bg-gradient-card")}><div className="text-2xl font-display text-gradient-gold">{subs.filter((s) => !s.paid).length}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Neapmokėti</div></div>
-      </div>\n      <div className="flex flex-wrap items-center gap-2 mb-3">
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <Input
           placeholder="Ieškoti vartotojo..."
           value={filter}
@@ -1999,7 +2001,8 @@ function SubDetailDialog({
       source = await enrichHorses(data ?? []); title = copyMode === "details" ? "🐴 PAMOKOS" : "🐴 EQUUS JOJIMO PAMOKOS";
     }
     const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("🐎 " + r.horse_name); return "* " + bits.join(" — "); });
-    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
+    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("
+");
     try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   return (
