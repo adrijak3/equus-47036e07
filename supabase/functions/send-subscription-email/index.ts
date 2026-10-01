@@ -177,22 +177,91 @@ async function getGmailAccessToken() {
   return data.access_token as string;
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 async function sendGmailEmail(
   accessToken: string,
   from: string,
   to: string,
   subject: string,
   html: string,
+  imageUrl?: string | null,
 ) {
-  const message = [
-    `From: ${from}`,
-    `To: ${to}`,
-    `Subject: ${encodeMimeHeader(subject)}`,
-    "MIME-Version: 1.0",
-    "Content-Type: text/html; charset=UTF-8",
-    "",
-    html,
-  ].join("\r\n");
+  let message: string;
+
+  if (imageUrl) {
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`GLOBAL_ANNOUNCEMENT_IMAGE_FETCH_FAILED: HTTP ${imageResponse.status}`);
+    }
+
+    const contentType = imageResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+    if (!contentType.startsWith("image/")) {
+      throw new Error("GLOBAL_ANNOUNCEMENT_IMAGE_INVALID_CONTENT_TYPE");
+    }
+
+    const extension = contentType.split("/")[1] || "jpeg";
+    const filename = `equus-pranesimas.${extension === "jpeg" ? "jpg" : extension}`;
+    const imageBase64 = arrayBufferToBase64(await imageResponse.arrayBuffer());
+    const mixedBoundary = `equus-mixed-${crypto.randomUUID()}`;
+    const relatedBoundary = `equus-related-${crypto.randomUUID()}`;
+
+    const htmlWithImage = html.replace(
+      "</body>",
+      `<div style="margin:20px 0 0;text-align:center;"><img src="cid:equus-announcement-image" alt="Equus pranešimo nuotrauka" style="display:block;max-width:100%;height:auto;margin:0 auto;border-radius:14px;"></div></body>`,
+    );
+
+    message = [
+      `From: ${from}`,
+      `To: ${to}`,
+      `Subject: ${encodeMimeHeader(subject)}`,
+      "MIME-Version: 1.0",
+      `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+      "",
+      `--${mixedBoundary}`,
+      `Content-Type: multipart/related; boundary="${relatedBoundary}"`,
+      "",
+      `--${relatedBoundary}`,
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      htmlWithImage,
+      `--${relatedBoundary}`,
+      `Content-Type: ${contentType}; name="${filename}"`,
+      "Content-ID: <equus-announcement-image>",
+      "Content-Disposition: inline",
+      "Content-Transfer-Encoding: base64",
+      "",
+      imageBase64,
+      `--${relatedBoundary}--`,
+      `--${mixedBoundary}`,
+      `Content-Type: ${contentType}; name="${filename}"`,
+      `Content-Disposition: attachment; filename="${filename}"`,
+      "Content-Transfer-Encoding: base64",
+      "",
+      imageBase64,
+      `--${mixedBoundary}--`,
+      "",
+    ].join("\r\n");
+  } else {
+    message = [
+      `From: ${from}`,
+      `To: ${to}`,
+      `Subject: ${encodeMimeHeader(subject)}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/html; charset=UTF-8",
+      "",
+      html,
+    ].join("\r\n");
+  }
 
   const response = await fetch(
     "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
@@ -574,6 +643,7 @@ Deno.serve(async (req) => {
         event.email,
         subject,
         html,
+        event.event_type === "global_important_update" ? String(event.payload?.image_url || "") || null : null,
       );
 
       if (!gmailResponse.ok) {
