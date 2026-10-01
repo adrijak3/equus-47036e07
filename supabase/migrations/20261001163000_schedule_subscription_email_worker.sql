@@ -25,6 +25,9 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Queue subscription-expiry reminders once per day (event keys prevent duplicates).
+  PERFORM public.queue_subscription_expiry_emails();
+
   PERFORM net.http_post(
     url := 'https://mdjhdpyrnroywxoaaraa.supabase.co/functions/v1/send-subscription-email',
     headers := jsonb_build_object(
