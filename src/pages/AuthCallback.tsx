@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLoader } from "@/components/PageLoader";
@@ -6,7 +6,6 @@ import { PageLoader } from "@/components/PageLoader";
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [message, setMessage] = useState("Prisijungiama…");
 
   useEffect(() => {
     let cancelled = false;
@@ -14,7 +13,6 @@ export default function AuthCallback() {
     const finishOAuth = async () => {
       const errorDescription = params.get("error_description");
       if (errorDescription) {
-        setMessage("Google prisijungimas nepavyko.");
         if (!cancelled) {
           window.setTimeout(() => navigate("/auth", { replace: true }), 1200);
         }
@@ -28,7 +26,6 @@ export default function AuthCallback() {
           // Supabase may already have exchanged the code automatically.
           const { data: sessionData } = await supabase.auth.getSession();
           if (!sessionData.session) {
-            setMessage("Google prisijungimas nepavyko.");
             if (!cancelled) {
               window.setTimeout(() => navigate("/auth", { replace: true }), 1200);
             }
@@ -53,5 +50,5 @@ export default function AuthCallback() {
     return () => { cancelled = true; };
   }, [navigate, params]);
 
-  return <PageLoader text={message} />;
+  return <PageLoader fullScreen />;
 }
