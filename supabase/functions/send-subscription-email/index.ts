@@ -229,6 +229,10 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
       <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a55d78;">Liko pamokų</div>
       <div style="font-size:40px;font-weight:700;color:#6f3049;margin-top:5px;">${remaining}</div>
       <div style="font-size:13px;color:#8b737c;">${Number(subscription.lessons_used ?? 0)} panaudota iš ${Number(subscription.lessons_total)}</div>
+    </div>
+    ${trainingHistoryHtml(trainings)}
+    <div style="margin-top:20px;padding:14px 16px;border-radius:14px;background:#fff0f5;border:1px solid #f0cbd8;text-align:center;color:#805d69;font-size:13px;line-height:1.6;">
+      Ačiū, kad renkatės Equus Jojimo Mokyklą. ♡
     </div>`;
   return pinkShell("Abonementas patvirtintas 🐎", "Jūsų Equus abonemento informacija", inner);
 }
@@ -237,6 +241,7 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
   const lastTraining = formatDate(payload?.last_training_date);
   const remaining = Number(payload?.remaining ?? 0);
   const inner = `
+    <div style="margin:0 0 14px;font-size:15px;line-height:1.7;font-weight:800;color:#9b3157;">!SVARBU!</div>
     <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}! 💗</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
       Norime priminti, kad Jūsų dabartinio abonemento <strong>paskutinė suplanuota treniruotė yra ${esc(lastTraining)}</strong>.
