@@ -194,7 +194,6 @@ function pinkShell(title: string, subtitle: string, inner: string) {
   <div style="max-width:620px;margin:0 auto;padding:30px 16px;">
     <div style="background:linear-gradient(135deg,#fff0f4,#f8dbe5);border:1px solid #efc5d3;border-radius:24px;padding:28px 28px 24px;box-shadow:0 8px 30px rgba(160,80,105,.10);">
       <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#a55d78;font-weight:700;">Equus Jojimo Mokykla</div>
-      <div style="font-size:34px;margin-top:8px;">♡</div>
       <h1 style="margin:2px 0 8px;font-size:28px;line-height:1.2;color:#6f3049;">${esc(title)}</h1>
       <p style="margin:0;color:#805d69;font-size:15px;line-height:1.6;">${esc(subtitle)}</p>
     </div>
@@ -221,7 +220,7 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
   );
   const inner = `
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! Jūsų abonemento pirkimas sėkmingai užregistruotas.</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}, Jūsų abonemento pirkimas sėkmingai užregistruotas.</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;">
       <tr><td style="padding:8px 0;color:#8b737c;">Pamokos</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td></tr>
       <tr><td style="padding:8px 0;color:#8b737c;">Tipas</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td></tr>
@@ -237,7 +236,7 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     </div>
     ${trainingHistoryHtml(trainings)}
     <div style="margin-top:20px;padding:14px 16px;border-radius:14px;background:#fff0f5;border:1px solid #f0cbd8;text-align:center;color:#805d69;font-size:13px;line-height:1.6;">
-      Ačiū, kad renkatės Equus Jojimo Mokyklą. ♡
+      Ačiū, kad renkatės Equus Jojimo Mokyklą.
     </div>`;
   return pinkShell("Abonementas patvirtintas", "Jūsų Equus abonemento informacija", inner);
 }
@@ -246,8 +245,7 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
   const lastTraining = formatDate(payload?.last_training_date);
   const remaining = Number(payload?.remaining ?? 0);
   const inner = `
-    <div style="margin:0 0 14px;font-size:15px;line-height:1.7;font-weight:800;color:#9b3157;">!SVARBU!</div>
-    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}!</p>
+    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)},</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
       Norime priminti, kad Jūsų dabartinio abonemento <strong>paskutinė suplanuota treniruotė yra ${esc(lastTraining)}</strong>.
     </p>
@@ -272,8 +270,7 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
   const bodyEn = String(payload?.body_en || "");
   const url = String(payload?.url || "/grafikas");
   const inner = `
-    <div style="margin:0 0 14px;font-size:15px;line-height:1.7;font-weight:800;color:#9b3157;">!SVARBU!</div>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}!</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)},</p>
     <div style="padding:16px 18px;border-radius:15px;background:#fff4f7;border:1px solid #f1d6df;">
       <h2 style="margin:0;color:#6f3049;font-size:20px;">${esc(titleLt)}</h2>
       <p style="margin:10px 0 0;white-space:pre-wrap;font-size:15px;line-height:1.7;">${esc(bodyLt)}</p>
@@ -291,6 +288,21 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
   return pinkShell(titleLt, "Svarbi informacija iš Equus", inner);
 }
 
+
+function passwordResetHtml(clientName: string, payload: any) {
+  const resetUrl = String(payload?.reset_url || "");
+  const inner =
+    '<p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Sveiki, ' +
+    esc(clientName) +
+    ',</p>' +
+    '<p style="margin:0;font-size:15px;line-height:1.7;">Gavome prašymą pakeisti Jūsų Equus paskyros slaptažodį.</p>' +
+    '<p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">Paspauskite žemiau esantį mygtuką ir nustatykite naują slaptažodį. Ši nuoroda skirta tik Jums ir yra vienkartinė.</p>' +
+    '<div style="margin:24px 0;text-align:center;">' +
+    '<a href="' + esc(resetUrl) + '" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">Nustatyti naują slaptažodį</a>' +
+    '</div>' +
+    '<p style="margin:0;color:#9a7f89;font-size:12px;line-height:1.6;">Jei šio prašymo nepateikėte, tiesiog ignoruokite šį laišką.</p>';
+  return pinkShell("Slaptažodžio atkūrimas", "Equus Jojimo Mokyklos paskyros saugumo pranešimas", inner);
+}
 
 async function getSubscriptionTrainingHistory(supabase: any, subscriptionId: string) {
   const { data: bookings, error: bookingsError } = await supabase
@@ -388,7 +400,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!["subscription_purchase", "subscription_expiring", "global_important_update"].includes(event.event_type)) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Unsupported event type: " + event.event_type,
@@ -456,13 +468,18 @@ Deno.serve(async (req) => {
       }
 
       if (event.event_type === "subscription_expiring") {
-        subject = "Jūsų Equus abonementas netrukus baigsis";
+        subject = "!SVARBU! Jūsų Equus abonementas netrukus baigsis";
         html = subscriptionExpiringHtml(clientName, event.payload || {});
+      }
+
+      if (event.event_type === "password_reset") {
+        subject = "Equus slaptažodžio atkūrimas";
+        html = passwordResetHtml(clientName, event.payload || {});
       }
 
       if (event.event_type === "global_important_update") {
         const payload = event.payload || {};
-        subject = String(payload.title_lt || "Svarbus Equus atnaujinimas");
+        subject = "!SVARBU! " + String(payload.title_lt || "Svarbus Equus atnaujinimas");
         html = globalAnnouncementHtml(clientName, payload);
       }
 
