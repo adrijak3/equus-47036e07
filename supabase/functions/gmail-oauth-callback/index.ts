@@ -22,7 +22,7 @@ function base64UrlDecode(value: string) {
   return new Uint8Array([...binary].map((c) => c.charCodeAt(0)));
 }
 
-async Deno.serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET") return page("Equus Gmail", "<h1>Method not allowed</h1>", 405);
 
