@@ -236,7 +236,7 @@ function AdminNotificationsTab() {
 
   const [globalLt, setGlobalLt] = useState("");
   const [globalEn, setGlobalEn] = useState("");
-  const [sendEmail, setSendEmail] = useState(true);
+  const [globalAudience, setGlobalAudience] = useState<"app" | "email" | "both">("both");
   const [globalImage, setGlobalImage] = useState<File | null>(null);
   const [globalImagePreview, setGlobalImagePreview] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -246,11 +246,19 @@ function AdminNotificationsTab() {
       toast.error("Užpildykite abu pranešimus.");
       return;
     }
-    if (!confirm("Išsiųsti šį svarbų pranešimą VISIEMS vartotojams?")) return;
+    if (globalAudience === "app" && globalImage) {
+      toast.error("Nuotrauka galima tik el. pašto pranešimui.");
+      return;
+    }
+    if (!confirm("Išsiųsti šį svarbų pranešimą VISIEMS pasirinktu kanalu?")) return;
+
     setSending(true);
     let imageUrl: string | null = null;
+    const sendApp = globalAudience === "app" || globalAudience === "both";
+    const sendEmail = globalAudience === "email" || globalAudience === "both";
+    const dedupeKey = "global-update:" + crypto.randomUUID();
 
-    if (globalImage) {
+    if (sendEmail && globalImage) {
       setUploadingImage(true);
       const extension = (globalImage.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
       const path = `global-announcements/${crypto.randomUUID()}.${extension || "jpg"}`;
@@ -275,23 +283,27 @@ function AdminNotificationsTab() {
       imageUrl = publicUrlData.publicUrl;
     }
 
-    const dedupeKey = "global-update:" + crypto.randomUUID();
-    const { data, error } = await (supabase as any).rpc("admin_send_global_notification", {
-      _title_lt: "Svarbus Equus atnaujinimas",
-      _title_en: "Important Equus update",
-      _body_lt: globalLt.trim(),
-      _body_en: globalEn.trim(),
-      _url: "/grafikas",
-      _dedupe_key: dedupeKey,
-    });
+    let appCount = 0;
+    if (sendApp) {
+      const { data, error } = await (supabase as any).rpc("admin_send_global_notification", {
+        _title_lt: "Svarbus Equus atnaujinimas",
+        _title_en: "Important Equus update",
+        _body_lt: globalLt.trim(),
+        _body_en: globalEn.trim(),
+        _url: "/grafikas",
+        _dedupe_key: dedupeKey,
+        _send_push: true,
+      });
 
-    if (error) {
-      setSending(false);
-      toast.error(error.message);
-      return;
+      if (error) {
+        setSending(false);
+        toast.error(error.message);
+        return;
+      }
+
+      appCount = Number(data ?? 0);
+      void flushPushNotifications();
     }
-
-    void flushPushNotifications();
 
     let emailCount = 0;
     if (sendEmail) {
@@ -306,18 +318,21 @@ function AdminNotificationsTab() {
       });
       if (emailError) {
         setSending(false);
-        toast.error("Telefono pranešimų eilė sukurta, bet el. pašto eilės sukurti nepavyko: " + emailError.message);
+        toast.error(
+          sendApp
+            ? "Programėlės pranešimų eilė sukurta, bet el. pašto eilės sukurti nepavyko: " + emailError.message
+            : "El. pašto eilės sukurti nepavyko: " + emailError.message,
+        );
         return;
       }
       emailCount = Number(emailData ?? 0);
     }
 
     setSending(false);
-    toast.success(
-      sendEmail
-        ? "Pranešimas įtrauktas į eilę " + Number(data ?? 0) + " vartotojams + " + emailCount + " el. laiškų."
-        : "Pranešimas įtrauktas į eilę " + Number(data ?? 0) + " vartotojams.",
-    );
+    const parts = [];
+    if (sendApp) parts.push(appCount + " programėlės pranešimų");
+    if (sendEmail) parts.push(emailCount + " el. laiškų");
+    toast.success("Pranešimas įtrauktas į eilę: " + parts.join(" + ") + ".");
   };
 
   const sendTestToMe = async () => {
@@ -385,7 +400,32 @@ function AdminNotificationsTab() {
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
         <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
-        <p className="text-sm text-muted-foreground">Parašykite svarbų pranešimą, pvz. dienos atšaukimą, grafiko pakeitimą ar kitą svarbią informaciją. Jis bus išsiųstas telefono pranešimu, o pasirinkus – ir el. paštu.</p>
+        <p className="text-sm text-muted-foreground">Parašykite svarbų pranešimą, pvz. dienos atšaukimą, grafiko pakeitimą ar kitą svarbią informaciją. Pasirinkite, kur jį siųsti.</p>
+        <div className="space-y-2">
+          <Label>Kur siųsti?</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {([
+              ["app", "Programėlėje", "Pranešimas programėlėje"],
+              ["email", "El. paštu", "Gražus laiškas visiems"],
+              ["both", "Abiem", "Programėlė + el. paštas"],
+            ] as const).map(([value, title, description]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setGlobalAudience(value)}
+                className={cn(
+                  "rounded-lg border p-3 text-left transition-colors",
+                  globalAudience === value
+                    ? "border-gold bg-gold/10"
+                    : "border-gold/15 hover:border-gold/35",
+                )}
+              >
+                <div className="font-medium text-sm">{title}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
         <div>
           <Label>Lietuviškai</Label>
           <textarea value={globalLt} onChange={(e) => setGlobalLt(e.target.value)} rows={4}
@@ -397,7 +437,8 @@ function AdminNotificationsTab() {
             className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
         </div>
 
-        <div className="rounded-lg border border-blush/20 bg-blush/5 p-3 space-y-3">
+        {globalAudience !== "app" && (
+          <div className="rounded-lg border border-blush/20 bg-blush/5 p-3 space-y-3">
           <div className="flex items-center gap-2">
             <ImagePlus className="h-4 w-4 text-blush" />
             <Label>Nuotrauka el. laiške</Label>
@@ -445,22 +486,11 @@ function AdminNotificationsTab() {
               </Button>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
-        <label className="flex items-center gap-3 rounded-lg border border-blush/20 bg-blush/5 px-3 py-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={sendEmail}
-            onChange={(e) => setSendEmail(e.target.checked)}
-            className="h-4 w-4 accent-blush"
-          />
-          <span className="text-sm">
-            <span className="font-medium">💌 Siųsti ir el. paštu</span>
-            <span className="block text-xs text-muted-foreground">Bus išsiųstas gražus Equus laiškas visiems vartotojams, turintiems el. paštą.</span>
-          </span>
-        </label>
         <Button variant="gold" disabled={sending} onClick={sendGlobal}>
-          {uploadingImage ? "Įkeliama nuotrauka..." : sendEmail ? "Siųsti visiems" : "Siųsti telefono pranešimą"}
+          {uploadingImage ? "Įkeliama nuotrauka..." : globalAudience === "app" ? "Siųsti programėlėje" : globalAudience === "email" ? "Siųsti el. paštu" : "Siųsti abiem"}
         </Button>
       </div>
 
