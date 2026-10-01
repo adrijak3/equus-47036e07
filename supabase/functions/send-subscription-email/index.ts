@@ -267,6 +267,7 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
   const bodyEn = String(payload?.body_en || "");
   const url = String(payload?.url || "/grafikas");
   const inner = `
+    <div style="margin:0 0 14px;font-size:15px;line-height:1.7;font-weight:800;color:#9b3157;">!SVARBU!</div>
     <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! 💗</p>
     <div style="padding:16px 18px;border-radius:15px;background:#fff4f7;border:1px solid #f1d6df;">
       <h2 style="margin:0;color:#6f3049;font-size:20px;">${esc(titleLt)}</h2>
