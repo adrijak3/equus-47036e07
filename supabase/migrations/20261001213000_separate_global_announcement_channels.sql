@@ -23,26 +23,26 @@ BEGIN
     RAISE EXCEPTION 'NOT_ADMIN';
   END IF;
 
-  FOR r IN
-    SELECT p.id
-    FROM public.profiles p
-  LOOP
-    INSERT INTO public.important_notifications (
-      user_id, notification_type, title_lt, title_en, body_lt, body_en, url, dedupe_key
-    )
-    VALUES (
-      r.id,
-      'GLOBAL_IMPORTANT_UPDATE',
-      _title_lt,
-      _title_en,
-      _body_lt,
-      _body_en,
-      COALESCE(_url, '/grafikas'),
-      CASE WHEN _dedupe_key IS NULL THEN NULL ELSE _dedupe_key || ':' || r.id END
-    )
-    ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
+  IF _send_push THEN
+    FOR r IN
+      SELECT p.id
+      FROM public.profiles p
+    LOOP
+      INSERT INTO public.important_notifications (
+        user_id, notification_type, title_lt, title_en, body_lt, body_en, url, dedupe_key
+      )
+      VALUES (
+        r.id,
+        'GLOBAL_IMPORTANT_UPDATE',
+        _title_lt,
+        _title_en,
+        _body_lt,
+        _body_en,
+        COALESCE(_url, '/grafikas'),
+        CASE WHEN _dedupe_key IS NULL THEN NULL ELSE _dedupe_key || ':' || r.id END
+      )
+      ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
 
-    IF _send_push THEN
       PERFORM public.queue_equus_notification(
         r.id,
         'GLOBAL_IMPORTANT_UPDATE',
@@ -53,10 +53,10 @@ BEGIN
         COALESCE(_url, '/grafikas'),
         CASE WHEN _dedupe_key IS NULL THEN NULL ELSE _dedupe_key || ':' || r.id END
       );
-    END IF;
 
-    queued_count := queued_count + 1;
-  END LOOP;
+      queued_count := queued_count + 1;
+    END LOOP;
+  END IF;
 
   RETURN queued_count;
 END;
