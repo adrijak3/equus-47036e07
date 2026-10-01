@@ -725,26 +725,69 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const { user, profile } = useAuth();
   const [name, setName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
-  }, [profile]);
+    setEmail(user?.email ?? "");
+  }, [profile, user?.email]);
 
   const save = async () => {
     if (!user) return;
     if (name.trim().length < 2) { toast.error("Vardas per trumpas"); return; }
+
+    let normalizedEmail = email.trim().toLowerCase().replace(/\s+/g, "");
+    let correctedGmailTypo = false;
+    if (/@gmail\.gom$/i.test(normalizedEmail)) {
+      normalizedEmail = normalizedEmail.replace(/@gmail\.gom$/i, "@gmail.com");
+      correctedGmailTypo = true;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      toast.error("Įveskite galiojantį el. pašto adresą");
+      return;
+    }
+
     setSaving(true);
+
+    const emailChanged = normalizedEmail !== (user.email ?? "").trim().toLowerCase();
+    if (emailChanged) {
+      const { error: emailError } = await supabase.auth.updateUser({
+        email: normalizedEmail,
+      });
+      if (emailError) {
+        setSaving(false);
+        toast.error(emailError.message || "Nepavyko pakeisti el. pašto");
+        return;
+      }
+    }
+
     const { error } = await supabase.from("profiles")
       .update({
         full_name: name.trim(),
         phone: phone.trim() || null,
       } as any)
       .eq("id", user.id);
+
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Išsaugota!:)");
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    if (emailChanged) {
+      setEmail(normalizedEmail);
+      toast.success(
+        correctedGmailTypo
+          ? "El. paštas pataisytas į gmail.com. Patikrinkite patvirtinimo laišką."
+          : "El. pašto keitimas pradėtas. Patikrinkite patvirtinimo laišką.",
+      );
+    } else {
+      toast.success("Išsaugota!:)");
+    }
+
     await onSaved();
   };
 
@@ -759,6 +802,25 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
           <Label htmlFor="pf-phone">Telefonas</Label>
           <Input id="pf-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
           <p className="text-xs text-muted-foreground mt-1">Naudojamas slaptažodžio atstatymui</p>
+        </div>
+        <div>
+          <Label htmlFor="pf-email">El. paštas</Label>
+          <Input
+            id="pf-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={254}
+            autoComplete="email"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Jei pakeisite el. paštą, reikės patvirtinti naują adresą el. paštu.
+          </p>
+          {/@gmail\.gom$/i.test(email.trim()) && (
+            <p className="text-xs text-blush mt-1">
+              Atrodo, kad turėjote omenyje <strong>{email.trim().replace(/@gmail\.gom$/i, "@gmail.com")}</strong>.
+            </p>
+          )}
         </div>
         <div className="flex justify-end pt-1">
           <Button variant="gold" onClick={save} disabled={saving}>{saving ? "Saugoma…" : "Išsaugoti"}</Button>
