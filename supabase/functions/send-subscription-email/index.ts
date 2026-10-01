@@ -336,7 +336,7 @@ function passwordResetHtml(clientName: string, payload: any) {
 async function getSubscriptionTrainingHistory(supabase: any, subscriptionId: string) {
   const { data: bookings, error: bookingsError } = await supabase
     .from("bookings")
-    .select("id,slot_date,slot_time,status,is_individual,lesson_kind")
+    .select("id,slot_date,slot_time,status,is_individual")
     .eq("subscription_id", subscriptionId)
     .eq("status", "completed")
     .eq("counts_in_subscription", true)
@@ -367,7 +367,57 @@ async function getSubscriptionTrainingHistory(supabase: any, subscriptionId: str
     (assignments ?? []).map((a: any) => [a.booking_id, horseById.get(a.horse_id) ?? "—"]),
   );
 
-  return rows.map((b: any) => ({ ...b, horse_name: horseByBooking.get(b.id) ?? "—" }));
+  // lesson_kind is not a physical bookings column. The app derives it from
+  // is_individual + the slot capacity: capacity 1–2 = po2, 3+ = group.
+  // Use the same rule here so the email worker does not depend on a
+  // non-existent database column.
+  const { data: timeSlots, error: timeSlotsError } = await supabase
+    .from("time_slots")
+    .select("day_of_week,slot_time,max_capacity")
+    .eq("active", true)
+    .is("one_off_date", null);
+  if (timeSlotsError) throw timeSlotsError;
+
+  const dates = Array.from(new Set(rows.map((b: any) => String(b.slot_date))));
+  const { data: overrides, error: overridesError } = await supabase
+    .from("slot_overrides")
+    .select("slot_date,slot_time,max_capacity")
+    .in("slot_date", dates);
+  if (overridesError) throw overridesError;
+
+  const dayOfWeek = (date: string) => {
+    const d = new Date(`${date}T12:00:00`);
+    const jsDay = d.getDay();
+    return jsDay === 0 ? 7 : jsDay;
+  };
+
+  const capacityFor = (date: string, time: string) => {
+    const override = (overrides ?? []).find(
+      (x: any) => String(x.slot_date) === date && String(x.slot_time) === time,
+    );
+    if (override) return Number(override.max_capacity);
+
+    const dow = dayOfWeek(date);
+    const slot = (timeSlots ?? []).find(
+      (x: any) => Number(x.day_of_week) === dow && String(x.slot_time) === time,
+    );
+    return slot ? Number(slot.max_capacity) : null;
+  };
+
+  return rows.map((b: any) => {
+    const capacity = capacityFor(String(b.slot_date), String(b.slot_time));
+    const lesson_kind = b.is_individual
+      ? "individual"
+      : capacity !== null && capacity <= 2
+        ? "po2"
+        : "group";
+
+    return {
+      ...b,
+      lesson_kind,
+      horse_name: horseByBooking.get(b.id) ?? "—",
+    };
+  });
 }
 
 Deno.serve(async (req) => {
