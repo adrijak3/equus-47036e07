@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     const email = String(body.email).trim().toLowerCase().replace(/\s+/g, "");
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return json({ error: "Įveskite galiojantį el. pašto adresą" }, 400);
     }
 
