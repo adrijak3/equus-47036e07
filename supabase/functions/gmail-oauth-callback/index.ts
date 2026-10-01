@@ -22,23 +22,7 @@ function base64UrlDecode(value: string) {
   return new Uint8Array([...binary].map((c) => c.charCodeAt(0)));
 }
 
-async function hmac(secret: string, value: string) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"],
-  );
-  return crypto.subtle.verify(
-    "HMAC",
-    key,
-    base64UrlDecode(arguments[2] as string),
-    new TextEncoder().encode(value),
-  );
-}
-
-Deno.serve(async (req) => {
+async Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET") return page("Equus Gmail", "<h1>Method not allowed</h1>", 405);
 
