@@ -38,6 +38,8 @@ export default function Auth() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState(params.get("tab") === "signup" ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const confirmed = params.get("confirmed") === "1";
 
   // Forgot-password dialog state — email only; phone/password fields are intentionally removed.
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -64,11 +66,11 @@ export default function Auth() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/auth?confirmed=1`,
         data: {
           full_name: parsed.data.full_name,
           phone: parsed.data.phone,
@@ -82,15 +84,20 @@ export default function Auth() {
       toast.error(error.message.includes("already") ? "Toks vartotojas jau egzistuoja" : error.message);
       return;
     }
-    toast.success("Sveiki atvykę į Equus!");
-    navigate("/");
+    if (data.session) {
+      toast.success("Sveiki atvykę į Equus!");
+      navigate("/");
+    } else {
+      setEmailConfirmationSent(true);
+      toast.success("Patikrinkite savo el. paštą ir patvirtinkite paskyrą.");
+    }
   };
 
   const handleGoogle = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) { setLoading(false); toast.error(error.message); }
   };
@@ -199,6 +206,17 @@ export default function Auth() {
               </button>
             </form>
           </TabsContent>
+
+          {(emailConfirmationSent || confirmed) && (
+            <div className="mb-6 rounded-lg border border-gold/20 bg-background/40 p-4 text-sm">
+              <p className="font-medium text-gold">Patvirtinkite savo el. paštą</p>
+              <p className="mt-1 text-muted-foreground">
+                {confirmed
+                  ? "El. paštas patvirtintas. Dabar galite prisijungti prie Equus."
+                  : "Į jūsų el. paštą išsiuntėme patvirtinimo nuorodą. Atidarykite ją ir tada prisijunkite."}
+              </p>
+            </div>
+          )}
 
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
