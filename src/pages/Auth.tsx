@@ -42,9 +42,6 @@ export default function Auth() {
   // Forgot-password dialog state
   const [forgotOpen, setForgotOpen] = useState(false);
   const [fpEmail, setFpEmail] = useState("");
-  const [fpPhone, setFpPhone] = useState("");
-  const [fpPw, setFpPw] = useState("");
-  const [fpPw2, setFpPw2] = useState("");
   const [fpBusy, setFpBusy] = useState(false);
 
   // Sign-up extras
@@ -134,22 +131,26 @@ export default function Auth() {
   };
 
   const submitForgot = async () => {
-    if (!fpEmail.trim()) { toast.error("Įveskite el. paštą"); return; }
-    if (!fpPhone.trim()) { toast.error("Įveskite telefono numerį"); return; }
-    if (fpPw.length < 8) { toast.error("Slaptažodis turi būti bent 8 simbolių"); return; }
-    if (fpPw !== fpPw2) { toast.error("Slaptažodžiai nesutampa"); return; }
-    setFpBusy(true);
-    const { data, error } = await supabase.functions.invoke("reset-password-by-phone", {
-      body: { email: fpEmail.trim(), phone: fpPhone.trim(), new_password: fpPw },
-    });
-    setFpBusy(false);
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Klaida");
+    const email = fpEmail.trim().toLowerCase();
+    if (!email) {
+      toast.error("Įveskite el. paštą");
       return;
     }
-    toast.success("Slaptažodis pakeistas. Galite prisijungti.");
+
+    setFpBusy(true);
+    const { error } = await supabase.functions.invoke("request-password-reset-email", {
+      body: { email },
+    });
+    setFpBusy(false);
+
+    if (error) {
+      toast.error("Nepavyko išsiųsti laiško. Bandykite dar kartą.");
+      return;
+    }
+
+    toast.success("Jei paskyra su šiuo el. paštu egzistuoja, netrukus gausite slaptažodžio atkūrimo laišką.");
     setForgotOpen(false);
-    setFpEmail(""); setFpPhone(""); setFpPw(""); setFpPw2("");
+    setFpEmail("");
   };
 
   return (
@@ -296,32 +297,20 @@ export default function Auth() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Įveskite paskyros el. paštą ir telefono numerį. Jei jie sutaps su paskyra –
-              galėsite iškart nustatyti naują slaptažodį.
+              Įveskite paskyros el. paštą. Į jį gausite saugią vienkartinę nuorodą,
+              kuri leis nustatyti naują slaptažodį.
             </p>
             <div>
               <Label htmlFor="fp-email">El. paštas</Label>
-              <Input id="fp-email" type="email" value={fpEmail} onChange={(e) => setFpEmail(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="fp-phone">Telefono numeris</Label>
-              <Input id="fp-phone" type="tel" value={fpPhone} onChange={(e) => setFpPhone(e.target.value)} placeholder="+370" />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="fp-pw">Naujas slaptažodis</Label>
-                <Input id="fp-pw" type="password" value={fpPw} onChange={(e) => setFpPw(e.target.value)} minLength={8} />
-              </div>
-              <div>
-                <Label htmlFor="fp-pw2">Pakartokite</Label>
-                <Input id="fp-pw2" type="password" value={fpPw2} onChange={(e) => setFpPw2(e.target.value)} minLength={8} />
-              </div>
+              <Input id="fp-email" type="email" value={fpEmail}
+                onChange={(e) => setFpEmail(e.target.value)}
+                autoComplete="email" placeholder="vardas@email.lt" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setForgotOpen(false)}>Atšaukti</Button>
             <Button variant="gold" onClick={submitForgot} disabled={fpBusy}>
-              {fpBusy ? "Keičiama…" : "Pakeisti slaptažodį"}
+              {fpBusy ? "Siunčiama…" : "Siųsti atkūrimo nuorodą"}
             </Button>
           </DialogFooter>
         </DialogContent>
