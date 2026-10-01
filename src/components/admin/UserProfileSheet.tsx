@@ -126,16 +126,28 @@ export function UserProfileSheet({
       toast.error("Įveskite galiojantį el. pašto adresą");
       return false;
     }
-    const { data, error } = await supabase.functions.invoke("admin-update-user-email", {
-      body: { user_id: profile.id, email: normalized },
-    });
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Nepavyko pakeisti el. pašto");
+    try {
+      const invokePromise = supabase.functions.invoke("admin-update-user-email", {
+        body: { user_id: profile.id, email: normalized },
+      });
+      const timeoutPromise = new Promise<{ data: any; error: Error }>((resolve) =>
+        window.setTimeout(
+          () => resolve({ data: null, error: new Error("El. pašto keitimo funkcija neatsako. Patikrinkite, ar ji įdiegta Supabase.") }),
+          15000,
+        ),
+      );
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error || error?.message || "Nepavyko pakeisti el. pašto");
+        return false;
+      }
+      toast.success("El. paštas pakeistas į " + normalized);
+      notifyAndReload();
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nepavyko pakeisti el. pašto");
       return false;
     }
-    toast.success("El. paštas pakeistas į " + normalized);
-    notifyAndReload();
-    return true;
   };
 
   const resetPassword = async () => {
