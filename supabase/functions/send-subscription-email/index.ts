@@ -46,9 +46,62 @@ function packageLabel(value: string | null | undefined) {
 }
 
 function horseLabel(value: string | null | undefined) {
-  if (value === "school") return "Mokyklos žirgais";
-  if (value === "own" || value === "private") return "Nuosavais žirgais";
+  if (value === "school") return "Mokyklos";
+  if (value === "own" || value === "private") return "Privatus";
   return value || "—";
+}
+
+function lessonKindLabel(value: unknown, isIndividual: unknown) {
+  const kind = String(value ?? "").toLowerCase();
+  if (kind === "individual" || isIndividual === true) return "Individuali";
+  if (kind === "po2") return "Po du";
+  return "Grupinė";
+}
+
+function formatTime(value: unknown) {
+  if (!value) return "";
+  return String(value).slice(0, 5);
+}
+
+function trainingHistoryHtml(trainings: any[]) {
+  if (!trainings.length) {
+    return `
+      <div style="margin-top:20px;padding:16px;border-radius:16px;background:#fff8fa;border:1px solid #f1d6df;">
+        <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Jūsų treniruotės</div>
+        <p style="margin:8px 0 0;color:#8b737c;font-size:13px;line-height:1.6;">
+          Šiame abonemente užbaigtų treniruočių dar nėra.
+        </p>
+      </div>`;
+  }
+
+  const rows = trainings.map((t) => `
+    <tr>
+      <td style="padding:9px 6px 9px 0;border-bottom:1px solid #f2e4e9;color:#5f4b53;white-space:nowrap;">
+        ${esc(formatDate(t.slot_date))}
+        ${t.slot_time ? `<br><span style="font-size:12px;color:#a18a93;">${esc(formatTime(t.slot_time))}</span>` : ""}
+      </td>
+      <td style="padding:9px 6px;border-bottom:1px solid #f2e4e9;color:#5f4b53;">
+        ${esc(lessonKindLabel(t.lesson_kind, t.is_individual))}
+      </td>
+      <td style="padding:9px 0 9px 6px;border-bottom:1px solid #f2e4e9;color:#5f4b53;text-align:right;">
+        ${esc(t.horse_name || "—")}
+      </td>
+    </tr>`).join("");
+
+  return `
+    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff8fa;border:1px solid #f1d6df;">
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Jūsų treniruotės šiame abonemente 🐎</div>
+      <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
+        <thead>
+          <tr>
+            <th style="padding:7px 6px 7px 0;text-align:left;color:#9a7f89;font-size:11px;font-weight:700;">Data</th>
+            <th style="padding:7px 6px;text-align:left;color:#9a7f89;font-size:11px;font-weight:700;">Treniruotė</th>
+            <th style="padding:7px 0 7px 6px;text-align:right;color:#9a7f89;font-size:11px;font-weight:700;">Žirgas</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function encodeMimeHeader(value: string) {
@@ -157,7 +210,7 @@ function pinkShell(title: string, subtitle: string, inner: string) {
 </html>`;
 }
 
-function subscriptionPurchaseHtml(clientName: string, subscription: any) {
+function subscriptionPurchaseHtml(clientName: string, subscription: any, trainings: any[]) {
   const remaining = Math.max(
     0,
     Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
@@ -193,8 +246,11 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
       <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">${esc(lastTraining)}</div>
       <div style="font-size:13px;color:#8b737c;margin-top:5px;">Po šios treniruotės abonemento pamokos bus išnaudotos / suplanuotos iki pabaigos.</div>
     </div>
-    <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.6;">
-      Jei norėsite tęsti treniruotes, galite pasirūpinti kitu abonementu iš anksto. Liko pamokų pagal sistemą: <strong>${remaining}</strong>.
+    <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
+      Jei norėsite tęsti treniruotes, galite pasirūpinti kitu abonementu iš anksto. Liko pamokų: <strong>${remaining}</strong>.
+    </p>
+    <p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
+      Po šios treniruotės abonemento pamokos bus išnaudotos iki pabaigos.
     </p>`;
   return pinkShell("Jūsų abonementas netrukus baigsis ♡", "Mažas priminimas prieš paskutinę suplanuotą treniruotę", inner);
 }
@@ -222,6 +278,44 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
       </a>
     </div>`;
   return pinkShell(titleLt + " ♡", "Svarbi informacija iš Equus", inner);
+}
+
+
+async function getSubscriptionTrainingHistory(supabase: any, subscriptionId: string) {
+  const { data: bookings, error: bookingsError } = await supabase
+    .from("bookings")
+    .select("id,slot_date,slot_time,status,is_individual,lesson_kind")
+    .eq("subscription_id", subscriptionId)
+    .eq("status", "completed")
+    .eq("counts_in_subscription", true)
+    .order("slot_date", { ascending: true })
+    .order("slot_time", { ascending: true });
+
+  if (bookingsError) throw bookingsError;
+  const rows = bookings ?? [];
+  if (!rows.length) return [];
+
+  const ids = rows.map((b: any) => b.id);
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from("horse_assignments")
+    .select("booking_id,horse_id")
+    .in("booking_id", ids);
+  if (assignmentsError) throw assignmentsError;
+
+  const horseIds = Array.from(new Set((assignments ?? []).map((a: any) => a.horse_id).filter(Boolean))) as string[];
+  let horses: any[] = [];
+  if (horseIds.length) {
+    const { data, error } = await supabase.from("horses").select("id,name").in("id", horseIds);
+    if (error) throw error;
+    horses = data ?? [];
+  }
+
+  const horseById = new Map(horses.map((h: any) => [h.id, h.name]));
+  const horseByBooking = new Map(
+    (assignments ?? []).map((a: any) => [a.booking_id, horseById.get(a.horse_id) ?? "—"]),
+  );
+
+  return rows.map((b: any) => ({ ...b, horse_name: horseByBooking.get(b.id) ?? "—" }));
 }
 
 Deno.serve(async (req) => {
@@ -325,8 +419,9 @@ Deno.serve(async (req) => {
           return json({ ok: false, processed: true, event_id: eventId, error: "SUBSCRIPTION_NOT_FOUND" }, 422);
         }
 
+        const trainings = await getSubscriptionTrainingHistory(supabase, event.subscription_id);
         subject = "Jūsų Equus abonementas patvirtintas 🐎";
-        html = subscriptionPurchaseHtml(clientName, subscription);
+        html = subscriptionPurchaseHtml(clientName, subscription, trainings);
       }
 
       if (event.event_type === "subscription_expiring") {
