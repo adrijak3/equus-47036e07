@@ -26,6 +26,7 @@ const Kainos = lazy(() => import("./pages/Kainos"));
 const Paskyra = lazy(() => import("./pages/Paskyra"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Trener = lazy(() => import("./pages/Trener"));
 const Informacija = lazy(() => import("./pages/Informacija"));
@@ -101,6 +102,7 @@ const App = () => (
                   <Route path="/kainos" element={<Kainos />} />
                   <Route path="/informacija" element={<Informacija />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/registracija" element={<PublicRegistration />} />
                   <Route path="/registracija/:token" element={<PublicRegistration />} />
