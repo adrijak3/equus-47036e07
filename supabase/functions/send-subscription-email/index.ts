@@ -46,8 +46,8 @@ function packageLabel(value: string | null | undefined) {
 }
 
 function horseLabel(value: string | null | undefined) {
-  if (value === "school") return "Mokyklos";
-  if (value === "own" || value === "private") return "Privatus";
+  if (value === "school") return "Mokyklos žirgas";
+  if (value === "own" || value === "private") return "Privatus žirgas";
   return value || "—";
 }
 
@@ -221,7 +221,7 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
   );
   const inner = `
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! Jūsų abonemento pirkimas sėkmingai užregistruotas. 🐎</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! Jūsų abonemento pirkimas sėkmingai užregistruotas.</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;">
       <tr><td style="padding:8px 0;color:#8b737c;">Pamokos</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td></tr>
       <tr><td style="padding:8px 0;color:#8b737c;">Tipas</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td></tr>
@@ -247,7 +247,7 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
   const remaining = Number(payload?.remaining ?? 0);
   const inner = `
     <div style="margin:0 0 14px;font-size:15px;line-height:1.7;font-weight:800;color:#9b3157;">!SVARBU!</div>
-    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}! 💗</p>
+    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}!</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
       Norime priminti, kad Jūsų dabartinio abonemento <strong>paskutinė suplanuota treniruotė yra ${esc(lastTraining)}</strong>.
     </p>
@@ -273,7 +273,7 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
   const url = String(payload?.url || "/grafikas");
   const inner = `
     <div style="margin:0 0 14px;font-size:15px;line-height:1.7;font-weight:800;color:#9b3157;">!SVARBU!</div>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! 💗</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}!</p>
     <div style="padding:16px 18px;border-radius:15px;background:#fff4f7;border:1px solid #f1d6df;">
       <h2 style="margin:0;color:#6f3049;font-size:20px;">${esc(titleLt)}</h2>
       <p style="margin:10px 0 0;white-space:pre-wrap;font-size:15px;line-height:1.7;">${esc(bodyLt)}</p>
