@@ -26,6 +26,7 @@ import { AdminCancellationHistory } from "@/components/AdminCancellationHistory"
 import { UsersSection } from "@/components/admin/UsersSection";
 import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders";
 import { History } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; trainer_name?: string | null; }
@@ -236,6 +237,9 @@ function AdminNotificationsTab() {
   const [globalLt, setGlobalLt] = useState("");
   const [globalEn, setGlobalEn] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
+  const [globalImage, setGlobalImage] = useState<File | null>(null);
+  const [globalImagePreview, setGlobalImagePreview] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const sendGlobal = async () => {
     if (!globalLt.trim() || !globalEn.trim()) {
@@ -244,6 +248,33 @@ function AdminNotificationsTab() {
     }
     if (!confirm("Išsiųsti šį svarbų pranešimą VISIEMS vartotojams?")) return;
     setSending(true);
+    let imageUrl: string | null = null;
+
+    if (globalImage) {
+      setUploadingImage(true);
+      const extension = (globalImage.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = `global-announcements/${crypto.randomUUID()}.${extension || "jpg"}`;
+      const { error: uploadError } = await supabase.storage
+        .from("global-announcement-images")
+        .upload(path, globalImage, {
+          cacheControl: "31536000",
+          contentType: globalImage.type,
+          upsert: false,
+        });
+
+      setUploadingImage(false);
+      if (uploadError) {
+        setSending(false);
+        toast.error("Nuotraukos įkelti nepavyko: " + uploadError.message);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("global-announcement-images")
+        .getPublicUrl(path);
+      imageUrl = publicUrlData.publicUrl;
+    }
+
     const dedupeKey = "global-update:" + crypto.randomUUID();
     const { data, error } = await (supabase as any).rpc("admin_send_global_notification", {
       _title_lt: "Svarbus Equus atnaujinimas",
@@ -271,6 +302,7 @@ function AdminNotificationsTab() {
         _body_en: globalEn.trim(),
         _url: "/grafikas",
         _dedupe_key: dedupeKey,
+        _image_url: imageUrl,
       });
       if (emailError) {
         setSending(false);
@@ -364,6 +396,57 @@ function AdminNotificationsTab() {
           <textarea value={globalEn} onChange={(e) => setGlobalEn(e.target.value)} rows={4}
             className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
         </div>
+
+        <div className="rounded-lg border border-blush/20 bg-blush/5 p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <ImagePlus className="h-4 w-4 text-blush" />
+            <Label>Nuotrauka el. laiške</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Pasirinkta nuotrauka bus rodoma pačiame laiške ir pridėta kaip atsisiunčiamas failas.
+          </p>
+          <Input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              if (!file) {
+                setGlobalImage(null);
+                setGlobalImagePreview("");
+                return;
+              }
+              if (file.size > 5 * 1024 * 1024) {
+                toast.error("Nuotrauka turi būti ne didesnė kaip 5 MB.");
+                e.currentTarget.value = "";
+                return;
+              }
+              setGlobalImage(file);
+              setGlobalImagePreview(URL.createObjectURL(file));
+            }}
+          />
+          {globalImagePreview && (
+            <div className="relative overflow-hidden rounded-lg border border-blush/20 bg-white">
+              <img
+                src={globalImagePreview}
+                alt="Pranešimo nuotraukos peržiūra"
+                className="max-h-72 w-full object-contain"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-2 bg-white/90"
+                onClick={() => {
+                  setGlobalImage(null);
+                  setGlobalImagePreview("");
+                }}
+              >
+                Pašalinti
+              </Button>
+            </div>
+          )}
+        </div>
+
         <label className="flex items-center gap-3 rounded-lg border border-blush/20 bg-blush/5 px-3 py-2.5 cursor-pointer">
           <input
             type="checkbox"
@@ -377,7 +460,7 @@ function AdminNotificationsTab() {
           </span>
         </label>
         <Button variant="gold" disabled={sending} onClick={sendGlobal}>
-          {sendEmail ? "Siųsti visiems" : "Siųsti telefono pranešimą"}
+          {uploadingImage ? "Įkeliama nuotrauka..." : sendEmail ? "Siųsti visiems" : "Siųsti telefono pranešimą"}
         </Button>
       </div>
 
