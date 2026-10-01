@@ -98,6 +98,13 @@ function base64UrlEncode(value: string) {
     .replaceAll("=", "");
 }
 
+function encodeMimeHeader(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `=?UTF-8?B?${btoa(binary)}?=`;
+}
+
 async function sendGmailEmail(
   accessToken: string,
   from: string,
@@ -108,7 +115,7 @@ async function sendGmailEmail(
   const message = [
     `From: ${from}`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodeMimeHeader(subject)}`,
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=UTF-8",
     "",
