@@ -51,22 +51,30 @@ export function UserProfileSheet({
   const load = async (id: string) => {
     setLoading(true);
     const today = formatDateISO(new Date());
-    const [p, s, ps, v, up, pa, tr, roles] = await Promise.all([
+    const [p, s, ps, v, bookings, tr, roles] = await Promise.all([
       supabase.from("profiles").select("id, full_name, phone, riding_level, experience_text, phone_is_parent").eq("id", id).maybeSingle(),
       supabase.from("subscriptions").select("*").eq("user_id", id).order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time").eq("user_id", id).order("day_of_week").order("slot_time"),
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").eq("user_id", id).order("starts_on", { ascending: false }),
-      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id, lesson_price").eq("user_id", id).eq("status", "active").gte("slot_date", today).order("slot_date").order("slot_time").limit(20),
-      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id, lesson_price").eq("user_id", id).or(`slot_date.lt.${today},status.neq.active`).order("slot_date", { ascending: false }).limit(20),
+      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id, lesson_price").eq("user_id", id).order("slot_date", { ascending: false }).order("slot_time").limit(100),
       supabase.from("trainer_riders").select("trainer_user_id, rider_user_id, level").eq("rider_user_id", id),
       supabase.from("user_roles").select("user_id").eq("role", "trainer"),
     ]);
+    const allBookings = (bookings.data ?? []) as any[];
+    const upcomingBookings = allBookings
+      .filter((b) => b.status === "active" && b.slot_date >= today)
+      .sort((a, b) => (a.slot_date + "T" + a.slot_time).localeCompare(b.slot_date + "T" + b.slot_time))
+      .slice(0, 20);
+    const pastBookings = allBookings
+      .filter((b) => b.slot_date < today || b.status !== "active")
+      .sort((a, b) => (b.slot_date + "T" + b.slot_time).localeCompare(a.slot_date + "T" + a.slot_time))
+      .slice(0, 20);
     setProfile((p.data as any) ?? null);
     setSubs((s.data ?? []) as any);
     setPermSlots((ps.data ?? []) as any);
     setVacations((v.data ?? []) as any);
-    setUpcoming((up.data ?? []) as any);
-    setPast((pa.data ?? []) as any);
+    setUpcoming(upcomingBookings as any);
+    setPast(pastBookings as any);
     setRosterLevel(((tr.data ?? []) as any[])[0]?.level);
     setTrainerIds(((roles.data ?? []) as any[]).map((r) => r.user_id));
     setLoading(false);
@@ -109,6 +117,25 @@ export function UserProfileSheet({
     if (error) { toast.error(error.message); return; }
     toast.success("Atnaujinta");
     notifyAndReload();
+  };
+
+  const changeEmail = async (email: string) => {
+    if (!profile) return false;
+    const normalized = email.trim().toLowerCase().replace(/\s+/g, "");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      toast.error("Įveskite galiojantį el. pašto adresą");
+      return false;
+    }
+    const { data, error } = await supabase.functions.invoke("admin-update-user-email", {
+      body: { user_id: profile.id, email: normalized },
+    });
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Nepavyko pakeisti el. pašto");
+      return false;
+    }
+    toast.success("El. paštas pakeistas į " + normalized);
+    notifyAndReload();
+    return true;
   };
 
   const resetPassword = async () => {
@@ -305,13 +332,14 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
 
 function UserDetailsBody({
   profile, subs, permSlots, vacations, upcoming, past, rosterLevel,
-  onSetLevel, onRename, onResetPassword, onDelete, onTogglePaid, onEditLessons, onEditUsed, onDeleteSub,
+  onSetLevel, onRename, onChangeEmail, onResetPassword, onDelete, onTogglePaid, onEditLessons, onEditUsed, onDeleteSub,
   onAddPermSlot, onChangePermSlotTime, onRemovePermSlot, onAddVacation, onRemoveVacation,
 }: {
   profile: Profile; subs: Sub[]; permSlots: PermSlot[]; vacations: Vacation[];
   upcoming: Booking[]; past: Booking[]; rosterLevel?: string;
   onSetLevel: (lvl: RidingLevel) => void;
   onRename: (first: string, last: string, phone: string) => void;
+  onChangeEmail: (email: string) => Promise<boolean>;
   onResetPassword: () => void;
   onDelete: () => void;
   onTogglePaid: (subId: string, paid: boolean) => void;
@@ -328,6 +356,8 @@ function UserDetailsBody({
   const [first, setFirst] = useState(parts[0] ?? "");
   const [last, setLast] = useState(parts.slice(1).join(" "));
   const [phone, setPhone] = useState(profile.phone ?? "");
+  const [email, setEmail] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // reset local edit fields whenever a different user is loaded
@@ -336,6 +366,13 @@ function UserDetailsBody({
     setFirst(p[0] ?? "");
     setLast(p.slice(1).join(" "));
     setPhone(profile.phone ?? "");
+    setEmail("");
+    void (async () => {
+      const { data } = await supabase.functions.invoke("admin-update-user-email", {
+        body: { user_id: profile.id },
+      });
+      if ((data as any)?.email) setEmail((data as any).email);
+    })();
   }, [profile.id]);
 
   const [newDay, setNewDay] = useState(1);
@@ -394,6 +431,25 @@ function UserDetailsBody({
             {profile.phone_is_parent && (
               <p className="mt-1 text-xs text-gold">Tai tėvų / globėjo numeris</p>
             )}
+          </div>
+          <div>
+            <Label>El. paštas</Label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="klientas@example.com" />
+            <p className="mt-1 text-xs text-muted-foreground">Administratorius gali pakeisti prisijungimo el. paštą tiesiogiai.</p>
+            <div className="mt-2">
+              <Button
+                variant="ghostGold"
+                size="sm"
+                disabled={emailBusy || !email.trim()}
+                onClick={async () => {
+                  setEmailBusy(true);
+                  await onChangeEmail(email);
+                  setEmailBusy(false);
+                }}
+              >
+                {emailBusy ? "Keičiama…" : "Pakeisti el. paštą"}
+              </Button>
+            </div>
           </div>
           <div className="rounded-lg border border-gold/15 bg-background/40 p-3">
             <Label>Jojimo patirtis (raitelio aprašymas)</Label>
