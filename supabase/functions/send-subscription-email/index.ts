@@ -358,7 +358,7 @@ Deno.serve(async (req) => {
         "mark_email_event_sent",
         {
           _event_id: eventId,
-          _provider_message_id: messageId,
+          _resend_message_id: messageId,
         },
       );
 
