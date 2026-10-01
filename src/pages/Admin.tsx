@@ -235,7 +235,7 @@ function AdminNotificationsTab() {
 
   const [globalLt, setGlobalLt] = useState("");
   const [globalEn, setGlobalEn] = useState("");
-
+  const [sendEmail, setSendEmail] = useState(true);
 
   const sendGlobal = async () => {
     if (!globalLt.trim() || !globalEn.trim()) {
@@ -244,21 +244,48 @@ function AdminNotificationsTab() {
     }
     if (!confirm("Išsiųsti šį svarbų pranešimą VISIEMS vartotojams?")) return;
     setSending(true);
+    const dedupeKey = "global-update:" + crypto.randomUUID();
     const { data, error } = await (supabase as any).rpc("admin_send_global_notification", {
       _title_lt: "Svarbus Equus atnaujinimas",
       _title_en: "Important Equus update",
       _body_lt: globalLt.trim(),
       _body_en: globalEn.trim(),
       _url: "/grafikas",
-      _dedupe_key: "schedule-update-2026-10-05",
+      _dedupe_key: dedupeKey,
     });
-    if (!error) void flushPushNotifications();
-    setSending(false);
+
     if (error) {
+      setSending(false);
       toast.error(error.message);
       return;
     }
-    toast.success(`Pranešimas įtrauktas į eilę ${Number(data ?? 0)} vartotojams.`);
+
+    void flushPushNotifications();
+
+    let emailCount = 0;
+    if (sendEmail) {
+      const { data: emailData, error: emailError } = await (supabase as any).rpc("admin_send_global_email", {
+        _title_lt: "Svarbus Equus atnaujinimas",
+        _title_en: "Important Equus update",
+        _body_lt: globalLt.trim(),
+        _body_en: globalEn.trim(),
+        _url: "/grafikas",
+        _dedupe_key: dedupeKey,
+      });
+      if (emailError) {
+        setSending(false);
+        toast.error("Telefono pranešimų eilė sukurta, bet el. pašto eilės sukurti nepavyko: " + emailError.message);
+        return;
+      }
+      emailCount = Number(emailData ?? 0);
+    }
+
+    setSending(false);
+    toast.success(
+      sendEmail
+        ? "Pranešimas įtrauktas į eilę " + Number(data ?? 0) + " vartotojams + " + emailCount + " el. laiškų."
+        : "Pranešimas įtrauktas į eilę " + Number(data ?? 0) + " vartotojams.",
+    );
   };
 
   const sendTestToMe = async () => {
@@ -326,7 +353,7 @@ function AdminNotificationsTab() {
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
         <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
-        <p className="text-sm text-muted-foreground">Parašykite savo pranešimą. Nieko čia neįrašome automatiškai.</p>
+        <p className="text-sm text-muted-foreground">Parašykite svarbų pranešimą, pvz. dienos atšaukimą, grafiko pakeitimą ar kitą svarbią informaciją. Jis bus išsiųstas telefono pranešimu, o pasirinkus – ir el. paštu.</p>
         <div>
           <Label>Lietuviškai</Label>
           <textarea value={globalLt} onChange={(e) => setGlobalLt(e.target.value)} rows={4}
@@ -337,7 +364,21 @@ function AdminNotificationsTab() {
           <textarea value={globalEn} onChange={(e) => setGlobalEn(e.target.value)} rows={4}
             className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
         </div>
-        <Button variant="gold" disabled={sending} onClick={sendGlobal}>Siųsti visiems</Button>
+        <label className="flex items-center gap-3 rounded-lg border border-blush/20 bg-blush/5 px-3 py-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={sendEmail}
+            onChange={(e) => setSendEmail(e.target.checked)}
+            className="h-4 w-4 accent-blush"
+          />
+          <span className="text-sm">
+            <span className="font-medium">💌 Siųsti ir el. paštu</span>
+            <span className="block text-xs text-muted-foreground">Bus išsiųstas gražus Equus laiškas visiems vartotojams, turintiems el. paštą.</span>
+          </span>
+        </label>
+        <Button variant="gold" disabled={sending} onClick={sendGlobal}>
+          {sendEmail ? "Siųsti visiems" : "Siųsti telefono pranešimą"}
+        </Button>
       </div>
 
 
