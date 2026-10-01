@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-equus-cron-secret",
 };
 
 function json(body: unknown, status = 200) {
@@ -138,6 +138,15 @@ Deno.serve(async (req) => {
 
   if (req.method !== "POST") {
     return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  }
+
+  // This worker is invoked by pg_cron/pg_net, not by a browser user.
+  // The endpoint is deployed without Supabase JWT verification, so it must
+  // validate the server-to-server cron secret itself.
+  const expectedCronSecret = Deno.env.get("EQUUS_CRON_SECRET");
+  const suppliedCronSecret = req.headers.get("x-equus-cron-secret");
+  if (!expectedCronSecret || !suppliedCronSecret || suppliedCronSecret !== expectedCronSecret) {
+    return json({ error: "UNAUTHORIZED" }, 401);
   }
 
   try {
