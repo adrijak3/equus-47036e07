@@ -4,6 +4,13 @@
 -- Admins may directly correct subscription lesson totals/used
 -- values. This is an administrative correction path and does
 -- not represent a new purchase or payment.
+--
+-- IMPORTANT:
+-- subscriptions has BEFORE UPDATE protection triggers which
+-- require the transaction-local setting
+-- equus.allow_subscription_financial_update = true.
+-- SECURITY DEFINER alone does NOT bypass those triggers.
+-- These admin RPCs explicitly set that marker for their update.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.admin_adjust_subscription_total(
@@ -48,6 +55,14 @@ BEGIN
   END IF;
 
   v_old := v_sub.lessons_total;
+
+  -- The subscriptions protection trigger requires this trusted
+  -- transaction-local marker before financial/package fields change.
+  PERFORM set_config(
+    'equus.allow_subscription_financial_update',
+    'true',
+    true
+  );
 
   UPDATE public.subscriptions
   SET lessons_total = _new_lessons_total
@@ -106,12 +121,12 @@ BEGIN
     RAISE EXCEPTION 'NOT_AUTHENTICATED';
   END IF;
 
-  IF NOT public.has_role(v_actor, 'admin'::public.app_role) THEN
-    RAISE EXCEPTION 'NOT_ALLOWED';
-  END IF;
-
   IF _subscription_id IS NULL THEN
     RAISE EXCEPTION 'SUBSCRIPTION_NOT_FOUND';
+  END IF;
+
+  IF NOT public.has_role(v_actor, 'admin'::public.app_role) THEN
+    RAISE EXCEPTION 'NOT_ALLOWED';
   END IF;
 
   IF _new_lessons_used IS NULL OR _new_lessons_used < 0 THEN
@@ -133,6 +148,14 @@ BEGIN
   END IF;
 
   v_old := v_sub.lessons_used;
+
+  -- The subscriptions protection trigger requires this trusted
+  -- transaction-local marker before financial/package fields change.
+  PERFORM set_config(
+    'equus.allow_subscription_financial_update',
+    'true',
+    true
+  );
 
   UPDATE public.subscriptions
   SET lessons_used = _new_lessons_used
