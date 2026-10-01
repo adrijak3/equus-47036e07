@@ -59,26 +59,73 @@ function horseLabel(value: string | null | undefined) {
   return value || "—";
 }
 
-async function sendResendEmail(
-  apiKey: string,
+async function getGmailAccessToken() {
+  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
+  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+  const refreshToken = Deno.env.get("GOOGLE_REFRESH_TOKEN");
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("GMAIL_OAUTH_NOT_CONFIGURED");
+  }
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.access_token) {
+    throw new Error(`GOOGLE_TOKEN_REFRESH_FAILED: HTTP ${response.status} ${JSON.stringify(data)}`);
+  }
+
+  return data.access_token as string;
+}
+
+function base64UrlEncode(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
+}
+
+async function sendGmailEmail(
+  accessToken: string,
   from: string,
   to: string,
   subject: string,
   html: string,
 ) {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const message = [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/html; charset=UTF-8",
+    "",
+    html,
+  ].join("\r\n");
+
+  const response = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw: base64UrlEncode(message) }),
     },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      html,
-    }),
-  });
+  );
 
   const data = await response.json();
   return { response, data };
@@ -96,12 +143,11 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const fromEmail =
-      Deno.env.get("RESEND_FROM_EMAIL") ||
-      "Equus Jojimo Mokykla <onboarding@resend.dev>";
+      Deno.env.get("GMAIL_FROM_EMAIL") ||
+      "Equus Jojimo Mokykla <equusjojimomokykla@gmail.com>";
 
-    if (!supabaseUrl || !serviceRoleKey || !resendApiKey) {
+    if (!supabaseUrl || !serviceRoleKey) {
       console.error("Missing server configuration");
       return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
     }
@@ -277,22 +323,23 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-      const { response: resendResponse, data: resendData } =
-        await sendResendEmail(
-          resendApiKey,
+      const accessToken = await getGmailAccessToken();
+      const { response: gmailResponse, data: gmailData } =
+        await sendGmailEmail(
+          accessToken,
           fromEmail,
           event.email,
           subject,
           html,
         );
 
-      if (!resendResponse.ok) {
-        const details = JSON.stringify(resendData);
-        const retryable = resendResponse.status >= 500 || resendResponse.status === 429;
+      if (!gmailResponse.ok) {
+        const details = JSON.stringify(gmailData);
+        const retryable = gmailResponse.status >= 500 || gmailResponse.status === 429;
 
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
-          _error: `Resend HTTP ${resendResponse.status}: ${details}`,
+          _error: `Gmail HTTP ${gmailResponse.status}: ${details}`,
           _retryable: retryable,
         });
 
@@ -300,18 +347,18 @@ Deno.serve(async (req) => {
           ok: false,
           processed: true,
           event_id: eventId,
-          error: "RESEND_FAILED",
+          error: "GMAIL_FAILED",
           retryable,
         }, 502);
       }
 
-      const messageId = resendData?.id ?? null;
+      const messageId = gmailData?.id ?? null;
 
       const { data: markedSent, error: sentError } = await supabase.rpc(
         "mark_email_event_sent",
         {
           _event_id: eventId,
-          _resend_message_id: messageId,
+          _provider_message_id: messageId,
         },
       );
 
