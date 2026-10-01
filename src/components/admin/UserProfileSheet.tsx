@@ -324,6 +324,7 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
             rosterLevel={rosterLevel}
             onSetLevel={setLevel}
             onRename={renameUser}
+            onChangeEmail={changeEmail}
             onResetPassword={resetPassword}
             onDelete={deleteUser}
             onTogglePaid={togglePaid}
