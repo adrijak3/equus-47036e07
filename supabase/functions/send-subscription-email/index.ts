@@ -63,6 +63,35 @@ function formatTime(value: unknown) {
   return String(value).slice(0, 5);
 }
 
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    const own = Object.getOwnPropertyNames(error).reduce<Record<string, unknown>>((acc, key) => {
+      try {
+        acc[key] = (error as any)[key];
+      } catch {
+        acc[key] = "<unreadable>";
+      }
+      return acc;
+    }, {});
+    const message = String(error.message ?? "");
+    if (message && message !== "[object Object]") return message;
+    const serialized = JSON.stringify(own);
+    return serialized && serialized !== "{}"
+      ? serialized
+      : message || error.name || "Unknown error";
+  }
+
+  if (error && typeof error === "object") {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+
+  return String(error ?? "Unknown error");
+}
+
 function trainingHistoryHtml(trainings: any[]) {
   if (!trainings.length) {
     return `
@@ -466,10 +495,7 @@ Deno.serve(async (req) => {
         try {
           trainings = await getSubscriptionTrainingHistory(supabase, event.subscription_id);
         } catch (historyError) {
-          const details = historyError && typeof historyError === "object"
-            ? JSON.stringify(historyError)
-            : String(historyError);
-          throw new Error("SUBSCRIPTION_TRAINING_HISTORY_FAILED: " + details);
+          throw new Error("SUBSCRIPTION_TRAINING_HISTORY_FAILED: " + describeError(historyError));
         }
         subject = "Jūsų Equus abonementas patvirtintas";
         html = subscriptionPurchaseHtml(clientName, subscription, trainings);
@@ -548,11 +574,7 @@ Deno.serve(async (req) => {
         message_id: messageId,
       });
     } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : error && typeof error === "object"
-          ? JSON.stringify(error)
-          : String(error);
+      const message = describeError(error);
       await supabase.rpc("mark_email_event_failed", {
         _event_id: eventId,
         _error: message,
