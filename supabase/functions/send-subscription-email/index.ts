@@ -90,7 +90,7 @@ function trainingHistoryHtml(trainings: any[]) {
 
   return `
     <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff8fa;border:1px solid #f1d6df;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Jūsų treniruotės šiame abonemente 🐎</div>
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Jūsų treniruotės šiame abonemente</div>
       <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
         <thead>
           <tr>
@@ -205,6 +205,11 @@ function pinkShell(title: string, subtitle: string, inner: string) {
       Šis laiškas išsiųstas automatiškai iš Equus Jojimo Mokyklos sistemos.<br>
       This email was sent automatically by the Equus Riding School system.
     </p>
+    <div style="margin:24px 4px 0;padding-top:16px;border-top:1px solid #eadde2;color:#8f7b83;font-size:10.5px;line-height:1.65;text-align:left;">
+      Pastaba: šiame laiške, įskaitant jo priedus, esanti informacija yra konfidenciali ir skirta tik adresatui. Jeigu Jūs nesate nurodytas adresatas, prašome įsidėmėti, kad bet koks šiame laiške esančios informacijos platinimas, dauginimas, kopijavimas ar naudojimas yra griežtai draudžiamas. Jeigu Jūs per klaidą gavote šį laišką, mes atsiprašome už sutrukdymą ir prašome nedelsiant informuoti siuntėją elektroniniu paštu
+      <a href="mailto:equusjojimomokykla@gmail.com" style="color:#8f6474;text-decoration:none;">equusjojimomokykla@gmail.com</a>
+      bei ištrinti laišką ir visus jo priedus iš Jūsų sistemos. Dėkojame.
+    </div>
   </div>
 </body>
 </html>`;
@@ -234,7 +239,7 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     <div style="margin-top:20px;padding:14px 16px;border-radius:14px;background:#fff0f5;border:1px solid #f0cbd8;text-align:center;color:#805d69;font-size:13px;line-height:1.6;">
       Ačiū, kad renkatės Equus Jojimo Mokyklą. ♡
     </div>`;
-  return pinkShell("Abonementas patvirtintas 🐎", "Jūsų Equus abonemento informacija", inner);
+  return pinkShell("Abonementas patvirtintas", "Jūsų Equus abonemento informacija", inner);
 }
 
 function subscriptionExpiringHtml(clientName: string, payload: any) {
@@ -257,7 +262,7 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
     <p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
       Po šios treniruotės abonemento pamokos bus išnaudotos iki pabaigos.
     </p>`;
-  return pinkShell("Jūsų abonementas netrukus baigsis ♡", "Mažas priminimas prieš paskutinę suplanuotą treniruotę", inner);
+  return pinkShell("Jūsų abonementas netrukus baigsis", "Mažas priminimas prieš paskutinę suplanuotą treniruotę", inner);
 }
 
 function globalAnnouncementHtml(clientName: string, payload: any) {
@@ -283,7 +288,7 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
         Atidaryti Equus / Open Equus
       </a>
     </div>`;
-  return pinkShell(titleLt + " ♡", "Svarbi informacija iš Equus", inner);
+  return pinkShell(titleLt, "Svarbi informacija iš Equus", inner);
 }
 
 
@@ -403,6 +408,26 @@ Deno.serve(async (req) => {
         if (profile?.full_name?.trim()) clientName = profile.full_name.trim();
       }
 
+      if (clientName === "Kliente" && event.email) {
+        const { data: authRows, error: authError } = await supabase.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        });
+        if (authError) throw authError;
+        const matched = authRows.users.find(
+          (u: any) => String(u.email ?? "").toLowerCase() === String(event.email).toLowerCase(),
+        );
+        if (matched) {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", matched.id)
+            .maybeSingle();
+          if (profileError) throw profileError;
+          if (profile?.full_name?.trim()) clientName = profile.full_name.trim();
+        }
+      }
+
       let subject = "Svarbus Equus atnaujinimas";
       let html = "";
 
@@ -426,18 +451,18 @@ Deno.serve(async (req) => {
         }
 
         const trainings = await getSubscriptionTrainingHistory(supabase, event.subscription_id);
-        subject = "Jūsų Equus abonementas patvirtintas 🐎";
+        subject = "Jūsų Equus abonementas patvirtintas";
         html = subscriptionPurchaseHtml(clientName, subscription, trainings);
       }
 
       if (event.event_type === "subscription_expiring") {
-        subject = "Jūsų Equus abonementas netrukus baigsis ♡";
+        subject = "Jūsų Equus abonementas netrukus baigsis";
         html = subscriptionExpiringHtml(clientName, event.payload || {});
       }
 
       if (event.event_type === "global_important_update") {
         const payload = event.payload || {};
-        subject = String(payload.title_lt || "Svarbus Equus atnaujinimas") + " ♡";
+        subject = String(payload.title_lt || "Svarbus Equus atnaujinimas");
         html = globalAnnouncementHtml(clientName, payload);
       }
 
