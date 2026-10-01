@@ -187,6 +187,14 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
   return btoa(binary);
 }
 
+function normalizeRecipientEmail(email: string): string {
+  const trimmed = email.trim().toLowerCase();
+  if (/@gmail\.gom$/i.test(trimmed)) {
+    return trimmed.replace(/@gmail\.gom$/i, "@gmail.com");
+  }
+  return trimmed;
+}
+
 async function sendGmailEmail(
   accessToken: string,
   from: string,
@@ -540,7 +548,17 @@ Deno.serve(async (req) => {
     if (!event) throw new Error("EMAIL_EVENT_NOT_FOUND");
 
     try {
-      if (!event.email) {
+      let recipientEmail = normalizeRecipientEmail(String(event.email ?? ""));
+
+      if (event.user_id) {
+        const { data: authUser, error: authUserError } = await supabase.auth.admin.getUserById(event.user_id);
+        if (authUserError) throw authUserError;
+        if (authUser.user?.email) {
+          recipientEmail = normalizeRecipientEmail(authUser.user.email);
+        }
+      }
+
+      if (!recipientEmail) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Email address is missing",
@@ -569,14 +587,14 @@ Deno.serve(async (req) => {
         if (profile?.full_name?.trim()) clientName = profile.full_name.trim();
       }
 
-      if (clientName === "Kliente" && event.email) {
+      if (clientName === "Kliente" && recipientEmail) {
         const { data: authRows, error: authError } = await supabase.auth.admin.listUsers({
           page: 1,
           perPage: 1000,
         });
         if (authError) throw authError;
         const matched = authRows.users.find(
-          (u: any) => String(u.email ?? "").toLowerCase() === String(event.email).toLowerCase(),
+          (u: any) => normalizeRecipientEmail(String(u.email ?? "")) === recipientEmail,
         );
         if (matched) {
           const { data: profile, error: profileError } = await supabase
@@ -641,7 +659,7 @@ Deno.serve(async (req) => {
       const { response: gmailResponse, data: gmailData } = await sendGmailEmail(
         accessToken,
         fromEmail,
-        event.email,
+        recipientEmail,
         subject,
         html,
         event.event_type === "global_important_update" ? String(event.payload?.image_url || "") || null : null,
