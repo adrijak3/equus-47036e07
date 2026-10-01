@@ -45,18 +45,27 @@ function packageLabel(value: string | null | undefined) {
   return value || "—";
 }
 
-function paymentLabel(value: string | null | undefined) {
-  if (value === "cash") return "Grynais";
-  if (value === "bank_transfer") return "Bankiniu pavedimu";
-  if (value === "other") return "Kita";
+function horseLabel(value: string | null | undefined) {
+  if (value === "school") return "Mokyklos žirgais";
+  if (value === "own" || value === "private") return "Nuosavais žirgais";
   return value || "—";
 }
 
-function horseLabel(value: string | null | undefined) {
-  if (value === "school") return "Mokyklos žirgais";
-  if (value === "own") return "Nuosavais žirgais";
-  if (value === "private") return "Nuosavais žirgais";
-  return value || "—";
+function encodeMimeHeader(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `=?UTF-8?B?${btoa(binary)}?=`;
+}
+
+function base64UrlEncode(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 }
 
 async function getGmailAccessToken() {
@@ -80,29 +89,10 @@ async function getGmailAccessToken() {
   });
 
   const data = await response.json();
-
   if (!response.ok || !data.access_token) {
     throw new Error(`GOOGLE_TOKEN_REFRESH_FAILED: HTTP ${response.status} ${JSON.stringify(data)}`);
   }
-
   return data.access_token as string;
-}
-
-function base64UrlEncode(value: string) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary)
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replaceAll("=", "");
-}
-
-function encodeMimeHeader(value: string) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return `=?UTF-8?B?${btoa(binary)}?=`;
 }
 
 async function sendGmailEmail(
@@ -138,18 +128,106 @@ async function sendGmailEmail(
   return { response, data };
 }
 
+function pinkShell(title: string, subtitle: string, inner: string) {
+  return `
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Equus</title>
+</head>
+<body style="margin:0;background:#fff6f8;color:#33252a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:620px;margin:0 auto;padding:30px 16px;">
+    <div style="background:linear-gradient(135deg,#fff0f4,#f8dbe5);border:1px solid #efc5d3;border-radius:24px;padding:28px 28px 24px;box-shadow:0 8px 30px rgba(160,80,105,.10);">
+      <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#a55d78;font-weight:700;">Equus Jojimo Mokykla</div>
+      <div style="font-size:34px;margin-top:8px;">♡</div>
+      <h1 style="margin:2px 0 8px;font-size:28px;line-height:1.2;color:#6f3049;">${esc(title)}</h1>
+      <p style="margin:0;color:#805d69;font-size:15px;line-height:1.6;">${esc(subtitle)}</p>
+    </div>
+    <div style="margin-top:14px;background:#fff;border:1px solid #efdce3;border-radius:20px;padding:24px 26px;box-shadow:0 4px 18px rgba(160,80,105,.06);">
+      ${inner}
+    </div>
+    <p style="margin:20px 4px 0;color:#9a7f89;font-size:12px;line-height:1.6;text-align:center;">
+      Šis laiškas išsiųstas automatiškai iš Equus Jojimo Mokyklos sistemos.<br>
+      This email was sent automatically by the Equus Riding School system.
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
+function subscriptionPurchaseHtml(clientName: string, subscription: any) {
+  const remaining = Math.max(
+    0,
+    Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
+  );
+  const inner = `
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! Jūsų abonemento pirkimas sėkmingai užregistruotas. 🐎</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <tr><td style="padding:8px 0;color:#8b737c;">Pamokos</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td></tr>
+      <tr><td style="padding:8px 0;color:#8b737c;">Tipas</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td></tr>
+      <tr><td style="padding:8px 0;color:#8b737c;">Žirgai</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(horseLabel(subscription.horse_type))}</td></tr>
+      <tr><td style="padding:8px 0;color:#8b737c;">Sumokėta</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatEur(subscription.price)}</td></tr>
+      <tr><td style="padding:8px 0;color:#8b737c;">Pirkimo data</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatDate(subscription.purchase_date)}</td></tr>
+      <tr><td style="padding:8px 0;color:#8b737c;">Galioja iki</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatDate(subscription.expires_at)}</td></tr>
+    </table>
+    <div style="margin-top:18px;padding:16px;border-radius:14px;background:#fff4f7;text-align:center;">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a55d78;">Liko pamokų</div>
+      <div style="font-size:40px;font-weight:700;color:#6f3049;margin-top:5px;">${remaining}</div>
+      <div style="font-size:13px;color:#8b737c;">${Number(subscription.lessons_used ?? 0)} panaudota iš ${Number(subscription.lessons_total)}</div>
+    </div>`;
+  return pinkShell("Abonementas patvirtintas 🐎", "Jūsų Equus abonemento informacija", inner);
+}
+
+function subscriptionExpiringHtml(clientName: string, payload: any) {
+  const lastTraining = formatDate(payload?.last_training_date);
+  const remaining = Number(payload?.remaining ?? 0);
+  const inner = `
+    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}! 💗</p>
+    <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
+      Norime priminti, kad Jūsų dabartinio abonemento <strong>paskutinė suplanuota treniruotė yra ${esc(lastTraining)}</strong>.
+    </p>
+    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;">
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Abonemento pabaiga</div>
+      <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">${esc(lastTraining)}</div>
+      <div style="font-size:13px;color:#8b737c;margin-top:5px;">Po šios treniruotės abonemento pamokos bus išnaudotos / suplanuotos iki pabaigos.</div>
+    </div>
+    <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.6;">
+      Jei norėsite tęsti treniruotes, galite pasirūpinti kitu abonementu iš anksto. Liko pamokų pagal sistemą: <strong>${remaining}</strong>.
+    </p>`;
+  return pinkShell("Jūsų abonementas netrukus baigsis ♡", "Mažas priminimas prieš paskutinę suplanuotą treniruotę", inner);
+}
+
+function globalAnnouncementHtml(clientName: string, payload: any) {
+  const titleLt = String(payload?.title_lt || "Svarbus Equus atnaujinimas");
+  const titleEn = String(payload?.title_en || "Important Equus update");
+  const bodyLt = String(payload?.body_lt || "");
+  const bodyEn = String(payload?.body_en || "");
+  const url = String(payload?.url || "/grafikas");
+  const inner = `
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! 💗</p>
+    <div style="padding:16px 18px;border-radius:15px;background:#fff4f7;border:1px solid #f1d6df;">
+      <h2 style="margin:0;color:#6f3049;font-size:20px;">${esc(titleLt)}</h2>
+      <p style="margin:10px 0 0;white-space:pre-wrap;font-size:15px;line-height:1.7;">${esc(bodyLt)}</p>
+    </div>
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid #eee0e5;">
+      <h3 style="margin:0;color:#6f3049;font-size:16px;">${esc(titleEn)}</h3>
+      <p style="margin:8px 0 0;white-space:pre-wrap;color:#705e66;font-size:14px;line-height:1.7;">${esc(bodyEn)}</p>
+    </div>
+    <div style="margin-top:20px;text-align:center;">
+      <a href="https://equus-47036e07.pages.dev${url.startsWith("/") ? url : "/" + url}"
+         style="display:inline-block;padding:12px 20px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">
+        Atidaryti Equus / Open Equus
+      </a>
+    </div>`;
+  return pinkShell(titleLt + " ♡", "Svarbi informacija iš Equus", inner);
+}
+
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
 
-  if (req.method !== "POST") {
-    return json({ error: "METHOD_NOT_ALLOWED" }, 405);
-  }
-
-  // This worker is invoked by pg_cron/pg_net, not by a browser user.
-  // The endpoint is deployed without Supabase JWT verification, so it must
-  // validate the server-to-server cron secret itself.
   const expectedCronSecret = Deno.env.get("EQUUS_CRON_SECRET");
   const suppliedCronSecret = req.headers.get("x-equus-cron-secret");
   if (!expectedCronSecret || !suppliedCronSecret || suppliedCronSecret !== expectedCronSecret) {
@@ -159,59 +237,43 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const fromEmail =
-      Deno.env.get("GMAIL_FROM_EMAIL") ||
-      "Equus Jojimo Mokykla <equusjojimomokykla@gmail.com>";
+    const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL") || "Equus Jojimo Mokykla <equusjojimomokykla@gmail.com>";
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error("Missing server configuration");
-      return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
-    }
+    if (!supabaseUrl || !serviceRoleKey) return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // First return abandoned jobs to the queue.
-    const { error: recoveryError } = await supabase.rpc(
-      "recover_stale_email_events",
-      { _stale_after: "15 minutes" },
-    );
-
+    const { error: recoveryError } = await supabase.rpc("recover_stale_email_events", { _stale_after: "15 minutes" });
     if (recoveryError) {
       console.error("Failed to recover stale email events:", recoveryError);
       return json({ error: "QUEUE_RECOVERY_FAILED" }, 500);
     }
 
-    // Claim exactly one event. The DB function uses FOR UPDATE SKIP LOCKED.
-    const { data: claimed, error: claimError } = await supabase.rpc(
-      "claim_email_event",
-    );
-
+    const { data: claimed, error: claimError } = await supabase.rpc("claim_email_event");
     if (claimError) {
       console.error("Failed to claim email event:", claimError);
       return json({ error: "QUEUE_CLAIM_FAILED" }, 500);
     }
 
-    const event = Array.isArray(claimed) ? claimed[0] : claimed;
+    const claimedEvent = Array.isArray(claimed) ? claimed[0] : claimed;
+    if (!claimedEvent) return json({ ok: true, processed: false, reason: "NO_PENDING_EVENTS" });
 
-    if (!event) {
-      return json({ ok: true, processed: false, reason: "NO_PENDING_EVENTS" });
-    }
+    const eventId = claimedEvent.id as string;
 
-    const eventId = event.id as string;
-    const eventType = event.event_type as string;
+    // Fetch the complete row after claiming so new payload-based event types
+    // do not depend on the return shape of the older claim RPC.
+    const { data: event, error: eventError } = await supabase
+      .from("email_events")
+      .select("id,event_type,user_id,email,subscription_id,booking_id,payload")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (eventError) throw eventError;
+    if (!event) throw new Error("EMAIL_EVENT_NOT_FOUND");
 
     try {
-      if (eventType !== "subscription_purchase") {
-        await supabase.rpc("mark_email_event_failed", {
-          _event_id: eventId,
-          _error: `Unsupported event type: ${eventType}`,
-          _retryable: false,
-        });
-        return json({ ok: false, processed: true, event_id: eventId, error: "UNSUPPORTED_EVENT_TYPE" }, 422);
-      }
-
       if (!event.email) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
@@ -221,31 +283,13 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!event.subscription_id) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
-          _error: "Subscription ID is missing",
+          _error: "Unsupported event type: " + event.event_type,
           _retryable: false,
         });
-        return json({ ok: false, processed: true, event_id: eventId, error: "SUBSCRIPTION_MISSING" }, 422);
-      }
-
-      const { data: subscription, error: subscriptionError } = await supabase
-        .from("subscriptions")
-        .select(
-          "id,user_id,lessons_total,lessons_used,price,purchase_date,start_from_date,expires_at,paid,lesson_type,package_type,horse_type,purchase_method,purchased_at",
-        )
-        .eq("id", event.subscription_id)
-        .maybeSingle();
-
-      if (subscriptionError) throw subscriptionError;
-      if (!subscription) {
-        await supabase.rpc("mark_email_event_failed", {
-          _event_id: eventId,
-          _error: "Subscription no longer exists",
-          _retryable: false,
-        });
-        return json({ ok: false, processed: true, event_id: eventId, error: "SUBSCRIPTION_NOT_FOUND" }, 422);
+        return json({ ok: false, processed: true, event_id: eventId, error: "UNSUPPORTED_EVENT_TYPE" }, 422);
       }
 
       let clientName = "Kliente";
@@ -255,110 +299,64 @@ Deno.serve(async (req) => {
           .select("full_name")
           .eq("id", event.user_id)
           .maybeSingle();
-
         if (profileError) throw profileError;
         if (profile?.full_name?.trim()) clientName = profile.full_name.trim();
       }
 
-      const remaining = Math.max(
-        0,
-        Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
-      );
+      let subject = "Svarbus Equus atnaujinimas";
+      let html = "";
 
-      const subject = "Jūsų Equus abonementas patvirtintas 🐎";
+      if (event.event_type === "subscription_purchase") {
+        if (!event.subscription_id) throw new Error("SUBSCRIPTION_MISSING");
 
-      const html = `
-<!doctype html>
-<html lang="lt">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Equus abonementas</title>
-</head>
-<body style="margin:0;background:#f6f3ee;color:#28231f;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:620px;margin:0 auto;padding:32px 16px;">
-    <div style="background:#171513;border-radius:22px;padding:28px 30px;color:#fff;">
-      <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#d6b56a;">
-        Equus Jojimo Mokykla
-      </div>
-      <h1 style="margin:12px 0 6px;font-size:28px;line-height:1.2;font-weight:600;">
-        Abonementas patvirtintas 🐎
-      </h1>
-      <p style="margin:0;color:#ddd5cb;font-size:15px;line-height:1.6;">
-        Sveiki, ${esc(clientName)}! Jūsų abonemento pirkimas sėkmingai užregistruotas.
-      </p>
-    </div>
+        const { data: subscription, error: subscriptionError } = await supabase
+          .from("subscriptions")
+          .select("id,user_id,lessons_total,lessons_used,price,purchase_date,start_from_date,expires_at,paid,lesson_type,package_type,horse_type,purchase_method,purchased_at")
+          .eq("id", event.subscription_id)
+          .maybeSingle();
 
-    <div style="margin-top:14px;background:#fff;border:1px solid #e4ddd3;border-radius:18px;padding:24px 26px;">
-      <h2 style="margin:0 0 18px;font-size:18px;">Abonemento informacija</h2>
+        if (subscriptionError) throw subscriptionError;
+        if (!subscription) {
+          await supabase.rpc("mark_email_event_failed", {
+            _event_id: eventId,
+            _error: "Subscription no longer exists",
+            _retryable: false,
+          });
+          return json({ ok: false, processed: true, event_id: eventId, error: "SUBSCRIPTION_NOT_FOUND" }, 422);
+        }
 
-      <table style="width:100%;border-collapse:collapse;font-size:14px;">
-        <tr>
-          <td style="padding:9px 0;color:#756d65;">Pamokos</td>
-          <td style="padding:9px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;color:#756d65;">Tipas</td>
-          <td style="padding:9px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;color:#756d65;">Žirgai</td>
-          <td style="padding:9px 0;text-align:right;font-weight:600;">${esc(horseLabel(subscription.horse_type))}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;color:#756d65;">Sumokėta</td>
-          <td style="padding:9px 0;text-align:right;font-weight:600;">${formatEur(subscription.price)}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;color:#756d65;">Pirkimo data</td>
-          <td style="padding:9px 0;text-align:right;font-weight:600;">${formatDate(subscription.purchase_date)}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;color:#756d65;">Galioja iki</td>
-          <td style="padding:9px 0;text-align:right;font-weight:600;">${formatDate(subscription.expires_at)}</td>
-        </tr>
-      </table>
-    </div>
+        subject = "Jūsų Equus abonementas patvirtintas 🐎";
+        html = subscriptionPurchaseHtml(clientName, subscription);
+      }
 
-    <div style="margin-top:14px;background:#fff;border:1px solid #e4ddd3;border-radius:18px;padding:24px 26px;text-align:center;">
-      <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8b7a5c;">
-        Liko pamokų
-      </div>
-      <div style="font-size:44px;line-height:1.1;font-weight:700;margin-top:8px;">
-        ${remaining}
-      </div>
-      <p style="margin:8px 0 0;color:#756d65;font-size:13px;">
-        ${Number(subscription.lessons_used ?? 0)} panaudota iš ${Number(subscription.lessons_total)}
-      </p>
-    </div>
+      if (event.event_type === "subscription_expiring") {
+        subject = "Jūsų Equus abonementas netrukus baigsis ♡";
+        html = subscriptionExpiringHtml(clientName, event.payload || {});
+      }
 
-    <p style="margin:22px 4px 0;color:#756d65;font-size:12px;line-height:1.6;text-align:center;">
-      Šis laiškas išsiųstas automatiškai iš Equus Jojimo Mokyklos sistemos.
-    </p>
-  </div>
-</body>
-</html>`;
+      if (event.event_type === "global_important_update") {
+        const payload = event.payload || {};
+        subject = String(payload.title_lt || "Svarbus Equus atnaujinimas") + " ♡";
+        html = globalAnnouncementHtml(clientName, payload);
+      }
 
       const accessToken = await getGmailAccessToken();
-      const { response: gmailResponse, data: gmailData } =
-        await sendGmailEmail(
-          accessToken,
-          fromEmail,
-          event.email,
-          subject,
-          html,
-        );
+      const { response: gmailResponse, data: gmailData } = await sendGmailEmail(
+        accessToken,
+        fromEmail,
+        event.email,
+        subject,
+        html,
+      );
 
       if (!gmailResponse.ok) {
         const details = JSON.stringify(gmailData);
         const retryable = gmailResponse.status >= 500 || gmailResponse.status === 429;
-
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: `Gmail HTTP ${gmailResponse.status}: ${details}`,
           _retryable: retryable,
         });
-
         return json({
           ok: false,
           processed: true,
@@ -369,13 +367,9 @@ Deno.serve(async (req) => {
       }
 
       const messageId = gmailData?.id ?? null;
-
       const { data: markedSent, error: sentError } = await supabase.rpc(
         "mark_email_event_sent",
-        {
-          _event_id: eventId,
-          _resend_message_id: messageId,
-        },
+        { _event_id: eventId, _resend_message_id: messageId },
       );
 
       if (sentError || !markedSent) {
@@ -389,9 +383,9 @@ Deno.serve(async (req) => {
         }, 500);
       }
 
-      console.log("Subscription email sent:", {
+      console.log("Equus email sent:", {
         event_id: eventId,
-        subscription_id: subscription.id,
+        event_type: event.event_type,
         message_id: messageId,
       });
 
@@ -399,26 +393,18 @@ Deno.serve(async (req) => {
         ok: true,
         processed: true,
         event_id: eventId,
-        subscription_id: subscription.id,
+        event_type: event.event_type,
         message_id: messageId,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-
       await supabase.rpc("mark_email_event_failed", {
         _event_id: eventId,
         _error: message,
         _retryable: true,
       });
-
       console.error("send-subscription-email processing failed:", error);
-
-      return json({
-        ok: false,
-        processed: true,
-        event_id: eventId,
-        error: "PROCESSING_FAILED",
-      }, 500);
+      return json({ ok: false, processed: true, event_id: eventId, error: "PROCESSING_FAILED" }, 500);
     }
   } catch (error) {
     console.error("send-subscription-email failed:", error);
