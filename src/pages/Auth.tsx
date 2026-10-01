@@ -39,7 +39,7 @@ export default function Auth() {
   const [tab, setTab] = useState(params.get("tab") === "signup" ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
 
-  // Forgot-password dialog state
+  // Forgot-password dialog state — email only; phone/password fields are intentionally removed.
   const [forgotOpen, setForgotOpen] = useState(false);
   const [fpEmail, setFpEmail] = useState("");
   const [fpBusy, setFpBusy] = useState(false);
