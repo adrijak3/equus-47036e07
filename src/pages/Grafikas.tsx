@@ -3548,6 +3548,17 @@ export default function Grafikas() {
                             const cap =
                               group.capacity;
 
+                            // Slot type label:
+                            // - an individual booking overrides the slot label for this specific time
+                            // - capacity 2 = Individuali po 2
+                            // - capacity 3+ = Grupinė
+                            const slotTypeLabel =
+                              slotBookings.some((b) => b.is_individual)
+                                ? "Individuali"
+                                : cap === 2
+                                  ? "Individuali po 2"
+                                  : "Grupinė";
+
                             const isFull =
                               group.taken >=
                               cap;
@@ -3598,6 +3609,9 @@ export default function Grafikas() {
                                       <Clock className="w-4 h-4 text-blush/60" />
                                       <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground/70">
                                         {formatTime(slot.slot_time)}
+                                      </span>
+                                      <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
+                                        ({slotTypeLabel})
                                       </span>
                                       {slot.trainer_name && (
                                         <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold">
@@ -3660,6 +3674,9 @@ export default function Grafikas() {
                                       )}
                                     >
                                       {formatTime(slot.slot_time)}
+                                    </span>
+                                    <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
+                                      ({slotTypeLabel})
                                     </span>
 
                                     {slot.trainer_name && (
