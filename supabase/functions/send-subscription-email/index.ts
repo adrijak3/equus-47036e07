@@ -516,6 +516,7 @@ Deno.serve(async (req) => {
       return json({ error: "QUEUE_RECOVERY_FAILED" }, 500);
     }
 
+    const processOneEmail = async () => {
     const { data: claimed, error: claimError } = await supabase.rpc("claim_email_event");
     if (claimError) {
       console.error("Failed to claim email event:", claimError);
@@ -703,6 +704,41 @@ Deno.serve(async (req) => {
       console.error("send-subscription-email processing failed:", error);
       return json({ ok: false, processed: true, event_id: eventId, error: "PROCESSING_FAILED" }, 500);
     }
+
+    };
+
+    const results: unknown[] = [];
+
+    for (let i = 0; i < 10; i += 1) {
+      try {
+        const response = await processOneEmail();
+        const payload = await response.json();
+        results.push(payload);
+
+        if (payload?.reason === "NO_PENDING_EVENTS") {
+          break;
+        }
+      } catch (error) {
+        console.error("send-subscription-email batch item failed:", error);
+        results.push({
+          ok: false,
+          processed: false,
+          error: "BATCH_ITEM_FAILED",
+          details: describeError(error),
+        });
+      }
+    }
+
+    const processedCount = results.filter((result: any) => result?.processed === true).length;
+    const sentCount = results.filter((result: any) => result?.ok === true && result?.processed === true).length;
+
+    return json({
+      ok: true,
+      processed: processedCount,
+      sent: sentCount,
+      attempted: results.length,
+      results,
+    });
   } catch (error) {
     console.error("send-subscription-email failed:", error);
     return json({ error: "INTERNAL_ERROR" }, 500);
