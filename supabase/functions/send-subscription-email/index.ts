@@ -462,7 +462,15 @@ Deno.serve(async (req) => {
           return json({ ok: false, processed: true, event_id: eventId, error: "SUBSCRIPTION_NOT_FOUND" }, 422);
         }
 
-        const trainings = await getSubscriptionTrainingHistory(supabase, event.subscription_id);
+        let trainings: any[] = [];
+        try {
+          trainings = await getSubscriptionTrainingHistory(supabase, event.subscription_id);
+        } catch (historyError) {
+          const details = historyError && typeof historyError === "object"
+            ? JSON.stringify(historyError)
+            : String(historyError);
+          throw new Error("SUBSCRIPTION_TRAINING_HISTORY_FAILED: " + details);
+        }
         subject = "Jūsų Equus abonementas patvirtintas";
         html = subscriptionPurchaseHtml(clientName, subscription, trainings);
       }
@@ -540,7 +548,11 @@ Deno.serve(async (req) => {
         message_id: messageId,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error
+        ? error.message
+        : error && typeof error === "object"
+          ? JSON.stringify(error)
+          : String(error);
       await supabase.rpc("mark_email_event_failed", {
         _event_id: eventId,
         _error: message,
