@@ -289,6 +289,7 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
             onDelete={deleteUser}
             onTogglePaid={togglePaid}
             onEditLessons={editLessons}
+            onEditUsed={editUsed}
             onDeleteSub={deleteSub}
             onAddPermSlot={addPermSlot}
             onChangePermSlotTime={changePermSlotTime}
@@ -304,7 +305,7 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
 
 function UserDetailsBody({
   profile, subs, permSlots, vacations, upcoming, past, rosterLevel,
-  onSetLevel, onRename, onResetPassword, onDelete, onTogglePaid, onEditLessons, onDeleteSub,
+  onSetLevel, onRename, onResetPassword, onDelete, onTogglePaid, onEditLessons, onEditUsed, onDeleteSub,
   onAddPermSlot, onChangePermSlotTime, onRemovePermSlot, onAddVacation, onRemoveVacation,
 }: {
   profile: Profile; subs: Sub[]; permSlots: PermSlot[]; vacations: Vacation[];
@@ -315,6 +316,7 @@ function UserDetailsBody({
   onDelete: () => void;
   onTogglePaid: (subId: string, paid: boolean) => void;
   onEditLessons: (s: Sub) => void;
+  onEditUsed: (s: Sub) => void;
   onDeleteSub: (s: Sub) => void;
   onAddPermSlot: (day: number, time: string) => void;
   onChangePermSlotTime: (row: PermSlot, newTime: string) => void;
@@ -422,7 +424,7 @@ function UserDetailsBody({
                 effectiveUsed={s.lessons_used ?? 0}
                 onMarkPaid={!s.paid ? () => onTogglePaid(s.id, true) : undefined}
                 onEditLessons={() => onEditLessons(s)}
-                onEditUsed={() => editUsed(s)}
+                onEditUsed={() => onEditUsed(s)}
                 onDelete={() => onDeleteSub(s)}
                 extra={s.paid ? (
                   <div className="flex justify-end">
