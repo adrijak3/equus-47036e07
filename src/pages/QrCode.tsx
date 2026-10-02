@@ -746,27 +746,38 @@ function SubscriptionPurchaseDialog({
 
           <div>
             <Label>Priskirti treniruotę</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {([
-                ["none", "Neskirti"],
-                ["today", "Šiandien"],
-                ["next", "Kita rezervacija"],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setAllocationMode(value)}
-                  className={`rounded-2xl border px-3 py-3 text-sm font-medium ${
-                    allocationMode === value ? "border-gold bg-gold/10 text-gold" : "border-gold/15 bg-background/30"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Sistema pati priskirs tik tinkamą aktyvią rezervaciją pagal abonemento tipą.
-            </p>
+            {isHalfAdmin ? (
+              <div className="mt-2 rounded-2xl border border-gold/20 bg-gold/5 p-4">
+                <p className="font-medium text-gold">Kita tinkama rezervacija</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Pirkimo metu sistema automatiškai priskirs artimiausią tinkamą rezervaciją.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {([
+                    ["none", "Neskirti"],
+                    ["today", "Šiandien"],
+                    ["next", "Kita rezervacija"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setAllocationMode(value)}
+                      className={`rounded-2xl border px-3 py-3 text-sm font-medium ${
+                        allocationMode === value ? "border-gold bg-gold/10 text-gold" : "border-gold/15 bg-background/30"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Sistema pati priskirs tik tinkamą aktyvią rezervaciją pagal abonemento tipą.
+                </p>
+              </>
+            )}
           </div>
         </div>
 
