@@ -394,7 +394,7 @@ export default function Grafikas() {
       supabase
         .from("bookings")
         .select(
-          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at",
+          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at, is_paused_for_subscription",
         )
         .gte("slot_date", startISO)
         .lte("slot_date", endISO)
@@ -492,8 +492,14 @@ export default function Grafikas() {
 
     setSlots(slotsRes.data ?? []);
 
+    const visibleBookings = isAdmin
+      ? (bookingsRes.data ?? [])
+      : (bookingsRes.data ?? []).filter(
+          (b: any) => b.is_paused_for_subscription !== true,
+        );
+
     setBookings(
-      (bookingsRes.data ?? []).map((b: any) => ({
+      visibleBookings.map((b: any) => ({
         ...b,
         profile_name: b.guest_rider_id
           ? guestNameMap[b.guest_rider_id]
