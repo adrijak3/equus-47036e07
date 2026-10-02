@@ -395,6 +395,28 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
 }
 
 
+function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
+  const bookingDate = formatDate(payload?.booking_date);
+  const bookingTime = formatTime(payload?.booking_time);
+  const deadline = formatDate(payload?.deadline);
+  const inner = `
+    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)},</p>
+    <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
+      Jūsų artimiausia treniruotė yra <strong>${esc(bookingDate)} ${esc(bookingTime)}</strong>.
+    </p>
+    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;">
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Abonemento terminas</div>
+      <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">${esc(deadline)} · 20:00</div>
+      <div style="font-size:13px;color:#8b737c;margin-top:6px;line-height:1.6;">
+        Iki šio termino reikia įsigyti abonementą. Jei abonementas nebus įsigytas, vėlesnės nuolatinės rezervacijos bus laikinai sustabdytos.
+      </div>
+    </div>
+    <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
+      Viena artimiausia rezervacija gali likti kaip viena būsima treniruotė be abonemento. Įsigijus abonementą, ši rezervacija gali būti priskirta naujam abonementui.
+    </p>`;
+  return pinkShell("!SVARBU! Abonementas reikalingas", "Priminimas dėl būsimos treniruotės", inner);
+}
+
 function passwordResetHtml(clientName: string, payload: any) {
   const resetUrl = String(payload?.reset_url || "");
   const inner =
@@ -567,7 +589,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset"].includes(event.event_type)) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "subscription_requirement_warning"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Unsupported event type: " + event.event_type,
@@ -642,6 +664,11 @@ Deno.serve(async (req) => {
       if (event.event_type === "subscription_expiring") {
         subject = "!SVARBU! Jūsų Equus abonementas netrukus baigsis";
         html = subscriptionExpiringHtml(clientName, event.payload || {});
+      }
+
+      if (event.event_type === "subscription_requirement_warning") {
+        subject = "!SVARBU! Abonementas reikalingas prieš Jūsų kitą treniruotę";
+        html = subscriptionRequirementWarningHtml(clientName, event.payload || {});
       }
 
       if (event.event_type === "password_reset") {
