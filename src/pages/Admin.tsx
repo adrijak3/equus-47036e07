@@ -219,6 +219,7 @@ export default function Admin() {
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
             <TabsContent value="settings" className="space-y-6">
+              <SubscriptionRuleExemptionsTab />
               <HalfAdminRolesTab />
               <AdminNotificationsTab />
               <MaintenanceSettings />
@@ -227,6 +228,136 @@ export default function Admin() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- SUBSCRIPTION RULE EXEMPTIONS ---------- */
+function SubscriptionRuleExemptionsTab() {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [exemptIds, setExemptIds] = useState<Set<string>>(new Set());
+  const [selectedUser, setSelectedUser] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: profs, error: profilesError }, { data: exemptions, error: exemptionsError }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
+      (supabase as any).from("subscription_rule_exemptions").select("user_id"),
+    ]);
+
+    if (profilesError || exemptionsError) {
+      toast.error((profilesError || exemptionsError)?.message || "Nepavyko įkelti išimčių");
+      setLoading(false);
+      return;
+    }
+
+    setProfiles((profs ?? []) as Profile[]);
+    setExemptIds(new Set((exemptions ?? []).map((r: any) => r.user_id)));
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const addExemption = async () => {
+    if (!selectedUser) {
+      toast.error("Pasirinkite vartotoją");
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await (supabase as any).rpc("admin_add_subscription_rule_exemption", {
+      _user_id: selectedUser,
+    });
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const name = profiles.find((p) => p.id === selectedUser)?.full_name ?? "Vartotojas";
+    toast.success(name + " išimtas iš abonemento reikalavimo");
+    setSelectedUser("");
+    await load();
+  };
+
+  const removeExemption = async (userId: string) => {
+    const name = profiles.find((p) => p.id === userId)?.full_name ?? "Vartotojas";
+    if (!confirm("Pašalinti abonemento reikalavimo išimtį iš " + name + "?")) return;
+
+    setSaving(true);
+    const { error } = await (supabase as any).rpc("admin_remove_subscription_rule_exemption", {
+      _user_id: userId,
+    });
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Abonemento reikalavimo išimtis pašalinta iš " + name);
+    await load();
+  };
+
+  const available = profiles.filter((p) => !exemptIds.has(p.id));
+
+  return (
+    <section className="rounded-2xl border border-gold/15 bg-gradient-card p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10">
+          <KeyRound className="h-5 w-5 text-gold" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl text-gradient-gold">Abonemento reikalavimo išimtys</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Šiems klientams abonementas nėra privalomas. <strong>Registracijos savaitės taisyklė jiems vis tiek galioja.</strong>
+            Kitos įprastos taisyklės, tokios kaip vietų skaičius ir dublikatų apsauga, taip pat lieka.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <select
+          value={selectedUser}
+          onChange={(e) => setSelectedUser(e.target.value)}
+          className="flex h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          disabled={loading || saving}
+        >
+          <option value="">— pasirinkite vartotoją —</option>
+          {available.map((p) => (
+            <option key={p.id} value={p.id}>{p.full_name}</option>
+          ))}
+        </select>
+        <Button variant="gold" onClick={() => void addExemption()} disabled={saving || !selectedUser}>
+          Pridėti išimtį
+        </Button>
+      </div>
+
+      <div className="mt-5 space-y-2">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Dabartinės išimtys</p>
+        {loading ? (
+          <p className="py-4 text-sm text-muted-foreground">Kraunama…</p>
+        ) : exemptIds.size === 0 ? (
+          <p className="rounded-xl border border-gold/10 bg-background/30 p-4 text-sm text-muted-foreground">
+            Kol kas niekam netaikoma.
+          </p>
+        ) : (
+          profiles.filter((p) => exemptIds.has(p.id)).map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-gold/10 bg-background/30 p-3">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{p.full_name}</p>
+                <p className="text-xs text-muted-foreground">{p.phone || "Telefono nėra"}</p>
+              </div>
+              <Button variant="ghost" size="sm" disabled={saving} onClick={() => void removeExemption(p.id)}>
+                Pašalinti
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -265,10 +396,12 @@ function HalfAdminRolesTab() {
     }
 
     setSaving(true);
-    const { error } = await (supabase as any).from("user_roles").insert({
-      user_id: selectedUser,
-      role: "half_admin",
-    });
+    const { error } = await (async () => {
+      const { error } = await (supabase as any).rpc("admin_add_half_admin", {
+        _user_id: selectedUser,
+      });
+      return { error };
+    })();
     setSaving(false);
 
     if (error) {
@@ -287,11 +420,12 @@ function HalfAdminRolesTab() {
     if (!confirm("Pašalinti pusiau admino rolę iš " + name + "? Kitos jo rolės nebus pakeistos.")) return;
 
     setSaving(true);
-    const { error } = await (supabase as any)
-      .from("user_roles")
-      .delete()
-      .eq("user_id", userId)
-      .eq("role", "half_admin");
+    const { error } = await (async () => {
+      const { error } = await (supabase as any).rpc("admin_remove_half_admin", {
+        _user_id: userId,
+      });
+      return { error };
+    })();
     setSaving(false);
 
     if (error) {
