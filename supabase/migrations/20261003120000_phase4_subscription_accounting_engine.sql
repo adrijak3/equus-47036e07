@@ -149,8 +149,8 @@ BEGIN
     s.purchase_date,
     s.purchased_at,
     s.id
-  FOR UPDATE
-  LIMIT 1;
+  LIMIT 1
+  FOR UPDATE;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object(
