@@ -8,6 +8,47 @@
 --   * a new subscription starts on the first actual lesson after the previous
 --     unfinished subscription's last counted lesson when that booking exists
 
+CREATE OR REPLACE FUNCTION public.reconcile_subscription_usage(
+  _subscription_id uuid
+)
+RETURNS smallint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_used smallint := 0;
+  v_total smallint;
+BEGIN
+  IF _subscription_id IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  SELECT lessons_total
+    INTO v_total
+  FROM public.subscriptions
+  WHERE id = _subscription_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN 0;
+  END IF;
+
+  SELECT COUNT(*)::smallint
+    INTO v_used
+  FROM public.bookings b
+  WHERE b.subscription_id = _subscription_id
+    AND b.status <> 'cancelled'
+    AND b.counts_in_subscription IS NOT FALSE;
+
+  UPDATE public.subscriptions
+  SET lessons_used = LEAST(v_total, v_used)
+  WHERE id = _subscription_id;
+
+  RETURN LEAST(v_total, v_used);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.allocate_booking_to_subscription(
   _booking_id uuid
 )
@@ -313,46 +354,7 @@ TO service_role;
 
 
 -- Replace the lesson processor so it uses the central idempotent allocator.
-CREATE OR REPLACE FUNCTION public.reconcile_subscription_usage(
-  _subscription_id uuid
-)
-RETURNS smallint
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_used smallint := 0;
-  v_total smallint;
-BEGIN
-  IF _subscription_id IS NULL THEN
-    RETURN 0;
-  END IF;
 
-  SELECT lessons_total
-    INTO v_total
-  FROM public.subscriptions
-  WHERE id = _subscription_id
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RETURN 0;
-  END IF;
-
-  SELECT COUNT(*)::smallint
-    INTO v_used
-  FROM public.bookings b
-  WHERE b.subscription_id = _subscription_id
-    AND b.status <> 'cancelled'
-    AND b.counts_in_subscription IS NOT FALSE;
-
-  UPDATE public.subscriptions
-  SET lessons_used = LEAST(v_total, v_used)
-  WHERE id = _subscription_id;
-
-  RETURN LEAST(v_total, v_used);
-END;
-$$;
 
 
 -- Fix the existing purchase engine:
