@@ -900,16 +900,32 @@ BEGIN
     );
   END IF;
 
-  IF NOT public.booking_matches_subscription_package(
-    v_booking.id,
-    v_sub.package_type
+  IF NOT (
+    (v_sub.package_type IS NULL AND v_sub.lesson_type IS NULL)
+    OR public.booking_matches_subscription_package(
+      v_booking.id,
+      COALESCE(
+        v_sub.package_type,
+        CASE
+          WHEN v_sub.lesson_type = 'sportine_po2' THEN 'po2'
+          ELSE 'group'
+        END
+      )
+    )
   ) THEN
     RETURN jsonb_build_object(
       'ok', true,
       'allocated', false,
       'reason', 'NO_MATCHING_SUBSCRIPTION_PACKAGE',
       'subscription_id', v_sub.id,
-      'subscription_package_type', v_sub.package_type
+      'subscription_package_type',
+        COALESCE(
+          v_sub.package_type,
+          CASE
+            WHEN v_sub.lesson_type = 'sportine_po2' THEN 'po2'
+            ELSE 'group'
+          END
+        )
     );
   END IF;
 
@@ -1082,7 +1098,7 @@ BEGIN
       AND COALESCE(s.start_from_date, s.purchase_date) <= _slot_date
       AND s.expires_at >= _slot_date
       AND (
-        s.package_type IS NULL
+        (s.package_type IS NULL AND s.lesson_type IS NULL)
         OR (
           v_capacity = 2
           AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) = 'po2'
