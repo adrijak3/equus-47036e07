@@ -95,7 +95,7 @@ function subscriptionType(s: Subscription) {
 }
 
 export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isHalfAdmin } = useAuth();
   const [token, setToken] = useState<string | null>(null);
   const [scannedToken, setScannedToken] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
@@ -270,6 +270,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
           <ClientResultCard
             result={client}
             isAdmin={isAdmin}
+            isHalfAdmin={isHalfAdmin}
             onPurchase={() => setPurchaseOpen(true)}
             onRescan={() => {
               setClient(null);
@@ -284,6 +285,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
             open={purchaseOpen}
             onOpenChange={setPurchaseOpen}
             client={client}
+            isHalfAdmin={isHalfAdmin}
             onPurchased={async () => {
               setPurchaseOpen(false);
               await reloadClient();
@@ -347,11 +349,13 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
 function ClientResultCard({
   result,
   isAdmin,
+  isHalfAdmin,
   onPurchase,
   onRescan,
 }: {
   result: ClientResult;
   isAdmin: boolean;
+  isHalfAdmin: boolean;
   onPurchase: () => void;
   onRescan: () => void;
 }) {
@@ -492,11 +496,13 @@ function SubscriptionPurchaseDialog({
   open,
   onOpenChange,
   client,
+  isHalfAdmin,
   onPurchased,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client: ClientResult;
+  isHalfAdmin: boolean;
   onPurchased: () => Promise<void>;
 }) {
   const [packageType, setPackageType] = useState<"group" | "po2">("group");
@@ -546,7 +552,8 @@ function SubscriptionPurchaseDialog({
 
     setSaving(true);
 
-    const { data, error } = await (supabase as any).rpc("admin_purchase_subscription", {
+    const purchaseRpc = isHalfAdmin ? "half_admin_purchase_subscription" : "admin_purchase_subscription";
+    const { data, error } = await (supabase as any).rpc(purchaseRpc, {
       _user_id: client.client.id,
       _lessons_total: count,
       _package_type: packageType,
