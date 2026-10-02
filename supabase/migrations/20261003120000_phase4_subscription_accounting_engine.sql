@@ -247,6 +247,113 @@ ON FUNCTION public.allocate_booking_to_subscription(uuid)
 TO service_role;
 
 
+-- Keep lessons_used synchronized whenever a booking is attached, released,
+-- cancelled, or completed. This is deliberately based on the booking rows,
+-- so two separate lessons on the same date count as two lessons.
+CREATE OR REPLACE FUNCTION public.sync_subscription_usage_from_booking()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  v_old_sub uuid;
+  v_new_sub uuid;
+  v_allocation_number smallint;
+BEGIN
+  v_old_sub := CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN OLD.subscription_id ELSE NULL END;
+  v_new_sub := CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN NEW.subscription_id ELSE NULL END;
+
+  IF TG_OP IN ('UPDATE','DELETE')
+     AND v_old_sub IS NOT NULL
+     AND (
+       TG_OP = 'DELETE'
+       OR v_old_sub IS DISTINCT FROM v_new_sub
+       OR OLD.counts_in_subscription IS DISTINCT FROM NEW.counts_in_subscription
+       OR OLD.status IS DISTINCT FROM NEW.status
+     )
+  THEN
+    UPDATE public.subscription_allocations
+    SET
+      status = CASE
+        WHEN TG_OP = 'DELETE' OR NEW.status = 'cancelled' OR NEW.counts_in_subscription IS FALSE
+          THEN 'released'
+        WHEN NEW.status = 'completed'
+          THEN 'consumed'
+        ELSE status
+      END,
+      released_at = CASE
+        WHEN TG_OP = 'DELETE' OR NEW.status = 'cancelled' OR NEW.counts_in_subscription IS FALSE
+          THEN COALESCE(released_at, now())
+        ELSE released_at
+      END,
+      consumed_at = CASE
+        WHEN TG_OP = 'UPDATE' AND NEW.status = 'completed' AND NEW.counts_in_subscription IS NOT FALSE
+          THEN COALESCE(consumed_at, now())
+        ELSE consumed_at
+      END
+    WHERE subscription_id = v_old_sub
+      AND booking_id = OLD.id;
+
+    PERFORM public.reconcile_subscription_usage(v_old_sub);
+  END IF;
+
+  IF TG_OP IN ('INSERT','UPDATE')
+     AND v_new_sub IS NOT NULL
+     AND NEW.status <> 'cancelled'
+     AND NEW.counts_in_subscription IS NOT FALSE
+  THEN
+    SELECT COALESCE(MAX(sa.allocation_number), 0) + 1
+      INTO v_allocation_number
+    FROM public.subscription_allocations sa
+    WHERE sa.subscription_id = v_new_sub;
+
+    INSERT INTO public.subscription_allocations(
+      subscription_id,
+      booking_id,
+      allocation_number,
+      status,
+      consumed_at
+    )
+    VALUES(
+      v_new_sub,
+      NEW.id,
+      v_allocation_number,
+      CASE WHEN NEW.status = 'completed' THEN 'consumed' ELSE 'allocated' END,
+      CASE WHEN NEW.status = 'completed' THEN now() ELSE NULL END
+    )
+    ON CONFLICT (subscription_id, booking_id) DO UPDATE
+      SET status = EXCLUDED.status,
+          consumed_at = COALESCE(
+            public.subscription_allocations.consumed_at,
+            EXCLUDED.consumed_at
+          );
+
+    PERFORM public.reconcile_subscription_usage(v_new_sub);
+  END IF;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$;
+
+DROP TRIGGER IF EXISTS trg_sync_subscription_usage_from_booking
+ON public.bookings;
+
+CREATE TRIGGER trg_sync_subscription_usage_from_booking
+AFTER INSERT OR DELETE OR UPDATE OF subscription_id, counts_in_subscription, status
+ON public.bookings
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_subscription_usage_from_booking();
+
+REVOKE ALL
+ON FUNCTION public.sync_subscription_usage_from_booking()
+FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE
+ON FUNCTION public.sync_subscription_usage_from_booking()
+TO service_role;
+
+
 -- Replace the lesson processor so it uses the central idempotent allocator.
 CREATE OR REPLACE FUNCTION public.reconcile_subscription_usage(
   _subscription_id uuid
