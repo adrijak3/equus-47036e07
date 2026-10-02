@@ -121,6 +121,7 @@ export default function Layout({
     user,
     isAdmin,
     isTrainer,
+    isHalfAdmin,
     profile,
     signOut,
     linkedProfiles,
@@ -156,6 +157,13 @@ export default function Layout({
       : user
         ? NAV_USER
         : NAV_GUEST;
+
+  const halfAdminItems = isHalfAdmin && !isAdmin
+    ? [
+        { to: "/admin/skenuoti", label: "QR kodo skenavimas", icon: ScanLine },
+        { to: "/half-admin/abonementai", label: "Abonementai", icon: Wallet },
+      ]
+    : [];
 
   const isLinkActive = (to: string) => {
     const [path, query] = to.split("?");
@@ -271,6 +279,31 @@ export default function Layout({
                   </Link>
                 );
               })}
+
+              {halfAdminItems.length > 0 && (
+                <div className="mb-2 space-y-1 rounded-xl border border-gold/20 bg-gold/5 p-2">
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-gold/70">Pusiau admino sritis</div>
+                  {halfAdminItems.map(({ to, label, icon: Icon }) => {
+                    const active = isLinkActive(to);
+                    return (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={close}
+                        className={cn(
+                          "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                          active
+                            ? "border-gold bg-gold/10 text-gold"
+                            : "border-transparent text-foreground/80 hover:border-gold/30 hover:bg-gold/5 hover:text-gold",
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="font-display text-base tracking-wide">{label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Administratoriaus skiltis */}
               {isAdmin && (
