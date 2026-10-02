@@ -573,3 +573,109 @@ FROM PUBLIC, anon;
 GRANT EXECUTE
 ON FUNCTION public.subscription_rules_diagnostics(uuid,date,time without time zone)
 TO authenticated, service_role;
+
+
+-- Phase 10: QR-specific context for today's lesson versus a queued/new subscription.
+CREATE OR REPLACE FUNCTION public.qr_today_subscription_context(
+  _user_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $phase10$
+DECLARE
+  v_current_id uuid;
+  v_next_id uuid;
+  v_today date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
+  v_today_bookings jsonb;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'NOT_AUTHENTICATED';
+  END IF;
+
+  IF NOT (
+    public.has_role(auth.uid(), 'admin'::public.app_role)
+    OR public.has_role(auth.uid(), 'trainer'::public.app_role)
+    OR public.has_role(auth.uid(), 'half_admin'::public.app_role)
+  ) THEN
+    RAISE EXCEPTION 'STAFF_ONLY';
+  END IF;
+
+  SELECT s.id
+    INTO v_current_id
+  FROM public.subscriptions s
+  WHERE s.user_id = _user_id
+    AND s.paid = true
+    AND s.cancelled_at IS NULL
+    AND COALESCE(s.start_from_date, s.purchase_date) <= v_today
+    AND s.expires_at >= v_today
+    AND s.lessons_used < s.lessons_total
+  ORDER BY COALESCE(s.start_from_date, s.purchase_date), s.purchase_date DESC
+  LIMIT 1;
+
+  SELECT s.id
+    INTO v_next_id
+  FROM public.subscriptions s
+  WHERE s.user_id = _user_id
+    AND s.paid = true
+    AND s.cancelled_at IS NULL
+    AND COALESCE(s.start_from_date, s.purchase_date) > v_today
+    AND s.lessons_used < s.lessons_total
+  ORDER BY COALESCE(s.start_from_date, s.purchase_date), s.purchase_date
+  LIMIT 1;
+
+  SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', b.id,
+        'slot_time', b.slot_time,
+        'subscription_id', b.subscription_id,
+        'uses_current_subscription', b.subscription_id = v_current_id,
+        'uses_next_subscription', b.subscription_id = v_next_id
+      )
+      ORDER BY b.slot_time
+    ),
+    '[]'::jsonb
+  )
+  INTO v_today_bookings
+  FROM public.bookings b
+  WHERE b.user_id = _user_id
+    AND b.slot_date = v_today
+    AND b.status IN ('active', 'completed');
+
+  RETURN jsonb_build_object(
+    'today', v_today,
+    'current_subscription_id', v_current_id,
+    'next_subscription_id', v_next_id,
+    'today_bookings', v_today_bookings,
+    'today_uses_current_subscription',
+      EXISTS (
+        SELECT 1
+        FROM public.bookings b
+        WHERE b.user_id = _user_id
+          AND b.slot_date = v_today
+          AND b.subscription_id = v_current_id
+          AND b.status IN ('active', 'completed')
+      ),
+    'today_uses_next_subscription',
+      EXISTS (
+        SELECT 1
+        FROM public.bookings b
+        WHERE b.user_id = _user_id
+          AND b.slot_date = v_today
+          AND b.subscription_id = v_next_id
+          AND b.status IN ('active', 'completed')
+      )
+  );
+END;
+$phase10$;
+
+REVOKE ALL
+ON FUNCTION public.qr_today_subscription_context(uuid)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.qr_today_subscription_context(uuid)
+TO authenticated;
