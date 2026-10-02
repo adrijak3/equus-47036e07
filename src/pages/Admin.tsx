@@ -219,6 +219,7 @@ export default function Admin() {
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
             <TabsContent value="settings" className="space-y-6">
+              <HalfAdminRolesTab />
               <AdminNotificationsTab />
               <MaintenanceSettings />
             </TabsContent>
@@ -226,6 +227,139 @@ export default function Admin() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- HALF-ADMIN ROLE ---------- */
+function HalfAdminRolesTab() {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [halfAdminIds, setHalfAdminIds] = useState<Set<string>>(new Set());
+  const [selectedUser, setSelectedUser] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: profs, error: profilesError }, { data: roles, error: rolesError }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
+      (supabase as any).from("user_roles").select("user_id, role").eq("role", "half_admin"),
+    ]);
+
+    if (profilesError || rolesError) {
+      toast.error((profilesError || rolesError)?.message || "Nepavyko įkelti vaidmenų");
+      setLoading(false);
+      return;
+    }
+
+    setProfiles((profs ?? []) as Profile[]);
+    setHalfAdminIds(new Set((roles ?? []).map((r: any) => r.user_id)));
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const addRole = async () => {
+    if (!selectedUser) {
+      toast.error("Pasirinkite vartotoją");
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await (supabase as any).from("user_roles").insert({
+      user_id: selectedUser,
+      role: "half_admin",
+    });
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.code === "23505" ? "Šis vartotojas jau turi pusiau admino rolę." : error.message);
+      return;
+    }
+
+    const name = profiles.find((p) => p.id === selectedUser)?.full_name ?? "Vartotojas";
+    toast.success(name + " suteikta pusiau admino rolė");
+    setSelectedUser("");
+    await load();
+  };
+
+  const removeRole = async (userId: string) => {
+    const name = profiles.find((p) => p.id === userId)?.full_name ?? "Vartotojas";
+    if (!confirm("Pašalinti pusiau admino rolę iš " + name + "? Kitos jo rolės nebus pakeistos.")) return;
+
+    setSaving(true);
+    const { error } = await (supabase as any)
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role", "half_admin");
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Pusiau admino rolė pašalinta iš " + name);
+    await load();
+  };
+
+  const available = profiles.filter((p) => !halfAdminIds.has(p.id));
+
+  return (
+    <section className="rounded-2xl border border-gold/15 bg-gradient-card p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10">
+          <Users className="h-5 w-5 text-gold" />
+        </div>
+        <div>
+          <h3 className="font-display text-xl text-gradient-gold">Pusiau adminai</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tai papildoma rolė. Ji nepanaikina vartotojo, trenerio ar admino rolės.
+            Pusiau adminas gali skenuoti QR, pirkti abonementus ir juos peržiūrėti, bet negali abonementų redaguoti ar trinti.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <select
+          value={selectedUser}
+          onChange={(e) => setSelectedUser(e.target.value)}
+          className="flex h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          disabled={loading || saving}
+        >
+          <option value="">— pasirinkite vartotoją —</option>
+          {available.map((p) => (
+            <option key={p.id} value={p.id}>{p.full_name}</option>
+          ))}
+        </select>
+        <Button variant="gold" onClick={() => void addRole()} disabled={saving || !selectedUser}>
+          Pridėti pusiau adminą
+        </Button>
+      </div>
+
+      <div className="mt-5 space-y-2">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Dabartiniai pusiau adminai</p>
+        {loading ? (
+          <p className="py-4 text-sm text-muted-foreground">Kraunama…</p>
+        ) : halfAdminIds.size === 0 ? (
+          <p className="rounded-xl border border-gold/10 bg-background/30 p-4 text-sm text-muted-foreground">
+            Kol kas niekam nesuteikta.
+          </p>
+        ) : (
+          profiles.filter((p) => halfAdminIds.has(p.id)).map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-gold/10 bg-background/30 p-3">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{p.full_name}</p>
+                <p className="text-xs text-muted-foreground">{p.phone || "Telefono nėra"}</p>
+              </div>
+              <Button variant="ghost" size="sm" disabled={saving} onClick={() => void removeRole(p.id)}>
+                Pašalinti
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 
