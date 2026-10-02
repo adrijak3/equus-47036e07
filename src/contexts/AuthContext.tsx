@@ -20,6 +20,7 @@ interface AuthContextValue {
   profile: Profile | null;
   isAdmin: boolean;
   isTrainer: boolean;
+  isHalfAdmin: boolean;
   loading: boolean;
   /** Linked sub-profiles (e.g. Jurgita's daughter Nomina) */
   linkedProfiles: LinkedProfile[];
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTrainer, setIsTrainer] = useState(false);
+  const [isHalfAdmin, setIsHalfAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [linkedProfiles, setLinkedProfiles] = useState<LinkedProfile[]>([]);
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(prof ?? null);
     setIsAdmin((roles ?? []).some((r) => r.role === "admin"));
     setIsTrainer((roles ?? []).some((r) => r.role === "trainer"));
+    setIsHalfAdmin((roles ?? []).some((r) => r.role === "half_admin"));
     const lps: LinkedProfile[] = ((links as any[]) ?? []).map((l) => ({
       id: l.id, profile_id: l.linked_profile_id, display_name: l.display_name,
     }));
@@ -74,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setIsAdmin(false);
         setIsTrainer(false);
+        setIsHalfAdmin(false);
         setLinkedProfiles([]);
         setActiveProfileIdState(null);
       }
@@ -109,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setIsAdmin(false);
     setIsTrainer(false);
+    setIsHalfAdmin(false);
     setLinkedProfiles([]);
     setActiveProfileIdState(null);
     localStorage.removeItem("equus_active_profile");
@@ -116,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, user, profile, isAdmin, isTrainer, loading,
+      session, user, profile, isAdmin, isTrainer, isHalfAdmin, loading,
       linkedProfiles, activeProfileId, activeProfileName, setActiveProfileId,
       signOut, refreshProfile,
     }}>
