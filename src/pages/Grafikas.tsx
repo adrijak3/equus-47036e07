@@ -396,7 +396,7 @@ export default function Grafikas() {
       supabase
         .from("bookings")
         .select(
-          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at, is_paused_for_subscription",
+          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at, is_paused_for_subscription, is_grace_booking",
         )
         .gte("slot_date", startISO)
         .lte("slot_date", endISO)
@@ -1137,10 +1137,18 @@ export default function Grafikas() {
     }
 
     if (!eligibility?.ok) {
-      toast.error(
-        eligibility?.message ??
-          "Šiuo metu registruotis į šią treniruotę negalima.",
-      );
+      const code = String(eligibility?.code ?? "");
+      if (code === "GRACE_BOOKING_ALREADY_USED") {
+        toast.error(
+          "Jau turite vieną būsimą treniruotę be abonemento. Norėdami registruotis į dar vieną, pirmiausia įsigykite abonementą.",
+          { duration: 8000 },
+        );
+      } else {
+        toast.error(
+          eligibility?.message ??
+            "Šiuo metu registruotis į šią treniruotę negalima.",
+        );
+      }
       return false;
     }
 
@@ -1176,8 +1184,8 @@ export default function Grafikas() {
 
     if (eligibility.grace_booking) {
       toast.success(
-        "Pamoka užregistruota. Tai vienintelė būsima treniruotė, kurią šiuo metu galite turėti be abonemento.",
-        { duration: 7000 },
+        "Pamoka užregistruota. Tai vienintelė būsima treniruotė, kurią šiuo metu galite turėti be abonemento. Iki kitos registracijos reikės įsigyti abonementą.",
+        { duration: 9000 },
       );
     } else {
       toast.success(
