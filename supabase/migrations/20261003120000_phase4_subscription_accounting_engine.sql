@@ -47,7 +47,7 @@ FROM PUBLIC, anon;
 
 GRANT EXECUTE
 ON FUNCTION public.reconcile_subscription_usage(uuid)
-TO authenticated, service_role;
+TO service_role;
 
 
 CREATE OR REPLACE FUNCTION public.allocate_booking_to_subscription(
@@ -244,7 +244,7 @@ FROM PUBLIC, anon;
 
 GRANT EXECUTE
 ON FUNCTION public.allocate_booking_to_subscription(uuid)
-TO authenticated, service_role;
+TO service_role;
 
 
 -- Replace the lesson processor so it uses the central idempotent allocator.
