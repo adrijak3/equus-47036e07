@@ -98,6 +98,8 @@ interface Booking {
   trainer_name?: string | null;
   is_newcomer?: boolean;
   created_at?: string | null;
+  is_paused_for_subscription?: boolean;
+  is_grace_booking?: boolean;
 }
 
 interface SlotOverride {
@@ -1118,13 +1120,73 @@ export default function Grafikas() {
 
   const createBooking = async (date: Date, time: string, options?: { subscriptionId?: string | null; countsInSubscription?: boolean; extraFeeEur?: number }) => {
     if (!user) return false;
+
+    const { data: eligibility, error: eligibilityError } = await (supabase as any).rpc(
+      "check_booking_eligibility",
+      {
+        _user_id: user.id,
+        _slot_date: formatDateISO(date),
+        _slot_time: time,
+        _allow_admin_bypass: true,
+      },
+    );
+
+    if (eligibilityError) {
+      toast.error("Nepavyko patikrinti registracijos taisyklių. Pabandykite dar kartą.");
+      return false;
+    }
+
+    if (!eligibility?.ok) {
+      toast.error(
+        eligibility?.message ??
+          "Šiuo metu registruotis į šią treniruotę negalima.",
+      );
+      return false;
+    }
+
     const slotForBooking = getSlotsAtTime(date, time)[0];
     setBusy("book-" + formatDateISO(date) + "-" + time);
-    const { error } = await supabase.from("bookings").insert({ user_id: user.id, slot_date: formatDateISO(date), slot_time: time, status: "active", trainer_name: slotForBooking?.trainer_name ?? null, subscription_id: options?.subscriptionId ?? null, counts_in_subscription: options?.countsInSubscription ?? true, extra_fee_eur: options?.extraFeeEur ?? 0, extra_fee_paid: false });
+
+    const { error } = await supabase.from("bookings").insert({
+      user_id: user.id,
+      slot_date: formatDateISO(date),
+      slot_time: time,
+      status: "active",
+      trainer_name: slotForBooking?.trainer_name ?? null,
+      subscription_id: options?.subscriptionId ?? null,
+      counts_in_subscription: options?.countsInSubscription ?? true,
+      extra_fee_eur: options?.extraFeeEur ?? 0,
+      extra_fee_paid: false,
+    });
+
     setBusy(null);
-    if (error) { toast.error(error.code === "23505" ? "Jūs jau užregistruoti į šią pamoką" : /pradedant|Grupė/i.test(error.message) ? error.message : "Klaida: " + error.message); return false; }
+
+    if (error) {
+      toast.error(
+        error.code === "23505"
+          ? "Jūs jau užregistruoti į šią pamoką"
+          : /registr|abonement|abonemento|savait/i.test(error.message)
+            ? error.message
+            : "Klaida: " + error.message,
+      );
+      return false;
+    }
+
     setBookingSuccess({ date, time });
-    toast.success(language === "lt" ? "Pamoka sėkmingai užregistruota!" : "Your lesson is booked!");
+
+    if (eligibility.grace_booking) {
+      toast.success(
+        "Pamoka užregistruota. Tai vienintelė būsima treniruotė, kurią šiuo metu galite turėti be abonemento.",
+        { duration: 7000 },
+      );
+    } else {
+      toast.success(
+        language === "lt"
+          ? "Pamoka sėkmingai užregistruota!"
+          : "Your lesson is booked!",
+      );
+    }
+
     await loadData();
     return true;
   };
