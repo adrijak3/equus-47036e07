@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS public.permanent_booking_exceptions (
 
 ALTER TABLE public.permanent_booking_exceptions ENABLE ROW LEVEL SECURITY;
 
+CREATE UNIQUE INDEX IF NOT EXISTS permanent_booking_exceptions_unique
+ON public.permanent_booking_exceptions (user_id, slot_date, slot_time);
+
 DROP POLICY IF EXISTS "Permanent booking exceptions readable" ON public.permanent_booking_exceptions;
 CREATE POLICY "Permanent booking exceptions readable"
 ON public.permanent_booking_exceptions
