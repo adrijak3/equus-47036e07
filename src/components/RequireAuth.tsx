@@ -2,8 +2,8 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function RequireAuth({ children, adminOnly = false }: { children: ReactNode; adminOnly?: boolean }) {
-  const { user, isAdmin, loading } = useAuth();
+export default function RequireAuth({ children, adminOnly = false, staffOnly = false }: { children: ReactNode; adminOnly?: boolean; staffOnly?: boolean }) {
+  const { user, isAdmin, isTrainer, isHalfAdmin, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -19,6 +19,10 @@ export default function RequireAuth({ children, adminOnly = false }: { children:
   }
 
   if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (staffOnly && !isAdmin && !isTrainer && !isHalfAdmin) {
     return <Navigate to="/" replace />;
   }
 
