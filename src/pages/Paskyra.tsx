@@ -967,6 +967,11 @@ function BookingRow({ b, past, separatelyPaid }: { b: Booking; past?: boolean; s
         </div>
         <div className="text-muted-foreground tabular-nums">
           {formatTime(b.slot_time)}
+          {b.is_grace_booking && !past && (
+            <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-blush">
+              · Vienintelė būsima be abonemento
+            </span>
+          )}
           <span className="ml-2 text-xs text-gold/80 font-medium">
             {b.lesson_kind === "individual" || b.is_individual ? "· Individuali" : b.lesson_kind === "po2" ? "· Po 2" : "· Grupinė"}
           </span>
