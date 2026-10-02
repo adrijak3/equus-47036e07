@@ -511,7 +511,7 @@ function SubscriptionPurchaseDialog({
   const [otherQuantity, setOtherQuantity] = useState("");
   const [quantityMode, setQuantityMode] = useState<"preset" | "other">("preset");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
-  const [allocationMode, setAllocationMode] = useState<"none" | "today" | "next">("none");
+  const [allocationMode, setAllocationMode] = useState<"none" | "today" | "next">("next");
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [loadingPrices, setLoadingPrices] = useState(false);
