@@ -1,6 +1,5 @@
-// Marks past active bookings as completed (using Europe/Vilnius "now") and
-// decrements the user's oldest valid active subscription FIFO when the booking
-// counts toward the subscription. Idempotent — safe to call repeatedly.
+// Marks past active bookings as completed and allocates counted lessons
+// through the central, idempotent subscription accounting engine.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -13,10 +12,19 @@ const corsHeaders = {
 function vilniusNow(): { date: string; time: string } {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Vilnius",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   });
-  const parts = Object.fromEntries(fmt.formatToParts(new Date()).map((p) => [p.type, p.value]));
+
+  const parts = Object.fromEntries(
+    fmt.formatToParts(new Date()).map((p) => [p.type, p.value]),
+  );
+
   return {
     date: `${parts.year}-${parts.month}-${parts.day}`,
     time: `${parts.hour}:${parts.minute}:${parts.second}`,
@@ -24,7 +32,9 @@ function vilniusNow(): { date: string; time: string } {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -33,10 +43,12 @@ Deno.serve(async (req) => {
 
   const { date: todayISO, time: nowTime } = vilniusNow();
 
-  // Expire any past-deadline makeup grants → mark booking as counts_in_subscription
+  // Expire past-deadline makeup grants first.
   let makeupsExpired = 0;
   const { data: expiredCount } = await supabase.rpc("expire_makeup_cancellations");
-  if (typeof expiredCount === "number") makeupsExpired = expiredCount;
+  if (typeof expiredCount === "number") {
+    makeupsExpired = expiredCount;
+  }
 
   const { data: pastActive, error: e1 } = await supabase
     .from("bookings")
@@ -53,45 +65,71 @@ Deno.serve(async (req) => {
 
   let processed = 0;
   let consumed = 0;
+  let alreadyAllocated = 0;
+  let notAllocated = 0;
 
-  for (const b of pastActive ?? []) {
-    const { error: upd } = await supabase
+  for (const booking of pastActive ?? []) {
+    const { error: updateError } = await supabase
       .from("bookings")
       .update({ status: "completed" })
-      .eq("id", b.id);
-    if (upd) continue;
+      .eq("id", booking.id)
+      .eq("status", "active");
+
+    if (updateError) {
+      continue;
+    }
+
     processed++;
 
-    if (!b.counts_in_subscription || b.subscription_id) continue;
+    if (!booking.counts_in_subscription) {
+      continue;
+    }
 
-    const { data: subs } = await supabase
-      .from("subscriptions")
-      .select("id, lessons_total, lessons_used, expires_at, purchase_date, start_from_date")
-      .eq("user_id", b.user_id)
-      .order("start_from_date", { ascending: true, nullsFirst: true })\n      .order("purchase_date", { ascending: true });
+    const { data: allocationResult, error: allocationError } =
+      await supabase.rpc("allocate_booking_to_subscription", {
+        _booking_id: booking.id,
+      });
 
-    const usableSub = (subs ?? []).find(
-      (s) =>
-        s.lessons_used < s.lessons_total &&
-        s.purchase_date <= b.slot_date &&
-        s.expires_at >= b.slot_date,
-    );
+    if (allocationError) {
+      console.error(
+        "Subscription allocation failed:",
+        booking.id,
+        allocationError,
+      );
+      notAllocated++;
+      continue;
+    }
 
-    if (usableSub) {
-      await supabase
-        .from("subscriptions")
-        .update({ lessons_used: usableSub.lessons_used + 1 })
-        .eq("id", usableSub.id);
-      await supabase
-        .from("bookings")
-        .update({ subscription_id: usableSub.id })
-        .eq("id", b.id);
-      consumed++;
+    const result = (allocationResult ?? {}) as {
+      allocated?: boolean;
+      reason?: string;
+    };
+
+    if (result.allocated) {
+      if (result.reason === "ALREADY_ALLOCATED" || result.reason === "BOOKING_ALREADY_ATTACHED") {
+        alreadyAllocated++;
+      } else {
+        consumed++;
+      }
+    } else {
+      notAllocated++;
     }
   }
 
   return new Response(
-    JSON.stringify({ ok: true, processed, consumed, makeupsExpired, today: todayISO, now: nowTime }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    JSON.stringify({
+      ok: true,
+      processed,
+      consumed,
+      alreadyAllocated,
+      notAllocated,
+      makeupsExpired,
+      today: todayISO,
+      now: nowTime,
+    }),
+    {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    },
   );
 });
