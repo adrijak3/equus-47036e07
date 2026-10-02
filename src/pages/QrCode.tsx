@@ -60,6 +60,13 @@ type ClientResult = {
     status: string;
     subscription_id?: string | null;
   }>;
+  today_subscription_context?: {
+    today: string;
+    current_subscription_id?: string | null;
+    next_subscription_id?: string | null;
+    today_uses_current_subscription: boolean;
+    today_uses_next_subscription: boolean;
+  } | null;
 };
 
 const packageLabel = (value?: string | null) =>
@@ -163,7 +170,19 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
       return;
     }
 
-    setClient(data as ClientResult);
+    let result = data as ClientResult;
+
+    const { data: todayContext } = await (supabase as any).rpc(
+      "qr_today_subscription_context",
+      { _user_id: result.client.id },
+    );
+
+    result = {
+      ...result,
+      today_subscription_context: todayContext ?? null,
+    };
+
+    setClient(result);
     setManual("");
   }, [stopScanner]);
 
@@ -444,6 +463,17 @@ function ClientResultCard({
             <p className="mt-1 text-sm text-muted-foreground">Galite iškart sukurti naują abonementą.</p>
           </div>
         )}
+
+        {client.today_subscription_context?.today_uses_current_subscription &&
+          client.today_subscription_context?.today_uses_next_subscription === false &&
+          nextSub && (
+            <div className="mt-4 rounded-2xl border border-blush/20 bg-blush/5 p-4">
+              <p className="font-medium text-blush">Šiandienos treniruotė priklauso ankstesniam abonementui</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Šiandienos pamoka nebus priskirta naujam abonementui. Naujas abonementas pradės galioti nuo kitos tinkamos treniruotės.
+              </p>
+            </div>
+          )}
 
         {nextSub && (
           <div className="mt-4 rounded-2xl border border-gold/20 bg-gold/5 p-4">
