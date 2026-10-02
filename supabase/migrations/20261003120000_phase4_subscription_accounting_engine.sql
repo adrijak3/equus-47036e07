@@ -333,7 +333,7 @@ BEGIN
 
   RETURN COALESCE(NEW, OLD);
 END;
-$$;
+$equus_trigger$;
 
 DROP TRIGGER IF EXISTS trg_sync_subscription_usage_from_booking
 ON public.bookings;
