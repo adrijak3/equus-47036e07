@@ -982,3 +982,50 @@ FROM PUBLIC, anon;
 GRANT EXECUTE
 ON FUNCTION public.allocate_booking_to_subscription(uuid)
 TO service_role;
+
+
+-- Half-admin is not allowed to bypass the grace-booking rule through the
+-- optional allocation selector: its purchase always consumes the next
+-- compatible future reservation when one exists.
+CREATE OR REPLACE FUNCTION public.half_admin_purchase_subscription(
+  _user_id uuid,
+  _lessons_total smallint,
+  _package_type text,
+  _horse_type text,
+  _allocation_mode text DEFAULT 'next',
+  _payment_method text DEFAULT 'cash'
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $phase5$
+DECLARE
+  v_actor uuid := auth.uid();
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'NOT_AUTHENTICATED';
+  END IF;
+
+  IF NOT public.has_role(v_actor, 'half_admin'::public.app_role) THEN
+    RAISE EXCEPTION 'NOT_ALLOWED';
+  END IF;
+
+  RETURN public.admin_purchase_subscription(
+    _user_id,
+    _lessons_total,
+    _package_type,
+    _horse_type,
+    'next',
+    _payment_method
+  );
+END;
+$phase5$;
+
+REVOKE ALL
+ON FUNCTION public.half_admin_purchase_subscription(uuid,smallint,text,text,text,text)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.half_admin_purchase_subscription(uuid,smallint,text,text,text,text)
+TO authenticated;
