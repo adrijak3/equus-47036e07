@@ -37,6 +37,7 @@ const PrivatumoPolitika = lazy(() => import("./pages/PrivatumoPolitika"));
 const TaisyklesIrSalygos = lazy(() => import("./pages/TaisyklesIrSalygos"));
 const QrCodePage = lazy(() => import("./pages/QrCode"));
 const SlapukuPolitika = lazy(() => import("./pages/SlapukuPolitika"));
+const HalfAdminSubscriptions = lazy(() => import("./pages/HalfAdminSubscriptions"));
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,7 @@ const App = () => (
                   <Route path="/slapuku-politika" element={<SlapukuPolitika />} />
                   <Route path="/mano-qr" element={<RequireAuth><QrCodePage /></RequireAuth>} />
                   <Route path="/admin/skenuoti" element={<RequireAuth><QrCodePage scanner /></RequireAuth>} />
+                  <Route path="/half-admin/abonementai" element={<RequireAuth><HalfAdminSubscriptions /></RequireAuth>} />
 
                   <Route
                     path="/paskyra"
