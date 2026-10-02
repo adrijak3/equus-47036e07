@@ -225,6 +225,21 @@ BEGIN
           AND b.slot_time = ps.slot_time
           AND b.status IN ('active', 'pending_cancel')
       )
+      -- The normal booking trigger intentionally closes public registration
+      -- three hours before training. Materialization must not try to create
+      -- an occurrence that is already inside that closed window.
+      AND (
+        d > (now() AT TIME ZONE 'Europe/Vilnius')::date
+        OR make_timestamptz(
+          EXTRACT(YEAR FROM d)::integer,
+          EXTRACT(MONTH FROM d)::integer,
+          EXTRACT(DAY FROM d)::integer,
+          EXTRACT(HOUR FROM ps.slot_time)::integer,
+          EXTRACT(MINUTE FROM ps.slot_time)::integer,
+          EXTRACT(SECOND FROM ps.slot_time),
+          'Europe/Vilnius'
+        ) >= now() + interval '3 hours'
+      )
       THEN
         BEGIN
           INSERT INTO public.bookings (
@@ -268,7 +283,9 @@ ON FUNCTION public.materialize_permanent_bookings(date, date)
 TO service_role;
 
 -- Repair currently missing future occurrences.
+-- Start tomorrow so the repair never attempts a same-day booking that is
+-- already inside the normal three-hour public-registration closing window.
 SELECT public.materialize_permanent_bookings(
-  (now() AT TIME ZONE 'Europe/Vilnius')::date,
+  ((now() AT TIME ZONE 'Europe/Vilnius')::date + 1),
   ((now() AT TIME ZONE 'Europe/Vilnius')::date + 120)
 );
