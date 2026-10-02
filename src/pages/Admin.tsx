@@ -2013,7 +2013,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       _lessons_total: lessonCount,
       _package_type: packageType,
       _horse_type: horseType,
-      _allocation_mode: "none",
+      _allocation_mode: "next",
     });
 
     setSaving(false);
