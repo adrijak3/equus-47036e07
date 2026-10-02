@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(prof ?? null);
     setIsAdmin((roles ?? []).some((r) => r.role === "admin"));
     setIsTrainer((roles ?? []).some((r) => r.role === "trainer"));
-    setIsHalfAdmin((roles ?? []).some((r) => r.role === "half_admin"));
+    setIsHalfAdmin((roles ?? []).some((r) => (r as any).role === "half_admin"));
     const lps: LinkedProfile[] = ((links as any[]) ?? []).map((l) => ({
       id: l.id, profile_id: l.linked_profile_id, display_name: l.display_name,
     }));
