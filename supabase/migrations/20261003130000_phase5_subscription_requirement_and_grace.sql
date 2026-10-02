@@ -137,7 +137,9 @@ BEGIN
     );
   END IF;
 
-  v_enforcement_active := _slot_date >= DATE '2026-10-18';
+  v_enforcement_active :=
+    v_local_date >= DATE '2026-10-18'
+    AND _slot_date >= v_local_date;
 
   IF v_enforcement_active
      AND NOT v_is_exempt
