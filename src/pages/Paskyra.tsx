@@ -223,8 +223,7 @@ export default function Paskyra() {
   useEffect(() => { load(); }, [user, acting]);
 
   const now = new Date();
-  const future = bookings.filter(\n    (b: any) =>\n      b.status === "active" &&\n      b.is_paused_for_subscription !== true &&\n      new Date(`${b.slot_date}T${b.slot_time}`) >= now,\n  );
-  const past = bookings.filter((b) => new Date(`${b.slot_date}T${b.slot_time}`) < now);
+  const future = bookings.filter(\n    (b: any) =>\n      b.status === "active" &&\n      b.is_paused_for_subscription !== true &&\n      new Date(`${b.slot_date}T${b.slot_time}`) >= now,\n  );\n  const past = bookings.filter((b) => new Date(`${b.slot_date}T${b.slot_time}`) < now);
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
