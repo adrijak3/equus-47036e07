@@ -212,13 +212,13 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
         <div className="mb-6">
-          <Link to="/admin" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-gold">
+          <Link to={isHalfAdmin && !isAdmin ? "/half-admin/abonementai" : "/admin"} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-gold">
             <ArrowLeft className="h-4 w-4" /> Grįžti
           </Link>
           <p className="mt-5 text-xs uppercase tracking-[0.25em] text-gold/70">Klientai</p>
           <h1 className="text-4xl font-display text-gradient-gold">Skenuoti kliento QR</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Nuskenuokite kliento QR ir iškart tvarkykite jo abonementą bei pirkimą.
+            Nuskenuokite kliento QR ir peržiūrėkite jo abonementą bei, jei turite teisę, atlikite pirkimą.
           </p>
         </div>
 
