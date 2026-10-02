@@ -230,6 +230,12 @@ export default function Paskyra() {
       new Date(`${b.slot_date}T${b.slot_time}`) >= now,
   );
   const past = bookings.filter((b) => new Date(`${b.slot_date}T${b.slot_time}`) < now);
+  const pausedFuture = bookings.filter(
+    (b: any) =>
+      b.status === "active" &&
+      b.is_paused_for_subscription === true &&
+      new Date(`${b.slot_date}T${b.slot_time}`) >= now,
+  );
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -393,6 +399,14 @@ export default function Paskyra() {
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Praėjęs mėnuo</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{previousMonthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
   <div className="col-span-2 sm:col-span-1 rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Iš viso</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{totalAttended}</div><div className="text-xs text-muted-foreground">pamokų</div></div>
 </div>
+          {pausedFuture.length > 0 && (
+            <section className="rounded-2xl border border-blush/25 bg-blush/5 px-5 py-4">
+              <div className="font-medium text-blush">Kai kurios būsimos rezervacijos laikinai sustabdytos</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Šios rezervacijos neberodomos grafike ir nenaudoja abonemento pamokų. Įsigijus tinkamą abonementą, jos bus automatiškai atkurtos, jei dar patenka į jo galiojimo laiką ir atitinka treniruotės tipą.
+              </p>
+            </section>
+          )}
           <Section title="Artimiausios pamokos" icon={<CalendarDays className="w-4 h-4" />}>{future.length === 0 ? <Empty text="Artimiausių pamokų nėra." /> : <ul className="divide-y divide-gold/5">{future.slice(0, 7).map((b) => <BookingRow key={b.id} b={b} />)}</ul>}</Section>
           <Section title={`Šio mėnesio pamokos · ${monthAttended.length}`} icon={<CheckCircle2 className="w-4 h-4" />}>{monthBookings.length === 0 ? <Empty text="Šį mėnesį pamokų dar nėra." /> : <ul className="divide-y divide-gold/5">{monthBookings.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
           <Section title="Ankstesnės pamokos" icon={<BarChart3 className="w-4 h-4" />}>{past.filter((b) => b.status === "active" || b.status === "completed").length === 0 ? <Empty text="Ankstesnių pamokų nėra." /> : <ul className="divide-y divide-gold/5 max-h-80 overflow-auto">{past.filter((b) => b.status === "active" || b.status === "completed").slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
