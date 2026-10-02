@@ -52,8 +52,9 @@ Deno.serve(async (req) => {
 
   const { data: pastActive, error: e1 } = await supabase
     .from("bookings")
-    .select("id, user_id, slot_date, slot_time, counts_in_subscription, subscription_id")
+    .select("id, user_id, slot_date, slot_time, counts_in_subscription, subscription_id, is_paused_for_subscription")
     .eq("status", "active")
+    .eq("is_paused_for_subscription", false)
     .or(`slot_date.lt.${todayISO},and(slot_date.eq.${todayISO},slot_time.lt.${nowTime})`);
 
   if (e1) {
