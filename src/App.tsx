@@ -112,8 +112,8 @@ const App = () => (
                   <Route path="/taisykles-ir-salygos" element={<TaisyklesIrSalygos />} />
                   <Route path="/slapuku-politika" element={<SlapukuPolitika />} />
                   <Route path="/mano-qr" element={<RequireAuth><QrCodePage /></RequireAuth>} />
-                  <Route path="/admin/skenuoti" element={<RequireAuth><QrCodePage scanner /></RequireAuth>} />
-                  <Route path="/half-admin/abonementai" element={<RequireAuth><HalfAdminSubscriptions /></RequireAuth>} />
+                  <Route path="/admin/skenuoti" element={<RequireAuth staffOnly><QrCodePage scanner /></RequireAuth>} />
+                  <Route path="/half-admin/abonementai" element={<RequireAuth staffOnly><HalfAdminSubscriptions /></RequireAuth>} />
 
                   <Route
                     path="/paskyra"
