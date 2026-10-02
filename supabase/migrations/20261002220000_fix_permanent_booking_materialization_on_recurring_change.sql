@@ -68,8 +68,9 @@ BEGIN
     RAISE EXCEPTION 'TARGET_TIME_EXISTS';
   END IF;
 
-  -- A target-time conflict is only relevant when an affected permanent rider
-  -- already has another active/pending booking at the target time.
+  -- A target-time conflict is relevant when an affected permanent rider
+  -- already has a booking at the target time, or when moving the recurring
+  -- riders would exceed the target slot capacity.
   IF EXISTS (
     SELECT 1
     FROM public.bookings b
@@ -95,6 +96,63 @@ BEGIN
           AND c.slot_time = _new_time
           AND c.status IN ('active', 'pending_cancel')
       )
+  ) THEN
+    RAISE EXCEPTION 'RECURRING_MOVE_CONFLICT';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM (
+      SELECT b.slot_date
+      FROM public.bookings b
+      JOIN public.permanent_slots ps
+        ON ps.user_id = b.user_id
+       AND ps.day_of_week = slot_row.day_of_week
+       AND ps.slot_time = old_time
+      WHERE b.slot_time = old_time
+        AND b.status IN ('active', 'pending_cancel')
+        AND (
+          CASE
+            WHEN EXTRACT(DOW FROM b.slot_date)::int = 0 THEN 7
+            ELSE EXTRACT(DOW FROM b.slot_date)::int
+          END
+        ) = slot_row.day_of_week
+        AND b.slot_date >= (now() AT TIME ZONE 'Europe/Vilnius')::date
+      GROUP BY b.slot_date
+    ) affected_dates
+    WHERE (
+      SELECT count(*)
+      FROM public.bookings target
+      WHERE target.slot_date = affected_dates.slot_date
+        AND target.slot_time = _new_time
+        AND target.status IN ('active', 'pending_cancel')
+        AND NOT EXISTS (
+          SELECT 1
+          FROM public.permanent_slots ps2
+          WHERE ps2.user_id = target.user_id
+            AND ps2.day_of_week = slot_row.day_of_week
+            AND ps2.slot_time = old_time
+        )
+    ) + (
+      SELECT count(*)
+      FROM public.bookings source
+      JOIN public.permanent_slots ps3
+        ON ps3.user_id = source.user_id
+       AND ps3.day_of_week = slot_row.day_of_week
+       AND ps3.slot_time = old_time
+      WHERE source.slot_date = affected_dates.slot_date
+        AND source.slot_time = old_time
+        AND source.status IN ('active', 'pending_cancel')
+    ) > COALESCE(
+      (
+        SELECT so.max_capacity
+        FROM public.slot_overrides so
+        WHERE so.slot_date = affected_dates.slot_date
+          AND so.slot_time = _new_time
+        LIMIT 1
+      ),
+      slot_row.max_capacity
+    )
   ) THEN
     RAISE EXCEPTION 'RECURRING_MOVE_CONFLICT';
   END IF;
