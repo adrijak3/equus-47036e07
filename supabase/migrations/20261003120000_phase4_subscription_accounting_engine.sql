@@ -8,48 +8,6 @@
 --   * a new subscription starts on the first actual lesson after the previous
 --     unfinished subscription's last counted lesson when that booking exists
 
-CREATE OR REPLACE FUNCTION public.reconcile_subscription_usage(
-  _subscription_id uuid
-)
-RETURNS smallint
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_used smallint := 0;
-BEGIN
-  IF _subscription_id IS NULL THEN
-    RETURN 0;
-  END IF;
-
-  SELECT COUNT(*)::smallint
-    INTO v_used
-  FROM public.bookings b
-  WHERE b.subscription_id = _subscription_id
-    AND b.status <> 'cancelled'
-    AND b.counts_in_subscription IS NOT FALSE;
-
-  UPDATE public.subscriptions
-  SET lessons_used = LEAST(lessons_total, v_used)
-  WHERE id = _subscription_id;
-
-  RETURN LEAST(
-    (SELECT lessons_total FROM public.subscriptions WHERE id = _subscription_id),
-    v_used
-  );
-END;
-$$;
-
-REVOKE ALL
-ON FUNCTION public.reconcile_subscription_usage(uuid)
-FROM PUBLIC, anon;
-
-GRANT EXECUTE
-ON FUNCTION public.reconcile_subscription_usage(uuid)
-TO service_role;
-
-
 CREATE OR REPLACE FUNCTION public.allocate_booking_to_subscription(
   _booking_id uuid
 )
