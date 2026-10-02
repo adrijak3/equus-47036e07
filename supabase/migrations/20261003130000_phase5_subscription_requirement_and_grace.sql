@@ -779,3 +779,191 @@ BEGIN
   );
 END;
 $phase5$;
+
+
+-- Phase 5 package compatibility: a subscription may only consume the
+-- matching training type. Re-define the allocator after the package helper
+-- exists so every allocation path uses the same compatibility rule.
+CREATE OR REPLACE FUNCTION public.allocate_booking_to_subscription(
+  _booking_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $phase5$
+DECLARE
+  v_booking public.bookings%ROWTYPE;
+  v_sub public.subscriptions%ROWTYPE;
+  v_allocation_number smallint;
+  v_existing_allocation public.subscription_allocations%ROWTYPE;
+BEGIN
+  SELECT *
+    INTO v_booking
+  FROM public.bookings
+  WHERE id = _booking_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'BOOKING_NOT_FOUND';
+  END IF;
+
+  IF v_booking.status = 'cancelled'
+     OR v_booking.counts_in_subscription IS FALSE
+     OR v_booking.is_paused_for_subscription
+  THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'allocated', false,
+      'reason', 'NOT_COUNTED'
+    );
+  END IF;
+
+  IF v_booking.subscription_id IS NOT NULL THEN
+    SELECT *
+      INTO v_existing_allocation
+    FROM public.subscription_allocations
+    WHERE subscription_id = v_booking.subscription_id
+      AND booking_id = v_booking.id
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+      SELECT COALESCE(MAX(sa.allocation_number), 0) + 1
+        INTO v_allocation_number
+      FROM public.subscription_allocations sa
+      WHERE sa.subscription_id = v_booking.subscription_id;
+
+      INSERT INTO public.subscription_allocations(
+        subscription_id,
+        booking_id,
+        allocation_number,
+        status,
+        consumed_at
+      )
+      VALUES(
+        v_booking.subscription_id,
+        v_booking.id,
+        v_allocation_number,
+        CASE WHEN v_booking.status = 'completed' THEN 'consumed' ELSE 'allocated' END,
+        CASE WHEN v_booking.status = 'completed' THEN now() ELSE NULL END
+      )
+      ON CONFLICT (subscription_id, booking_id) DO NOTHING;
+    END IF;
+
+    PERFORM public.reconcile_subscription_usage(v_booking.subscription_id);
+
+    RETURN jsonb_build_object(
+      'ok', true,
+      'allocated', true,
+      'subscription_id', v_booking.subscription_id,
+      'reason', 'ALREADY_ALLOCATED'
+    );
+  END IF;
+
+  SELECT s.*
+    INTO v_sub
+  FROM public.subscriptions s
+  WHERE s.user_id = v_booking.user_id
+    AND COALESCE(s.paid, false) = true
+    AND s.cancelled_at IS NULL
+    AND s.lessons_used < s.lessons_total
+    AND COALESCE(s.start_from_date, s.purchase_date) <= v_booking.slot_date
+    AND s.expires_at >= v_booking.slot_date
+  ORDER BY
+    COALESCE(s.start_from_date, s.purchase_date),
+    s.purchase_date,
+    s.purchased_at,
+    s.id
+  LIMIT 1
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'allocated', false,
+      'reason', 'NO_USABLE_SUBSCRIPTION'
+    );
+  END IF;
+
+  IF NOT public.booking_matches_subscription_package(
+    v_booking.id,
+    v_sub.package_type
+  ) THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'allocated', false,
+      'reason', 'NO_MATCHING_SUBSCRIPTION_PACKAGE',
+      'subscription_id', v_sub.id,
+      'subscription_package_type', v_sub.package_type
+    );
+  END IF;
+
+  PERFORM public.reconcile_subscription_usage(v_sub.id);
+
+  SELECT *
+    INTO v_sub
+  FROM public.subscriptions
+  WHERE id = v_sub.id
+  FOR UPDATE;
+
+  IF v_sub.lessons_used >= v_sub.lessons_total THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'allocated', false,
+      'reason', 'NO_SUBSCRIPTION_LESSONS_LEFT'
+    );
+  END IF;
+
+  UPDATE public.bookings
+  SET subscription_id = v_sub.id
+  WHERE id = v_booking.id
+    AND subscription_id IS NULL;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'allocated', true,
+      'subscription_id', v_sub.id,
+      'reason', 'BOOKING_ALREADY_ATTACHED'
+    );
+  END IF;
+
+  SELECT COALESCE(MAX(sa.allocation_number), 0) + 1
+    INTO v_allocation_number
+  FROM public.subscription_allocations sa
+  WHERE sa.subscription_id = v_sub.id;
+
+  INSERT INTO public.subscription_allocations(
+    subscription_id,
+    booking_id,
+    allocation_number,
+    status,
+    consumed_at
+  )
+  VALUES(
+    v_sub.id,
+    v_booking.id,
+    v_allocation_number,
+    CASE WHEN v_booking.status = 'completed' THEN 'consumed' ELSE 'allocated' END,
+    CASE WHEN v_booking.status = 'completed' THEN now() ELSE NULL END
+  )
+  ON CONFLICT (subscription_id, booking_id) DO NOTHING;
+
+  PERFORM public.reconcile_subscription_usage(v_sub.id);
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'allocated', true,
+    'subscription_id', v_sub.id,
+    'reason', 'ALLOCATED'
+  );
+END;
+$phase5$;
+
+REVOKE ALL
+ON FUNCTION public.allocate_booking_to_subscription(uuid)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.allocate_booking_to_subscription(uuid)
+TO service_role;
