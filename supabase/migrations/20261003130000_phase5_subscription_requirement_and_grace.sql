@@ -709,6 +709,21 @@ BEGIN
     ORDER BY b.slot_date, b.slot_time, b.created_at, b.id
     LIMIT 1;
 
+    PERFORM public.queue_subscription_requirement_warning(
+      (
+        SELECT b3.id
+        FROM public.bookings b3
+        WHERE b3.user_id = r.user_id
+          AND b3.slot_date >= DATE '2026-10-18'
+          AND b3.status = 'active'
+          AND b3.subscription_id IS NULL
+          AND b3.counts_in_subscription IS NOT FALSE
+          AND b3.is_paused_for_subscription = false
+        ORDER BY b3.slot_date, b3.slot_time, b3.created_at, b3.id
+        LIMIT 1
+      )
+    );
+
     IF v_deadline IS NOT NULL
        AND local_now >= v_deadline
        AND NOT public.booking_subscription_is_usable(
