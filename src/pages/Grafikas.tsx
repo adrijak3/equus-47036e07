@@ -884,7 +884,7 @@ export default function Grafikas() {
         date,
         time,
         slot,
-      ).length;
+      ).filter((b) => b.is_paused_for_subscription !== true).length;
 
       return {
         trainer: slot.trainer_name ?? null,
