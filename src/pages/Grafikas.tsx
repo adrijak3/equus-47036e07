@@ -860,9 +860,9 @@ export default function Grafikas() {
     time: string,
     slot: TimeSlot,
   ): RidingLevel[] =>
-    getSlotBookings(date, time, slot).map((b) =>
-      riderLevel(b, slot),
-    );
+    getSlotBookings(date, time, slot)
+      .filter((b) => b.is_paused_for_subscription !== true)
+      .map((b) => riderLevel(b, slot));
 
   const getGroupInfo = (
     date: Date,
