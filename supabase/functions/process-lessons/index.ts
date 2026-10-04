@@ -104,13 +104,32 @@ Deno.serve(async (req) => {
     const result = (allocationResult ?? {}) as {
       allocated?: boolean;
       reason?: string;
+      subscription_id?: string | null;
     };
 
     if (result.allocated) {
-      if (result.reason === "ALREADY_ALLOCATED" || result.reason === "BOOKING_ALREADY_ATTACHED") {
+      if (result.reason === "ALREADY_ALLOCATED" || result.reason === "BOOKING_ALREADY_ATTACHED" || result.reason === "ALREADY_VALID") {
         alreadyAllocated++;
       } else {
         consumed++;
+      }
+
+      // A completed lesson may free one lesson of a package that has paused
+      // recurring occurrences. Restore the next eligible recurring occurrence
+      // only when the slot actually has capacity. Restoration does not attach
+      // the future booking to the subscription; it remains future/unconsumed.
+      if (result.subscription_id) {
+        const { error: restoreError } = await supabase.rpc(
+          "restore_paused_bookings_for_subscription",
+          { _subscription_id: result.subscription_id },
+        );
+        if (restoreError) {
+          console.error(
+            "Failed to restore paused recurring bookings:",
+            result.subscription_id,
+            restoreError,
+          );
+        }
       }
     } else {
       notAllocated++;
