@@ -2796,6 +2796,7 @@ BEGIN
       AND s.cancelled_at IS NULL
       AND COALESCE(s.start_from_date, s.purchase_date) <= b.slot_date
       AND s.expires_at >= b.slot_date
+      AND public.subscription_committed_lessons(s.id) < s.lessons_total
       AND public.booking_matches_subscription_package(
         b.id,
         COALESCE(
