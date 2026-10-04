@@ -241,7 +241,7 @@ SET search_path = ''
 AS $trigger$
 BEGIN
   IF pg_trigger_depth() > 1 THEN
-    RETURN 0;
+    RETURN NEW;
   END IF;
 
   IF NEW.user_id IS NOT NULL THEN
