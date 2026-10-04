@@ -30,6 +30,16 @@ ON CONFLICT (user_id, slot_date, slot_time) DO NOTHING;
 --    existing vacation period. This intentionally includes both recurring
 --    and one-off bookings: Atostogos means the rider does not attend during
 --    the selected range.
+--
+-- This is a trusted migration repair. Booking cancellation triggers also
+-- reconcile subscription accounting, whose protection trigger requires the
+-- same transaction-local marker used by the existing admin correction RPCs.
+PERFORM set_config(
+  'equus.allow_subscription_financial_update',
+  'true',
+  true
+);
+
 UPDATE public.bookings b
 SET
   status = 'cancelled',
