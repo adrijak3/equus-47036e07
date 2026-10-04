@@ -293,12 +293,15 @@ AS $$
       WHERE s.start_pending = false
         AND b.status IN ('active', 'pending_cancel', 'completed')
         AND b.counts_in_subscription IS NOT FALSE
-        AND public.booking_matches_subscription_package(
-          b.id,
-          COALESCE(
-            s.package_type,
-            CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-          )
+        AND (
+          public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 0
+          OR public.booking_matches_subscription_package(
+            b.id,
+            COALESCE(
+              s.package_type,
+              CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+            )
+          ) IS TRUE
         )
         AND b.slot_date BETWEEN s.start_from_date AND s.expires_at
     ),
@@ -814,12 +817,15 @@ BEGIN
       AND s.start_from_date IS NOT NULL
       AND s.expires_at IS NOT NULL
       AND v_booking.slot_date BETWEEN s.start_from_date AND s.expires_at
-      AND public.booking_matches_subscription_package(
-        v_booking.id,
-        COALESCE(
-          s.package_type,
-          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-        )
+      AND (
+        public.equus_effective_slot_capacity(v_booking.slot_date, v_booking.slot_time) = 0
+        OR public.booking_matches_subscription_package(
+          v_booking.id,
+          COALESCE(
+            s.package_type,
+            CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+          )
+        ) IS TRUE
       )
     FOR UPDATE;
 
