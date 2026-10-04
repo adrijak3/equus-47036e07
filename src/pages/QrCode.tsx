@@ -621,16 +621,22 @@ function SubscriptionPurchaseDialog({
       return;
     }
 
-    const start = formatDate(data.start_from_date);
-    const expiry = formatDate(data.expires_at);
-    const allocationText = data.booking_id
-      ? " Rezervacija priskirta."
-      : allocationMode === "none"
-        ? ""
-        : " Rezervacijos pagal pasirinktą kriterijų nerasta.";
+    const start = data.start_pending
+      ? "laukiama pirmos treniruotės"
+      : formatDate(data.start_from_date);
+    const expiry = data.start_pending
+      ? "dar neprasidėjo"
+      : formatDate(data.expires_at);
+    const allocationText = data.start_pending
+      ? " Abonementas laukia pirmos faktinės treniruotės."
+      : data.booking_id
+        ? " Pirmoji treniruotė nustatyta."
+        : allocationMode === "none"
+          ? ""
+          : " Tinkamos būsimos treniruotės nerasta.";
 
     toast.success(
-      `Pirkimas patvirtintas · ${Number(data.price_eur).toFixed(2)} € · pradžia ${start} · galioja iki ${expiry}.${allocationText}`,
+      `Pirkimas patvirtintas · ${Number(data.price_eur).toFixed(2)} € · pradžia ${start} · galiojimas ${expiry}.${allocationText}`,
       { duration: 7000 },
     );
 
