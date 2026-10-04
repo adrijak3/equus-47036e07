@@ -56,7 +56,7 @@ export function UserProfileSheet({
       supabase.from("subscriptions").select("*").eq("user_id", id).order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time").eq("user_id", id).order("day_of_week").order("slot_time"),
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").eq("user_id", id).order("starts_on", { ascending: false }),
-      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id, lesson_price").eq("user_id", id).order("slot_date", { ascending: false }).order("slot_time").limit(100),
+      supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id").eq("user_id", id).order("slot_date", { ascending: false }).order("slot_time").limit(100),
       supabase.from("trainer_riders").select("trainer_user_id, rider_user_id, level").eq("rider_user_id", id),
       supabase.from("user_roles").select("user_id").eq("role", "trainer"),
     ]);
