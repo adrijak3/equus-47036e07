@@ -87,7 +87,9 @@ function extractToken(value: string) {
     const parts = url.pathname.split("/").filter(Boolean);
     const token = parts.at(-1);
     if (parts.at(-2) === "qr" && token) return token;
-  } catch {}
+  } catch {
+    // Treat non-URL input as a raw QR token.
+  }
 
   return trimmed;
 }
@@ -117,8 +119,16 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
     const current = scannerRef.current;
     scannerRef.current = null;
     if (!current) return;
-    try { await current.stop(); } catch {}
-    try { await current.clear(); } catch {}
+    try {
+      await current.stop();
+    } catch {
+      // Scanner may already be stopped.
+    }
+    try {
+      await current.clear();
+    } catch {
+      // Scanner DOM cleanup may already be complete.
+    }
   }, []);
 
   const loadOwnQr = useCallback(async (rotate = false) => {
