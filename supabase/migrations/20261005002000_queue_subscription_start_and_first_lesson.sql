@@ -69,7 +69,7 @@ BEGIN
       AND s.cancelled_at IS NULL
       AND s.start_pending = false
       AND COALESCE(s.lessons_total, 0) > 0
-      AND s.lessons_used < s.lessons_total
+      AND public.subscription_committed_lessons(s.id) < s.lessons_total
       AND s.start_from_date IS NOT NULL
       AND s.expires_at IS NOT NULL
       AND s.expires_at >= (now() AT TIME ZONE 'Europe/Vilnius')::date
@@ -141,7 +141,7 @@ BEGIN
       AND s.start_from_date IS NOT NULL
       AND s.expires_at IS NOT NULL
       AND s.expires_at >= v_today
-      AND s.lessons_used < s.lessons_total
+      AND public.subscription_committed_lessons(s.id) < s.lessons_total
   ) THEN
     RETURN NULL;
   END IF;
@@ -1071,7 +1071,7 @@ BEGIN
       AND s.start_from_date IS NOT NULL
       AND s.expires_at IS NOT NULL
       AND s.expires_at >= v_purchase_date
-      AND s.lessons_used < s.lessons_total
+      AND public.subscription_committed_lessons(s.id) < s.lessons_total
   ) THEN
     -- Current package still exists. The new one is queued and receives no
     -- start date until the old package is actually completed.
