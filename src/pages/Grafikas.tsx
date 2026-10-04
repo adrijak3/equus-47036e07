@@ -1216,9 +1216,19 @@ export default function Grafikas() {
     if (getTrainerDayCancellation(date, bookSlot?.trainer_name)) { toast.error("Šios treniruotės ta diena nevyksta"); return; }
     const slotForBooking = getSlotsAtTime(date, time)[0];
     if (slotForBooking?.max_capacity === 2) {
-      const { data: subscriptions, error: subError } = await supabase.from("subscriptions").select("id, lessons_total, lessons_used, price, lesson_type, start_from_date, purchase_date").eq("user_id", user.id).eq("paid", true).gte("expires_at", formatDateISO(date)).order("start_from_date", { ascending: true, nullsFirst: true }).order("purchase_date", { ascending: true });
+      const { data: subscriptions, error: subError } = await supabase.from("subscriptions").select("id, lessons_total, lessons_used, price, lesson_type, start_from_date, purchase_date, expires_at, start_pending, package_type").eq("user_id", user.id).eq("paid", true).is("cancelled_at", null).order("start_pending", { ascending: false }).order("start_from_date", { ascending: true, nullsFirst: true }).order("purchase_date", { ascending: true });
       if (subError) { toast.error(subError.message); return; }
-      const usable = (subscriptions ?? []).filter((s: any) => Number(s.lessons_total) > Number(s.lessons_used) && ["sportine", "sportine_po2"].includes(String(s.lesson_type)) && (s.start_from_date ?? s.purchase_date) <= formatDateISO(date));
+      const dateISO = formatDateISO(date);
+      const usable = (subscriptions ?? []).filter((s: any) => {
+        const packageType = String(s.package_type ?? (s.lesson_type === "sportine_po2" ? "po2" : "group"));
+        if (packageType !== "po2" && packageType !== "group") return false;
+        if (s.start_pending) return true;
+        return Number(s.lessons_total) > Number(s.lessons_used)
+          && !!s.start_from_date
+          && !!s.expires_at
+          && s.start_from_date <= dateISO
+          && s.expires_at >= dateISO;
+      });
       if (usable.length > 0) { setPo2Choice({ date, time, subscriptions: usable as any }); return; }
       await createBooking(date, time, { countsInSubscription: false });
       return;
