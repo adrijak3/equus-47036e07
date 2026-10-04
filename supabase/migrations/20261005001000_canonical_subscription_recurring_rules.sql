@@ -467,10 +467,17 @@ BEGIN
       AND public.subscription_committed_lessons(s.id) < s.lessons_total
       AND COALESCE(s.start_from_date, s.purchase_date) <= _slot_date
       AND s.expires_at >= _slot_date
-      AND COALESCE(
-        s.package_type,
-        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-      ) = v_package_type
+      AND (
+        (v_package_type = 'group' AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) = 'group')
+        OR
+        (v_package_type = 'po2' AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) IN ('group', 'po2'))
+      )
   );
 END;
 $equus_slot_sub$;
