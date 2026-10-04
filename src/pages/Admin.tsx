@@ -1477,8 +1477,8 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
       const list = (bks ?? []) as any[];
       const bIds = list.map((b) => b.id);
       const subIds = Array.from(new Set(list.map((b) => b.subscription_id).filter(Boolean))) as string[];
-      let paidMap: Record<string, boolean> = {};
-      let sickMap: Record<string, { sickness: boolean; reason: string | null }> = {};
+      const paidMap: Record<string, boolean> = {};
+      const sickMap: Record<string, { sickness: boolean; reason: string | null }> = {};
       if (subIds.length) {
         const { data: ss } = await supabase.from("subscriptions").select("id, paid").in("id", subIds);
         (ss ?? []).forEach((s: any) => { paidMap[s.id] = !!s.paid; });
