@@ -30,10 +30,14 @@ BEGIN
     RETURN 0;
   END IF;
 
+  -- Never recurse through the booking/horse triggers that this function itself
+  -- can fire while moving the subscription onto the surviving booking.
   IF pg_trigger_depth() > 1 THEN
     RETURN 0;
   END IF;
 
+  -- Only the one-subscription-duplicate case is eligible. If the rider has
+  -- multiple subscription bookings that day, leave everything untouched.
   IF (
     SELECT count(*)
     FROM public.bookings b
@@ -46,6 +50,8 @@ BEGIN
     RETURN 0;
   END IF;
 
+  -- Find each subscription-linked booking that does not already have a horse.
+  -- Only a single matching horse booking within 15 minutes is considered safe.
   FOR v_subscription_booking_id, v_subscription_id, v_subscription_counts,
       v_subscription_extra_fee, v_subscription_extra_paid IN
     SELECT
@@ -78,32 +84,15 @@ BEGIN
             WHERE ha2.booking_id = h.id
           )
           AND abs(extract(epoch FROM (h.slot_time - b.slot_time))) <= 900
+          AND COALESCE(h.lesson_kind::text,
+            CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
+          ) = COALESCE(b.lesson_kind::text,
+            CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
+          )
       )
   LOOP
-    SELECT count(*)
-      INTO candidate_count
-    FROM public.bookings h
-    WHERE h.user_id = _user_id
-      AND h.slot_date = _slot_date
-      AND h.status IN ('active', 'pending_cancel')
-      AND h.id <> v_subscription_booking_id
-      AND EXISTS (
-        SELECT 1
-        FROM public.horse_assignments ha
-        WHERE ha.booking_id = h.id
-      )
-      AND abs(extract(epoch FROM (h.slot_time - (
-        SELECT b.slot_time
-        FROM public.bookings b
-        WHERE b.id = v_subscription_booking_id
-      )))) <= 900;
-
-    IF candidate_count <> 1 THEN
-      CONTINUE;
-    END IF;
-
-    SELECT h.id
-      INTO v_horse_booking_id
+    SELECT count(*), min(h.id)
+      INTO candidate_count, v_horse_booking_id
     FROM public.bookings h
     WHERE h.user_id = _user_id
       AND h.slot_date = _slot_date
@@ -119,12 +108,22 @@ BEGIN
         FROM public.bookings b
         WHERE b.id = v_subscription_booking_id
       )))) <= 900
-    LIMIT 1;
+      AND COALESCE(h.lesson_kind::text,
+        CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
+      ) = (
+        SELECT COALESCE(b.lesson_kind::text,
+          CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
+        )
+        FROM public.bookings b
+        WHERE b.id = v_subscription_booking_id
+      );
 
-    IF v_horse_booking_id IS NULL THEN
+    IF candidate_count <> 1 OR v_horse_booking_id IS NULL THEN
       CONTINUE;
     END IF;
 
+    -- The horse booking is the survivor. Move the subscription attribution
+    -- before deleting the duplicate row.
     UPDATE public.bookings
     SET
       subscription_id = v_subscription_id,
@@ -143,7 +142,19 @@ BEGIN
 
     removed_count := removed_count + 1;
 
-    PERFORM public.reconcile_subscription_usage(v_subscription_id);
+    -- Keep the package counter aligned with the surviving booking.
+    UPDATE public.subscriptions s
+    SET lessons_used = LEAST(
+      s.lessons_total,
+      (
+        SELECT count(*)::smallint
+        FROM public.bookings b
+        WHERE b.subscription_id = s.id
+          AND b.counts_in_subscription = true
+          AND b.status <> 'cancelled'
+      )
+    )
+    WHERE s.id = v_subscription_id;
   END LOOP;
 
   RETURN removed_count;
@@ -151,6 +162,7 @@ END;
 $$;
 
 
+-- Clean up existing accidental duplicates using the same narrow rule.
 DO $$
 DECLARE
   r record;
