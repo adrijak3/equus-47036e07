@@ -84,10 +84,17 @@ BEGIN
       AND s.paid = true
       AND s.cancelled_at IS NULL
       AND s.start_pending = true
-      AND COALESCE(
-        s.package_type,
-        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-      ) = v_package_type
+      AND (
+        (v_package_type = 'group' AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) = 'group')
+        OR
+        (v_package_type = 'po2' AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) IN ('group', 'po2'))
+      )
   );
 END;
 $pending_usable$;
@@ -238,6 +245,7 @@ BEGIN
         )
       )
     ORDER BY
+      CASE WHEN b.is_grace_booking THEN 0 ELSE 1 END,
       b.slot_date,
       b.slot_time,
       b.created_at,
