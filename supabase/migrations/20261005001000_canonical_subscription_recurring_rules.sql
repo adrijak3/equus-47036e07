@@ -1396,6 +1396,269 @@ ON FUNCTION public.materialize_permanent_bookings(date,date)
 TO service_role;
 
 
+
+-- ---------------------------------------------------------------------------
+-- 8. Permanent-slot request/approval also ignores paused occupants
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.request_or_create_permanent_slot(
+  _day int,
+  _time time
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $perm_request_final$
+DECLARE
+  _uid uuid := auth.uid();
+  _cap int;
+  _existing int;
+  _conflict record;
+  _tomorrow date := (now() AT TIME ZONE 'Europe/Vilnius')::date + 1;
+BEGIN
+  IF _uid IS NULL THEN
+    RAISE EXCEPTION 'Prisijunkite';
+  END IF;
+
+  SELECT max_capacity
+    INTO _cap
+  FROM public.time_slots
+  WHERE active = true
+    AND one_off_date IS NULL
+    AND day_of_week = _day
+    AND slot_time = _time
+  LIMIT 1;
+
+  IF _cap IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'message', 'Šio laiko grafike nėra.');
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.permanent_slots
+    WHERE user_id = _uid
+      AND day_of_week = _day
+      AND slot_time = _time
+  ) THEN
+    RETURN jsonb_build_object('ok', false, 'message', 'Šį nuolatinį laiką jau turite.');
+  END IF;
+
+  IF _cap <= 2 THEN
+    INSERT INTO public.permanent_slot_requests(user_id, day_of_week, slot_time)
+    VALUES (_uid, _day, _time);
+
+    RETURN jsonb_build_object(
+      'ok', true,
+      'requested', true,
+      'message', 'Prašymas išsiųstas administracijai.'
+    );
+  END IF;
+
+  SELECT count(*)
+    INTO _existing
+  FROM public.permanent_slots
+  WHERE day_of_week = _day
+    AND slot_time = _time;
+
+  IF _existing >= 5 THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'message', 'Šis laikas jau turi 5 nuolatines vietas.'
+    );
+  END IF;
+
+  SELECT b.slot_date, count(*) AS taken
+    INTO _conflict
+  FROM public.bookings b
+  WHERE b.slot_time = _time
+    AND b.status IN ('active', 'pending_cancel')
+    AND b.is_paused_for_subscription IS NOT TRUE
+    AND b.slot_date >= _tomorrow
+    AND extract(isodow from b.slot_date)::int = _day
+  GROUP BY b.slot_date
+  HAVING count(*) + 1 > COALESCE(
+    (
+      SELECT so.max_capacity
+      FROM public.slot_overrides so
+      WHERE so.slot_date = b.slot_date
+        AND so.slot_time = _time
+      LIMIT 1
+    ),
+    _cap
+  )
+  ORDER BY b.slot_date
+  LIMIT 1;
+
+  IF FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'message', format(
+        'Negalima pridėti: %s ši treniruotė jau būtų virš talpos.',
+        _conflict.slot_date
+      )
+    );
+  END IF;
+
+  INSERT INTO public.permanent_slots(user_id, day_of_week, slot_time)
+  VALUES (_uid, _day, _time);
+
+  PERFORM public.materialize_permanent_bookings(
+    _tomorrow,
+    _tomorrow + 120
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'requested', false,
+    'message', 'Nuolatinis laikas pridėtas.'
+  );
+END;
+$perm_request_final$;
+
+REVOKE ALL
+ON FUNCTION public.request_or_create_permanent_slot(int,time)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.request_or_create_permanent_slot(int,time)
+TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.decide_permanent_slot_request(
+  _request_id uuid,
+  _approve boolean,
+  _note text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $perm_decide_final$
+DECLARE
+  r public.permanent_slot_requests%ROWTYPE;
+  _cap int;
+  _existing int;
+  _conflict record;
+  _tomorrow date := (now() AT TIME ZONE 'Europe/Vilnius')::date + 1;
+BEGIN
+  IF NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'Tik administratorius';
+  END IF;
+
+  SELECT *
+    INTO r
+  FROM public.permanent_slot_requests
+  WHERE id = _request_id
+    AND status = 'pending'
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'message', 'Prašymas neberastas.'
+    );
+  END IF;
+
+  IF NOT _approve THEN
+    UPDATE public.permanent_slot_requests
+    SET
+      status = 'rejected',
+      admin_note = _note,
+      decided_at = now(),
+      decided_by = auth.uid()
+    WHERE id = r.id;
+
+    RETURN jsonb_build_object('ok', true);
+  END IF;
+
+  SELECT max_capacity
+    INTO _cap
+  FROM public.time_slots
+  WHERE active = true
+    AND one_off_date IS NULL
+    AND day_of_week = r.day_of_week
+    AND slot_time = r.slot_time
+  LIMIT 1;
+
+  IF _cap IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'message', 'Šio laiko grafike nebėra.');
+  END IF;
+
+  SELECT count(*)
+    INTO _existing
+  FROM public.permanent_slots
+  WHERE day_of_week = r.day_of_week
+    AND slot_time = r.slot_time;
+
+  IF _existing >= 5 THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'message', 'Šis laikas jau turi 5 nuolatines vietas.'
+    );
+  END IF;
+
+  SELECT b.slot_date, count(*) AS taken
+    INTO _conflict
+  FROM public.bookings b
+  WHERE b.slot_time = r.slot_time
+    AND b.status IN ('active', 'pending_cancel')
+    AND b.is_paused_for_subscription IS NOT TRUE
+    AND b.slot_date >= _tomorrow
+    AND extract(isodow from b.slot_date)::int = r.day_of_week
+  GROUP BY b.slot_date
+  HAVING count(*) + 1 > COALESCE(
+    (
+      SELECT so.max_capacity
+      FROM public.slot_overrides so
+      WHERE so.slot_date = b.slot_date
+        AND so.slot_time = r.slot_time
+      LIMIT 1
+    ),
+    _cap
+  )
+  ORDER BY b.slot_date
+  LIMIT 1;
+
+  IF FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'message', format(
+        'Negalima patvirtinti: %s ši treniruotė jau būtų virš talpos.',
+        _conflict.slot_date
+      )
+    );
+  END IF;
+
+  INSERT INTO public.permanent_slots(user_id, day_of_week, slot_time)
+  VALUES (r.user_id, r.day_of_week, r.slot_time)
+  ON CONFLICT DO NOTHING;
+
+  UPDATE public.permanent_slot_requests
+  SET
+    status = 'approved',
+    admin_note = _note,
+    decided_at = now(),
+    decided_by = auth.uid()
+  WHERE id = r.id;
+
+  PERFORM public.materialize_permanent_bookings(
+    _tomorrow,
+    _tomorrow + 120
+  );
+
+  RETURN jsonb_build_object('ok', true);
+END;
+$perm_decide_final$;
+
+REVOKE ALL
+ON FUNCTION public.decide_permanent_slot_request(uuid,boolean,text)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.decide_permanent_slot_request(uuid,boolean,text)
+TO authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 8. Waitlist: paused cancellations must not open a seat
 -- ---------------------------------------------------------------------------
@@ -2735,6 +2998,7 @@ BEGIN
      AND current_booking.slot_date = stale_booking.slot_date
      AND current_booking.slot_time = ps.slot_time
      AND current_booking.status IN ('active', 'pending_cancel')
+     AND public.booking_is_permanent(current_booking.id)
      AND current_booking.trainer_name IS NULL
      AND COALESCE(current_booking.is_individual, false) = false
     WHERE stale_booking.status IN ('active', 'pending_cancel')
