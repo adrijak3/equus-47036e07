@@ -794,10 +794,12 @@ BEGIN
     );
   END IF;
 
-  v_is_permanent := public.booking_is_permanent_for_slot(
-    _user_id,
-    _slot_date,
-    _slot_time
+  v_is_permanent := EXISTS (
+    SELECT 1
+    FROM public.permanent_slots ps
+    WHERE ps.user_id = _user_id
+      AND ps.day_of_week = EXTRACT(ISODOW FROM _slot_date)::integer
+      AND ps.slot_time = _slot_time
   );
 
   v_weekly_slot := public.is_laura_weekly_registration_slot(
@@ -1575,7 +1577,6 @@ BEGIN
       AND b.slot_time = old_time
       AND b.slot_date >= tomorrow
       AND b.status IN ('active', 'pending_cancel')
-      AND public.booking_is_permanent(b.id)
     ORDER BY b.slot_date, b.slot_time, b.created_at, b.id
   LOOP
     v_capacity := public.equus_effective_slot_capacity(
@@ -2476,7 +2477,7 @@ BEGIN
   PERFORM cron.schedule(
     'equus-cleanup-old-subscriptions',
     '15 3 * * *',
-    $$SELECT public.cleanup_old_subscriptions();$$
+    $cron$SELECT public.cleanup_old_subscriptions();$cron$
   );
 EXCEPTION
   WHEN undefined_table THEN
