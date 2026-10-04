@@ -84,15 +84,22 @@ BEGIN
             WHERE ha2.booking_id = h.id
           )
           AND abs(extract(epoch FROM (h.slot_time - b.slot_time))) <= 900
-          AND COALESCE(h.lesson_kind::text,
-            CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
-          ) = COALESCE(b.lesson_kind::text,
-            CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
+          AND (
+            CASE
+              WHEN h.is_individual IS TRUE THEN 'individual'
+              ELSE 'group'
+            END
+          ) = (
+            CASE
+              WHEN b.is_individual IS TRUE THEN 'individual'
+              ELSE 'group'
+            END
           )
       )
   LOOP
-    SELECT count(*), min(h.id)
-      INTO candidate_count, v_horse_booking_id
+    -- First count matching horse-assigned candidates.
+    SELECT count(*)
+      INTO candidate_count
     FROM public.bookings h
     WHERE h.user_id = _user_id
       AND h.slot_date = _slot_date
@@ -108,17 +115,58 @@ BEGIN
         FROM public.bookings b
         WHERE b.id = v_subscription_booking_id
       )))) <= 900
-      AND COALESCE(h.lesson_kind::text,
-        CASE WHEN h.is_individual THEN 'individual' ELSE 'group' END
+      AND (
+        CASE
+          WHEN h.is_individual IS TRUE THEN 'individual'
+          ELSE 'group'
+        END
       ) = (
-        SELECT COALESCE(b.lesson_kind::text,
-          CASE WHEN b.is_individual THEN 'individual' ELSE 'group' END
-        )
+        SELECT CASE
+          WHEN b.is_individual IS TRUE THEN 'individual'
+          ELSE 'group'
+        END
         FROM public.bookings b
         WHERE b.id = v_subscription_booking_id
       );
 
-    IF candidate_count <> 1 OR v_horse_booking_id IS NULL THEN
+    IF candidate_count <> 1 THEN
+      CONTINUE;
+    END IF;
+
+    -- Exactly one candidate exists, so it is safe to select it.
+    SELECT h.id
+      INTO v_horse_booking_id
+    FROM public.bookings h
+    WHERE h.user_id = _user_id
+      AND h.slot_date = _slot_date
+      AND h.status IN ('active', 'pending_cancel')
+      AND h.id <> v_subscription_booking_id
+      AND EXISTS (
+        SELECT 1
+        FROM public.horse_assignments ha
+        WHERE ha.booking_id = h.id
+      )
+      AND abs(extract(epoch FROM (h.slot_time - (
+        SELECT b.slot_time
+        FROM public.bookings b
+        WHERE b.id = v_subscription_booking_id
+      )))) <= 900
+      AND (
+        CASE
+          WHEN h.is_individual IS TRUE THEN 'individual'
+          ELSE 'group'
+        END
+      ) = (
+        SELECT CASE
+          WHEN b.is_individual IS TRUE THEN 'individual'
+          ELSE 'group'
+        END
+        FROM public.bookings b
+        WHERE b.id = v_subscription_booking_id
+      )
+    LIMIT 1;
+
+    IF v_horse_booking_id IS NULL THEN
       CONTINUE;
     END IF;
 
@@ -142,19 +190,8 @@ BEGIN
 
     removed_count := removed_count + 1;
 
-    -- Keep the package counter aligned with the surviving booking.
-    UPDATE public.subscriptions s
-    SET lessons_used = LEAST(
-      s.lessons_total,
-      (
-        SELECT count(*)::smallint
-        FROM public.bookings b
-        WHERE b.subscription_id = s.id
-          AND b.counts_in_subscription = true
-          AND b.status <> 'cancelled'
-      )
-    )
-    WHERE s.id = v_subscription_id;
+    -- Keep completed usage accounting aligned with the surviving booking.
+    PERFORM public.reconcile_subscription_usage(v_subscription_id);
   END LOOP;
 
   RETURN removed_count;
@@ -204,7 +241,7 @@ SET search_path = ''
 AS $trigger$
 BEGIN
   IF pg_trigger_depth() > 1 THEN
-    RETURN NEW;
+    RETURN 0;
   END IF;
 
   IF NEW.user_id IS NOT NULL THEN
