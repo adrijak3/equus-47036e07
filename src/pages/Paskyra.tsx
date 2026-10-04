@@ -45,7 +45,7 @@ interface Subscription {
   purchase_date: string;
   start_from_date?: string | null;
   start_pending?: boolean;
-  expires_at: string;
+  expires_at: string | null;
   paid: boolean;
   lesson_type?: string;
 }
@@ -457,8 +457,8 @@ export default function Paskyra() {
                 // Usage is derived from bookings assigned to this subscription.
                 const actualUsed = attributedUsed;
                 const remaining = s.lessons_total - actualUsed;
-                const expDays = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
-                const lowRemaining = remaining <= 1 || (expDays <= 7 && expDays >= 0);
+                const expDays = s.expires_at ? Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000) : Infinity;
+                const lowRemaining = !s.start_pending && (remaining <= 1 || (expDays <= 7 && expDays >= 0));
                 return (
                   <div key={s.id} className="relative">
                     {lowRemaining && (
