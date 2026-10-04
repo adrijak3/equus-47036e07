@@ -393,7 +393,7 @@ export default function Paskyra() {
           <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Mano informacija</DialogTitle></DialogHeader><ProfileSettings onSaved={async () => { await refreshProfile(); await load(); setEditOpen(false); }} /></DialogContent></Dialog>
           <Dialog open={pwOpen} onOpenChange={setPwOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Slaptažodžio keitimas</DialogTitle></DialogHeader><PasswordChange /></DialogContent></Dialog>
           <Dialog open={pushOpen} onOpenChange={setPushOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Telefono pranešimai</DialogTitle></DialogHeader><PushNotificationSettings language={language} /></DialogContent></Dialog>
-          <Dialog open={vacationOpen} onOpenChange={setVacationOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Atostogos / nedalyvavimas</DialogTitle></DialogHeader><VacationsPanel userId={acting} /></DialogContent></Dialog>
+          <Dialog open={vacationOpen} onOpenChange={setVacationOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Atostogos / nedalyvavimas</DialogTitle></DialogHeader><VacationsPanel userId={acting} onChanged={() => void load()} /></DialogContent></Dialog>
         </TabsContent>
 
         {/* LESSONS */}
