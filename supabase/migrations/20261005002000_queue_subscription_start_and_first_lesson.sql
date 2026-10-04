@@ -623,17 +623,11 @@ BEGIN
     );
 
     -- A newly activated subscription may restore permanent occurrences.
-    IF EXISTS (
-      SELECT 1
-      FROM public.subscriptions s
-      WHERE s.user_id = NEW.user_id
-        AND s.start_pending = false
-        AND s.paid = true
-        AND s.cancelled_at IS NULL
-        AND s.start_from_date = NEW.slot_date
-        AND s.expires_at = NEW.slot_date + 30
-    ) THEN
-      PERFORM public.restore_paused_bookings_after_subscription_purchase();
+    IF public.activate_pending_subscription_for_user(
+      NEW.user_id,
+      CASE WHEN NEW.subscription_id IS NULL THEN NEW.id ELSE NULL END
+    ) IS NOT NULL THEN
+      NULL;
     END IF;
   END IF;
 
@@ -1365,10 +1359,10 @@ BEGIN
 END;
 $completed_activation$;
 
-DROP TRIGGER IF EXISTS trg_process_completed_booking_subscription_activation
+DROP TRIGGER IF EXISTS trg_z_process_completed_booking_subscription_activation
 ON public.bookings;
 
-CREATE TRIGGER trg_process_completed_booking_subscription_activation
+CREATE TRIGGER trg_z_process_completed_booking_subscription_activation
 AFTER UPDATE OF status ON public.bookings
 FOR EACH ROW
 EXECUTE FUNCTION public.process_completed_booking_subscription_activation();
