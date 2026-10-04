@@ -121,7 +121,9 @@ export function EquusHelpWidget() {
         const parsed = JSON.parse(saved);
         if (Number.isFinite(parsed?.x) && Number.isFinite(parsed?.y)) setDragOffset({ x: parsed.x, y: parsed.y });
       }
-    } catch {}
+    } catch {
+      // Ignore malformed or missing saved widget position.
+    }
   }, []);
 
   useEffect(() => {
@@ -141,7 +143,11 @@ export function EquusHelpWidget() {
 
   useEffect(() => {
     if (!isDragging) {
-      try { window.localStorage.setItem("equus-help-position", JSON.stringify(dragOffset)); } catch {}
+      try {
+        window.localStorage.setItem("equus-help-position", JSON.stringify(dragOffset));
+      } catch {
+        // Ignore storage failures (for example, private browsing restrictions).
+      }
     }
   }, [dragOffset, isDragging]);
 
