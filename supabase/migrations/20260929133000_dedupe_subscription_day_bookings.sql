@@ -30,14 +30,10 @@ BEGIN
     RETURN 0;
   END IF;
 
-  -- Never recurse through the booking/horse triggers that this function itself
-  -- can fire while moving the subscription onto the surviving booking.
   IF pg_trigger_depth() > 1 THEN
     RETURN 0;
   END IF;
 
-  -- Only the one-subscription-duplicate case is eligible. If the rider has
-  -- multiple subscription bookings that day, leave everything untouched.
   IF (
     SELECT count(*)
     FROM public.bookings b
@@ -50,8 +46,6 @@ BEGIN
     RETURN 0;
   END IF;
 
-  -- Find each subscription-linked booking that does not already have a horse.
-  -- Only a single matching horse booking within 15 minutes is considered safe.
   FOR v_subscription_booking_id, v_subscription_id, v_subscription_counts,
       v_subscription_extra_fee, v_subscription_extra_paid IN
     SELECT
@@ -84,20 +78,8 @@ BEGIN
             WHERE ha2.booking_id = h.id
           )
           AND abs(extract(epoch FROM (h.slot_time - b.slot_time))) <= 900
-          AND (
-            CASE
-              WHEN h.is_individual IS TRUE THEN 'individual'
-              ELSE 'group'
-            END
-          ) = (
-            CASE
-              WHEN b.is_individual IS TRUE THEN 'individual'
-              ELSE 'group'
-            END
-          )
       )
   LOOP
-    -- First count matching horse-assigned candidates.
     SELECT count(*)
       INTO candidate_count
     FROM public.bookings h
@@ -114,26 +96,12 @@ BEGIN
         SELECT b.slot_time
         FROM public.bookings b
         WHERE b.id = v_subscription_booking_id
-      )))) <= 900
-      AND (
-        CASE
-          WHEN h.is_individual IS TRUE THEN 'individual'
-          ELSE 'group'
-        END
-      ) = (
-        SELECT CASE
-          WHEN b.is_individual IS TRUE THEN 'individual'
-          ELSE 'group'
-        END
-        FROM public.bookings b
-        WHERE b.id = v_subscription_booking_id
-      );
+      )))) <= 900;
 
     IF candidate_count <> 1 THEN
       CONTINUE;
     END IF;
 
-    -- Exactly one candidate exists, so it is safe to select it.
     SELECT h.id
       INTO v_horse_booking_id
     FROM public.bookings h
@@ -151,27 +119,12 @@ BEGIN
         FROM public.bookings b
         WHERE b.id = v_subscription_booking_id
       )))) <= 900
-      AND (
-        CASE
-          WHEN h.is_individual IS TRUE THEN 'individual'
-          ELSE 'group'
-        END
-      ) = (
-        SELECT CASE
-          WHEN b.is_individual IS TRUE THEN 'individual'
-          ELSE 'group'
-        END
-        FROM public.bookings b
-        WHERE b.id = v_subscription_booking_id
-      )
     LIMIT 1;
 
     IF v_horse_booking_id IS NULL THEN
       CONTINUE;
     END IF;
 
-    -- The horse booking is the survivor. Move the subscription attribution
-    -- before deleting the duplicate row.
     UPDATE public.bookings
     SET
       subscription_id = v_subscription_id,
@@ -190,7 +143,6 @@ BEGIN
 
     removed_count := removed_count + 1;
 
-    -- Keep completed usage accounting aligned with the surviving booking.
     PERFORM public.reconcile_subscription_usage(v_subscription_id);
   END LOOP;
 
@@ -199,7 +151,6 @@ END;
 $$;
 
 
--- Clean up existing accidental duplicates using the same narrow rule.
 DO $$
 DECLARE
   r record;
