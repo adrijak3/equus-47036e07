@@ -1335,6 +1335,235 @@ TO authenticated;
 
 
 -- ---------------------------------------------------------------------------
+-- 6.5. The explicit po2 booking path can activate a queued package from the
+-- first po2 reservation, then keep the booking explicitly attached because
+-- this RPC is the intentional subscription-backed booking path.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.book_po2_with_subscription(
+  _slot_date date,
+  _slot_time time,
+  _subscription_id uuid,
+  _extra_fee_eur numeric DEFAULT 0
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $queued_po2$
+DECLARE
+  v_user uuid := auth.uid();
+  v_sub public.subscriptions%ROWTYPE;
+  v_booking uuid;
+  v_trainer_name text;
+  v_capacity integer;
+  v_booked_count integer;
+  v_committed smallint;
+  v_package_type text;
+  v_extra_fee numeric(10,2);
+  v_allocation_id uuid;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'NOT_AUTHENTICATED';
+  END IF;
+
+  v_capacity := public.equus_effective_slot_capacity(_slot_date, _slot_time);
+
+  IF v_capacity <> 2 THEN
+    RAISE EXCEPTION 'NOT_PO2_SLOT';
+  END IF;
+
+  SELECT count(*)::integer
+    INTO v_booked_count
+  FROM public.bookings b
+  WHERE b.slot_date = _slot_date
+    AND b.slot_time = _slot_time
+    AND b.status IN ('active', 'pending_cancel')
+    AND b.is_paused_for_subscription IS NOT TRUE;
+
+  IF v_booked_count >= 2 THEN
+    RAISE EXCEPTION 'SLOT_FULL';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.bookings b
+    WHERE b.user_id = v_user
+      AND b.slot_date = _slot_date
+      AND b.slot_time = _slot_time
+      AND b.status IN ('active', 'pending_cancel')
+  ) THEN
+    RAISE EXCEPTION 'DUPLICATE_BOOKING';
+  END IF;
+
+  SELECT *
+    INTO v_sub
+  FROM public.subscriptions s
+  WHERE s.id = _subscription_id
+    AND s.user_id = v_user
+    AND s.paid = true
+    AND s.cancelled_at IS NULL
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'SUBSCRIPTION_NOT_FOUND';
+  END IF;
+
+  v_package_type := COALESCE(
+    v_sub.package_type,
+    CASE
+      WHEN v_sub.lesson_type = 'sportine_po2' THEN 'po2'
+      ELSE 'group'
+    END
+  );
+
+  IF v_package_type NOT IN ('group', 'po2') THEN
+    RAISE EXCEPTION 'SUBSCRIPTION_NOT_ELIGIBLE_FOR_PO2';
+  END IF;
+
+  IF v_sub.start_pending THEN
+    -- A queued package may activate only after all older active packages are
+    -- fully completed. This is the same FIFO rule used by normal registration.
+    IF EXISTS (
+      SELECT 1
+      FROM public.subscriptions older
+      WHERE older.user_id = v_user
+        AND older.id <> v_sub.id
+        AND older.paid = true
+        AND older.cancelled_at IS NULL
+        AND older.start_pending = false
+        AND older.start_from_date IS NOT NULL
+        AND older.expires_at IS NOT NULL
+        AND older.expires_at >= (now() AT TIME ZONE 'Europe/Vilnius')::date
+        AND public.subscription_committed_lessons(older.id) < older.lessons_total
+        AND older.purchase_date <= v_sub.purchase_date
+    ) THEN
+      RAISE EXCEPTION 'SUBSCRIPTION_NOT_STARTED';
+    END IF;
+
+    IF NOT (
+      v_package_type = 'po2'
+    ) THEN
+      RAISE EXCEPTION 'SUBSCRIPTION_NOT_ELIGIBLE_FOR_PO2';
+    END IF;
+
+    UPDATE public.subscriptions
+    SET
+      start_pending = false,
+      start_from_date = _slot_date,
+      expires_at = _slot_date + 30,
+      updated_at = now()
+    WHERE id = v_sub.id;
+
+    SELECT *
+      INTO v_sub
+    FROM public.subscriptions
+    WHERE id = v_sub.id
+    FOR UPDATE;
+  END IF;
+
+  IF v_sub.start_from_date IS NULL
+     OR v_sub.expires_at IS NULL
+  THEN
+    RAISE EXCEPTION 'SUBSCRIPTION_NOT_STARTED';
+  END IF;
+
+  IF v_sub.start_from_date > _slot_date THEN
+    RAISE EXCEPTION 'SUBSCRIPTION_NOT_STARTED';
+  END IF;
+
+  IF v_sub.expires_at < _slot_date THEN
+    RAISE EXCEPTION 'SUBSCRIPTION_EXPIRED';
+  END IF;
+
+  v_committed := public.subscription_committed_lessons(v_sub.id);
+
+  IF v_committed >= v_sub.lessons_total THEN
+    RAISE EXCEPTION 'NO_SUBSCRIPTION_LESSONS_LEFT';
+  END IF;
+
+  IF v_package_type = 'po2' THEN
+    v_extra_fee := 0;
+  ELSE
+    v_extra_fee := GREATEST(
+      0,
+      ROUND(
+        45 - (v_sub.price / v_sub.lessons_total),
+        2
+      )
+    );
+  END IF;
+
+  SELECT trainer_name
+    INTO v_trainer_name
+  FROM public.time_slots
+  WHERE active = true
+    AND (
+      one_off_date = _slot_date
+      OR (
+        one_off_date IS NULL
+        AND day_of_week = EXTRACT(ISODOW FROM _slot_date)::integer
+      )
+    )
+    AND slot_time = _slot_time
+  ORDER BY id
+  LIMIT 1;
+
+  INSERT INTO public.bookings (
+    user_id,
+    slot_date,
+    slot_time,
+    status,
+    subscription_id,
+    counts_in_subscription,
+    extra_fee_eur,
+    extra_fee_paid,
+    trainer_name,
+    is_grace_booking
+  )
+  VALUES (
+    v_user,
+    _slot_date,
+    _slot_time,
+    'active',
+    v_sub.id,
+    true,
+    v_extra_fee,
+    false,
+    v_trainer_name,
+    false
+  )
+  RETURNING id INTO v_booking;
+
+  SELECT id
+    INTO v_allocation_id
+  FROM public.subscription_allocations
+  WHERE subscription_id = v_sub.id
+    AND booking_id = v_booking
+  LIMIT 1;
+
+  PERFORM public.reconcile_subscription_usage(v_sub.id);
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'booking_id', v_booking,
+    'subscription_id', v_sub.id,
+    'extra_fee_eur', v_extra_fee,
+    'allocation_id', v_allocation_id
+  );
+END;
+$queued_po2$;
+
+REVOKE ALL
+ON FUNCTION public.book_po2_with_subscription(date,time,uuid,numeric)
+FROM PUBLIC, anon;
+
+GRANT EXECUTE
+ON FUNCTION public.book_po2_with_subscription(date,time,uuid,numeric)
+TO authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
 -- 7. Complete lessons can activate and restore queued subscriptions.
 -- ---------------------------------------------------------------------------
 
