@@ -374,11 +374,6 @@ export default function Grafikas() {
     const startISO = formatDateISO(weekStart);
     const endISO = formatDateISO(weekEnd);
 
-    await supabase.rpc("materialize_permanent_bookings", {
-      _start: startISO,
-      _end: endISO,
-    });
-
     const [
       slotsRes,
       bookingsRes,
@@ -1235,10 +1230,8 @@ export default function Grafikas() {
     if (!po2Choice) return;
     const sub = po2Choice.subscriptions.find((s) => s.id === subscriptionId);
     if (!sub) return;
-    const perLesson = Number(sub.price) / Math.max(1, Number(sub.lessons_total));
-    const extraFee = Math.max(0, Math.round((45 - perLesson) * 100) / 100);
     setPo2Busy(true);
-    const { error } = await supabase.rpc("book_po2_with_subscription" as any, { _slot_date: formatDateISO(po2Choice.date), _slot_time: po2Choice.time, _subscription_id: subscriptionId, _extra_fee_eur: extraFee });
+    const { error } = await supabase.rpc("book_po2_with_subscription" as any, { _slot_date: formatDateISO(po2Choice.date), _slot_time: po2Choice.time, _subscription_id: subscriptionId });
     setPo2Busy(false);
     if (error) { toast.error(error.message); return; }
     setPo2Choice(null);
