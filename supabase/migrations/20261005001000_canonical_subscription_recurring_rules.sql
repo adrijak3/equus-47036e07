@@ -1877,7 +1877,7 @@ BEGIN
       AND b.status IN ('active', 'pending_cancel', 'completed')
       AND b.counts_in_subscription IS NOT FALSE;
 
-    SELECT min(b.slot_date)
+    SELECT b.slot_date
       INTO v_first_future_booking_date
     FROM public.bookings b
     WHERE b.user_id = _user_id
@@ -1897,7 +1897,7 @@ BEGIN
       GREATEST(v_purchase_date, v_previous_last_booking_date + 1)
     );
   ELSE
-    SELECT min(b.slot_date)
+    SELECT b.slot_date
       INTO v_first_future_booking_date
     FROM public.bookings b
     WHERE b.user_id = _user_id
@@ -1977,10 +1977,7 @@ BEGIN
     v_subscription_id,
     _user_id,
     v_price,
-    CASE
-      WHEN _payment_method = 'cash' THEN 'cash'
-      ELSE 'cash'
-    END,
+    _payment_method,
     v_purchase_at,
     v_actor
   )
