@@ -73,23 +73,21 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $
   SELECT EXISTS (
     SELECT 1
     FROM public.bookings b
     WHERE b.id = _booking_id
-      AND (
-        CASE
-          WHEN b.is_individual IS TRUE
-               OR public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 1
-            THEN 'individual'
-          WHEN public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 2
-            THEN 'po2'
-          ELSE 'group'
-        END
-      ) = _package_type
+      AND CASE
+        WHEN b.is_individual IS TRUE
+             OR public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 1
+          THEN false
+        WHEN public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 2
+          THEN _package_type IN ('group', 'po2')
+        ELSE _package_type = 'group'
+      END
   );
-$$;
+$;
 
 REVOKE ALL
 ON FUNCTION public.booking_matches_subscription_package(uuid,text)
