@@ -11,12 +11,13 @@ type Row = {
   lessons_used: number;
   price: number;
   purchase_date: string;
-  expires_at: string;
+  expires_at: string | null;
   paid: boolean;
   package_type?: string | null;
   horse_type?: string | null;
   purchase_method?: string | null;
   start_from_date?: string | null;
+  start_pending?: boolean;
   full_name?: string;
   email?: string;
 };
@@ -128,7 +129,7 @@ export default function HalfAdminSubscriptions() {
                     </div>
                     <div className="rounded-xl bg-background/40 p-2.5">
                       <p className="text-[10px] uppercase text-muted-foreground">Galioja iki</p>
-                      <p className="font-semibold">{new Date(s.expires_at + "T12:00:00").toLocaleDateString("lt-LT")}</p>
+                      <p className="font-semibold">{s.start_pending ? "Po pirmos treniruotės" : s.expires_at ? new Date(s.expires_at + "T12:00:00").toLocaleDateString("lt-LT") : "—"}</p>
                     </div>
                     <div className="rounded-xl bg-background/40 p-2.5">
                       <p className="text-[10px] uppercase text-muted-foreground">Mokėjimas</p>
