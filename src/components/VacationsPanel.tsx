@@ -18,9 +18,10 @@ export interface Vacation {
 interface Props {
   userId: string | null;
   compact?: boolean;
+  onChanged?: () => void | Promise<void>;
 }
 
-export function VacationsPanel({ userId, compact }: Props) {
+export function VacationsPanel({ userId, compact, onChanged }: Props) {
   const [items, setItems] = useState<Vacation[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -82,14 +83,16 @@ export function VacationsPanel({ userId, compact }: Props) {
         : "Atostogos pridėtos",
     );
     setAdding(false); setNote("");
-    load();
+    await load();
+    await onChanged?.();
   };
 
   const remove = async (id: string) => {
     const { error } = await (supabase as any).from("vacations").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Pašalinta");
-    load();
+    await load();
+    await onChanged?.();
   };
 
   const upcoming = items.filter((v) => v.ends_on >= today);
