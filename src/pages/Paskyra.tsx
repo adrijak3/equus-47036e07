@@ -279,7 +279,11 @@ export default function Paskyra() {
     const { data, error } = await (supabase as any).rpc("request_or_create_permanent_slot", { _day: slot.day_of_week, _time: slot.slot_time });
     if (error) { toast.error(error.message); return; }
     if (!data?.ok) { toast.error(data?.message ?? "Nepavyko pridėti"); return; }
-    data?.requested ? toast.success("Prašymas išsiųstas administracijai") : toast.success("Nuolatinis laikas pridėtas");
+    if (data?.requested) {
+      toast.success("Prašymas išsiųstas administracijai");
+    } else {
+      toast.success("Nuolatinis laikas pridėtas");
+    }
     load();
   };
 
