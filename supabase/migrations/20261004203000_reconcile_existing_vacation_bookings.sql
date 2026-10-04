@@ -31,9 +31,22 @@ ON CONFLICT (user_id, slot_date, slot_time) DO NOTHING;
 --    and one-off bookings: Atostogos means the rider does not attend during
 --    the selected range.
 --
--- This is a trusted migration repair. Booking cancellation triggers also
--- reconcile subscription accounting, whose protection trigger requires the
--- same transaction-local marker used by the existing admin correction RPCs.
+-- This is a one-time trusted data repair. Some existing booking triggers use
+-- auth.uid() to identify an authenticated/admin actor. Migrations do not have
+-- a JWT context, so provide the known Equus admin identity for this transaction
+-- only. This does not alter normal application authentication or RLS behavior.
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '973bb95b-39f8-41cf-82a3-d1609422da28',
+  true
+);
+
+SELECT set_config(
+  'request.jwt.claim.role',
+  'authenticated',
+  true
+);
+
 SELECT set_config(
   'equus.allow_subscription_financial_update',
   'true',
