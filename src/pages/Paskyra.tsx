@@ -450,7 +450,7 @@ export default function Paskyra() {
               {subs.map((s) => {
                 const attributedUsed = bookings.filter((b) =>
                   b.subscription_id === s.id &&
-                  b.status !== "cancelled" &&
+                  b.status === "completed" &&
                   b.counts_in_subscription !== false,
                 ).length;
                 // Usage is derived from bookings assigned to this subscription.
