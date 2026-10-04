@@ -36,6 +36,7 @@ type Subscription = {
   expires_at: string;
   purchase_date: string;
   start_from_date?: string | null;
+  start_pending?: boolean;
   price: number;
   paid: boolean;
   lesson_type?: string | null;
@@ -457,8 +458,8 @@ function ClientResultCard({
               </div>
               <div className="rounded-2xl border border-gold/10 bg-background/30 p-4">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Galioja iki</p>
-                <p className="mt-2 font-display text-xl text-gold">{formatDate(sub.expires_at)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Pradžia: {formatDate(sub.start_from_date || sub.purchase_date)}</p>
+                <p className="mt-2 font-display text-xl text-gold">{sub.start_pending ? "—" : formatDate(sub.expires_at)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{sub.start_pending ? "Laukia pirmos treniruotės" : `Pradžia: ${formatDate(sub.start_from_date || sub.purchase_date)}`}</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -492,7 +493,7 @@ function ClientResultCard({
               <div>
                 <p className="font-medium">Kitas abonementas jau nupirktas</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Prasidės {formatDate(nextSub.start_from_date || nextSub.purchase_date)} · {nextSub.lessons_total} treniruotės · {Number(nextSub.price).toFixed(2)} €
+                  {nextSub.start_pending ? "Prasidės po pirmos faktinės treniruotės" : `Prasidės ${formatDate(nextSub.start_from_date || nextSub.purchase_date)}`} · {nextSub.lessons_total} treniruotės · {Number(nextSub.price).toFixed(2)} €
                 </p>
               </div>
             </div>
