@@ -18,7 +18,7 @@ DECLARE
 BEGIN
   PERFORM public.materialize_permanent_bookings(
     tomorrow,
-    tomorrow + 12 weeks
+    tomorrow + 84
   );
   RETURN NEW;
 END;
