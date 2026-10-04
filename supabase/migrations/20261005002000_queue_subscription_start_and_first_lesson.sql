@@ -872,10 +872,17 @@ BEGIN
     AND s.expires_at IS NOT NULL
     AND s.start_from_date <= v_booking.slot_date
     AND s.expires_at >= v_booking.slot_date
-    AND COALESCE(
-      s.package_type,
-      CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-    ) = v_package_type
+    AND (
+      (v_package_type = 'group' AND COALESCE(
+        s.package_type,
+        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+      ) = 'group')
+      OR
+      (v_package_type = 'po2' AND COALESCE(
+        s.package_type,
+        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+      ) IN ('group', 'po2'))
+    )
     AND public.subscription_committed_lessons(s.id) < s.lessons_total
   ORDER BY
     s.start_from_date,
