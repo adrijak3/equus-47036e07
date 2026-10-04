@@ -34,7 +34,7 @@ ON CONFLICT (user_id, slot_date, slot_time) DO NOTHING;
 -- This is a trusted migration repair. Booking cancellation triggers also
 -- reconcile subscription accounting, whose protection trigger requires the
 -- same transaction-local marker used by the existing admin correction RPCs.
-PERFORM set_config(
+SELECT set_config(
   'equus.allow_subscription_financial_update',
   'true',
   true
