@@ -613,21 +613,21 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $pending_booking_trigger$
+DECLARE
+  v_activated uuid;
 BEGIN
   IF NEW.user_id IS NOT NULL
      AND NEW.status IN ('active', 'completed')
   THEN
-    PERFORM public.activate_pending_subscription_for_user(
+    v_activated := public.activate_pending_subscription_for_user(
       NEW.user_id,
       CASE WHEN NEW.subscription_id IS NULL THEN NEW.id ELSE NULL END
     );
 
-    -- A newly activated subscription may restore permanent occurrences.
-    IF public.activate_pending_subscription_for_user(
-      NEW.user_id,
-      CASE WHEN NEW.subscription_id IS NULL THEN NEW.id ELSE NULL END
-    ) IS NOT NULL THEN
-      NULL;
+    -- A newly activated subscription may restore eligible permanent
+    -- occurrences, but only where real slot capacity exists.
+    IF v_activated IS NOT NULL THEN
+      PERFORM public.restore_paused_bookings_for_subscription(v_activated);
     END IF;
   END IF;
 
