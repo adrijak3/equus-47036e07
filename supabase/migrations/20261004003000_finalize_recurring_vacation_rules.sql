@@ -1,3 +1,40 @@
+-- Repair the live schema if the original permanent-slot request table is
+-- missing despite its historical migration being marked as applied.
+CREATE TABLE IF NOT EXISTS public.permanent_slot_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  day_of_week int not null check (day_of_week between 1 and 7),
+  slot_time time not null,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  admin_note text,
+  created_at timestamptz not null default now(),
+  decided_at timestamptz,
+  decided_by uuid
+);
+
+ALTER TABLE public.permanent_slot_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "users read own permanent requests" ON public.permanent_slot_requests;
+CREATE POLICY "users read own permanent requests"
+  ON public.permanent_slot_requests
+  FOR SELECT
+  USING (
+    auth.uid() = user_id
+    OR public.has_role(auth.uid(), 'admin')
+  );
+
+DROP POLICY IF EXISTS "users create own permanent requests" ON public.permanent_slot_requests;
+CREATE POLICY "users create own permanent requests"
+  ON public.permanent_slot_requests
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "admins update permanent requests" ON public.permanent_slot_requests;
+CREATE POLICY "admins update permanent requests"
+  ON public.permanent_slot_requests
+  FOR UPDATE
+  USING (public.has_role(auth.uid(), 'admin'));
+
 -- Finalize permanent-slot and Atostogos behavior:
 --   1. Every path that ADDS/APPROVES a recurring slot starts tomorrow.
 --   2. User Atostogos cancel all of that user's active/pending lessons
