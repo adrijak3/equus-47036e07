@@ -1287,6 +1287,8 @@ DECLARE
   v_has_subscription boolean;
   v_pause boolean;
 BEGIN
+  PERFORM set_config('equus.allow_permanent_materialization', 'true', true);
+
   IF _end < _start THEN
     RETURN 0;
   END IF;
