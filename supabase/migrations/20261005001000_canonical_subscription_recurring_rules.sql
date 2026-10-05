@@ -73,7 +73,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $$
   SELECT EXISTS (
     SELECT 1
     FROM public.bookings b
@@ -87,7 +87,7 @@ AS $
         ELSE _package_type = 'group'
       END
   );
-$;
+$$;
 
 REVOKE ALL
 ON FUNCTION public.booking_matches_subscription_package(uuid,text)
