@@ -57,9 +57,12 @@ END;
 $equus_booking_guard$;
 
 -- 1. Rebuild missing future permanent occurrences using the current,
--- subscription-aware materializer. It is idempotent and respects:
--- permanent_booking_exceptions, vacations, zero-capacity overrides, the
--- three-hour cutoff, and current slot capacity semantics.
+-- subscription-aware materializer. This migration runs without an auth.uid(),
+-- so explicitly mark the transaction as a trusted permanent-materialization
+-- repair before invoking the SECURITY DEFINER function. The normal booking
+-- eligibility guard remains unchanged for client inserts.
+SELECT set_config('equus.allow_permanent_materialization', 'true', true);
+
 SELECT public.materialize_permanent_bookings(
   ((now() AT TIME ZONE 'Europe/Vilnius')::date + 1),
   ((now() AT TIME ZONE 'Europe/Vilnius')::date + 120)
