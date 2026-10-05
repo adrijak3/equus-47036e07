@@ -17,6 +17,8 @@ DECLARE
   ps record;
   d date;
 BEGIN
+  PERFORM set_config('equus.allow_permanent_materialization', 'true', true);
+
   IF _end < _start THEN
     RETURN 0;
   END IF;
