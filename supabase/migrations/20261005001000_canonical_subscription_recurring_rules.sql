@@ -2768,25 +2768,25 @@ BEGIN
   -- 13a. Completed rows with missing, orphaned, or invalid subscription links:
   -- select the oldest valid subscription whose real period covers the lesson.
   FOR b IN
-    SELECT b.*
-    FROM public.bookings b
+    SELECT booking_row.*
+    FROM public.bookings booking_row
     LEFT JOIN public.subscriptions s
-      ON s.id = b.subscription_id
-    WHERE b.status = 'completed'
-      AND b.counts_in_subscription IS NOT FALSE
+      ON s.id = booking_row.subscription_id
+    WHERE booking_row.status = 'completed'
+      AND booking_row.counts_in_subscription IS NOT FALSE
       AND (
-        b.subscription_id IS NULL
+        booking_row.subscription_id IS NULL
         OR s.id IS NULL
-        OR s.user_id IS DISTINCT FROM b.user_id
+        OR s.user_id IS DISTINCT FROM booking_row.user_id
         OR s.paid IS NOT TRUE
         OR s.cancelled_at IS NOT NULL
-        OR b.slot_date NOT BETWEEN
+        OR booking_row.slot_date NOT BETWEEN
           COALESCE(s.start_from_date, s.purchase_date)
           AND s.expires_at
         OR (
-          public.equus_effective_slot_capacity(b.slot_date, b.slot_time) > 0
+          public.equus_effective_slot_capacity(booking_row.slot_date, booking_row.slot_time) > 0
           AND public.booking_matches_subscription_package(
-            b.id,
+            booking_row.id,
             COALESCE(
               s.package_type,
               CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
@@ -2794,7 +2794,7 @@ BEGIN
           ) IS NOT TRUE
         )
       )
-    ORDER BY b.slot_date, b.slot_time, b.created_at, b.id
+    ORDER BY booking_row.slot_date, booking_row.slot_time, booking_row.created_at, booking_row.id
   LOOP
     v_old_sub := b.subscription_id;
     v_candidate := NULL;
@@ -2896,24 +2896,24 @@ BEGIN
   -- 13b. Future rows pointing at a deleted/invalid subscription are detached.
   -- Ordinary future reservations remain unassigned until completion.
   FOR b IN
-    SELECT b.*
-    FROM public.bookings b
+    SELECT booking_row.*
+    FROM public.bookings booking_row
     LEFT JOIN public.subscriptions s
-      ON s.id = b.subscription_id
-    WHERE b.status IN ('active', 'pending_cancel')
-      AND b.subscription_id IS NOT NULL
+      ON s.id = booking_row.subscription_id
+    WHERE booking_row.status IN ('active', 'pending_cancel')
+      AND booking_row.subscription_id IS NOT NULL
       AND (
         s.id IS NULL
-        OR s.user_id IS DISTINCT FROM b.user_id
+        OR s.user_id IS DISTINCT FROM booking_row.user_id
         OR s.paid IS NOT TRUE
         OR s.cancelled_at IS NOT NULL
-        OR b.slot_date NOT BETWEEN
+        OR booking_row.slot_date NOT BETWEEN
           COALESCE(s.start_from_date, s.purchase_date)
           AND s.expires_at
         OR (
-          public.equus_effective_slot_capacity(b.slot_date, b.slot_time) > 0
+          public.equus_effective_slot_capacity(booking_row.slot_date, booking_row.slot_time) > 0
           AND public.booking_matches_subscription_package(
-            b.id,
+            booking_row.id,
             COALESCE(
               s.package_type,
               CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
@@ -2922,7 +2922,7 @@ BEGIN
         )
       )
   LOOP
-    v_old_sub := b.subscription_id;
+    v_old_sub := booking_row.subscription_id;
 
     UPDATE public.bookings
     SET
@@ -2930,7 +2930,7 @@ BEGIN
       counts_in_subscription = true,
       is_grace_booking = false,
       updated_at = now()
-    WHERE id = b.id;
+    WHERE id = booking_row.id;
 
     INSERT INTO public.subscription_audit_log (
       target_user_id,
@@ -2941,8 +2941,8 @@ BEGIN
       metadata
     )
     VALUES (
-      b.user_id,
-      b.id,
+      booking_row.user_id,
+      booking_row.id,
       'future_subscription_attribution_cleared',
       jsonb_build_object('subscription_id', v_old_sub),
       jsonb_build_object('subscription_id', NULL),
@@ -2959,31 +2959,31 @@ BEGIN
     status = 'released',
     released_at = COALESCE(sa.released_at, now())
   FROM public.bookings b
-  WHERE b.id = sa.booking_id
-    AND sa.subscription_id IS DISTINCT FROM b.subscription_id
+  WHERE booking_row.id = sa.booking_id
+    AND sa.subscription_id IS DISTINCT FROM booking_row.subscription_id
     AND sa.status <> 'released';
 
   -- 13d. Recreate/repair allocation metadata for every currently attached
   -- counted active/completed booking. Allocation numbers are concurrency-safe
   -- because ensure_subscription_allocation() locks the subscription.
   FOR b IN
-    SELECT b.id
+    SELECT booking_row.id
     FROM public.bookings b
     JOIN public.subscriptions s
-      ON s.id = b.subscription_id
-    WHERE b.status IN ('active', 'pending_cancel', 'completed')
-      AND b.counts_in_subscription IS NOT FALSE
-      AND b.slot_date BETWEEN
+      ON s.id = booking_row.subscription_id
+    WHERE booking_row.status IN ('active', 'pending_cancel', 'completed')
+      AND booking_row.counts_in_subscription IS NOT FALSE
+      AND booking_row.slot_date BETWEEN
         COALESCE(s.start_from_date, s.purchase_date)
         AND s.expires_at
       AND public.booking_matches_subscription_package(
-        b.id,
+        booking_row.id,
         COALESCE(
           s.package_type,
           CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
         )
       )
-    ORDER BY b.slot_date, b.slot_time, b.created_at, b.id
+    ORDER BY booking_row.slot_date, booking_row.slot_time, booking_row.created_at, booking_row.id
   LOOP
     PERFORM public.ensure_subscription_allocation(b.id);
   END LOOP;
