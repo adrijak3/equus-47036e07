@@ -16,6 +16,46 @@
 -- The active occurrence is represented by a new canonical booking at the
 -- current permanent slot time.
 
+-- Migration-time trusted path: permanent materialization is a server-side
+-- repair operation, not a rider registration. Keep normal client inserts
+-- behind the eligibility guard while allowing the materializer to create
+-- canonical permanent occurrences during migrations.
+CREATE OR REPLACE FUNCTION public.enforce_booking_eligibility_phase2()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $equus_booking_guard$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF current_setting('equus.allow_permanent_materialization', true) = 'true' THEN
+    NEW.is_grace_booking := false;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.user_id IS NULL THEN
+    RAISE EXCEPTION 'NOT_AUTHENTICATED';
+  END IF;
+
+  v_result := public.check_booking_eligibility(
+    NEW.user_id,
+    NEW.slot_date,
+    NEW.slot_time,
+    true
+  );
+
+  IF COALESCE((v_result ->> 'ok')::boolean, false) = false THEN
+    RAISE EXCEPTION '%', COALESCE(v_result ->> 'message', 'Registracija negalima.');
+  END IF;
+
+  NEW.is_grace_booking :=
+    COALESCE((v_result ->> 'grace_booking')::boolean, false);
+
+  RETURN NEW;
+END;
+$equus_booking_guard$;
+
 -- 1. Rebuild missing future permanent occurrences using the current,
 -- subscription-aware materializer. It is idempotent and respects:
 -- permanent_booking_exceptions, vacations, zero-capacity overrides, the
