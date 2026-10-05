@@ -25,7 +25,6 @@ SET
   is_paused_for_subscription = false,
   is_grace_booking = false
 WHERE slot_date < DATE '2026-10-18'
-  AND status IN ('active', 'pending_cancel')
   AND (
     is_paused_for_subscription = true
     OR is_grace_booking = true
@@ -94,10 +93,3 @@ ALTER TABLE public.bookings
     OR slot_date >= DATE '2026-10-18'
   );
 
--- 4. Grace is part of the same subscription-enforcement concept. It must not
---    be present on pre-enforcement bookings.
-UPDATE public.bookings
-SET is_grace_booking = false
-WHERE slot_date < DATE '2026-10-18'
-  AND status IN ('active', 'pending_cancel')
-  AND is_grace_booking = true;
