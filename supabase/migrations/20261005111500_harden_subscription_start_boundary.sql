@@ -10,6 +10,14 @@
 -- It also repairs any active/pending rows that were already left paused before
 -- the enforcement date. Cancellation status/history is intentionally untouched.
 
+-- Allow the subscription-system cleanup below to clear its own pause/grace
+-- flags through the existing protection trigger.
+SELECT set_config(
+  'equus.allow_subscription_pause_update',
+  'true',
+  true
+);
+
 -- 1. Repair legacy subscription flags before enforcing the invariant.
 --    These flags are subscription-system state, not cancellation state.
 UPDATE public.bookings
