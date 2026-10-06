@@ -62,6 +62,65 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_folders: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gallery_photos: {
+        Row: {
+          id: string
+          folder_id: string
+          storage_path: string
+          public_url: string
+          original_name: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          folder_id: string
+          storage_path: string
+          public_url: string
+          original_name?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          folder_id?: string
+          storage_path?: string
+          public_url?: string
+          original_name?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_photos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           counts_in_subscription: boolean
