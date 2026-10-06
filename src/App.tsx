@@ -22,7 +22,8 @@ import { PageLoader } from "@/components/PageLoader";
 
 const Grafikas = lazy(() => import("./pages/Grafikas"));
 const Pradzia = lazy(() => import("./pages/Pradzia"));
-const Kainos = lazy(() => import("./pages/Kainos"));\nconst Galerija = lazy(() => import("./pages/Galerija"));
+const Kainos = lazy(() => import("./pages/Kainos"));
+const Galerija = lazy(() => import("./pages/Galerija"));
 const Paskyra = lazy(() => import("./pages/Paskyra"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
