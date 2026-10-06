@@ -225,13 +225,14 @@ export default function Grafikas() {
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
-  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; trainerName: string | null; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
+  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; slotId: string | null; trainerName: string | null; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
   const [po2Busy, setPo2Busy] = useState(false);
   const [familyRiders, setFamilyRiders] = useState<FamilyRider[]>([]);
   const [familyBookingChoice, setFamilyBookingChoice] = useState<{
     date: Date;
     time: string;
     familyRiderId: string | null;
+    slotId: string | null;
     trainerName: string | null;
     availableSeats: number;
   } | null>(null);
@@ -1289,6 +1290,7 @@ export default function Grafikas() {
     time: string,
     familyRiderId: string | null = null,
     trainerName: string | null = null,
+    slotId: string | null = null,
   ) => {
     if (familyRiderId) {
       const slotForFamily =
@@ -1334,6 +1336,7 @@ export default function Grafikas() {
           date,
           time,
           subscriptions: usable as any,
+          slotId,
           trainerName: slotForFamily.trainer_name ?? null,
           familyRiderId,
         } as any);
@@ -1345,6 +1348,7 @@ export default function Grafikas() {
         _slot_time: time,
         _family_rider_id: familyRiderId,
         _trainer_name: slotForFamily.trainer_name ?? trainerName ?? null,
+        _slot_id: slotId ?? slotForFamily.id,
       });
 
       if (error) {
@@ -1385,7 +1389,7 @@ export default function Grafikas() {
       return;
     }
 
-    const bookSlot = getDaySlots(date).find((s) => s.slot_time === time);
+    const bookSlot = clickedSlot ?? getDaySlots(date).find((s) => s.slot_time === time);
     if (getTrainerDayCancellation(date, bookSlot?.trainer_name)) {
       toast.error("Šios treniruotės ta diena nevyksta");
       return;
@@ -1412,6 +1416,7 @@ export default function Grafikas() {
         date,
         time,
         familyRiderId: defaultRider?.id ?? null,
+        slotId: selectedSlot?.id ?? null,
         trainerName: selectedSlot?.trainer_name ?? null,
         availableSeats,
       });
@@ -1434,7 +1439,7 @@ export default function Grafikas() {
           _subscription_id: subscriptionId,
           _force_separate: false,
           _trainer_name: po2Choice.trainerName,
-
+          _slot_id: po2Choice.slotId,
         })
       : await supabase.rpc("book_po2_with_subscription" as any, {
           _slot_date: formatDateISO(po2Choice.date),
@@ -1460,6 +1465,7 @@ export default function Grafikas() {
         _subscription_id: null,
         _force_separate: true,
         _trainer_name: po2Choice.trainerName,
+        _slot_id: po2Choice.slotId,
       });
       setPo2Busy(false);
       if (error) {
@@ -5874,7 +5880,7 @@ export default function Grafikas() {
                 if (!familyBookingChoice) return;
                 const choice = familyBookingChoice;
                 setFamilyBookingChoice(null);
-                await continueBooking(choice.date, choice.time, choice.familyRiderId);
+                await continueBooking(choice.date, choice.time, choice.familyRiderId, choice.trainerName, choice.slotId);
               }}
             >
               {familyBookingChoice?.familyRiderId ? "Pridėti ir rezervuoti" : "Rezervuoti tik save"}
