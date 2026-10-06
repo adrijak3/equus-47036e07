@@ -232,6 +232,7 @@ export default function Grafikas() {
     date: Date;
     time: string;
     familyRiderId: string | null;
+    availableSeats: number;
   } | null>(null);
 
   // Horse selection
@@ -1384,13 +1385,25 @@ export default function Grafikas() {
     }
 
     if (!isAdmin && !isTrainer && familyRiders.length > 0) {
+      const selectedSlot = getSlotsAtTime(date, time)[0];
+      const groupInfo = selectedSlot
+        ? getGroupInfo(date, time, selectedSlot)
+        : null;
+      const availableSeats = Math.max(
+        0,
+        (groupInfo?.capacity ?? 0) - (groupInfo?.taken ?? 0),
+      );
+
       const defaultRider =
-        familyRiders.find((r) => r.always_together) ?? null;
+        availableSeats >= 2
+          ? familyRiders.find((r) => r.always_together) ?? null
+          : null;
 
       setFamilyBookingChoice({
         date,
         time,
         familyRiderId: defaultRider?.id ?? null,
+        availableSeats,
       });
       return;
     }
@@ -5781,13 +5794,15 @@ export default function Grafikas() {
               <div className="space-y-2">
                 {familyRiders.map((rider) => {
                   const selected = familyBookingChoice.familyRiderId === rider.id;
+                  const pairUnavailable = familyBookingChoice.availableSeats < 2;
                   return (
                     <button
                       key={rider.id}
                       type="button"
+                      disabled={pairUnavailable}
                       onClick={() =>
                         setFamilyBookingChoice((current) =>
-                          current
+                          current && !pairUnavailable
                             ? {
                                 ...current,
                                 familyRiderId: selected ? null : rider.id,
@@ -5799,7 +5814,9 @@ export default function Grafikas() {
                         "flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-colors",
                         selected
                           ? "border-gold/45 bg-gold/10"
-                          : "border-gold/15 bg-background/25 hover:border-gold/30",
+                          : pairUnavailable
+                            ? "cursor-not-allowed border-gold/10 bg-background/15 opacity-50"
+                            : "border-gold/15 bg-background/25 hover:border-gold/30",
                       )}
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/20 bg-gold/5 text-gold">
@@ -5808,7 +5825,11 @@ export default function Grafikas() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">+ {rider.first_name} {rider.last_name}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {rider.always_together ? "Numatyta registruoti kartu" : "Pridėti šiai rezervacijai"}
+                          {pairUnavailable
+                            ? "Šiam raiteliui šiuo metu nepakanka vietų"
+                            : rider.always_together
+                              ? "Numatyta registruoti kartu"
+                              : "Pridėti šiai rezervacijai"}
                         </p>
                       </div>
                     </button>
@@ -5817,8 +5838,9 @@ export default function Grafikas() {
               </div>
 
               <div className="rounded-xl border border-gold/10 bg-gold/5 p-3 text-xs leading-5 text-muted-foreground">
-                Atšaukus vieną raitelį, kito raitelio rezervacija lieka atskira.
-                Jei abonementas dengia 2 žmones, šiai rezervacijai bus sunaudotos 2 treniruotės.
+                {familyBookingChoice.availableSeats < 2
+                  ? "Liko tik 1 vieta, todėl galite rezervuoti tik save. Kito raitelio įtraukti dabar negalima."
+                  : "Atšaukus vieną raitelį, kito raitelio rezervacija lieka atskira. Jei abonementas dengia 2 žmones, šiai rezervacijai bus sunaudotos 2 treniruotės."}
               </div>
             </div>
           )}
