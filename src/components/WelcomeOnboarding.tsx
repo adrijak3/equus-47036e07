@@ -170,7 +170,7 @@ export function WelcomeOnboarding() {
         const refreshed = await (supabase as any)
           .from("profiles")
           .select(
-            "onboarding_accepted_at,onboarding_version,full_name,phone,experience_text,phone_is_parent",
+            "onboarding_required,onboarding_accepted_at,onboarding_version,full_name,phone,experience_text,phone_is_parent",
           )
           .eq("id", user.id)
           .maybeSingle();
@@ -342,6 +342,7 @@ export function WelcomeOnboarding() {
       .update({
         onboarding_accepted_at: new Date().toISOString(),
         onboarding_version: ONBOARDING_VERSION,
+        onboarding_required: false,
         rules_version: "2026-10",
       })
       .eq("id", user.id);
