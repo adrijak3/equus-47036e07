@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Clock3,
   FileText,
-  Heart,
   ShieldCheck,
   Sparkles,
   Tag,
@@ -38,14 +37,14 @@ const RULES = [
     icon: Tag,
     title: "Abonementas",
     teaser: "4, 8 ar 12 treniruočių viename pakete.",
-    body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą ir gali būti skirtos vienam arba dviem raiteliams. Jei abonemento neturite, nuo 2026-10-18 galite turėti vieną būsimą įprastą rezervaciją be abonemento.",
+    body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą. Jei abonemento neturite, nuo 2026-10-18 galite turėti vieną būsimą įprastą rezervaciją be abonemento.",
   },
   {
     key: "booking",
     icon: CalendarDays,
     title: "Rezervacija",
     teaser: "Pasirinkite laiką grafike ir registruokitės.",
-    body: "Grafike matysite laisvas vietas. Rezervuojant galite pasirinkti ir kartu lankantį raitelį. Jei turite 2 žmonėms skirtą abonementą, viena bendra rezervacija gali sunaudoti dvi abonemento treniruotes.",
+    body: "Grafike matysite laisvas vietas ir galėsite pasirinkti norimą treniruotės laiką.",
   },
   {
     key: "cancel",
@@ -53,13 +52,6 @@ const RULES = [
     title: "Atšaukimas",
     teaser: "Iki 24 val. prieš treniruotę – be praradimo. Registracija į treniruotę uždaroma 3 val. prieš treniruotę.",
     body: "Treniruotę galima atšaukti nemokamai ne vėliau kaip 24 valandas prieš pradžią. Vėliau atšaukta arba praleista treniruotė paprastai laikoma panaudota, išskyrus ligos ar force majeure atvejus. Taipogi galite persikelti į kitą treniruotę tą pačią savaitę, neprarasdami savo treniruotės.",
-  },
-  {
-    key: "family",
-    icon: Heart,
-    title: "Kartu lankantis raitelis",
-    teaser: "Vaiką ar kitą artimą raitelį galite turėti savo paskyroje.",
-    body: "Kartu lankantis raitelis neturi atskiro prisijungimo. Rezervuojant galite jį pridėti kartu, o atšaukus vieną rezervaciją kito raitelio rezervacija lieka nepakeista.",
   },
   {
     key: "contract",
@@ -699,8 +691,7 @@ export function WelcomeOnboarding() {
                     <p className="font-semibold">Maža taisyklė, kurią verta žinoti</p>
                     <p className="mt-1 text-muted-foreground">
                       Vienas žmogus gali turėti vieną aktyvią rezervaciją konkrečiam
-                      laikui. Kartu lankantys raiteliai turi atskiras rezervacijas,
-                      todėl vieno atšaukimas automatiškai neatšaukia kito.
+                      laikui.
                     </p>
                   </div>
                 </div>
