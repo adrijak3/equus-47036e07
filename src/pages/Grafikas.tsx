@@ -1724,9 +1724,8 @@ export default function Grafikas() {
       );
 
     if (error) {
-      toast.error(
-        `Nepavyko atšaukti: ${error.message}`,
-      );
+      console.error("cancel_booking_occurrence failed", error);
+      toast.error("Nepavyko atšaukti pamokos. Pabandykite dar kartą.");
       await loadData();
       return;
     }
@@ -2058,9 +2057,8 @@ export default function Grafikas() {
     );
 
     if (e1) {
-      toast.error(
-        `Nepavyko atšaukti: ${e1.message}`,
-      );
+      console.error("late cancellation RPC failed", e1);
+      toast.error("Nepavyko atšaukti pamokos. Pabandykite dar kartą.");
       await loadData();
       return;
     }
