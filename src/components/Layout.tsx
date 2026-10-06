@@ -519,10 +519,10 @@ export default function Layout({
             {(isAdmin
               ? [
                   NAV_ADMIN[0],
-                  NAV_ADMIN[1],
                   NAV_ADMIN[2],
                   NAV_ADMIN[3],
                   NAV_ADMIN[4],
+                  NAV_ADMIN[5],
                   STAFF_QR_NAV,
                 ]
               : isTrainer
