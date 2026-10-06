@@ -124,7 +124,7 @@ export function WelcomeOnboarding() {
       const { data, error } = await (supabase as any)
         .from("profiles")
         .select(
-          "onboarding_accepted_at,onboarding_version,full_name,phone,experience_text,phone_is_parent",
+          "onboarding_required,onboarding_accepted_at,onboarding_version,full_name,phone,experience_text,phone_is_parent",
         )
         .eq("id", user.id)
         .maybeSingle();
