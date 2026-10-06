@@ -364,7 +364,7 @@ export default function Paskyra() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Adrija</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Svetainės ir registracijos klausimai</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Jei turite problemų su svetaine ar turite klausimų -</p>
                     <p className="mt-2 text-sm text-gold">+370 628 76090</p>
                   </div>
                   <Phone className="h-4 w-4 text-gold" />
@@ -374,7 +374,7 @@ export default function Paskyra() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Laura</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Treniruočių klausimai ir rezervacijos</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Trenerė</p>
                     <p className="mt-2 text-sm text-gold">+370 658 22872</p>
                   </div>
                   <Phone className="h-4 w-4 text-gold" />
@@ -410,7 +410,7 @@ export default function Paskyra() {
             <section className="rounded-2xl border border-blush/25 bg-blush/5 px-5 py-4">
               <div className="font-medium text-blush">Kai kurios būsimos rezervacijos laikinai sustabdytos</div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Šios rezervacijos neberodomos grafike ir nenaudoja abonemento pamokų. Įsigijus tinkamą abonementą, jos bus automatiškai atkurtos, jei dar patenka į jo galiojimo laiką ir atitinka treniruotės tipą.
+                Šios rezervacijos neberodomos grafike ir nenaudoja treniruočių iš abonemento. Įsigijus tinkamą abonementą, jos bus automatiškai atkurtos, jei dar patenka į jo galiojimo laiką ir atitinka treniruotės tipą.
               </p>
             </section>
           )}
@@ -438,7 +438,7 @@ export default function Paskyra() {
               <div>
                 <p className="text-sm font-medium">Mano QR kodas</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Parodykite QR administratoriui arba treneriui, kad Jus greitai rastų ir galėtų tvarkyti abonementą.
+                  Parodykite QR trenerei Laurai arba Jolitai.
                 </p>
               </div>
               <Button variant="outlineGold" onClick={() => navigate("/mano-qr")} className="shrink-0">
@@ -568,7 +568,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
         setEnabled(true);
         toast.success(
           language === "lt"
-            ? "Telefono pranešimai įjungti 🐴"
+            ? "Telefono pranešimai įjungti"
             : "Phone notifications enabled 🐴",
         );
       }
@@ -634,7 +634,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
             </div>
             <p className="mt-1 max-w-xl text-xs text-muted-foreground">
               {language === "lt"
-                ? "Tai tik telefono push pranešimai. Jūsų treniruočių rezervacijos ir abonementas nuo šio nustatymo nepriklauso."
+                ? "Dar testuojama:)"
                 : "These are phone push notifications only. This setting does not change your training bookings or lesson subscription."}
             </p>
           </div>
@@ -675,7 +675,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {language === "lt"
-              ? "Pasirinkite, kada norite būti priminti apie artėjančią treniruotę. Šie priminimai yra neprivalomi."
+              ? "Pasirinkite, kada norite būti priminti apie artėjančią treniruotę."
               : "Choose when you want to be reminded about an upcoming training. These reminders are optional."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -701,7 +701,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
 
         <p className="text-[11px] leading-5 text-muted-foreground">
           {language === "lt"
-            ? "Svarbūs Equus atnaujinimai nėra reklama ir naudojami tik tam, kad žinotumėte apie jūsų rezervacijos pokyčius."
+            ? "Svarbūs Equus atnaujinimai dar testuojami:)."
             : "Important Equus updates are not advertising and are used only to keep you informed about changes to your booking."}
         </p>
       </div>
@@ -808,7 +808,7 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
       toast.success(
         correctedGmailTypo
           ? "El. paštas pataisytas į gmail.com. Patikrinkite patvirtinimo laišką."
-          : "El. pašto keitimas pradėtas. Patikrinkite patvirtinimo laišką.",
+          : "El. pašto keitimas pabaigtas. Patikrinkite patvirtinimo laišką.",
       );
     } else {
       toast.success("Išsaugota!:)");
@@ -844,7 +844,7 @@ function ProfileSettings({ onSaved }: { onSaved: () => void | Promise<void> }) {
           </p>
           {/@gmail\.gom$/i.test(email.trim()) && (
             <p className="text-xs text-blush mt-1">
-              Atrodo, kad turėjote omenyje <strong>{email.trim().replace(/@gmail\.gom$/i, "@gmail.com")}</strong>.
+              Gal turėjote omenyje <strong>{email.trim().replace(/@gmail\.gom$/i, "@gmail.com")}</strong>.
             </p>
           )}
         </div>
@@ -1013,7 +1013,7 @@ function FamilyRidersSection({ parentUserId }: { parentUserId: string }) {
     }
 
     if ((count ?? 0) > 0) {
-      toast.error("Raitelio pašalinti negalima, nes jo rezervacijų istorija turi būti išsaugota. Galite išjungti „Visada registruoti kartu“ ir redaguoti duomenis.");
+      toast.error("Raitelio pašalinti negalima, nes jo rezervacijų istorija turi būti išsaugota. Galite išjungti „Visada registruoti kartu“ ir redaguoti duomenis tuomet.");
       return;
     }
 
@@ -1256,7 +1256,7 @@ function BookingRow({ b, past, separatelyPaid }: { b: Booking; past?: boolean; s
           {formatTime(b.slot_time)}
           {b.is_grace_booking && !past && (
             <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-blush">
-              · Vienintelė būsima be abonemento
+              · Vienintelė būsima treniruotė be abonemento
             </span>
           )}
           <span className="ml-2 text-xs text-gold/80 font-medium">
@@ -1293,8 +1293,8 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
     {!extra && (
       <div className="mt-4 border-t border-gold/10 pt-3 text-xs text-muted-foreground">
         {Number(s.covered_riders ?? 1) === 2
-          ? "👥 Šis abonementas dengia 2 raitelius · bendra rezervacija sunaudoja 2 treniruotes"
-          : "👤 Šis abonementas dengia 1 raitelį"}
+          ? "👥 Šis abonementas skaičiuoja 2 raitelius · bendra rezervacija sunaudoja 2 treniruotes Jūsų abonemente:)"
+          : "👤 Šis abonementas skaičiuoja 1 raitelį"}
       </div>
     )}
     {extra && <div className="mt-4 border-t border-gold/10 pt-3">{extra}</div>}
