@@ -153,6 +153,26 @@ BEGIN
         'grace_booking_used', false,
         'duplicate_protected', true
       );
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'bypass', false,
+    'subscription_exempt', v_is_exempt,
+    'permanent_booking', v_is_permanent,
+    'weekly_registration_restricted', v_weekly_slot AND NOT v_is_permanent,
+    'weekly_registration_window_open',
+      NOT v_weekly_slot OR v_is_permanent OR public.weekly_registration_window_is_open(_slot_date),
+    'subscription_required',
+      v_enforcement_active AND NOT v_is_exempt AND NOT v_is_permanent,
+    'subscription_usable', v_subscription_usable,
+    'subscription_pending_start', v_pending_usable,
+    'grace_booking', false,
+    'duplicate_protected', true
+  );
+END;
+$equus_eligibility_family$;
 
 REVOKE ALL
 ON FUNCTION public.check_booking_eligibility(uuid,date,time without time zone,boolean)
