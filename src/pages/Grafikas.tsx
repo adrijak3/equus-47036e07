@@ -1190,7 +1190,12 @@ export default function Grafikas() {
     }
   };
 
-  const createBooking = async (date: Date, time: string, options?: { subscriptionId?: string | null; countsInSubscription?: boolean; extraFeeEur?: number }) => {
+  const createBooking = async (
+    date: Date,
+    time: string,
+    options?: { subscriptionId?: string | null; countsInSubscription?: boolean; extraFeeEur?: number },
+    clickedSlot?: TimeSlot,
+  ) => {
     if (!user) return false;
 
     const { data: eligibility, error: eligibilityError } = await (supabase as any).rpc(
@@ -1210,7 +1215,23 @@ export default function Grafikas() {
 
     if (!eligibility?.ok) {
       const code = String(eligibility?.code ?? "");
-      if (code === "GRACE_BOOKING_ALREADY_USED") {
+
+      // Eligibility historically checks capacity across the whole clock time.
+      // The schedule itself is trainer/slot specific. When the exact clicked
+      // slot still has room, let the authoritative booking-capacity trigger
+      // perform the final race-safe check.
+      if (code === "SLOT_FULL" && clickedSlot) {
+        const exactGroup = getGroupInfo(date, time, clickedSlot);
+        if (exactGroup.taken < exactGroup.capacity) {
+          // Continue to the insert below.
+        } else {
+          toast.error(
+            eligibility?.message ??
+              "Ši treniruotė jau pilna.",
+          );
+          return false;
+        }
+      } else if (code === "GRACE_BOOKING_ALREADY_USED") {
         toast.error(
           "Jau turite vieną būsimą treniruotę be abonemento. Norėdami registruotis į dar vieną, pirmiausia įsigykite abonementą.",
           { duration: 8000 },
@@ -1376,7 +1397,16 @@ export default function Grafikas() {
       return;
     }
 
-    await createBooking(date, time);
+    await createBooking(
+      date,
+      time,
+      undefined,
+      slotId
+        ? getSlotsAtTime(date, time).find((s) => s.id === slotId)
+        : getSlotsAtTime(date, time).find(
+            (s) => (s.trainer_name ?? null) === (trainerName ?? null),
+          ),
+    );
   };
 
   const handleBook = async (date: Date, time: string, clickedSlot?: TimeSlot) => {
