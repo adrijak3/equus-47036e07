@@ -348,6 +348,7 @@ export default function Paskyra() {
         {/* PROFILE OVERVIEW */}
         <TabsContent value="profile" className="space-y-5">
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
+          {!isLinked && user && <FamilyRidersSection parentUserId={user.id} />}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Mano QR" icon={<QrCode className="h-4 w-4" />} onClick={() => navigate("/mano-qr")} />
@@ -895,6 +896,272 @@ function PermanentSlotsSection({
         </div>
       </div>
     </Section>
+  );
+}
+
+function FamilyRidersSection({ parentUserId }: { parentUserId: string }) {
+  type FamilyRider = {
+    id: string;
+    first_name: string;
+    last_name: string;
+    experience_text: string | null;
+    always_together: boolean;
+  };
+
+  const [riders, setRiders] = useState<FamilyRider[]>([]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<FamilyRider | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [experience, setExperience] = useState("");
+  const [alwaysTogether, setAlwaysTogether] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    const { data, error } = await (supabase as any)
+      .from("family_riders")
+      .select("id,first_name,last_name,experience_text,always_together")
+      .eq("parent_user_id", parentUserId)
+      .order("first_name");
+
+    if (!error) setRiders((data ?? []) as FamilyRider[]);
+  };
+
+  useEffect(() => {
+    void load();
+  }, [parentUserId]);
+
+  const reset = () => {
+    setEditing(null);
+    setFirstName("");
+    setLastName("");
+    setExperience("");
+    setAlwaysTogether(false);
+  };
+
+  const openAdd = () => {
+    reset();
+    setOpen(true);
+  };
+
+  const openEdit = (rider: FamilyRider) => {
+    setEditing(rider);
+    setFirstName(rider.first_name);
+    setLastName(rider.last_name);
+    setExperience(rider.experience_text ?? "");
+    setAlwaysTogether(rider.always_together);
+    setOpen(true);
+  };
+
+  const save = async () => {
+    const first = firstName.trim();
+    const last = lastName.trim();
+    const exp = experience.trim();
+
+    if (first.length < 1 || last.length < 1) {
+      toast.error("Įveskite vardą ir pavardę.");
+      return;
+    }
+    if (exp.length < 30) {
+      toast.error("Aprašykite jojimo patirtį bent 30 simbolių.");
+      return;
+    }
+
+    setSaving(true);
+
+    const payload = {
+      first_name: first,
+      last_name: last,
+      experience_text: exp,
+      always_together: alwaysTogether,
+    };
+
+    const { error } = editing
+      ? await (supabase as any)
+          .from("family_riders")
+          .update(payload)
+          .eq("id", editing.id)
+          .eq("parent_user_id", parentUserId)
+      : await (supabase as any)
+          .from("family_riders")
+          .insert({ ...payload, parent_user_id: parentUserId });
+
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message || "Nepavyko išsaugoti raitelio.");
+      return;
+    }
+
+    setOpen(false);
+    reset();
+    await load();
+    toast.success(editing ? "Raitelio informacija atnaujinta." : "Raitelis pridėtas.");
+  };
+
+  const remove = async (rider: FamilyRider) => {
+    const { count, error: countError } = await (supabase as any)
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", parentUserId)
+      .eq("family_rider_id", rider.id);
+
+    if (countError) {
+      toast.error("Nepavyko patikrinti raitelio rezervacijų.");
+      return;
+    }
+
+    if ((count ?? 0) > 0) {
+      toast.error("Raitelio pašalinti negalima, nes jo rezervacijų istorija turi būti išsaugota. Galite išjungti „Visada registruoti kartu“ ir redaguoti duomenis.");
+      return;
+    }
+
+    if (!window.confirm(`Pašalinti ${rider.first_name} ${rider.last_name} iš paskyros?`)) return;
+
+    const { error } = await (supabase as any)
+      .from("family_riders")
+      .delete()
+      .eq("id", rider.id)
+      .eq("parent_user_id", parentUserId);
+
+    if (error) {
+      toast.error(error.message || "Nepavyko pašalinti.");
+      return;
+    }
+
+    await load();
+    toast.success("Raitelis pašalintas.");
+  };
+
+  return (
+    <>
+      <Section title="Kartu lankantys raiteliai" icon={<UserIcon className="h-4 w-4" />}>
+        <div className="space-y-4 p-5">
+          <div className="rounded-2xl border border-gold/15 bg-gold/5 p-4 text-sm leading-6">
+            <p className="font-medium">Vaiką ar kitą kartu lankantį raitelį galite turėti savo paskyroje.</p>
+            <p className="mt-1 text-muted-foreground">
+              Jam nereikia atskiro prisijungimo. Rezervuojant galėsite parodyti „+ Pridėti“,
+              o vieno raitelio atšaukimas kito rezervacijos nepakeis.
+            </p>
+          </div>
+
+          {riders.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {riders.map((rider) => (
+                <div key={rider.id} className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-display text-xl text-gold">
+                        {rider.first_name} {rider.last_name}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {rider.always_together ? "Numatyta registruoti kartu" : "Pridedamas pagal poreikį"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(rider)}
+                      className="rounded-lg border border-gold/20 px-2.5 py-1.5 text-xs text-gold hover:bg-gold/5"
+                    >
+                      Redaguoti
+                    </button>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {rider.experience_text}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void remove(rider)}
+                    className="mt-3 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Pašalinti
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button variant="outlineGold" onClick={openAdd}>
+            <Plus className="mr-2 h-4 w-4" />
+            Pridėti raitelį
+          </Button>
+        </div>
+      </Section>
+
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next && !saving) {
+            setOpen(false);
+            reset();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[88dvh] overflow-y-auto border-gold/25 bg-gradient-card sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold">
+              {editing ? "Redaguoti raitelį" : "Pridėti raitelį"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label>Vardas</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={60} />
+              </div>
+              <div>
+                <Label>Pavardė</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={60} />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-end justify-between gap-3">
+                <Label>Jojimo patirtis</Label>
+                <span className={cn("text-xs tabular-nums", experience.trim().length >= 30 ? "text-emerald-500" : "text-muted-foreground")}>
+                  {experience.length}/30 min.
+                </span>
+              </div>
+              <Textarea
+                value={experience}
+                onChange={(e) => setExperience(e.target.value)}
+                minLength={30}
+                maxLength={500}
+                rows={6}
+                className="mt-1.5"
+                placeholder="Kiek laiko jodinėja, ką moka, ar turi varžybų patirties…"
+              />
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/20 bg-gold/5 p-4">
+              <input
+                type="checkbox"
+                checked={alwaysTogether}
+                onChange={(e) => setAlwaysTogether(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[hsl(var(--gold))]"
+              />
+              <span>
+                <span className="block text-sm font-medium">Visada registruoti kartu</span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  Rezervuojant šis raitelis bus pasirinktas iš karto. Jūs vis tiek
+                  galėsite nuimti varnelę ir registruotis tik pats.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setOpen(false); reset(); }} disabled={saving}>
+              Atšaukti
+            </Button>
+            <Button variant="gold" onClick={save} disabled={saving}>
+              {saving ? "Saugoma…" : "Išsaugoti"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
