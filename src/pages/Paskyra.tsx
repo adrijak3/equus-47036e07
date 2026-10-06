@@ -349,7 +349,6 @@ export default function Paskyra() {
         {/* PROFILE OVERVIEW */}
         <TabsContent value="profile" className="space-y-5">
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
-          {!isLinked && user && <FamilyRidersSection parentUserId={user.id} />}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Mano QR" icon={<QrCode className="h-4 w-4" />} onClick={() => navigate("/mano-qr")} />
