@@ -53,7 +53,7 @@ FOR DELETE TO authenticated
 USING (parent_user_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
 
 ALTER TABLE public.bookings
-  ADD COLUMN IF NOT EXISTS family_rider_id uuid REFERENCES public.family_riders(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS family_rider_id uuid REFERENCES public.family_riders(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS family_group_id uuid;
 
 CREATE INDEX IF NOT EXISTS bookings_family_rider_idx
@@ -130,76 +130,6 @@ BEGIN
   RETURN NEW;
 END;
 $equus_booking_guard_family$;
-
-CREATE OR REPLACE FUNCTION public.enforce_trainer_group_rules()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $equus_trainer_group_family$
-DECLARE
-  caller uuid := auth.uid();
-  dow int := CASE WHEN extract(dow FROM NEW.slot_date)::int = 0 THEN 7 ELSE extract(dow FROM NEW.slot_date)::int END;
-  trainer text;
-  new_lvl text;
-  total int := 0;
-  beginners int := 0;
-  max_allowed int;
-BEGIN
-  IF NEW.status <> 'active' THEN RETURN NEW; END IF;
-
-  IF current_setting('equus.allow_family_booking_insert', true) = 'true' THEN
-    RETURN NEW;
-  END IF;
-
-  IF caller IS NOT NULL AND (public.has_role(caller, 'admin') OR public.has_role(caller, 'trainer')) THEN
-    RETURN NEW;
-  END IF;
-
-  trainer := NEW.trainer_name;
-  IF trainer IS NULL THEN
-    SELECT t.trainer_name INTO trainer
-      FROM public.time_slots t
-     WHERE t.active
-       AND t.slot_time = NEW.slot_time
-       AND t.trainer_name IS NOT NULL
-       AND ((t.one_off_date IS NULL AND t.day_of_week = dow) OR t.one_off_date = NEW.slot_date)
-     LIMIT 1;
-  END IF;
-
-  IF trainer IS NULL OR trainer NOT ILIKE '%Jolita%' THEN RETURN NEW; END IF;
-
-  new_lvl := public.trainer_rider_level(trainer, NEW.user_id, NEW.guest_rider_id);
-
-  SELECT count(*), count(*) FILTER (WHERE lvl = 'beginner')
-    INTO total, beginners
-    FROM (
-      SELECT public.trainer_rider_level(trainer, b.user_id, b.guest_rider_id) AS lvl
-        FROM public.bookings b
-       WHERE b.slot_date = NEW.slot_date
-         AND b.slot_time = NEW.slot_time
-         AND b.status = 'active'
-         AND b.trainer_name IS NOT DISTINCT FROM NEW.trainer_name
-         AND b.id <> NEW.id
-    ) x;
-
-  IF new_lvl = 'beginner' THEN beginners := beginners + 1; END IF;
-  total := total + 1;
-
-  IF beginners > 2 THEN
-    RAISE EXCEPTION 'Šioje treniruotėje jau yra 2 pradedantieji, todėl daugiau pradedančiųjų registruoti negalima.'
-      USING ERRCODE = 'check_violation';
-  END IF;
-
-  max_allowed := CASE WHEN beginners >= 2 THEN 2 WHEN beginners = 1 THEN 3 ELSE 4 END;
-
-  IF total > max_allowed THEN
-    RAISE EXCEPTION 'Grupė pilna — maksimalus dalyvių skaičius yra %.', max_allowed USING ERRCODE = 'check_violation';
-  END IF;
-
-  RETURN NEW;
-END;
-$equus_trainer_group_family$;
 
 -- Grace is one future reservation, not one booking row. A parent + child pair
 -- therefore consumes one grace reservation.
@@ -606,6 +536,8 @@ BEGIN
       END IF;
     END IF;
   ELSE
+    -- A queued subscription can still cover the family pair. It remains
+    -- unattached until the normal first-lesson activation runs.
     SELECT s.*
       INTO v_sub
     FROM public.subscriptions s
@@ -614,15 +546,19 @@ BEGIN
       AND s.cancelled_at IS NULL
       AND s.start_pending = true
       AND COALESCE(s.covered_riders,1) IN (1,2)
-      AND public.booking_matches_subscription_package(
-        (
-          SELECT b.id
-          FROM public.bookings b
-          WHERE false
-        ),
-        COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END)
-      )
-    LIMIT 1;
+      AND COALESCE(
+        s.package_type,
+        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+      ) IN ('group','po2')
+    ORDER BY s.purchased_at, s.purchase_date, s.id
+    LIMIT 1
+    FOR UPDATE;
+
+    IF FOUND THEN
+      IF COALESCE(v_sub.covered_riders,1) = 2 THEN
+        v_child_counts := true;
+      END IF;
+    END IF;
   END IF;
 
   PERFORM set_config('equus.allow_family_booking_insert', 'true', true);
