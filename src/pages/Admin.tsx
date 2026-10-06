@@ -865,7 +865,6 @@ function VacationsAdminTab() {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
-  useEffect(() => { setOpenUserId(focusUserId ?? null); }, [focusUserId]);
 
   const upcoming = rows.filter((r) => r.ends_on >= today);
   const past = rows.filter((r) => r.ends_on < today).reverse();
@@ -1928,6 +1927,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     );
   };
   useEffect(() => { load(); }, []);
+  useEffect(() => { setOpenUserId(focusUserId ?? null); }, [focusUserId]);
 
   const togglePaid = async (subId: string, p: boolean) => {
     const fn = p ? "admin_mark_subscription_paid" : "admin_mark_subscription_unpaid";
