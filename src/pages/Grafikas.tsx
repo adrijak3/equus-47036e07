@@ -106,14 +106,6 @@ interface Booking {
   family_group_id?: string | null;
 }
 
-interface FamilyRider {
-  id: string;
-  first_name: string;
-  last_name: string;
-  experience_text: string | null;
-  always_together: boolean;
-}
-
 interface SlotOverride {
   slot_date: string;
   slot_time: string;
@@ -227,16 +219,6 @@ export default function Grafikas() {
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
   const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; slotId: string | null; trainerName: string | null; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
   const [po2Busy, setPo2Busy] = useState(false);
-  const [familyRiders, setFamilyRiders] = useState<FamilyRider[]>([]);
-  const [familyBookingChoice, setFamilyBookingChoice] = useState<{
-    date: Date;
-    time: string;
-    familyRiderId: string | null;
-    slotId: string | null;
-    trainerName: string | null;
-    availableSeats: number;
-  } | null>(null);
-
   // Horse selection
   const [horseDialog, setHorseDialog] = useState<{
     bookingId: string;
@@ -388,34 +370,7 @@ export default function Grafikas() {
 
   const weekEnd = days[6];
 
-  useEffect(() => {
-    if (!user || isAdmin || isTrainer) {
-      setFamilyRiders([]);
-      return;
-    }
 
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await (supabase as any)
-        .from("family_riders")
-        .select("id,first_name,last_name,experience_text,always_together")
-        .eq("parent_user_id", user.id)
-        .order("first_name");
-
-      if (!cancelled) {
-        if (error) {
-          console.error("Nepavyko įkelti kartu lankančių raitelių:", error);
-          setFamilyRiders([]);
-        } else {
-          setFamilyRiders((data ?? []) as FamilyRider[]);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, isAdmin, isTrainer]);
 
   const loadData = async () => {
     setLoading(true);
@@ -1427,31 +1382,6 @@ export default function Grafikas() {
     const bookSlot = clickedSlot ?? getDaySlots(date).find((s) => s.slot_time === time);
     if (getTrainerDayCancellation(date, bookSlot?.trainer_name)) {
       toast.error("Šios treniruotės ta diena nevyksta");
-      return;
-    }
-
-    if (!isAdmin && !isTrainer && familyRiders.length > 0) {
-      const selectedSlot =
-        clickedSlot ??
-        getSlotsAtTime(date, time)[0];
-      const groupInfo = selectedSlot
-        ? getGroupInfo(date, time, selectedSlot)
-        : null;
-      const availableSeats = Math.max(
-        0,
-        (groupInfo?.capacity ?? 0) - (groupInfo?.taken ?? 0),
-      );
-
-      // Never pre-select another rider: the customer must explicitly decide
-      // whether this lesson is only for themselves or also for a family rider.
-      setFamilyBookingChoice({
-        date,
-        time,
-        familyRiderId: null,
-        slotId: selectedSlot?.id ?? null,
-        trainerName: selectedSlot?.trainer_name ?? null,
-        availableSeats,
-      });
       return;
     }
 
@@ -5822,112 +5752,7 @@ export default function Grafikas() {
       <Dialog open={!!po2Choice} onOpenChange={(open) => !open && !po2Busy && setPo2Choice(null)}>
         <DialogContent className="max-w-md rounded-3xl border-gold/20 bg-gradient-card">
           <DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">Po 2 pamoka</DialogTitle><DialogDescription>Pasirinkite, kaip norite apmokėti šią pamoką.</DialogDescription></DialogHeader>
-          <Dialog
-        open={!!familyBookingChoice}
-        onOpenChange={(open) => !open && setFamilyBookingChoice(null)}
-      >
-        <DialogContent className="max-w-md border-gold/25 bg-gradient-card">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold">
-              Kam skirta ši pamoka?
-            </DialogTitle>
-            <DialogDescription>
-              Jūsų abonementas gali būti skirtas 1 arba 2 raiteliams. Prieš rezervuojant pasirinkite, ar ši pamoka skirta tik jums, ar norite įtraukti ir kitą raitelį.
-            </DialogDescription>
-          </DialogHeader>
-
-          {familyBookingChoice && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-gold/15 bg-background/35 p-4">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                  Jūs
-                </p>
-                <p className="mt-1 font-display text-xl">
-                  {profile?.full_name || user?.email || "Raitelis"}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                {familyRiders.map((rider) => {
-                  const selected = familyBookingChoice.familyRiderId === rider.id;
-                  const pairUnavailable = familyBookingChoice.availableSeats < 2;
-                  return (
-                    <button
-                      key={rider.id}
-                      type="button"
-                      disabled={pairUnavailable}
-                      onClick={() =>
-                        setFamilyBookingChoice((current) =>
-                          current && !pairUnavailable
-                            ? {
-                                ...current,
-                                familyRiderId: selected ? null : rider.id,
-                              }
-                            : current,
-                        )
-                      }
-                      className={cn(
-                        "flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-colors",
-                        selected
-                          ? "border-gold/45 bg-gold/10"
-                          : pairUnavailable
-                            ? "cursor-not-allowed border-gold/10 bg-background/15 opacity-50"
-                            : "border-gold/15 bg-background/25 hover:border-gold/30",
-                      )}
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/20 bg-gold/5 text-gold">
-                        {selected ? <Check className="h-5 w-5" /> : <UserRound className="h-5 w-5" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">+ {rider.first_name} {rider.last_name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {pairUnavailable
-                            ? "Šiam raiteliui šiuo metu nepakanka vietų"
-                            : rider.always_together
-                              ? "Numatyta registruoti kartu"
-                              : "Pridėti šiai rezervacijai"}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="rounded-xl border border-gold/10 bg-gold/5 p-3 text-xs leading-5 text-muted-foreground">
-                {familyBookingChoice.availableSeats < 2
-                  ? "Liko tik 1 vieta, todėl galite rezervuoti tik save. Kito raitelio įtraukti dabar negalima."
-                  : "Atšaukus vieną raitelį, kito raitelio rezervacija lieka atskira. Jei abonementas dengia 2 žmones, šiai rezervacijai bus sunaudotos 2 treniruotės."}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setFamilyBookingChoice(null)}
-              disabled={!!busy}
-            >
-              Atšaukti
-            </Button>
-            <Button
-              variant="gold"
-              disabled={!familyBookingChoice || !!busy}
-              onClick={async () => {
-                if (!familyBookingChoice) return;
-                const choice = familyBookingChoice;
-                setFamilyBookingChoice(null);
-                await continueBooking(choice.date, choice.time, choice.familyRiderId, choice.trainerName, choice.slotId);
-              }}
-            >
-              {familyBookingChoice?.familyRiderId
-                ? "Rezervuoti man + kitam raiteliui"
-                : "Rezervuoti tik man"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {po2Choice && <div className="space-y-3">
+          {po2Choice && <div className="space-y-3">
             <div className="rounded-xl border border-gold/15 bg-background/30 p-3 text-sm">{po2Choice.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })} · <span className="text-gold font-semibold">{formatTime(po2Choice.time)}</span></div>
             {po2Choice.subscriptions.map((sub) => { const perLesson = Number(sub.price) / Math.max(1, Number(sub.lessons_total)); const extra = Math.max(0, Math.round((45 - perLesson) * 100) / 100); const remainingAfter = Number(sub.lessons_total) - Number(sub.lessons_used) - 1; return <button key={sub.id} type="button" disabled={po2Busy} onClick={() => void choosePo2Subscription(sub.id)} className="w-full rounded-xl border border-gold/20 p-4 text-left hover:border-gold/50 hover:bg-gold/5 transition-colors"><div className="font-semibold">Įskaičiuoti į abonementą</div><div className="mt-1 text-xs text-muted-foreground">1 pamoka iš abonemento + papildomai <span className="font-semibold text-gold">{extra.toFixed(2).replace(".00","")} €</span> skirtumas.</div><div className="mt-1 text-xs text-muted-foreground">Po šios pamokos liks {remainingAfter}.</div></button>; })}
             <button type="button" disabled={po2Busy} onClick={() => void choosePo2Separate()} className="w-full rounded-xl border border-gold/20 p-4 text-left hover:border-gold/50 hover:bg-gold/5 transition-colors"><div className="font-semibold">Mokėti atskirai · 45 €</div><div className="mt-1 text-xs text-muted-foreground">Ši pamoka abonemento nemažins.</div></button>
