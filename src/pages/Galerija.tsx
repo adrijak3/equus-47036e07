@@ -323,7 +323,7 @@ export default function Galerija() {
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-gold/70">Equus jojimo mokykla</p>
               <h1 className="text-4xl font-display text-gradient-gold md:text-5xl">Galerija</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                Nuotraukos iš treniruočių, varžybų ir Equus gyvenimo.
+                Equus nuotraukų galerija - kviečiame pasižvalgyti!
               </p>
             </div>
 
@@ -377,7 +377,7 @@ export default function Galerija() {
               <FolderOpen className="mx-auto mb-4 h-10 w-10 text-gold/60" />
               <h2 className="font-display text-2xl text-gold">Galerija dar tuščia</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {isAdmin ? "Sukurkite pirmą aplanką ir įkelkite nuotraukas." : "Nuotraukos čia atsiras netrukus."}
+                {isAdmin ? "Sukurkite pirmą aplanką ir įkelkite nuotraukas." : "Nuotraukos čia atsiras netrukus:)."}
               </p>
             </div>
           ) : (
