@@ -256,7 +256,7 @@ export default function Layout({
           {/* Slenkama meniu dalis */}
           <div className="flex-1 overflow-y-auto overscroll-contain pb-4">
             <nav className="space-y-1 px-4 py-6">
-              {navigationItems.map(({ to, label, icon: Icon }) => {
+              {navigationItems.map(({ to, label, icon: Icon, mobileBottomOnly }) => {
                 const active = isLinkActive(to);
 
                 return (
@@ -265,7 +265,7 @@ export default function Layout({
                     to={to}
                     onClick={close}
                     className={cn(
-                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",\n                      isAdmin && mobileBottomOnly && "hidden sm:flex",
                       active
                         ? "border-gold bg-gold/10 text-gold"
                         : "border-transparent text-foreground/80 hover:border-gold/30 hover:bg-gold/5 hover:text-gold",
