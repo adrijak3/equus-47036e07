@@ -48,6 +48,7 @@ interface Subscription {
   expires_at: string | null;
   paid: boolean;
   lesson_type?: string;
+  covered_riders?: 1 | 2;
 }
 interface PermanentSlot {
   id: string;
@@ -1289,6 +1290,13 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
   return <div className={cn("rounded-2xl border bg-gradient-card p-5", remaining <= 0 ? "border-destructive/40" : "border-gold/15", expired && "opacity-60")}>
     <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground"> {s.start_pending ? "Laukia pirmos treniruotės" : notStarted ? "Kitas abonementas" : expired ? "Pasibaigęs abonementas" : "Aktyvus abonementas"}</p><div className="mt-1 font-display text-xl">{s.lessons_total} pamokos</div></div>{s.paid ? <span className="text-xs px-2 py-1 rounded-full bg-gold/15 text-gold border border-gold/30"><CheckCircle2 className="inline h-3 w-3 mr-1" />Apmokėta</span> : <button type="button" onClick={() => onMarkPaid?.(s.id)} className="text-xs px-2 py-1 rounded-full bg-blush/15 text-blush border border-blush/30">Neapmokėta</button>}</div>
     <div className="mt-4 flex items-end justify-between gap-4"><div><div className="font-display text-4xl text-gradient-gold">{remaining}</div>{onEditLessons && <button type="button" onClick={() => onEditLessons(s)} className="mt-1 text-[10px] text-muted-foreground hover:text-gold">Keisti visą kiekį</button>}{onEditUsed && <button type="button" onClick={() => onEditUsed(s)} className="ml-2 mt-1 text-[10px] text-muted-foreground hover:text-gold">Keisti panaudota</button>}<div className="text-xs text-muted-foreground">panaudota {used} · liko {remaining}</div></div><div className="text-right text-xs text-muted-foreground">{s.start_pending ? <><div className="text-foreground">Pradžia po pirmos treniruotės</div><div className="mt-1">Galioja 30 dienų nuo pradžios</div></> : <><div>Pradžia <span className="text-foreground">{startDate}</span></div><div className="mt-1">Galioja iki <span className="text-foreground">{s.expires_at}</span></div></>}<div className="mt-1">{Number(s.price).toFixed(2)} €</div></div></div>
+    {!extra && (
+      <div className="mt-4 border-t border-gold/10 pt-3 text-xs text-muted-foreground">
+        {Number(s.covered_riders ?? 1) === 2
+          ? "👥 Šis abonementas dengia 2 raitelius · bendra rezervacija sunaudoja 2 treniruotes"
+          : "👤 Šis abonementas dengia 1 raitelį"}
+      </div>
+    )}
     {extra && <div className="mt-4 border-t border-gold/10 pt-3">{extra}</div>}
     {onDelete && <div className="mt-4 flex justify-end border-t border-gold/10 pt-3"><button type="button" onClick={() => onDelete(s.id)} className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"><Trash2 className="h-3 w-3" /> Ištrinti</button></div>}
     {lessons && <div className="mt-4 border-t border-gold/10 pt-3"><button type="button" onClick={() => setShowLessons(v => !v)} className="flex w-full items-center justify-between text-sm font-medium"><span>Pamokos šiame abonemente</span><ChevronRight className={cn("h-4 w-4 text-gold", showLessons && "rotate-90")} /></button>{showLessons && <ul className="mt-3 space-y-2">{lessons.map((l) => { const kind = l.lesson_kind === "individual" ? "Individuali" : l.lesson_kind === "po2" ? "Po 2" : "Grupinė"; const extra = l.lesson_kind === "individual" || (l.lesson_kind === "po2" && s.lesson_type !== "sportine_po2"); return <li key={l.id} className="rounded-xl border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex justify-between gap-3"><div><div className="text-sm">{l.slot_date} · {formatTime(l.slot_time)}</div><div className="text-xs text-muted-foreground">{kind}{l.horse_name ? " · 🐎 " + l.horse_name : ""}{l.slot_capacity ? " · talpa " + l.slot_capacity : ""}</div></div><div className="text-right">{l.lesson_price != null ? <div className="text-sm font-semibold text-gold">{l.lesson_price.toFixed(2)} €</div> : <div className="text-xs font-semibold text-blush">Individualus tarifas</div>}<div className="text-[10px] text-muted-foreground">{extra ? "mokama atskirai" : l.status === "cancelled" ? "atšaukta" : "įskaičiuota"}</div></div></div></li>; })}</ul>}</div>}
