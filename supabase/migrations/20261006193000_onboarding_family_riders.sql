@@ -503,11 +503,16 @@ BEGIN
         AND s.user_id = v_actor
         AND s.paid = true
         AND s.cancelled_at IS NULL
-        AND s.start_pending = false
-        AND s.start_from_date IS NOT NULL
-        AND s.expires_at IS NOT NULL
-        AND _slot_date BETWEEN s.start_from_date AND s.expires_at
-        AND public.subscription_committed_lessons(s.id) < s.lessons_total
+        AND (
+          s.start_pending = true
+          OR (
+            s.start_pending = false
+            AND s.start_from_date IS NOT NULL
+            AND s.expires_at IS NOT NULL
+            AND _slot_date BETWEEN s.start_from_date AND s.expires_at
+            AND public.subscription_committed_lessons(s.id) < s.lessons_total
+          )
+        )
         AND (
           (v_package_type = 'group'
             AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) = 'group')
@@ -636,11 +641,11 @@ END;
 $equus_family_booking$;
 
 REVOKE ALL
-ON FUNCTION public.create_family_booking(date,time without time zone,uuid)
+ON FUNCTION public.create_family_booking(date,time without time zone,uuid,uuid,boolean)
 FROM PUBLIC, anon;
 
 GRANT EXECUTE
-ON FUNCTION public.create_family_booking(date,time without time zone,uuid)
+ON FUNCTION public.create_family_booking(date,time without time zone,uuid,uuid,boolean)
 TO authenticated;
 
 -- The legacy po2 helper is kept intact. This family-specific helper mirrors
