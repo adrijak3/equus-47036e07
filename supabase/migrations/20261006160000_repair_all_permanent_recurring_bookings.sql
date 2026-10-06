@@ -137,6 +137,7 @@ WHERE pbe.slot_date >= (now() AT TIME ZONE 'Europe/Vilnius')::date
   );
 
 -- Make all existing future permanent bookings subscription-independent.
+SELECT set_config('equus.allow_subscription_financial_update', 'true', true);
 SELECT set_config('equus.allow_subscription_pause_update', 'true', true);
 
 UPDATE public.bookings b
