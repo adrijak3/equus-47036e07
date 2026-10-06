@@ -80,7 +80,7 @@ export default function HalfAdminSubscriptions() {
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70">Pusiau admino sritis</p>
         <h1 className="mt-2 text-4xl font-display text-gradient-gold">Abonementai</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Tik peržiūra. Abonementų čia keisti ar trinti negalima.
+          Galima tik peržiūrėti.
         </p>
       </header>
 
