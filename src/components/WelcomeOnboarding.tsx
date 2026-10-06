@@ -202,9 +202,9 @@ export function WelcomeOnboarding() {
       setCompletionExperience(profileData?.experience_text || "");
       setCompletionParentPhone(!!profileData?.phone_is_parent);
 
-      const version = Number(profileData?.onboarding_version || 0);
       const needsOnboarding =
-        !profileData?.onboarding_accepted_at || version < ONBOARDING_VERSION;
+        Boolean(profileData?.onboarding_required) &&
+        !profileData?.onboarding_accepted_at;
 
       if (!needsOnboarding) return;
 
