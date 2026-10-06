@@ -652,6 +652,7 @@ export type Database = {
           notify_schedule_changes: boolean
           notify_school_news: boolean
           onboarding_accepted_at: string | null
+          onboarding_required: boolean
           onboarding_version: number | null
           phone: string | null
           phone_is_parent: boolean
@@ -672,6 +673,7 @@ export type Database = {
           notify_schedule_changes?: boolean
           notify_school_news?: boolean
           onboarding_accepted_at?: string | null
+          onboarding_required?: boolean
           onboarding_version?: number | null
           phone?: string | null
           phone_is_parent?: boolean
