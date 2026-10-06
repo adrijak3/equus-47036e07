@@ -284,9 +284,9 @@ export default function Pradzia() {
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
           {isAdmin
-            ? "Svarbiausia šiandienos informacija ir greiti administravimo veiksmai."
+            ? "Svarbiausia info -"
             : isTrainer
-              ? "Šiandienos informacija ir greita prieiga prie trenerio srities."
+              ? "Svarbiausia info + trenerio skiltis"
               : "Čia visada rasite artimiausią treniruotę ir svarbiausią informaciją."}
         </p>
       </motion.header>
@@ -300,7 +300,7 @@ export default function Pradzia() {
               icon: CalendarDays,
             },
             {
-              label: "Unikalūs raiteliai",
+              label: "Skirtingi raiteliai",
               value: adminSummary.uniqueRiders,
               icon: Users,
             },
@@ -441,7 +441,7 @@ export default function Pradzia() {
               </div>
             </div>
             <Button asChild variant="link" className="mt-3 h-auto px-0 text-gold">
-              <Link to="/paskyra?tab=lessons">Peržiūrėti pamokas <ArrowRight className="h-3.5 w-3.5" /></Link>
+              <Link to="/paskyra?tab=lessons">Peržiūrėti treniruotes <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
           </motion.section>
 
@@ -452,7 +452,7 @@ export default function Pradzia() {
             className="rounded-2xl border border-gold/15 bg-gradient-card p-5 shadow-soft"
           >
             <h2 className="font-display text-xl text-foreground">
-              Greiti veiksmai
+              Greita prieiga
             </h2>
             <div className="mt-4 grid gap-2">
               <Button asChild variant="outlineGold" className="justify-between">
