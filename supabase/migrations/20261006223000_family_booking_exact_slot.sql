@@ -294,13 +294,13 @@ BEGIN
 
   INSERT INTO public.bookings (
     user_id, slot_date, slot_time, status, trainer_name,
-    subscription_id, counts_in_subscription, extra_fee_eur, extra_fee_paid,
-    family_group_id
+    subscription_id, counts_in_subscription, is_grace_booking,
+    extra_fee_eur, extra_fee_paid, family_group_id
   )
   VALUES (
     v_actor, _slot_date, _slot_time, 'active', v_trainer_name,
-    v_primary_sub, v_primary_counts, v_extra_fee, false,
-    v_group
+    v_primary_sub, v_primary_counts, v_primary_sub IS NULL,
+    v_extra_fee, false, v_group
   )
   RETURNING id INTO v_primary;
 
