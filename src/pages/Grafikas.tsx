@@ -1222,15 +1222,14 @@ export default function Grafikas() {
       // perform the final race-safe check.
       if (code === "SLOT_FULL" && clickedSlot) {
         const exactGroup = getGroupInfo(date, time, clickedSlot);
-        if (exactGroup.taken < exactGroup.capacity) {
-          // Continue to the insert below.
-        } else {
+        if (exactGroup.taken >= exactGroup.capacity) {
           toast.error(
             eligibility?.message ??
               "Ši treniruotė jau pilna.",
           );
           return false;
         }
+        // Exact slot has room; continue to the insert below.
       } else if (code === "GRACE_BOOKING_ALREADY_USED") {
         toast.error(
           "Jau turite vieną būsimą treniruotę be abonemento. Norėdami registruotis į dar vieną, pirmiausia įsigykite abonementą.",
@@ -1242,10 +1241,12 @@ export default function Grafikas() {
             "Šiuo metu registruotis į šią treniruotę negalima.",
         );
       }
-      return false;
+      if (code !== "SLOT_FULL" || !clickedSlot) {
+        return false;
+      }
     }
 
-    const slotForBooking = getSlotsAtTime(date, time)[0];
+    const slotForBooking = clickedSlot ?? getSlotsAtTime(date, time)[0];
     setBusy("book-" + formatDateISO(date) + "-" + time);
 
     const { error } = await supabase.from("bookings").insert({
@@ -1457,7 +1458,13 @@ export default function Grafikas() {
       return;
     }
 
-    await continueBooking(date, time);
+    await continueBooking(
+      date,
+      time,
+      null,
+      clickedSlot?.trainer_name ?? null,
+      clickedSlot?.id ?? null,
+    );
   };
 
   const choosePo2Subscription = async (subscriptionId: string) => {
