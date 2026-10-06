@@ -38,7 +38,7 @@ const RULES = [
     icon: Tag,
     title: "Abonementas",
     teaser: "4, 8 ar 12 treniruočių viename pakete.",
-    body: "Abonementas galioja 30 dienų nuo jo pradžios. Jo treniruotės priskiriamos pagal pasirinktą treniruotės tipą ir žirgą. Jei abonemento neturite, nuo 2026-10-18 galite turėti vieną būsimą įprastą rezervaciją be abonemento.",
+    body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą ir gali būti skirtos vienam arba dviem raiteliams. Jei abonemento neturite, nuo 2026-10-18 galite turėti vieną būsimą įprastą rezervaciją be abonemento.",
   },
   {
     key: "booking",
@@ -335,7 +335,7 @@ export function WelcomeOnboarding() {
       .update({
         onboarding_accepted_at: new Date().toISOString(),
         onboarding_version: ONBOARDING_VERSION,
-        rules_version: "2026-09",
+        rules_version: "2026-10",
       })
       .eq("id", user.id);
 
