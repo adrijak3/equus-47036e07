@@ -22,7 +22,7 @@ import { PageLoader } from "@/components/PageLoader";
 
 const Grafikas = lazy(() => import("./pages/Grafikas"));
 const Pradzia = lazy(() => import("./pages/Pradzia"));
-const Kainos = lazy(() => import("./pages/Kainos"));
+const Kainos = lazy(() => import("./pages/Kainos"));\nconst Galerija = lazy(() => import("./pages/Galerija"));
 const Paskyra = lazy(() => import("./pages/Paskyra"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -100,7 +100,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
-                  <Route path="/kainos" element={<Kainos />} />
+                  <Route path="/kainos" element={<Kainos />} />\n                  <Route\n                    path="/galerija"\n                    element={\n                      <RequireAuth>\n                        <Galerija />\n                      </RequireAuth>\n                    }\n                  />
                   <Route path="/informacija" element={<Informacija />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
