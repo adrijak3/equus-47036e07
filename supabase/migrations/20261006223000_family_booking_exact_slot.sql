@@ -180,7 +180,6 @@ BEGIN
     ) THEN
       RAISE EXCEPTION '%', COALESCE(v_eligibility ->> 'message', 'Registracija negalima.');
     END IF;
-    END IF;
   END IF;
 
   IF NOT _force_separate THEN
