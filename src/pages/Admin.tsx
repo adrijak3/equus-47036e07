@@ -2010,6 +2010,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       return;
     }
 
+    if (coveredRiders === 2 && lessonCount < 2) {
+      toast.error("2 raiteliams skirtame abonemente turi būti bent 2 treniruotės.");
+      return;
+    }
+
     setSaving(true);
 
     const { data, error } = await (supabase as any).rpc("admin_purchase_subscription", {
