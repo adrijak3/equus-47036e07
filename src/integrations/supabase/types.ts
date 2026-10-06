@@ -140,6 +140,8 @@ export type Database = {
           trainer_name: string | null
           updated_at: string
           user_id: string | null
+          family_rider_id: string | null
+          family_group_id: string | null
         }
         Insert: {
           counts_in_subscription?: boolean
@@ -178,6 +180,8 @@ export type Database = {
           trainer_name?: string | null
           updated_at?: string
           user_id?: string | null
+          family_rider_id?: string | null
+          family_group_id?: string | null
         }
         Relationships: [
           {
@@ -187,7 +191,47 @@ export type Database = {
             referencedRelation: "guest_riders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bookings_family_rider_id_fkey"
+            columns: ["family_rider_id"]
+            isOneToOne: false
+            referencedRelation: "family_riders"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      family_riders: {
+        Row: {
+          id: string
+          parent_user_id: string
+          first_name: string
+          last_name: string
+          experience_text: string | null
+          always_together: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          parent_user_id: string
+          first_name: string
+          last_name: string
+          experience_text?: string | null
+          always_together?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          parent_user_id?: string
+          first_name?: string
+          last_name?: string
+          experience_text?: string | null
+          always_together?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       cancellation_requests: {
         Row: {
@@ -1125,6 +1169,7 @@ export type Database = {
           price: number
           purchase_date: string
           sickness_credits: number
+          covered_riders: number
           start_from_date: string | null
           updated_at: string
           user_id: string | null
@@ -1141,6 +1186,7 @@ export type Database = {
           price: number
           purchase_date: string
           sickness_credits?: number
+          covered_riders?: number
           start_from_date?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1157,6 +1203,7 @@ export type Database = {
           price?: number
           purchase_date?: string
           sickness_credits?: number
+          covered_riders?: number
           start_from_date?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1515,6 +1562,20 @@ export type Database = {
       }
       link_guest_rider_to_account: {
         Args: { _guest_id: string; _user_id: string }
+        Returns: Json
+      }
+      create_family_booking: {
+        Args: {
+          _family_rider_id: string
+          _force_separate?: boolean
+          _slot_date: string
+          _slot_time: string
+          _subscription_id?: string | null
+        }
+        Returns: Json
+      }
+      admin_set_subscription_coverage: {
+        Args: { _covered_riders: number; _subscription_id: string }
         Returns: Json
       }
       make_booking_individual: { Args: { _booking_id: string }; Returns: Json }
