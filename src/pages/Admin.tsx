@@ -865,6 +865,7 @@ function VacationsAdminTab() {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+  useEffect(() => { setOpenUserId(focusUserId ?? null); }, [focusUserId]);
 
   const upcoming = rows.filter((r) => r.ends_on >= today);
   const past = rows.filter((r) => r.ends_on < today).reverse();
@@ -1907,6 +1908,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [saving, setSaving] = useState(false);
   const [subscriptionPrices, setSubscriptionPrices] = useState<Record<string, number>>({});
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
+  const [openUserId, setOpenUserId] = useState<string | null>(focusUserId ?? null);
   const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
   const load = async () => {
     const [p, s, priceRows] = await Promise.all([
@@ -2150,18 +2152,25 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
         {filteredProfiles.map((p) => {
           const us = subs.filter((s) => s.user_id === p.id);
           const unpaid = us.some((s) => !s.paid);
+          const isOpen = openUserId === p.id;
+
           return (
-            <details
-              key={p.id}
-              className="bg-gradient-card border border-gold/15 rounded-lg"
-              open={focusUserId === p.id}
-            >
-              <summary className="px-5 py-3 cursor-pointer flex items-center justify-between">
-                <div>
+            <div key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg overflow-hidden">
+              <div className="px-5 py-3 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenUserId(isOpen ? null : p.id);
+                    setDetailSub(null);
+                  }}
+                  className="min-w-0 flex-1 text-left"
+                  aria-expanded={isOpen}
+                >
                   <div className="font-display text-base text-gold">{p.full_name}</div>
                   <div className="text-xs text-muted-foreground">{p.phone ?? "—"} · {us.length} ab.</div>
-                </div>
-                <div className="flex items-center gap-2">
+                </button>
+
+                <div className="flex items-center gap-2 shrink-0">
                   {unpaid && (
                     <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-blush/15 text-blush border border-blush/30 font-medium">
                       Neapmokėta
@@ -2185,71 +2194,89 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                   >
                     <Plus className="w-3.5 h-3.5" /> Abonementas
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenUserId(isOpen ? null : p.id);
+                      setDetailSub(null);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gold/20 text-muted-foreground hover:border-gold/40 hover:text-gold"
+                    aria-label={isOpen ? "Uždaryti" : "Atidaryti"}
+                  >
+                    {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
                 </div>
-              </summary>
-              <div className="border-t border-gold/10 px-5 py-3">
-                {us.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
-                ) : (
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {us.map((s) => {
-                      const actual = s.lessons_used ?? 0;
-                      return (
-                        <SubscriptionCard
-                          key={s.id}
-                          s={s as any}
-                          extra={
-                            <div className="text-xs text-muted-foreground">
-                              {Number(s.covered_riders ?? 1) === 2
-                                ? "👥 Skirtas 2 raiteliams · bendra rezervacija sunaudoja 2 treniruotes"
-                                : "👤 Skirtas 1 raiteliui"}
-                            </div>
-                          }
-                          effectiveUsed={actual}
-                          onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
-                          onEditLessons={() => editLessons(s)}
-                          onEditUsed={() => editUsed(s)}
-                          onDelete={() => deleteSub(s)}
-                          extra={
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setDetailSub(s)}
-                                className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
-                                title="Abonemento pamokos"
-                              >
-                                <ListTree className="w-3 h-3" /> Pamokos
-                              </button>
-                              <div className="flex flex-wrap items-center gap-1.5 w-full">
-                                <span className="text-[11px] text-muted-foreground">Pratęsti:</span>
-                                {[{ days: 1, label: "+1 d." }, { days: 7, label: "+1 sav." }, { days: 14, label: "+2 sav." }].map((opt) => (
-                                  <button
-                                    key={opt.days}
-                                    type="button"
-                                    onClick={() => extendExpiry(s, opt.days)}
-                                    className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
-                                  >
-                                    {opt.label}
-                                  </button>
-                                ))}
-                              </div>
-                              {s.paid && (
-                                <button
-                                  onClick={() => togglePaid(s.id, false)}
-                                  className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
-                                >
-                                  Pažymėti neapmokėta
-                                </button>
-                              )}
-                            </div>
-                          }
-                        />
-                      );
-                    })}
-                  </div>
-                )}
               </div>
-            </details>
+
+              {isOpen && (
+                <div className="border-t border-gold/10 px-5 py-3">
+                  {us.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">Nėra abonementų</p>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {us.map((s) => {
+                        const actual = s.lessons_used ?? 0;
+                        return (
+                          <SubscriptionCard
+                            key={s.id}
+                            s={s as any}
+                            effectiveUsed={actual}
+                            onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
+                            onEditLessons={() => editLessons(s)}
+                            onEditUsed={() => editUsed(s)}
+                            onDelete={() => deleteSub(s)}
+                            extra={
+                              <div className="space-y-3">
+                                <div className="text-xs text-muted-foreground">
+                                  {Number(s.covered_riders ?? 1) === 2
+                                    ? "👥 Skirtas 2 raiteliams · bendra rezervacija sunaudoja 2 treniruotes"
+                                    : "👤 Skirtas 1 raiteliui"}
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setDetailSub(s)}
+                                    className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1"
+                                    title="Abonemento pamokos"
+                                  >
+                                    <ListTree className="w-3 h-3" /> Pamokos
+                                  </button>
+
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-[11px] text-muted-foreground">Pratęsti:</span>
+                                    {[{ days: 1, label: "+1 d." }, { days: 7, label: "+1 sav." }, { days: 14, label: "+2 sav." }].map((opt) => (
+                                      <button
+                                        key={opt.days}
+                                        type="button"
+                                        onClick={() => extendExpiry(s, opt.days)}
+                                        className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
+                                      >
+                                        {opt.label}
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  {s.paid && (
+                                    <button
+                                      type="button"
+                                      onClick={() => togglePaid(s.id, false)}
+                                      className="text-[11px] px-2 py-1 rounded border border-blush/30 text-blush bg-blush/10"
+                                    >
+                                      Pažymėti neapmokėta
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
