@@ -41,6 +41,7 @@ interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean;
   lesson_type?: string;
+  covered_riders?: 1 | 2;
 }
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
@@ -1897,10 +1898,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
   // Add dialog
   const [open, setOpen] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState<{ name: string; price: number; lessons: number; emailOk: boolean } | null>(null);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<{ name: string; price: number; lessons: number; coveredRiders: 1 | 2; emailOk: boolean } | null>(null);
   const [selUser, setSelUser] = useState("");
   const [packageType, setPackageType] = useState<"group" | "po2">("group");
   const [horseType, setHorseType] = useState<"school" | "own">("school");
+  const [coveredRiders, setCoveredRiders] = useState<1 | 2>(1);
   const [lessons, setLessons] = useState("");
   const [saving, setSaving] = useState(false);
   const [subscriptionPrices, setSubscriptionPrices] = useState<Record<string, number>>({});
@@ -2039,6 +2041,23 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       return;
     }
 
+    const { error: coverageError } = await (supabase as any).rpc(
+      "admin_set_subscription_coverage",
+      {
+        _subscription_id: data.subscription_id,
+        _covered_riders: coveredRiders,
+      },
+    );
+
+    if (coverageError) {
+      console.error("admin_set_subscription_coverage failed", coverageError);
+      toast.error(
+        "Abonementas sukurtas, bet nepavyko nustatyti raitelių skaičiaus. Paliktas 1 raiteliui.",
+      );
+      setCoveredRiders(1);
+      await load();
+    }
+
     const price = Number(data.price_eur);
     const purchasedName = profiles.find((p) => p.id === selUser)?.full_name ?? "klientui";
 
@@ -2048,6 +2067,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       name: purchasedName,
       price: Number.isFinite(price) ? price : 0,
       lessons: lessonCount,
+      coveredRiders,
       emailOk: false,
     };
     setPurchaseSuccess(purchaseInfo);
@@ -2057,6 +2077,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     setLessons("");
     setPackageType("group");
     setHorseType("school");
+    setCoveredRiders(1);
     load();
 
     // Kick the email worker in the background. Update the popup when the worker responds.
@@ -2177,6 +2198,13 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                         <SubscriptionCard
                           key={s.id}
                           s={s as any}
+                          extra={
+                            <div className="text-xs text-muted-foreground">
+                              {Number(s.covered_riders ?? 1) === 2
+                                ? "👥 Skirtas 2 raiteliams · bendra rezervacija sunaudoja 2 treniruotes"
+                                : "👤 Skirtas 1 raiteliui"}
+                            </div>
+                          }
                           effectiveUsed={actual}
                           onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
                           onEditLessons={() => editLessons(s)}
@@ -2253,6 +2281,21 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                 <option value="school">Mokyklos žirgais</option>
                 <option value="own">Nuosavais žirgais</option>
               </select>
+            </div>
+            <div>
+              <Label>Abonementas skirtas</Label>
+              <select
+                value={coveredRiders}
+                onChange={(e) => setCoveredRiders(Number(e.target.value) as 1 | 2)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value={1}>1 raiteliui</option>
+                <option value={2}>2 raiteliams</option>
+              </select>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                2 raiteliams skirtas abonementas vienos bendros rezervacijos metu
+                sunaudoja 2 treniruotes ir gali dengti, pvz., tėvą + vaiką.
+              </p>
             </div>
             <div>
               <Label>Pamokų sk.</Label>
@@ -2332,6 +2375,10 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                   <div>
                     <div className="text-xs text-muted-foreground">Suma</div>
                     <div className="font-medium">{purchaseSuccess.price.toFixed(2)} €</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Dengia</div>
+                    <div className="font-medium">{purchaseSuccess.coveredRiders} raitelį{purchaseSuccess.coveredRiders === 2 ? "us" : ""}</div>
                   </div>
                 </div>
               </div>
