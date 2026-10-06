@@ -1059,24 +1059,28 @@ function FamilyRidersSection({ parentUserId }: { parentUserId: string }) {
                         {rider.always_together ? "Numatyta registruoti kartu" : "Pridedamas pagal poreikį"}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openEdit(rider)}
-                      className="rounded-lg border border-gold/20 px-2.5 py-1.5 text-xs text-gold hover:bg-gold/5"
-                    >
-                      Redaguoti
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(rider)}
+                        className="rounded-lg border border-gold/20 px-2.5 py-1.5 text-xs text-gold hover:bg-gold/5"
+                      >
+                        Redaguoti
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void remove(rider)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 px-2.5 py-1.5 text-xs text-muted-foreground hover:border-destructive/40 hover:text-destructive"
+                        title="Pašalinti raitelį"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Pašalinti
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">
                     {rider.experience_text}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => void remove(rider)}
-                    className="mt-3 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    Pašalinti
-                  </button>
                 </div>
               ))}
             </div>
