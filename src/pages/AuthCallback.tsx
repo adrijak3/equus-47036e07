@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLoader } from "@/components/PageLoader";
@@ -6,6 +6,7 @@ import { PageLoader } from "@/components/PageLoader";
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +50,17 @@ export default function AuthCallback() {
     void finishOAuth();
     return () => { cancelled = true; };
   }, [navigate, params]);
+
+  if (message) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="rounded-2xl border border-gold/20 bg-gradient-card px-6 py-5 text-center text-sm shadow-elegant">
+          <p className="font-medium text-gold">{message}</p>
+          <p className="mt-2 text-xs text-muted-foreground">Grįžtame į prisijungimą…</p>
+        </div>
+      </div>
+    );
+  }
 
   return <PageLoader fullScreen />;
 }
