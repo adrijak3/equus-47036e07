@@ -51,8 +51,8 @@ const RULES = [
     key: "cancel",
     icon: XCircle,
     title: "Atšaukimas",
-    teaser: "Iki 24 val. prieš treniruotę – be praradimo.",
-    body: "Treniruotę galima atšaukti nemokamai ne vėliau kaip 24 valandas prieš pradžią. Vėliau atšaukta arba praleista treniruotė paprastai laikoma panaudota, išskyrus ligos ar force majeure atvejus.",
+    teaser: "Iki 24 val. prieš treniruotę – be praradimo. Registracija į treniruotę uždaroma 3 val. prieš treniruotę.",
+    body: "Treniruotę galima atšaukti nemokamai ne vėliau kaip 24 valandas prieš pradžią. Vėliau atšaukta arba praleista treniruotė paprastai laikoma panaudota, išskyrus ligos ar force majeure atvejus. Taipogi galite persikelti į kitą treniruotę tą pačią savaitę, neprarasdami savo treniruotės.",
   },
   {
     key: "family",
@@ -233,7 +233,7 @@ export function WelcomeOnboarding() {
     }
 
     if (cleanExperience.length < 30) {
-      toast.error("Aprašykite jojimo patirtį bent 30 simbolių.");
+      toast.error("Aprašykite jojimo patirtį.");
       return false;
     }
 
@@ -435,7 +435,7 @@ export function WelcomeOnboarding() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.55 }}
               >
-                Čia prasideda jūsų kitas jojimo sezonas.
+                Sveiki atvykę!
               </motion.h2>
               <motion.p
                 className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base"
@@ -443,8 +443,8 @@ export function WelcomeOnboarding() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.75 }}
               >
-                Keliose trumpose stotelėse parodysime, kaip naudotis Equus
-                svetaine. Visą turinį galėsite laisvai slinkti ir peržiūrėti.
+                Susipažinkime! Parodysime kaip naudotis Equus
+                svetaine. Visą turinį galėsite laisvai peržiūrėti.
               </motion.p>
             </motion.div>
           )}
@@ -465,7 +465,7 @@ export function WelcomeOnboarding() {
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Šie duomenys naudojami rezervacijoms ir treneriui geriau
-                  suprasti jūsų jojimo patirtį.
+                  suprasti jūsų jojimo patirtį, bei parinkti Jums tinkamą žirgą.
                 </p>
               </div>
 
@@ -556,10 +556,10 @@ export function WelcomeOnboarding() {
                     maxLength={500}
                     rows={6}
                     className="mt-1.5 flex w-full resize-y rounded-xl border border-input bg-background px-3 py-2.5 text-sm leading-6 outline-none transition-colors focus:border-gold/50 focus:ring-1 focus:ring-gold/30"
-                    placeholder="Pvz. kiek laiko jodinėjate, kokiose treniruotėse dalyvavote, ką mokate, ar turite varžybų patirties…"
+                    placeholder="Pvz. kiek laiko jodinėjate, ar turite varžybų patirties…"
                   />
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    Mažiausiai 30 simbolių. Galite parašyti ir daugiau.
+                    Mažiausiai 30 simbolių. Galite parašyti ir daugiau:)
                   </p>
                 </div>
               </div>
@@ -715,7 +715,7 @@ export function WelcomeOnboarding() {
                   Abonementai ir svarbiausia
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Spustelėkite korteles – jos išsiskleidžia ir parodo esmę.
+                  Spustelėkite korteles – jos išsiskleidžia ir parodo informaciją.
                   Apačioje yra nuoroda į pilną taisyklių puslapį.
                 </p>
               </div>
@@ -782,8 +782,8 @@ export function WelcomeOnboarding() {
                   <div>
                     <p className="font-semibold">Pilnos taisyklės</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Atidaroma atskirame puslapyje, kad galėtumėte ramiai
-                      perskaityti visą teisinį tekstą.
+                      Atidaroma atskirame puslapyje, kad galėtumėte patogiau
+                      perskaityti visą tekstą.
                     </p>
                   </div>
                   <Link
@@ -822,7 +822,7 @@ export function WelcomeOnboarding() {
                   05 · Išvaizda
                 </p>
                 <h2 className="mt-2 font-display text-3xl text-gradient-gold">
-                  Pasirinkite savo Equus nuotaiką
+                  Pasirinkite savo Equus tematiką
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Temą ir šviesumą vėliau galėsite pakeisti paskyroje.
@@ -853,7 +853,7 @@ export function WelcomeOnboarding() {
                 Viskas paruošta
               </p>
               <h2 className="mt-2 max-w-xl font-display text-4xl text-gradient-gold sm:text-5xl">
-                Susitiksime manieže. 🐴
+                Lauksime Jūsų atvykstant! 🐴
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground">
                 Jūsų profilis, taisyklės ir pasirinkta tema išsaugoti. Toliau
