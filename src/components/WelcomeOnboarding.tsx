@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import horseHead from "./equus-head-transparent.png";
 
 const ONBOARDING_VERSION = 2;
 
@@ -412,7 +413,7 @@ export function WelcomeOnboarding() {
                   transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
                 />
                 <motion.img
-                  src="/equus-head-transparent.png"
+                  src={horseHead}
                   alt="Equus"
                   className="relative z-10 h-36 w-36 object-contain drop-shadow-elegant sm:h-44 sm:w-44"
                   initial={{ opacity: 0, scale: 0.72, y: 8 }}
