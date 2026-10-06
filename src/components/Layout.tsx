@@ -26,6 +26,7 @@ import {
   Settings,
   Inbox,
   X,
+  Images,
   ScanLine,
 } from "lucide-react";
 
@@ -64,6 +65,7 @@ const NAV_GUEST = [
 
 const NAV_USER = [
   { to: "/", label: "Pagrindinis", icon: Home },
+  { to: "/galerija", label: "Galerija", icon: Images },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
   { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
@@ -73,10 +75,11 @@ const NAV_USER = [
 
 const NAV_ADMIN = [
   { to: "/admin", label: "Pagrindinis", icon: Home },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
-  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
-  { to: "/admin?section=subs", label: "Abonementai", icon: Wallet },
+  { to: "/galerija", label: "Galerija", icon: Images },
+  { to: "/kainos", label: "Kainos", icon: Tag, mobileBottomOnly: true },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays, mobileBottomOnly: true },
+  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox, mobileBottomOnly: true },
+  { to: "/admin?section=subs", label: "Abonementai", icon: Wallet, mobileBottomOnly: true },
   { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
   { to: "/admin?section=cancelHistory", label: "Atšaukimų istorija", icon: History },
   { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
