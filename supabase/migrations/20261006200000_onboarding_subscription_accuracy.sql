@@ -208,6 +208,13 @@ FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.queue_subscription_expiry_emails()
 TO service_role;
 
+-- Do not let stale reminders created by the old MAX(slot_date) logic escape
+-- after this fix. Sent history is preserved; only still-pending flawed events
+-- are removed.
+DELETE FROM public.email_events
+WHERE event_type = 'subscription_expiring'
+  AND status = 'pending';
+
 -- ---------------------------------------------------------------------------
 -- 3. Restore ordinary paused reservations after a valid subscription purchase.
 --    Permanent bookings are only unpaused here as a safety repair and are
