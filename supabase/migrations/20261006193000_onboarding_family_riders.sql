@@ -373,7 +373,9 @@ $equus_pause_family$;
 CREATE OR REPLACE FUNCTION public.create_family_booking(
   _slot_date date,
   _slot_time time without time zone,
-  _family_rider_id uuid
+  _family_rider_id uuid,
+  _subscription_id uuid DEFAULT NULL,
+  _force_separate boolean DEFAULT false
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -389,6 +391,7 @@ DECLARE
   v_package_type text;
   v_sub public.subscriptions%ROWTYPE;
   v_child_counts boolean := false;
+  v_primary_counts boolean := true;
   v_primary_sub uuid := NULL;
   v_group uuid := gen_random_uuid();
   v_primary uuid;
@@ -466,8 +469,8 @@ BEGIN
   );
 
   IF COALESCE((v_eligibility ->> 'ok')::boolean, false) = false THEN
-    -- The special legacy po2 flow allows a group subscription to cover a pair
-    -- slot with a rate difference. Permit that same valid subscription here.
+    -- Preserve the legacy po2 behavior: a valid group/po2 subscription may
+    -- still cover a capacity-2 slot with a rate difference.
     IF NOT (
       v_capacity = 2
       AND EXISTS (
@@ -480,7 +483,10 @@ BEGIN
           AND s.start_from_date IS NOT NULL
           AND s.expires_at IS NOT NULL
           AND _slot_date BETWEEN s.start_from_date AND s.expires_at
-          AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) IN ('group','po2')
+          AND COALESCE(
+            s.package_type,
+            CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+          ) IN ('group','po2')
           AND public.subscription_committed_lessons(s.id) < s.lessons_total
       )
     ) THEN
@@ -488,77 +494,106 @@ BEGIN
     END IF;
   END IF;
 
-  SELECT s.*
-    INTO v_sub
-  FROM public.subscriptions s
-  WHERE s.user_id = v_actor
-    AND s.paid = true
-    AND s.cancelled_at IS NULL
-    AND s.start_pending = false
-    AND s.start_from_date IS NOT NULL
-    AND s.expires_at IS NOT NULL
-    AND _slot_date BETWEEN s.start_from_date AND s.expires_at
-    AND public.subscription_committed_lessons(s.id) < s.lessons_total
-    AND (
-      (v_package_type = 'group'
-        AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) = 'group')
-      OR
-      (v_package_type = 'po2'
-        AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) IN ('group','po2'))
-    )
-  ORDER BY
-    COALESCE(s.start_from_date, s.purchase_date),
-    s.purchase_date,
-    s.purchased_at,
-    s.id
-  LIMIT 1
-  FOR UPDATE;
+  IF NOT _force_separate THEN
+    IF _subscription_id IS NOT NULL THEN
+      SELECT s.*
+        INTO v_sub
+      FROM public.subscriptions s
+      WHERE s.id = _subscription_id
+        AND s.user_id = v_actor
+        AND s.paid = true
+        AND s.cancelled_at IS NULL
+        AND s.start_pending = false
+        AND s.start_from_date IS NOT NULL
+        AND s.expires_at IS NOT NULL
+        AND _slot_date BETWEEN s.start_from_date AND s.expires_at
+        AND public.subscription_committed_lessons(s.id) < s.lessons_total
+        AND (
+          (v_package_type = 'group'
+            AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) = 'group')
+          OR
+          (v_package_type = 'po2'
+            AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) IN ('group','po2'))
+        )
+      FOR UPDATE;
 
-  IF FOUND THEN
-    IF COALESCE(v_sub.covered_riders, 1) = 2 THEN
-      IF public.subscription_committed_lessons(v_sub.id) > v_sub.lessons_total - 2 THEN
-        RAISE EXCEPTION 'NOT_ENOUGH_SUBSCRIPTION_LESSONS_FOR_TWO_RIDERS';
-      END IF;
-      v_child_counts := true;
-      v_primary_sub := v_sub.id;
-
-      IF v_capacity = 2 THEN
-        v_per_lesson := v_sub.price / GREATEST(1, v_sub.lessons_total);
-        v_extra_fee := GREATEST(0, ROUND((45 - v_per_lesson) * 2, 2));
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'SUBSCRIPTION_NOT_FOUND';
       END IF;
     ELSE
-      v_child_counts := false;
-      v_primary_sub := v_sub.id;
+      SELECT s.*
+        INTO v_sub
+      FROM public.subscriptions s
+      WHERE s.user_id = v_actor
+        AND s.paid = true
+        AND s.cancelled_at IS NULL
+        AND s.start_pending = false
+        AND s.start_from_date IS NOT NULL
+        AND s.expires_at IS NOT NULL
+        AND _slot_date BETWEEN s.start_from_date AND s.expires_at
+        AND public.subscription_committed_lessons(s.id) < s.lessons_total
+        AND (
+          (v_package_type = 'group'
+            AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) = 'group')
+          OR
+          (v_package_type = 'po2'
+            AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) IN ('group','po2'))
+        )
+      ORDER BY
+        COALESCE(s.start_from_date, s.purchase_date),
+        s.purchase_date,
+        s.purchased_at,
+        s.id
+      LIMIT 1
+      FOR UPDATE;
+    END IF;
+
+    IF v_sub.id IS NULL THEN
+      -- A queued subscription can cover the pair after the normal
+      -- first-lesson activation runs.
+      SELECT s.*
+        INTO v_sub
+      FROM public.subscriptions s
+      WHERE s.user_id = v_actor
+        AND s.paid = true
+        AND s.cancelled_at IS NULL
+        AND s.start_pending = true
+        AND COALESCE(s.covered_riders,1) IN (1,2)
+        AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) IN ('group','po2')
+      ORDER BY s.purchased_at, s.purchase_date, s.id
+      LIMIT 1
+      FOR UPDATE;
+    END IF;
+
+    IF v_sub.id IS NOT NULL THEN
+      v_primary_sub := CASE WHEN v_sub.start_pending = false THEN v_sub.id ELSE NULL END;
+
+      IF COALESCE(v_sub.covered_riders,1) = 2 THEN
+        IF v_sub.start_pending = false
+           AND public.subscription_committed_lessons(v_sub.id) > v_sub.lessons_total - 2
+        THEN
+          RAISE EXCEPTION 'NOT_ENOUGH_SUBSCRIPTION_LESSONS_FOR_TWO_RIDERS';
+        END IF;
+
+        v_child_counts := true;
+      END IF;
 
       IF v_capacity = 2 THEN
         v_per_lesson := v_sub.price / GREATEST(1, v_sub.lessons_total);
-        v_extra_fee := GREATEST(0, ROUND(45 - v_per_lesson, 2));
+        v_extra_fee := GREATEST(
+          0,
+          ROUND(
+            (45 - v_per_lesson) * CASE WHEN v_child_counts THEN 2 ELSE 1 END,
+            2
+          )
+        );
       END IF;
     END IF;
   ELSE
-    -- A queued subscription can still cover the family pair. It remains
-    -- unattached until the normal first-lesson activation runs.
-    SELECT s.*
-      INTO v_sub
-    FROM public.subscriptions s
-    WHERE s.user_id = v_actor
-      AND s.paid = true
-      AND s.cancelled_at IS NULL
-      AND s.start_pending = true
-      AND COALESCE(s.covered_riders,1) IN (1,2)
-      AND COALESCE(
-        s.package_type,
-        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-      ) IN ('group','po2')
-    ORDER BY s.purchased_at, s.purchase_date, s.id
-    LIMIT 1
-    FOR UPDATE;
-
-    IF FOUND THEN
-      IF COALESCE(v_sub.covered_riders,1) = 2 THEN
-        v_child_counts := true;
-      END IF;
-    END IF;
+    v_primary_counts := false;
   END IF;
 
   PERFORM set_config('equus.allow_family_booking_insert', 'true', true);
@@ -570,7 +605,7 @@ BEGIN
   )
   VALUES (
     v_actor, _slot_date, _slot_time, 'active', v_trainer_name,
-    v_primary_sub, true, v_extra_fee, false,
+    v_primary_sub, v_primary_counts, v_extra_fee, false,
     v_group
   )
   RETURNING id INTO v_primary;
