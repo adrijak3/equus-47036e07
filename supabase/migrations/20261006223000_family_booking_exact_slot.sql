@@ -65,6 +65,7 @@ BEGIN
       INTO v_requested_slot
     FROM public.time_slots t
     WHERE t.id = _slot_id
+      AND t.slot_time = _slot_time
       AND t.active = true
       AND (
         t.one_off_date = _slot_date
