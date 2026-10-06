@@ -107,9 +107,16 @@ export function WelcomeOnboarding() {
   const [rulesViewed, setRulesViewed] = useState<Set<string>>(new Set());
   const [expandedRule, setExpandedRule] = useState<string | null>(RULES[0].key);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const onboardingLoadedForUser = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!user || authLoading || isAdmin) return;
+    if (!user || authLoading || isAdmin) {
+      if (!user) onboardingLoadedForUser.current = null;
+      return;
+    }
+
+    if (onboardingLoadedForUser.current === user.id) return;
+    onboardingLoadedForUser.current = user.id;
 
     let cancelled = false;
 
@@ -213,7 +220,7 @@ export function WelcomeOnboarding() {
     return () => {
       cancelled = true;
     };
-  }, [user, isAdmin, profile, authLoading]);
+  }, [user, isAdmin, authLoading]);
 
   const saveMainInfo = async () => {
     if (!user) return false;
