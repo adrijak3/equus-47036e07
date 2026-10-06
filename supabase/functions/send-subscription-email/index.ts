@@ -348,25 +348,36 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
 }
 
 function subscriptionExpiringHtml(clientName: string, payload: any) {
-  const lastTraining = formatDate(payload?.last_training_date);
-  const remaining = Number(payload?.remaining ?? 0);
+  const lastTraining = payload?.last_training_date
+    ? formatDate(payload.last_training_date)
+    : null;
+  const lastTrainingTime = payload?.last_training_time
+    ? formatTime(payload.last_training_time)
+    : null;
+  const expiresAt = payload?.expires_at ? formatDate(payload.expires_at) : null;
+  const remaining = Number(payload?.remaining ?? 1);
+
+  const finalTrainingText = lastTraining
+    ? `Liko viena įskaičiuota treniruotė. Ji šiuo metu suplanuota ${lastTraining}${lastTrainingTime ? ` ${lastTrainingTime}` : ""}.`
+    : "Liko viena įskaičiuota treniruotė, tačiau šiuo metu jai nėra priskirtos būsimos rezervacijos.";
+
   const inner = `
     <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)},</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
-      Norime priminti, kad Jūsų dabartinio abonemento <strong>paskutinė suplanuota treniruotė yra ${esc(lastTraining)}</strong>.
+      Norime priminti, kad Jūsų abonemente <strong>liko ${remaining} treniruotė</strong>.
     </p>
     <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Abonemento pabaiga</div>
-      <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">${esc(lastTraining)}</div>
-      <div style="font-size:13px;color:#8b737c;margin-top:5px;">Po šios treniruotės abonemento pamokos bus išnaudotos / suplanuotos iki pabaigos.</div>
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Liko abonemente</div>
+      <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">1 treniruotė</div>
+      <div style="font-size:13px;color:#8b737c;margin-top:7px;line-height:1.6;">
+        ${esc(finalTrainingText)}
+      </div>
+      ${expiresAt ? `<div style="font-size:13px;color:#8b737c;margin-top:5px;">Abonementas galioja iki ${esc(expiresAt)}.</div>` : ""}
     </div>
     <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
-      Jei norėsite tęsti treniruotes, galite pasirūpinti kitu abonementu iš anksto. Liko pamokų: <strong>${remaining}</strong>.
-    </p>
-    <p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
-      Po šios treniruotės abonemento pamokos bus išnaudotos iki pabaigos.
+      Jei norėsite tęsti treniruotes, kitu abonementu galite pasirūpinti iš anksto.
     </p>`;
-  return pinkShell("Jūsų abonementas netrukus baigsis", "Mažas priminimas prieš paskutinę suplanuotą treniruotę", inner);
+  return pinkShell("Liko 1 treniruotė abonemente", "Mažas priminimas apie likutį", inner);
 }
 
 function globalAnnouncementHtml(clientName: string, payload: any) {
