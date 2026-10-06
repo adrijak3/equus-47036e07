@@ -268,7 +268,8 @@ export default function Layout({
                     to={to}
                     onClick={close}
                     className={cn(
-                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",\n                      isAdmin && mobileBottomOnly && "hidden sm:flex",
+                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                      isAdmin && mobileBottomOnly && "hidden sm:flex",
                       active
                         ? "border-gold bg-gold/10 text-gold"
                         : "border-transparent text-foreground/80 hover:border-gold/30 hover:bg-gold/5 hover:text-gold",
