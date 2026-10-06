@@ -64,6 +64,39 @@ BEGIN
             AND b.slot_time = ps.slot_time
             AND b.status IN ('active', 'pending_cancel')
         )
+        -- Respect the normal slot capacity. The repair must never create an
+        -- active permanent booking on an already-full slot.
+        AND (
+          SELECT count(*)::integer
+          FROM public.bookings b
+          WHERE b.slot_date = d
+            AND b.slot_time = ps.slot_time
+            AND b.status = 'active'
+        ) < COALESCE(
+          (
+            SELECT so.max_capacity
+            FROM public.slot_overrides so
+            WHERE so.slot_date = d
+              AND so.slot_time = ps.slot_time
+            LIMIT 1
+          ),
+          (
+            SELECT ts.max_capacity
+            FROM public.time_slots ts
+            WHERE ts.slot_time = ps.slot_time
+              AND ts.active = true
+              AND (
+                ts.one_off_date = d
+                OR (
+                  ts.one_off_date IS NULL
+                  AND ts.day_of_week = EXTRACT(ISODOW FROM d)::integer
+                )
+              )
+            ORDER BY ts.max_capacity DESC
+            LIMIT 1
+          ),
+          5
+        )
         AND (
           d > (now() AT TIME ZONE 'Europe/Vilnius')::date
           OR make_timestamptz(
@@ -101,6 +134,13 @@ BEGIN
         EXCEPTION
           WHEN unique_violation THEN
             NULL;
+          WHEN check_violation THEN
+            -- Capacity can change between the pre-check and INSERT. Only
+            -- suppress SLOT_FULL; all other check violations must still fail
+            -- the migration so booking integrity is not weakened.
+            IF SQLERRM <> 'SLOT_FULL' THEN
+              RAISE;
+            END IF;
         END;
       END IF;
 
