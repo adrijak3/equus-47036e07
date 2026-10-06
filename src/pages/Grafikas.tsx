@@ -1442,15 +1442,12 @@ export default function Grafikas() {
         (groupInfo?.capacity ?? 0) - (groupInfo?.taken ?? 0),
       );
 
-      const defaultRider =
-        availableSeats >= 2
-          ? familyRiders.find((r) => r.always_together) ?? null
-          : null;
-
+      // Never pre-select another rider: the customer must explicitly decide
+      // whether this lesson is only for themselves or also for a family rider.
       setFamilyBookingChoice({
         date,
         time,
-        familyRiderId: defaultRider?.id ?? null,
+        familyRiderId: null,
         slotId: selectedSlot?.id ?? null,
         trainerName: selectedSlot?.trainer_name ?? null,
         availableSeats,
@@ -5834,10 +5831,10 @@ export default function Grafikas() {
         <DialogContent className="max-w-md border-gold/25 bg-gradient-card">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl text-gradient-gold">
-              Kartu lankantis raitelis
+              Kam skirta ši pamoka?
             </DialogTitle>
             <DialogDescription>
-              Pasirinkite, ar šiai rezervacijai registruojamas ir kitas raitelis.
+              Jūsų abonementas gali būti skirtas 1 arba 2 raiteliams. Prieš rezervuojant pasirinkite, ar ši pamoka skirta tik jums, ar norite įtraukti ir kitą raitelį.
             </DialogDescription>
           </DialogHeader>
 
@@ -5924,7 +5921,9 @@ export default function Grafikas() {
                 await continueBooking(choice.date, choice.time, choice.familyRiderId, choice.trainerName, choice.slotId);
               }}
             >
-              {familyBookingChoice?.familyRiderId ? "Pridėti ir rezervuoti" : "Rezervuoti tik save"}
+              {familyBookingChoice?.familyRiderId
+                ? "Rezervuoti man + kitam raiteliui"
+                : "Rezervuoti tik man"}
             </Button>
           </DialogFooter>
         </DialogContent>
