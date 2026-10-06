@@ -1294,9 +1294,13 @@ export default function Grafikas() {
   ) => {
     if (familyRiderId) {
       const slotForFamily =
+        (slotId
+          ? getSlotsAtTime(date, time).find((s) => s.id === slotId)
+          : null) ??
         getSlotsAtTime(date, time).find(
           (s) => (s.trainer_name ?? null) === (trainerName ?? null),
-        ) ?? getSlotsAtTime(date, time)[0];
+        ) ??
+        getSlotsAtTime(date, time)[0];
       if (!slotForFamily) {
         toast.error("Šio laiko grafike nėra.");
         return;
