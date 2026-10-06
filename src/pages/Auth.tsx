@@ -20,7 +20,7 @@ const signUpSchema = z.object({
     .string()
     .trim()
     .min(30, "Aprašykite patirtį bent 30 simbolių")
-    .max(30, "Aprašymas gali būti iki 30 simbolių"),
+    .max(500, "Aprašymas gali būti iki 500 simbolių"),
 });
 
 const EXPERIENCE_PLACEHOLDER =
@@ -97,7 +97,7 @@ export default function Auth() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      // Keep the OAuth return URL on the established site root. This avoids\n      // requiring /auth/callback to be separately whitelisted in Supabase Auth.\n      // The dedicated callback route remains available for existing links/configs.\n      options: { redirectTo: window.location.origin },
     });
     if (error) { setLoading(false); toast.error(error.message); }
   };
@@ -262,14 +262,14 @@ export default function Auth() {
                   name="experience_text"
                   required
                   minLength={30}
-                  maxLength={30}
+                  maxLength={500}
                   rows={4}
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
                   placeholder={EXPERIENCE_PLACEHOLDER}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Trumpai aprašykite savo jojimo patirtį. Bent 30 simbolių ({experience.trim().length}/30).
+                  Trumpai aprašykite savo jojimo patirtį. Bent 30 simbolių ({experience.trim().length}/500).
                 </p>
               </div>
               <div>
