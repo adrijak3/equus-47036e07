@@ -225,13 +225,14 @@ export default function Grafikas() {
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
-  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
+  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; trainerName: string | null; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
   const [po2Busy, setPo2Busy] = useState(false);
   const [familyRiders, setFamilyRiders] = useState<FamilyRider[]>([]);
   const [familyBookingChoice, setFamilyBookingChoice] = useState<{
     date: Date;
     time: string;
     familyRiderId: string | null;
+    trainerName: string | null;
     availableSeats: number;
   } | null>(null);
 
@@ -1287,9 +1288,13 @@ export default function Grafikas() {
     date: Date,
     time: string,
     familyRiderId: string | null = null,
+    trainerName: string | null = null,
   ) => {
     if (familyRiderId) {
-      const slotForFamily = getSlotsAtTime(date, time)[0];
+      const slotForFamily =
+        getSlotsAtTime(date, time).find(
+          (s) => (s.trainer_name ?? null) === (trainerName ?? null),
+        ) ?? getSlotsAtTime(date, time)[0];
       if (!slotForFamily) {
         toast.error("Šio laiko grafike nėra.");
         return;
@@ -1329,6 +1334,7 @@ export default function Grafikas() {
           date,
           time,
           subscriptions: usable as any,
+          trainerName: slotForFamily.trainer_name ?? null,
           familyRiderId,
         } as any);
         return;
@@ -1338,6 +1344,7 @@ export default function Grafikas() {
         _slot_date: formatDateISO(date),
         _slot_time: time,
         _family_rider_id: familyRiderId,
+        _trainer_name: slotForFamily.trainer_name ?? trainerName ?? null,
       });
 
       if (error) {
@@ -1364,7 +1371,7 @@ export default function Grafikas() {
     await createBooking(date, time);
   };
 
-  const handleBook = async (date: Date, time: string) => {
+  const handleBook = async (date: Date, time: string, clickedSlot?: TimeSlot) => {
     if (!user) {
       toast.error("Prisijunkite, kad užsiregistruotumėte");
       return;
@@ -1385,7 +1392,9 @@ export default function Grafikas() {
     }
 
     if (!isAdmin && !isTrainer && familyRiders.length > 0) {
-      const selectedSlot = getSlotsAtTime(date, time)[0];
+      const selectedSlot =
+        clickedSlot ??
+        getSlotsAtTime(date, time)[0];
       const groupInfo = selectedSlot
         ? getGroupInfo(date, time, selectedSlot)
         : null;
@@ -1403,6 +1412,7 @@ export default function Grafikas() {
         date,
         time,
         familyRiderId: defaultRider?.id ?? null,
+        trainerName: selectedSlot?.trainer_name ?? null,
         availableSeats,
       });
       return;
@@ -1423,6 +1433,8 @@ export default function Grafikas() {
           _family_rider_id: po2Choice.familyRiderId,
           _subscription_id: subscriptionId,
           _force_separate: false,
+          _trainer_name: po2Choice.trainerName,
+
         })
       : await supabase.rpc("book_po2_with_subscription" as any, {
           _slot_date: formatDateISO(po2Choice.date),
@@ -1447,6 +1459,7 @@ export default function Grafikas() {
         _family_rider_id: po2Choice.familyRiderId,
         _subscription_id: null,
         _force_separate: true,
+        _trainer_name: po2Choice.trainerName,
       });
       setPo2Busy(false);
       if (error) {
@@ -4419,6 +4432,7 @@ export default function Grafikas() {
                                             handleBook(
                                               date,
                                               slot.slot_time,
+                                              slot,
                                             )
                                           }
                                         >
