@@ -17,6 +17,8 @@ import {
   List,
   CircleCheckBig,
   ArrowRightLeft,
+  Check,
+  UserRound,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,6 +102,16 @@ interface Booking {
   created_at?: string | null;
   is_paused_for_subscription?: boolean;
   is_grace_booking?: boolean;
+  family_rider_id?: string | null;
+  family_group_id?: string | null;
+}
+
+interface FamilyRider {
+  id: string;
+  first_name: string;
+  last_name: string;
+  experience_text: string | null;
+  always_together: boolean;
 }
 
 interface SlotOverride {
@@ -213,8 +225,14 @@ export default function Grafikas() {
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
-  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
+  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
   const [po2Busy, setPo2Busy] = useState(false);
+  const [familyRiders, setFamilyRiders] = useState<FamilyRider[]>([]);
+  const [familyBookingChoice, setFamilyBookingChoice] = useState<{
+    date: Date;
+    time: string;
+    familyRiderId: string | null;
+  } | null>(null);
 
   // Horse selection
   const [horseDialog, setHorseDialog] = useState<{
@@ -367,6 +385,35 @@ export default function Grafikas() {
 
   const weekEnd = days[6];
 
+  useEffect(() => {
+    if (!user || isAdmin || isTrainer) {
+      setFamilyRiders([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("family_riders")
+        .select("id,first_name,last_name,experience_text,always_together")
+        .eq("parent_user_id", user.id)
+        .order("first_name");
+
+      if (!cancelled) {
+        if (error) {
+          console.error("Nepavyko įkelti kartu lankančių raitelių:", error);
+          setFamilyRiders([]);
+        } else {
+          setFamilyRiders((data ?? []) as FamilyRider[]);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isAdmin, isTrainer]);
+
   const loadData = async () => {
     setLoading(true);
     setLoadError(false);
@@ -391,7 +438,7 @@ export default function Grafikas() {
       supabase
         .from("bookings")
         .select(
-          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at, is_paused_for_subscription, is_grace_booking",
+          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at, is_paused_for_subscription, is_grace_booking, family_rider_id, family_group_id",
         )
         .gte("slot_date", startISO)
         .lte("slot_date", endISO)
@@ -487,6 +534,29 @@ export default function Grafikas() {
       );
     }
 
+    const familyRiderIds = Array.from(
+      new Set(
+        (bookingsRes.data ?? [])
+          .map((b: any) => b.family_rider_id)
+          .filter(Boolean),
+      ),
+    );
+
+    let familyNameMap: Record<string, string> = {};
+    if (familyRiderIds.length > 0) {
+      const { data: familyRows } = await (supabase as any)
+        .from("family_riders")
+        .select("id,first_name,last_name")
+        .in("id", familyRiderIds);
+
+      familyNameMap = Object.fromEntries(
+        (familyRows ?? []).map((r: any) => [
+          r.id,
+          `${r.first_name} ${r.last_name}`.trim(),
+        ]),
+      );
+    }
+
     setSlots(slotsRes.data ?? []);
 
     const visibleBookings = isAdmin
@@ -498,9 +568,11 @@ export default function Grafikas() {
     setBookings(
       visibleBookings.map((b: any) => ({
         ...b,
-        profile_name: b.guest_rider_id
-          ? guestNameMap[b.guest_rider_id]
-          : nameMap[b.user_id],
+        profile_name: b.family_rider_id
+          ? familyNameMap[b.family_rider_id] ?? "Kartu lankantis raitelis"
+          : b.guest_rider_id
+            ? guestNameMap[b.guest_rider_id]
+            : nameMap[b.user_id],
         is_newcomer: b.guest_rider_id
           ? !!guestNewcomerMap[b.guest_rider_id]
           : undefined,
@@ -831,7 +903,9 @@ export default function Grafikas() {
     const list = matching.filter((b) => {
       const key = b.is_guest
         ? `guest:${b.guest_rider_id ?? b.guest_name ?? b.id}`
-        : `user:${b.user_id}`;
+        : b.family_rider_id
+          ? `family:${b.family_rider_id}`
+          : `user:${b.user_id}`;
 
       if (seen.has(key)) return false;
 
@@ -1208,32 +1282,120 @@ export default function Grafikas() {
     toast.success(language === "lt" ? "Prašymas išsiųstas administracijai 🐴" : "Request sent to administration 🐴");
   };
 
-  const handleBook = async (date: Date, time: string) => {
-    if (!user) { toast.error("Prisijunkite, kad užsiregistruotumėte"); return; }
-    if (date.getTime() < new Date().setHours(0, 0, 0, 0)) { toast.error("Negalima registruotis į praeities pamokas"); return; }
-    if (getDayCancellation(date)) { toast.error("Šią dieną treniruotės nevyksta"); return; }
-    const bookSlot = getDaySlots(date).find((s) => s.slot_time === time);
-    if (getTrainerDayCancellation(date, bookSlot?.trainer_name)) { toast.error("Šios treniruotės ta diena nevyksta"); return; }
-    const slotForBooking = getSlotsAtTime(date, time)[0];
-    if (slotForBooking?.max_capacity === 2) {
-      const { data: subscriptions, error: subError } = await supabase.from("subscriptions").select("id, lessons_total, lessons_used, price, lesson_type, start_from_date, purchase_date, expires_at, start_pending, package_type").eq("user_id", user.id).eq("paid", true).is("cancelled_at", null).order("start_pending", { ascending: false }).order("start_from_date", { ascending: true, nullsFirst: true }).order("purchase_date", { ascending: true });
-      if (subError) { toast.error(subError.message); return; }
-      const dateISO = formatDateISO(date);
-      const usable = (subscriptions ?? []).filter((s: any) => {
-        const packageType = String(s.package_type ?? (s.lesson_type === "sportine_po2" ? "po2" : "group"));
-        if (packageType !== "po2" && packageType !== "group") return false;
-        if (s.start_pending) return true;
-        return Number(s.lessons_total) > Number(s.lessons_used)
-          && !!s.start_from_date
-          && !!s.expires_at
-          && s.start_from_date <= dateISO
-          && s.expires_at >= dateISO;
+  const continueBooking = async (
+    date: Date,
+    time: string,
+    familyRiderId: string | null = null,
+  ) => {
+    if (familyRiderId) {
+      const slotForFamily = getSlotsAtTime(date, time)[0];
+      if (!slotForFamily) {
+        toast.error("Šio laiko grafike nėra.");
+        return;
+      }
+
+      if (slotForFamily.max_capacity === 2) {
+        const { data: subscriptions, error: subError } = await supabase
+          .from("subscriptions")
+          .select("id, lessons_total, lessons_used, price, lesson_type, start_from_date, purchase_date, expires_at, start_pending, package_type")
+          .eq("user_id", user!.id)
+          .eq("paid", true)
+          .is("cancelled_at", null)
+          .order("start_pending", { ascending: false })
+          .order("start_from_date", { ascending: true, nullsFirst: true })
+          .order("purchase_date", { ascending: true });
+
+        if (subError) {
+          toast.error(subError.message);
+          return;
+        }
+
+        const dateISO = formatDateISO(date);
+        const usable = (subscriptions ?? []).filter((s: any) => {
+          const packageType = String(
+            s.package_type ?? (s.lesson_type === "sportine_po2" ? "po2" : "group"),
+          );
+          if (packageType !== "po2" && packageType !== "group") return false;
+          if (s.start_pending) return true;
+          return Number(s.lessons_total) > Number(s.lessons_used)
+            && !!s.start_from_date
+            && !!s.expires_at
+            && s.start_from_date <= dateISO
+            && s.expires_at >= dateISO;
+        });
+
+        setPo2Choice({
+          date,
+          time,
+          subscriptions: usable as any,
+          familyRiderId,
+        } as any);
+        return;
+      }
+
+      const { data, error } = await (supabase as any).rpc("create_family_booking", {
+        _slot_date: formatDateISO(date),
+        _slot_time: time,
+        _family_rider_id: familyRiderId,
       });
-      if (usable.length > 0) { setPo2Choice({ date, time, subscriptions: usable as any }); return; }
-      await createBooking(date, time, { countsInSubscription: false });
+
+      if (error) {
+        toast.error(
+          error.message?.includes("NOT_ENOUGH_SUBSCRIPTION_LESSONS_FOR_TWO_RIDERS")
+            ? "Abonemente liko per mažai treniruočių dviem raiteliams."
+            : error.message?.includes("NOT_ENOUGH_CAPACITY")
+              ? "Šiame laike nebeužtenka vietų dviem raiteliams."
+              : error.message || "Nepavyko užregistruoti dviejų raitelių.",
+        );
+        return;
+      }
+
+      setBookingSuccess({ date, time });
+      toast.success(
+        Number(data?.covered_riders) === 2
+          ? "Abu raiteliai užregistruoti!"
+          : "Raiteliai užregistruoti. Abonementas šiuo metu dengia vieną raitelį.",
+      );
+      await loadData();
       return;
     }
+
     await createBooking(date, time);
+  };
+
+  const handleBook = async (date: Date, time: string) => {
+    if (!user) {
+      toast.error("Prisijunkite, kad užsiregistruotumėte");
+      return;
+    }
+    if (date.getTime() < new Date().setHours(0, 0, 0, 0)) {
+      toast.error("Negalima registruotis į praeities pamokas");
+      return;
+    }
+    if (getDayCancellation(date)) {
+      toast.error("Šią dieną treniruotės nevyksta");
+      return;
+    }
+
+    const bookSlot = getDaySlots(date).find((s) => s.slot_time === time);
+    if (getTrainerDayCancellation(date, bookSlot?.trainer_name)) {
+      toast.error("Šios treniruotės ta diena nevyksta");
+      return;
+    }
+
+    if (!isAdmin && !isTrainer && familyRiders.length > 0) {
+      const defaultRider =
+        familyRiders.find((r) => r.always_together) ?? null;
+
+      setFamilyBookingChoice({
+        date,
+        time,
+        familyRiderId: defaultRider?.id ?? null,
+      });
+      return;
+    }
+
+    await continueBooking(date, time);
   };
 
   const choosePo2Subscription = async (subscriptionId: string) => {
@@ -1241,7 +1403,19 @@ export default function Grafikas() {
     const sub = po2Choice.subscriptions.find((s) => s.id === subscriptionId);
     if (!sub) return;
     setPo2Busy(true);
-    const { error } = await supabase.rpc("book_po2_with_subscription" as any, { _slot_date: formatDateISO(po2Choice.date), _slot_time: po2Choice.time, _subscription_id: subscriptionId });
+    const { error } = po2Choice.familyRiderId
+      ? await (supabase as any).rpc("create_family_booking", {
+          _slot_date: formatDateISO(po2Choice.date),
+          _slot_time: po2Choice.time,
+          _family_rider_id: po2Choice.familyRiderId,
+          _subscription_id: subscriptionId,
+          _force_separate: false,
+        })
+      : await supabase.rpc("book_po2_with_subscription" as any, {
+          _slot_date: formatDateISO(po2Choice.date),
+          _slot_time: po2Choice.time,
+          _subscription_id: subscriptionId,
+        });
     setPo2Busy(false);
     if (error) { toast.error(error.message); return; }
     setPo2Choice(null);
@@ -1253,7 +1427,19 @@ export default function Grafikas() {
   const choosePo2Separate = async () => {
     if (!po2Choice) return;
     setPo2Busy(true);
-    const ok = await createBooking(po2Choice.date, po2Choice.time, { subscriptionId: null, countsInSubscription: false, extraFeeEur: 0 });
+    const ok = po2Choice.familyRiderId
+      ? !((await (supabase as any).rpc("create_family_booking", {
+          _slot_date: formatDateISO(po2Choice.date),
+          _slot_time: po2Choice.time,
+          _family_rider_id: po2Choice.familyRiderId,
+          _subscription_id: null,
+          _force_separate: true,
+        })).error)
+      : await createBooking(po2Choice.date, po2Choice.time, {
+          subscriptionId: null,
+          countsInSubscription: false,
+          extraFeeEur: 0,
+        });
     setPo2Busy(false);
     if (ok) setPo2Choice(null);
   };
@@ -5556,7 +5742,101 @@ export default function Grafikas() {
       <Dialog open={!!po2Choice} onOpenChange={(open) => !open && !po2Busy && setPo2Choice(null)}>
         <DialogContent className="max-w-md rounded-3xl border-gold/20 bg-gradient-card">
           <DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">Po 2 pamoka</DialogTitle><DialogDescription>Pasirinkite, kaip norite apmokėti šią pamoką.</DialogDescription></DialogHeader>
-          {po2Choice && <div className="space-y-3">
+          <Dialog
+        open={!!familyBookingChoice}
+        onOpenChange={(open) => !open && setFamilyBookingChoice(null)}
+      >
+        <DialogContent className="max-w-md border-gold/25 bg-gradient-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl text-gradient-gold">
+              Kartu lankantis raitelis
+            </DialogTitle>
+            <DialogDescription>
+              Pasirinkite, ar šiai rezervacijai registruojamas ir kitas raitelis.
+            </DialogDescription>
+          </DialogHeader>
+
+          {familyBookingChoice && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-gold/15 bg-background/35 p-4">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Jūs
+                </p>
+                <p className="mt-1 font-display text-xl">
+                  {profile?.full_name || user?.email || "Raitelis"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {familyRiders.map((rider) => {
+                  const selected = familyBookingChoice.familyRiderId === rider.id;
+                  return (
+                    <button
+                      key={rider.id}
+                      type="button"
+                      onClick={() =>
+                        setFamilyBookingChoice((current) =>
+                          current
+                            ? {
+                                ...current,
+                                familyRiderId: selected ? null : rider.id,
+                              }
+                            : current,
+                        )
+                      }
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-colors",
+                        selected
+                          ? "border-gold/45 bg-gold/10"
+                          : "border-gold/15 bg-background/25 hover:border-gold/30",
+                      )}
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/20 bg-gold/5 text-gold">
+                        {selected ? <Check className="h-5 w-5" /> : <UserRound className="h-5 w-5" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">+ {rider.first_name} {rider.last_name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {rider.always_together ? "Numatyta registruoti kartu" : "Pridėti šiai rezervacijai"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-gold/10 bg-gold/5 p-3 text-xs leading-5 text-muted-foreground">
+                Atšaukus vieną raitelį, kito raitelio rezervacija lieka atskira.
+                Jei abonementas dengia 2 žmones, šiai rezervacijai bus sunaudotos 2 treniruotės.
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setFamilyBookingChoice(null)}
+              disabled={!!busy}
+            >
+              Atšaukti
+            </Button>
+            <Button
+              variant="gold"
+              disabled={!familyBookingChoice || !!busy}
+              onClick={async () => {
+                if (!familyBookingChoice) return;
+                const choice = familyBookingChoice;
+                setFamilyBookingChoice(null);
+                await continueBooking(choice.date, choice.time, choice.familyRiderId);
+              }}
+            >
+              {familyBookingChoice?.familyRiderId ? "Pridėti ir rezervuoti" : "Rezervuoti tik save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {po2Choice && <div className="space-y-3">
             <div className="rounded-xl border border-gold/15 bg-background/30 p-3 text-sm">{po2Choice.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })} · <span className="text-gold font-semibold">{formatTime(po2Choice.time)}</span></div>
             {po2Choice.subscriptions.map((sub) => { const perLesson = Number(sub.price) / Math.max(1, Number(sub.lessons_total)); const extra = Math.max(0, Math.round((45 - perLesson) * 100) / 100); const remainingAfter = Number(sub.lessons_total) - Number(sub.lessons_used) - 1; return <button key={sub.id} type="button" disabled={po2Busy} onClick={() => void choosePo2Subscription(sub.id)} className="w-full rounded-xl border border-gold/20 p-4 text-left hover:border-gold/50 hover:bg-gold/5 transition-colors"><div className="font-semibold">Įskaičiuoti į abonementą</div><div className="mt-1 text-xs text-muted-foreground">1 pamoka iš abonemento + papildomai <span className="font-semibold text-gold">{extra.toFixed(2).replace(".00","")} €</span> skirtumas.</div><div className="mt-1 text-xs text-muted-foreground">Po šios pamokos liks {remainingAfter}.</div></button>; })}
             <button type="button" disabled={po2Busy} onClick={() => void choosePo2Separate()} className="w-full rounded-xl border border-gold/20 p-4 text-left hover:border-gold/50 hover:bg-gold/5 transition-colors"><div className="font-semibold">Mokėti atskirai · 45 €</div><div className="mt-1 text-xs text-muted-foreground">Ši pamoka abonemento nemažins.</div></button>
