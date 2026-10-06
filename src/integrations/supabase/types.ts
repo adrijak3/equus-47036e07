@@ -161,6 +161,8 @@ export type Database = {
           trainer_name?: string | null
           updated_at?: string
           user_id?: string | null
+          family_rider_id?: string | null
+          family_group_id?: string | null
         }
         Update: {
           counts_in_subscription?: boolean
