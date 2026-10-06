@@ -65,7 +65,7 @@ const NAV_GUEST = [
 
 const NAV_USER = [
   { to: "/", label: "Pagrindinis", icon: Home },
-  { to: "/galerija", label: "Galerija", icon: Images },
+  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
   { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
@@ -534,7 +534,7 @@ export default function Layout({
                     { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
                   ]
                 : NAV_USER
-            ).map(({ to, label, icon: Icon }) => {
+            ).filter(({ menuOnly }) => !menuOnly).map(({ to, label, icon: Icon }) => {
               const active = isLinkActive(to);
               return (
                 <Link
