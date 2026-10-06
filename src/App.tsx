@@ -101,7 +101,15 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
-                  <Route path="/kainos" element={<Kainos />} />\n                  <Route\n                    path="/galerija"\n                    element={\n                      <RequireAuth>\n                        <Galerija />\n                      </RequireAuth>\n                    }\n                  />
+                  <Route path="/kainos" element={<Kainos />} />
+                  <Route
+                    path="/galerija"
+                    element={
+                      <RequireAuth>
+                        <Galerija />
+                      </RequireAuth>
+                    }
+                  />
                   <Route path="/informacija" element={<Informacija />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
