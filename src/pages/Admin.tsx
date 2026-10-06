@@ -2058,8 +2058,11 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
     if (coverageError) {
       console.error("admin_set_subscription_coverage failed", coverageError);
+      const coverageMessage =
+        coverageError.message?.replace(/^Error:\s*/i, "").trim() ||
+        "nežinoma klaida";
       toast.error(
-        "Abonementas sukurtas, bet nepavyko nustatyti raitelių skaičiaus. Paliktas 1 raiteliui.",
+        `Abonementas sukurtas, bet nepavyko nustatyti raitelių skaičiaus. ${coverageMessage}`,
       );
       setCoveredRiders(1);
       await load();
