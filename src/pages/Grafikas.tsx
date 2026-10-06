@@ -190,7 +190,7 @@ function trainerSectionLabel(
 
 
 export default function Grafikas() {
-  const { user, isAdmin, isTrainer } = useAuth();
+  const { user, profile, isAdmin, isTrainer } = useAuth();
   const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
   const { language, t } = useLanguage();
 
@@ -1427,19 +1427,30 @@ export default function Grafikas() {
   const choosePo2Separate = async () => {
     if (!po2Choice) return;
     setPo2Busy(true);
-    const ok = po2Choice.familyRiderId
-      ? !((await (supabase as any).rpc("create_family_booking", {
-          _slot_date: formatDateISO(po2Choice.date),
-          _slot_time: po2Choice.time,
-          _family_rider_id: po2Choice.familyRiderId,
-          _subscription_id: null,
-          _force_separate: true,
-        })).error)
-      : await createBooking(po2Choice.date, po2Choice.time, {
-          subscriptionId: null,
-          countsInSubscription: false,
-          extraFeeEur: 0,
-        });
+    if (po2Choice.familyRiderId) {
+      const { error } = await (supabase as any).rpc("create_family_booking", {
+        _slot_date: formatDateISO(po2Choice.date),
+        _slot_time: po2Choice.time,
+        _family_rider_id: po2Choice.familyRiderId,
+        _subscription_id: null,
+        _force_separate: true,
+      });
+      setPo2Busy(false);
+      if (error) {
+        toast.error(error.message || "Nepavyko užregistruoti dviejų raitelių.");
+        return;
+      }
+      setPo2Choice(null);
+      setBookingSuccess({ date: po2Choice.date, time: po2Choice.time });
+      await loadData();
+      return;
+    }
+
+    const ok = await createBooking(po2Choice.date, po2Choice.time, {
+      subscriptionId: null,
+      countsInSubscription: false,
+      extraFeeEur: 0,
+    });
     setPo2Busy(false);
     if (ok) setPo2Choice(null);
   };
