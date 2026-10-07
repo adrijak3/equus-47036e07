@@ -2466,7 +2466,10 @@ function SubDetailDialog({
   const [freeRows, setFreeRows] = useState<HistoryRow[]>([]);
   const [copyOpen, setCopyOpen] = useState(false);
   const [copyMode, setCopyMode] = useState<"period" | "unpaid" | "details">("period");
-  const defaultFrom = () => { const d = new Date(); d.setMonth(d.getMonth() - 2); return formatDateISO(d); };
+  const defaultFrom = () => {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+    return formatDateISO(d);
+  };
   const [copyFrom, setCopyFrom] = useState(defaultFrom);
   const [copyUntil, setCopyUntil] = useState(() => formatDateISO(new Date()));
   useEffect(() => { setLiveSub(sub); }, [sub]);
@@ -2484,10 +2487,12 @@ function SubDetailDialog({
   const load = async () => {
     setLoading(true);
 
-    // Show the last 2 months of subscription history plus every future booking.
-    const historyFromDate = new Date();
-    historyFromDate.setMonth(historyFromDate.getMonth() - 2);
-    const historyFrom = formatDateISO(historyFromDate);
+    // Show the current calendar month + previous calendar month,
+    // plus every future booking.
+    const today = new Date();
+    const historyFrom = formatDateISO(
+      new Date(today.getFullYear(), today.getMonth() - 1, 1),
+    );
 
     const { data } = await supabase
       .from("bookings")
