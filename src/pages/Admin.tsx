@@ -2466,7 +2466,7 @@ function SubDetailDialog({
   const [freeRows, setFreeRows] = useState<HistoryRow[]>([]);
   const [copyOpen, setCopyOpen] = useState(false);
   const [copyMode, setCopyMode] = useState<"period" | "unpaid" | "details">("period");
-  const defaultFrom = () => { const d = new Date(); d.setMonth(d.getMonth() - 1); return formatDateISO(d); };
+  const defaultFrom = () => { const d = new Date(); d.setMonth(d.getMonth() - 2); return formatDateISO(d); };
   const [copyFrom, setCopyFrom] = useState(defaultFrom);
   const [copyUntil, setCopyUntil] = useState(() => formatDateISO(new Date()));
   useEffect(() => { setLiveSub(sub); }, [sub]);
@@ -2483,11 +2483,32 @@ function SubDetailDialog({
   };
   const load = async () => {
     setLoading(true);
-    const in7 = formatDateISO(new Date(Date.now() + 7 * 86400000));
-    const { data } = await supabase.from("bookings").select("id, slot_date, slot_time, status, counts_in_subscription, is_individual").eq("subscription_id", sub.id).lte("slot_date", in7).order("slot_date", { ascending: false }).order("slot_time", { ascending: false });
+
+    // Show the last 2 months of subscription history plus every future booking.
+    const historyFromDate = new Date();
+    historyFromDate.setMonth(historyFromDate.getMonth() - 2);
+    const historyFrom = formatDateISO(historyFromDate);
+
+    const { data } = await supabase
+      .from("bookings")
+      .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual")
+      .eq("subscription_id", sub.id)
+      .gte("slot_date", historyFrom)
+      .order("slot_date", { ascending: false })
+      .order("slot_time", { ascending: false });
     setRows(await enrichHorses(data ?? []));
-    const { data: free } = await supabase.from("bookings").select("id, slot_date, slot_time, status, counts_in_subscription, is_individual").eq("user_id", sub.user_id).is("subscription_id", null).neq("status", "cancelled").gte("slot_date", sub.purchase_date).lte("slot_date", in7).order("slot_date", { ascending: false });
+
+    const { data: free } = await supabase
+      .from("bookings")
+      .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual")
+      .eq("user_id", sub.user_id)
+      .is("subscription_id", null)
+      .neq("status", "cancelled")
+      .gte("slot_date", historyFrom)
+      .order("slot_date", { ascending: true })
+      .order("slot_time", { ascending: true });
     setFreeRows(await enrichHorses(free ?? []));
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sub.id]);
@@ -2519,7 +2540,7 @@ function SubDetailDialog({
           <div className="rounded-md bg-gold/5 border border-gold/15 px-3 py-2 tabular-nums"><div className="text-base">Įvykusios treniruotės: <span className="text-gold">{displayUsed}/{liveSub.lessons_total}</span></div><div className="text-xs text-muted-foreground mt-1">{liveSub.purchase_date} → {liveSub.expires_at}</div>{counted.length !== liveSub.lessons_used && <button type="button" onClick={async () => { const { error } = await supabase.from("subscriptions").update({ lessons_used: counted.length }).eq("id", sub.id); if (error) { toast.error(error.message); return; } toast.success("Sinchronizuota"); await refreshSub(); onChanged(); }} className="mt-2 text-[11px] px-2 py-1 rounded border border-blush/40 text-blush hover:bg-blush/10">Sinchronizuoti vidinį skaitiklį ({liveSub.lessons_used} → {counted.length})</button>}</div>
           <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("period"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Kopijuoti</button><button type="button" onClick={() => { setCopyMode("details"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/20 text-foreground/75 hover:bg-gold/10 inline-flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Datos + laikai + žirgai</button></div>
           <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("unpaid"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Neapmokėtos pamokos</button><button type="button" onClick={async () => { const remaining = liveSub.lessons_total - counted.length; if (remaining <= 0) { toast.error("Abonementas pilnas"); return; } const { data: bks } = await supabase.from("bookings").select("id").eq("user_id", sub.user_id).eq("status", "completed").neq("counts_in_subscription", false).is("subscription_id", null).gte("slot_date", liveSub.purchase_date).lte("slot_date", liveSub.expires_at).order("slot_date", { ascending: true }).limit(remaining); const ids = (bks ?? []).map((b: any) => b.id); if (ids.length === 0) { toast.message("Neįskaičiuotų pamokų nėra šio abonemento laikotarpyje"); return; } const { error } = await supabase.from("bookings").update({ subscription_id: sub.id } as any).in("id", ids); if (error) { toast.error(error.message); return; } await supabase.from("subscriptions").update({ lessons_used: counted.length + ids.length }).eq("id", sub.id); toast.success("Priskirta " + ids.length); load(); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Auto-priskirti šio abonemento įvykusias</button><button type="button" onClick={async () => { const txt = prompt("Kiek pamokų jau panaudota? (0–" + liveSub.lessons_total + ")", String(liveSub.lessons_used)); if (txt === null) return; const n = parseInt(txt); if (!Number.isFinite(n) || n < 0 || n > liveSub.lessons_total) { toast.error("Neteisingas skaičius"); return; } const { error } = await supabase.from("subscriptions").update({ lessons_used: n }).eq("id", sub.id); if (error) { toast.error(error.message); return; } toast.success("Atnaujinta"); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Pridėti rankiniu būdu</button></div>
-          {loading ? <p className="text-muted-foreground italic">Kraunama…</p> : <><div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
+          {loading ? <p className="text-muted-foreground italic">Kraunama…</p> : <><div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · 2 mėn. + būsimos ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>Uždaryti</Button></DialogFooter>
       </DialogContent>
