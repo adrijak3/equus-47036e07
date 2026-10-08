@@ -46,7 +46,7 @@ interface Sub {
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
 export default function Admin() {
-  const [alerts, setAlerts] = useState({ sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
+  const [alerts, setAlerts] = useState({ pending: 0, sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [focusUserId, setFocusUserId] = useState<string | null>(null);
@@ -70,6 +70,7 @@ export default function Admin() {
       ]);
       const reqs = (c.data ?? []) as any[];
       setAlerts({
+        pending: reqs.length,
         sickness: reqs.filter((r) => r.sickness).length,
         missingDoc: reqs.filter((r) => r.sickness && !r.document_url && r.document_deadline && r.document_deadline < today).length,
         unread: (u.data ?? []).length,
@@ -79,7 +80,7 @@ export default function Admin() {
   }, []);
 
   const totalAlerts = alerts.sickness + alerts.missingDoc + alerts.unread;
-  const cancelAlerts = alerts.sickness + alerts.missingDoc;
+  const cancelAlerts = alerts.pending;
 
   const navItems: { value: string; label: string; icon: any; badge?: number; badgeCls?: string }[] = [
     { value: "overview", label: "Apžvalga", icon: LayoutDashboard },
@@ -782,7 +783,7 @@ function AdminNotificationsTab() {
 }
 
 /* ---------- OVERVIEW ---------- */
-function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { sickness: number; missingDoc: number; unread: number }; onGo: (s: string) => void; onFocusUser: (userId: string) => void }) {
+function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number; sickness: number; missingDoc: number; unread: number }; onGo: (s: string) => void; onFocusUser: (userId: string) => void }) {
   const [stats, setStats] = useState({ users: 0, activeSubs: 0, unpaidSubs: 0, weekBookings: 0, onVacation: 0 });
   useEffect(() => {
     (async () => {
@@ -812,7 +813,7 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { sickness: number
     { label: "Šios sav. treniruotės", value: stats.weekBookings, icon: CalendarCog, go: "schedule", cls: "" },
     { label: "Atostogose / greitai", value: stats.onVacation, icon: Palmtree, go: "vacations", cls: stats.onVacation > 0 ? "border-gold/40 bg-gold/5" : "" },
     { label: "Nauj. žinutės", value: alerts.unread, icon: MessageSquare, go: "messages", cls: alerts.unread > 0 ? "border-gold/40 bg-gold/5" : "" },
-    { label: "Laukiantys atšaukimai", value: alerts.sickness + alerts.missingDoc, icon: Inbox, go: "cancels", cls: (alerts.sickness + alerts.missingDoc) > 0 ? "border-blush/40 bg-blush/5" : "" },
+    { label: "Laukiantys atšaukimai", value: alerts.pending, icon: Inbox, go: "cancels", cls: alerts.pending > 0 ? "border-blush/40 bg-blush/5" : "" },
   ];
 
   return (
