@@ -3827,8 +3827,8 @@ export default function Grafikas() {
                                   </div>
                                   {sectionLabel === "Treniruotės pas Vytautą" && (
                                     <div className="rounded-xl border border-gold/20 bg-gold/[0.06] px-3 py-2 text-center text-xs leading-snug text-foreground/80">
-                                      🐎 <span className="font-semibold text-foreground">Vytauto savaitgalio treniruotės:</span>{" "}
-                                      grupinės, po du arba individualios.
+                                       <span className="font-semibold text-foreground">Vytauto vedamos treniruotės gali būti grupinės, po 2 arba individualios.</span>{" "}
+                                  
                                     </div>
                                   )}
                                 </div>
