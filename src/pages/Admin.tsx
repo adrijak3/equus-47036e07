@@ -2048,24 +2048,30 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       return;
     }
 
-    const { error: coverageError } = await (supabase as any).rpc(
-      "admin_set_subscription_coverage",
-      {
-        _subscription_id: data.subscription_id,
-        _covered_riders: coveredRiders,
-      },
-    );
-
-    if (coverageError) {
-      console.error("admin_set_subscription_coverage failed", coverageError);
-      const coverageMessage =
-        coverageError.message?.replace(/^Error:\s*/i, "").trim() ||
-        "nežinoma klaida";
-      toast.error(
-        `Abonementas sukurtas, bet nepavyko nustatyti raitelių skaičiaus. ${coverageMessage}`,
+    // New purchases are created for 1 rider by default.
+    // Only call the coverage RPC when the admin explicitly chose 2 riders.
+    // This avoids an unnecessary subscriptions UPDATE for the already-correct
+    // default value and keeps the financial-field protection untouched.
+    if (coveredRiders === 2) {
+      const { error: coverageError } = await (supabase as any).rpc(
+        "admin_set_subscription_coverage",
+        {
+          _subscription_id: data.subscription_id,
+          _covered_riders: coveredRiders,
+        },
       );
-      setCoveredRiders(1);
-      await load();
+
+      if (coverageError) {
+        console.error("admin_set_subscription_coverage failed", coverageError);
+        const coverageMessage =
+          coverageError.message?.replace(/^Error:\s*/i, "").trim() ||
+          "nežinoma klaida";
+        toast.error(
+          `Abonementas sukurtas, bet nepavyko nustatyti raitelių skaičiaus. ${coverageMessage}`,
+        );
+        setCoveredRiders(1);
+        await load();
+      }
     }
 
     const price = Number(data.price_eur);
