@@ -1995,46 +1995,6 @@ export default function Grafikas() {
       return;
     }
 
-    const {
-      data: cancelResultRaw,
-      error: e1,
-    } = await supabase.rpc(
-      "cancel_booking_occurrence" as any,
-      {
-        _booking_id:
-          cancelDialog.booking.id,
-      } as any,
-    );
-
-    if (e1) {
-      console.error("late cancellation RPC failed", e1);
-      toast.error("Nepavyko atšaukti pamokos. Pabandykite dar kartą.");
-      await loadData();
-      return;
-    }
-
-    const cancelResult =
-      (cancelResultRaw ?? {}) as {
-        ok?: boolean;
-        message?: string;
-      };
-
-    if (!cancelResult.ok) {
-      toast.error(
-        cancelResult.message ??
-          "Nepavyko atšaukti treniruotės.",
-      );
-      await loadData();
-      return;
-    }
-
-    setBookings((current) =>
-      current.filter(
-        (b) =>
-          b.id !== cancelDialog.booking.id,
-      ),
-    );
-
     let documentUrl: string | null = null;
     let documentDeadline: string | null = null;
 
@@ -2073,32 +2033,56 @@ export default function Grafikas() {
       }
     }
 
-    const { error: e2 } =
-      await supabase
-        .from("cancellation_requests")
-        .insert({
-          booking_id:
-            cancelDialog.booking.id,
-          user_id: user.id,
-          reason: cancelSickness
-            ? "Liga"
-            : cancelReason.trim(),
-          sickness: cancelSickness,
-          status: "pending",
-          admin_decision_counts: null,
-          document_url: documentUrl,
-          document_uploaded_at:
-            documentUrl
-              ? new Date().toISOString()
-              : null,
-          document_deadline:
-            documentDeadline,
-        } as any);
+    // Create the cancellation request and cancel the booking atomically.
+    // If either database operation fails, neither change is committed.
+    const {
+      data: cancelResultRaw,
+      error: e1,
+    } = await supabase.rpc(
+      "request_booking_cancellation" as any,
+      {
+        _booking_id:
+          cancelDialog.booking.id,
+        _reason: cancelSickness
+          ? "Liga"
+          : cancelReason.trim(),
+        _sickness: cancelSickness,
+        _document_url: documentUrl,
+        _document_deadline: documentDeadline,
+      } as any,
+    );
 
-    if (e2) {
-      toast.error(e2.message);
+    if (e1) {
+      console.error("request_booking_cancellation failed", e1);
+      toast.error(
+        e1.message ??
+          "Nepavyko atšaukti pamokos. Pabandykite dar kartą.",
+      );
+      await loadData();
       return;
     }
+
+    const cancelResult =
+      (cancelResultRaw ?? {}) as {
+        ok?: boolean;
+        message?: string;
+      };
+
+    if (!cancelResult.ok) {
+      toast.error(
+        cancelResult.message ??
+          "Nepavyko atšaukti treniruotės.",
+      );
+      await loadData();
+      return;
+    }
+
+    setBookings((current) =>
+      current.filter(
+        (b) =>
+          b.id !== cancelDialog.booking.id,
+      ),
+    );
 
     toast.success(
       cancelSickness
