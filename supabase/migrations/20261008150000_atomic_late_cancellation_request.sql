@@ -25,6 +25,7 @@ DECLARE
   v_booking public.bookings%ROWTYPE;
   v_request_id uuid;
   v_reason text := btrim(COALESCE(_reason, ''));
+  v_cancel_result jsonb;
 BEGIN
   IF v_actor IS NULL THEN
     RETURN jsonb_build_object(
@@ -126,7 +127,11 @@ BEGIN
 
   -- Reuse the already-authoritative cancellation operation. Because this
   -- function is one transaction, any failure rolls back the request INSERT.
-  PERFORM public.cancel_booking_occurrence(v_booking.id);
+  v_cancel_result := public.cancel_booking_occurrence(v_booking.id);
+
+  IF COALESCE((v_cancel_result ->> 'ok')::boolean, false) IS NOT TRUE THEN
+    RAISE EXCEPTION '%', COALESCE(v_cancel_result ->> 'message', 'Nepavyko atšaukti treniruotės.');
+  END IF;
 
   RETURN jsonb_build_object(
     'ok', true,
