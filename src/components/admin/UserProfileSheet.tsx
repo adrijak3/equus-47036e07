@@ -491,6 +491,7 @@ function UserDetailsBody({
                 key={s.id}
                 s={s as any}
                 effectiveUsed={s.lessons_used ?? 0}
+                showPaymentStatus
                 onMarkPaid={!s.paid ? () => onTogglePaid(s.id, true) : undefined}
                 onEditLessons={() => onEditLessons(s)}
                 onEditUsed={() => onEditUsed(s)}
