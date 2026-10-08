@@ -179,6 +179,26 @@ function trainerSectionLabel(
   return null;
 }
 
+/** Tik vizualinis laiko formatavimas: DB laikas lieka nepakeistas ir slotai nesujungiami. */
+function scheduleDisplayTime(
+  dow: number,
+  slot: Pick<TimeSlot, "slot_time" | "trainer_name">,
+): string {
+  const isVytautas =
+    !!slot.trainer_name &&
+    slot.trainer_name.toLowerCase().includes("vytautas");
+
+  if (
+    dow === 6 &&
+    isVytautas &&
+    slot.slot_time.slice(0, 5) === "11:01"
+  ) {
+    return "11:00";
+  }
+
+  return formatTime(slot.slot_time);
+}
+
 
 
 export default function Grafikas() {
@@ -3801,8 +3821,16 @@ export default function Grafikas() {
                             const sectionBanner =
                               sectionLabel &&
                               sectionLabel !== prevSectionLabel ? (
-                                <div className="rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-center font-display text-xs sm:text-sm uppercase tracking-[0.2em] text-gold">
-                                  {sectionLabel}
+                                <div className="space-y-2">
+                                  <div className="rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-center font-display text-xs sm:text-sm uppercase tracking-[0.2em] text-gold">
+                                    {sectionLabel}
+                                  </div>
+                                  {sectionLabel === "Treniruotės pas Vytautą" && (
+                                    <div className="rounded-xl border border-gold/20 bg-gold/[0.06] px-3 py-2 text-center text-xs leading-snug text-foreground/80">
+                                      🐎 <span className="font-semibold text-foreground">Vytauto savaitgalio treniruotės:</span>{" "}
+                                      grupinės, po du arba individualios.
+                                    </div>
+                                  )}
                                 </div>
                               ) : null;
                             const slotBookings =
@@ -3882,7 +3910,7 @@ export default function Grafikas() {
                                     <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                       <Clock className="w-4 h-4 text-blush/60" />
                                       <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground/70">
-                                        {formatTime(slot.slot_time)}
+                                        {scheduleDisplayTime(dow, slot)}
                                       </span>
                                       <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
                                         ({slotTypeLabel})
@@ -3947,7 +3975,7 @@ export default function Grafikas() {
                                         isAdmin && !slotPast && "cursor-pointer rounded px-1 -mx-1 hover:bg-gold/10 focus:outline-none focus:ring-1 focus:ring-gold/50",
                                       )}
                                     >
-                                      {formatTime(slot.slot_time)}
+                                      {scheduleDisplayTime(dow, slot)}
                                     </span>
                                     <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
                                       ({slotTypeLabel})
