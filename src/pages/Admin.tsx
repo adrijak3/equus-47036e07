@@ -2023,6 +2023,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       _package_type: packageType,
       _horse_type: horseType,
       _allocation_mode: "next",
+      _payment_method: "cash",
     });
 
     setSaving(false);
@@ -2235,6 +2236,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                             key={s.id}
                             s={s as any}
                             effectiveUsed={actual}
+                            showPaymentStatus
                             onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
                             onEditLessons={() => editLessons(s)}
                             onEditUsed={() => editUsed(s)}
