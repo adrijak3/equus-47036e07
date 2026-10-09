@@ -2509,6 +2509,7 @@ function SubDetailDialog({
       .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual")
       .eq("subscription_id", sub.id)
       .gte("slot_date", historyFrom)
+      .lte("slot_date", historyUntil)
       .order("slot_date", { ascending: false })
       .order("slot_time", { ascending: false });
     setRows(await enrichHorses(data ?? []));
@@ -2532,7 +2533,8 @@ function SubDetailDialog({
   const attach = async (bookingId: string) => { const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any); if (error) { toast.error(error.message); return; } toast.success("Priskirta abonementui"); load(); refreshSub(); onChanged(); };
   const counted = rows.filter((r) => r.status !== "cancelled" && r.counts_in_subscription !== false);
   const cancelled = rows.filter((r) => r.status === "cancelled" || r.counts_in_subscription === false);
-  const displayUsed = Math.max(counted.length, liveSub.lessons_used ?? 0);
+  // The database counter is authoritative; allocated future/active bookings are not used lessons.
+  const displayUsed = liveSub.lessons_used ?? 0;
   const copyMessage = async () => {
     if (!copyFrom || !copyUntil || copyFrom > copyUntil) { toast.error("Patikrinkite laikotarpio datas."); return; }
     let source: HistoryRow[];
