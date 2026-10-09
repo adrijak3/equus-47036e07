@@ -137,8 +137,9 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Update usage exactly once daily at 20:00 Europe/Vilnius, while keeping
-  // the existing hourly booking completion and make-up expiry maintenance.
+  // Reconcile same-day usage in the 20:00 Europe/Vilnius window, while
+  // keeping hourly booking completion and make-up expiry maintenance. Repeated
+  // calls are safe because reconciliation recomputes from booking records.
   if (nowTime.startsWith("20:00:")) {
     const { data: completedToday, error: completedTodayError } = await supabase
       .from("bookings")
