@@ -152,42 +152,39 @@ Deno.serve(async (req) => {
       console.error("Failed to load today's completed lessons:", completedTodayError);
     }
 
+    const dailySubscriptionIds = new Set<string>();
+
     // Catch completed lessons that were marked by a trainer but were not yet
     // attached to a subscription. Future/active bookings are never allocated here.
     for (const booking of completedToday ?? []) {
-      if (booking.subscription_id) continue;
+      let subscriptionId = booking.subscription_id as string | null;
 
-      const { data: allocationData, error: allocationError } = await supabase.rpc(
-        "allocate_booking_to_subscription",
-        { _booking_id: booking.id },
-      );
-
-      if (allocationError) {
-        console.error("Daily lesson allocation failed:", booking.id, allocationError);
-        notAllocated++;
-        continue;
-      }
-
-      const allocation = (allocationData ?? {}) as {
-        allocated?: boolean;
-        subscription_id?: string | null;
-      };
-
-      if (!allocation.allocated || !allocation.subscription_id) continue;
-
-      const { error: restoreError } = await supabase.rpc(
-        "restore_paused_bookings_for_subscription",
-        { _subscription_id: allocation.subscription_id },
-      );
-      if (restoreError) {
-        console.error(
-          "Failed to restore paused recurring bookings:",
-          allocation.subscription_id,
-          restoreError,
+      if (!subscriptionId) {
+        const { data: allocationData, error: allocationError } = await supabase.rpc(
+          "allocate_booking_to_subscription",
+          { _booking_id: booking.id },
         );
+
+        if (allocationError) {
+          console.error("Daily lesson allocation failed:", booking.id, allocationError);
+          notAllocated++;
+          continue;
+        }
+
+        const allocation = (allocationData ?? {}) as {
+          allocated?: boolean;
+          subscription_id?: string | null;
+        };
+
+        if (!allocation.allocated || !allocation.subscription_id) continue;
+        subscriptionId = allocation.subscription_id;
       }
+
+      dailySubscriptionIds.add(subscriptionId);
     }
 
+    // Reconcile counters first. Recurring bookings are restored afterwards so
+    // they see the freshly consumed lesson and the newly available capacity.
     const { data: reconciledCount, error: dailyReconcileError } = await supabase.rpc(
       "reconcile_daily_subscription_usage",
     );
@@ -196,6 +193,20 @@ Deno.serve(async (req) => {
       console.error("Daily subscription usage reconciliation failed:", dailyReconcileError);
     } else if (typeof reconciledCount === "number") {
       dailyReconciled = reconciledCount;
+
+      for (const subscriptionId of dailySubscriptionIds) {
+        const { error: restoreError } = await supabase.rpc(
+          "restore_paused_bookings_for_subscription",
+          { _subscription_id: subscriptionId },
+        );
+        if (restoreError) {
+          console.error(
+            "Failed to restore paused recurring bookings:",
+            subscriptionId,
+            restoreError,
+          );
+        }
+      }
     }
   }
 
