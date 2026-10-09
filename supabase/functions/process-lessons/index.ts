@@ -206,7 +206,6 @@ Deno.serve(async (req) => {
       consumed,
       alreadyAllocated,
       notAllocated,
-      dailyReconciled: dailySubscriptionIds.size,
       dailyReconciled,
       makeupsExpired,
       today: todayISO,
