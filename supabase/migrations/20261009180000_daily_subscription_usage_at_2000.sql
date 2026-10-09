@@ -19,8 +19,6 @@ AS $reconcile_subscription_usage_2000$
 DECLARE
   v_used smallint := 0;
   v_total smallint;
-  v_local_now timestamp without time zone :=
-    (now() AT TIME ZONE 'Europe/Vilnius');
   v_local_date date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
   v_previous_financial_setting text := current_setting(
     'equus.allow_subscription_financial_update',
@@ -52,13 +50,13 @@ BEGIN
     AND b.slot_date BETWEEN
       COALESCE(s.start_from_date, s.purchase_date)
       AND s.expires_at
-    -- Today's lessons must not change lessons_used before 20:00 Vilnius time.
-    -- Completed lessons from previous dates remain valid catch-up history.
+    -- Same-day completion events cannot change lessons_used on their own.
+    -- Only the dedicated 20:00 batch sets this transaction-local flag.
     AND (
       b.slot_date < v_local_date
       OR (
         b.slot_date = v_local_date
-        AND v_local_now::time >= TIME '20:00:00'
+        AND current_setting('equus.allow_daily_subscription_usage_update', true) = 'true'
       )
     )
     AND public.booking_matches_subscription_package(
@@ -108,11 +106,82 @@ ON FUNCTION public.reconcile_subscription_usage(uuid)
 TO service_role;
 
 
--- pg_cron uses UTC by default on many hosted PostgreSQL projects. Keep its
--- hourly tick but invoke the Edge Function only when that tick corresponds to
--- 20:00 in Europe/Vilnius, which handles both winter and summer time correctly.
--- The Edge Function also checks local time so direct/client calls outside the
--- 20:00 hour are harmless no-ops.
+-- The daily batch sets a transaction-local accounting flag, then reconciles
+-- only subscriptions with a counted, completed booking on today's local date.
+-- This keeps ordinary hourly booking triggers from consuming today's lessons
+-- before the 20:00 batch.
+CREATE OR REPLACE FUNCTION public.reconcile_daily_subscription_usage()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $daily_usage_2000$
+DECLARE
+  v_local_now timestamp without time zone :=
+    (now() AT TIME ZONE 'Europe/Vilnius');
+  v_today date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
+  v_previous_daily_setting text := current_setting(
+    'equus.allow_daily_subscription_usage_update',
+    true
+  );
+  v_subscription_id uuid;
+  v_reconciled integer := 0;
+BEGIN
+  IF v_local_now::time < TIME '20:00:00'
+     OR v_local_now::time >= TIME '20:01:00'
+  THEN
+    RAISE EXCEPTION 'OUTSIDE_DAILY_SUBSCRIPTION_USAGE_WINDOW';
+  END IF;
+
+  PERFORM set_config(
+    'equus.allow_daily_subscription_usage_update',
+    'true',
+    true
+  );
+
+  FOR v_subscription_id IN
+    SELECT DISTINCT b.subscription_id
+    FROM public.bookings b
+    WHERE b.slot_date = v_today
+      AND b.status = 'completed'
+      AND b.counts_in_subscription IS NOT FALSE
+      AND b.is_paused_for_subscription IS NOT TRUE
+      AND b.subscription_id IS NOT NULL
+  LOOP
+    PERFORM public.reconcile_subscription_usage(v_subscription_id);
+    v_reconciled := v_reconciled + 1;
+  END LOOP;
+
+  IF v_previous_daily_setting = 'true' THEN
+    PERFORM set_config(
+      'equus.allow_daily_subscription_usage_update',
+      'true',
+      true
+    );
+  ELSE
+    PERFORM set_config(
+      'equus.allow_daily_subscription_usage_update',
+      'false',
+      true
+    );
+  END IF;
+
+  RETURN v_reconciled;
+END;
+$daily_usage_2000$;
+
+REVOKE ALL
+ON FUNCTION public.reconcile_daily_subscription_usage()
+FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE
+ON FUNCTION public.reconcile_daily_subscription_usage()
+TO service_role;
+
+
+-- Keep the existing hourly worker hourly: it also expires make-up grants and
+-- processes bookings. Only the worker's subscription-usage batch is gated to
+-- 20:00 Europe/Vilnius inside the Edge Function, so DST changes are safe.
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
@@ -124,16 +193,13 @@ WHERE jobname IN (
 );
 
 SELECT cron.schedule(
-  'process-lessons-daily-20-vilnius',
+  'process-lessons-hourly',
   '0 * * * *',
   $cron$
     SELECT net.http_post(
       url := 'https://tkksskpvpartlhpnctzu.supabase.co/functions/v1/process-lessons',
       headers := '{"Content-Type":"application/json"}'::jsonb,
       body := '{}'::jsonb
-    ) AS request_id
-    WHERE EXTRACT(
-      HOUR FROM (now() AT TIME ZONE 'Europe/Vilnius')
-    )::integer = 20;
+    ) AS request_id;
   $cron$
 );
