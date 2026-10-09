@@ -43,25 +43,6 @@ Deno.serve(async (req) => {
 
   const { date: todayISO, time: nowTime } = vilniusNow();
 
-  // This worker is intentionally a once-daily Vilnius-time operation. The
-  // database cron calls it at 20:00 local time; calls from any other hour are
-  // harmless no-ops and cannot advance subscription usage early.
-  if (!nowTime.startsWith("20:")) {
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        skipped: true,
-        reason: "Outside the daily 20:00 Europe/Vilnius processing window",
-        today: todayISO,
-        now: nowTime,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
-    );
-  }
-
   // Expire past-deadline makeup grants first.
   let makeupsExpired = 0;
   const { data: expiredCount } = await supabase.rpc("expire_makeup_cancellations");
@@ -74,8 +55,7 @@ Deno.serve(async (req) => {
     .select("id, user_id, slot_date, slot_time, counts_in_subscription, subscription_id, is_paused_for_subscription")
     .eq("status", "active")
     .eq("is_paused_for_subscription", false)
-    .eq("slot_date", todayISO)
-    .lt("slot_time", nowTime);
+    .or(`slot_date.lt.${todayISO},and(slot_date.eq.${todayISO},slot_time.lt.${nowTime})`);
 
   if (e1) {
     return new Response(JSON.stringify({ error: e1.message }), {
@@ -88,6 +68,7 @@ Deno.serve(async (req) => {
   let consumed = 0;
   let alreadyAllocated = 0;
   let notAllocated = 0;
+  let dailyReconciled = 0;
 
   for (const booking of pastActive ?? []) {
     const { error: updateError } = await supabase
@@ -156,30 +137,26 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Revisit every counted lesson completed today, including lessons that a
-  // trainer marked completed manually before 20:00. Before the daily cutoff,
-  // the canonical reconciler deliberately excludes today's lessons; this pass
-  // makes the counter refresh once the cutoff has been reached.
-  const { data: completedToday, error: completedTodayError } = await supabase
-    .from("bookings")
-    .select("id, subscription_id, counts_in_subscription, is_paused_for_subscription")
-    .eq("slot_date", todayISO)
-    .eq("status", "completed")
-    .eq("counts_in_subscription", true)
-    .eq("is_paused_for_subscription", false);
+  // Update usage exactly once daily at 20:00 Europe/Vilnius, while keeping
+  // the existing hourly booking completion and make-up expiry maintenance.
+  if (nowTime.startsWith("20:00:")) {
+    const { data: completedToday, error: completedTodayError } = await supabase
+      .from("bookings")
+      .select("id, subscription_id, counts_in_subscription, is_paused_for_subscription")
+      .eq("slot_date", todayISO)
+      .eq("status", "completed")
+      .eq("counts_in_subscription", true)
+      .eq("is_paused_for_subscription", false);
 
-  if (completedTodayError) {
-    console.error("Failed to load today's completed lessons:", completedTodayError);
-  }
+    if (completedTodayError) {
+      console.error("Failed to load today's completed lessons:", completedTodayError);
+    }
 
-  const dailySubscriptionIds = new Set<string>();
+    // Catch completed lessons that were marked by a trainer but were not yet
+    // attached to a subscription. Future/active bookings are never allocated here.
+    for (const booking of completedToday ?? []) {
+      if (booking.subscription_id) continue;
 
-  for (const booking of completedToday ?? []) {
-    let subscriptionId = booking.subscription_id as string | null;
-
-    // The daily job also catches any completed lesson that wasn't allocated by
-    // the UI action that marked it completed.
-    if (!subscriptionId) {
       const { data: allocationData, error: allocationError } = await supabase.rpc(
         "allocate_booking_to_subscription",
         { _booking_id: booking.id },
@@ -196,33 +173,29 @@ Deno.serve(async (req) => {
         subscription_id?: string | null;
       };
 
-      if (!allocation.allocated || !allocation.subscription_id) {
-        continue;
-      }
-
-      subscriptionId = allocation.subscription_id;
+      if (!allocation.allocated || !allocation.subscription_id) continue;
 
       const { error: restoreError } = await supabase.rpc(
         "restore_paused_bookings_for_subscription",
-        { _subscription_id: subscriptionId },
+        { _subscription_id: allocation.subscription_id },
       );
       if (restoreError) {
-        console.error("Failed to restore paused recurring bookings:", subscriptionId, restoreError);
+        console.error(
+          "Failed to restore paused recurring bookings:",
+          allocation.subscription_id,
+          restoreError,
+        );
       }
     }
 
-    dailySubscriptionIds.add(subscriptionId);
-  }
-
-  // Reconcile only subscriptions connected to completed training today, rather
-  // than touching every rider/package every night.
-  for (const subscriptionId of dailySubscriptionIds) {
-    const { error: reconcileError } = await supabase.rpc(
-      "reconcile_subscription_usage",
-      { _subscription_id: subscriptionId },
+    const { data: reconciledCount, error: dailyReconcileError } = await supabase.rpc(
+      "reconcile_daily_subscription_usage",
     );
-    if (reconcileError) {
-      console.error("Daily subscription usage reconciliation failed:", subscriptionId, reconcileError);
+
+    if (dailyReconcileError) {
+      console.error("Daily subscription usage reconciliation failed:", dailyReconcileError);
+    } else if (typeof reconciledCount === "number") {
+      dailyReconciled = reconciledCount;
     }
   }
 
@@ -234,6 +207,7 @@ Deno.serve(async (req) => {
       alreadyAllocated,
       notAllocated,
       dailyReconciled: dailySubscriptionIds.size,
+      dailyReconciled,
       makeupsExpired,
       today: todayISO,
       now: nowTime,
