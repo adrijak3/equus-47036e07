@@ -197,7 +197,7 @@ SELECT cron.schedule(
   '0 * * * *',
   $cron$
     SELECT net.http_post(
-      url := 'https://tkksskpvpartlhpnctzu.supabase.co/functions/v1/process-lessons',
+      url := 'https://mdjhdpyrnroywxoaaraa.supabase.co/functions/v1/process-lessons',
       headers := '{"Content-Type":"application/json"}'::jsonb,
       body := '{}'::jsonb
     ) AS request_id;
