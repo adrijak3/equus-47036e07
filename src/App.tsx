@@ -103,7 +103,7 @@ const App = () => (
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
                   <Route path="/kainos" element={<Kainos />} />
-                  <Route path="/apie-mus" element={<ApieMus />} />
+                  <Route path="/apie-mus" element={<RequireAuth adminOnly><ApieMus /></RequireAuth>} />
                   <Route
                     path="/galerija"
                     element={
