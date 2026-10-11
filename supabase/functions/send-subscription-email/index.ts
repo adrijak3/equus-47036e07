@@ -397,7 +397,7 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
       <p style="margin:8px 0 0;white-space:pre-wrap;color:#705e66;font-size:14px;line-height:1.7;">${esc(bodyEn)}</p>
     </div>
     <div style="margin-top:20px;text-align:center;">
-      <a href="https://equus-47036e07.pages.dev${url.startsWith("/") ? url : "/" + url}"
+      <a href="https://equusjm.pages.dev${url.startsWith("/") ? url : "/" + url}"
          style="display:inline-block;padding:12px 20px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">
         Atidaryti Equus / Open Equus
       </a>
