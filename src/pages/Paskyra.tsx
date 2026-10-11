@@ -22,6 +22,7 @@ import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { disablePushNotifications, enablePushNotifications, getPushSubscription, pushNotificationsSupported, syncPushLanguage } from "@/lib/pushNotifications";
+import { loadHorseNamesForBookings } from "@/lib/horseNames";
 
 interface Booking {
   id: string;
@@ -127,19 +128,7 @@ export default function Paskyra() {
     // attach horse names from horse_assignments
     const bs = (b.data ?? []) as any[];
     if (bs.length) {
-      const ids = bs.map((x) => x.id);
-      const { data: ha } = await supabase
-        .from("horse_assignments")
-        .select("booking_id, horse_id, slot_date, slot_time")
-        .in("booking_id", ids);
-      const horseIds = Array.from(new Set((ha ?? []).map((x: any) => x.horse_id)));
-      let horseMap: Record<string, string> = {};
-      if (horseIds.length) {
-        const { data: hs } = await supabase.from("horses").select("id, name").in("id", horseIds);
-        horseMap = Object.fromEntries((hs ?? []).map((h: any) => [h.id, h.name]));
-      }
-      const haMap: Record<string, string> = {};
-      (ha ?? []).forEach((x: any) => { if (x.booking_id) haMap[x.booking_id] = horseMap[x.horse_id]; });
+      const haMap = await loadHorseNamesForBookings(bs, acting);
       const baseSlots = (ts.data ?? []) as any[];
       const overrides = (ov.data ?? []) as any[];
       const getCapacity = (date: string, time: string) => {
@@ -450,13 +439,9 @@ export default function Paskyra() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {subs.map((s) => {
-                const attributedUsed = bookings.filter((b) =>
-                  b.subscription_id === s.id &&
-                  b.status === "completed" &&
-                  b.counts_in_subscription !== false,
-                ).length;
-                // Usage is derived from bookings assigned to this subscription.
-                const actualUsed = attributedUsed;
+                // The database counter is authoritative (same number admins and e-mails use):
+                // completed lessons plus any permanent admin correction.
+                const actualUsed = Number(s.lessons_used ?? 0);
                 const remaining = s.lessons_total - actualUsed;
                 const expDays = s.expires_at ? Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000) : Infinity;
                 const lowRemaining = !s.start_pending && (remaining <= 1 || (expDays <= 7 && expDays >= 0));
@@ -1302,6 +1287,6 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
     )}
     {extra && <div className="mt-4 border-t border-gold/10 pt-3">{extra}</div>}
     {onDelete && <div className="mt-4 flex justify-end border-t border-gold/10 pt-3"><button type="button" onClick={() => onDelete(s.id)} className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"><Trash2 className="h-3 w-3" /> Ištrinti</button></div>}
-    {lessons && <div className="mt-4 border-t border-gold/10 pt-3"><button type="button" onClick={() => setShowLessons(v => !v)} className="flex w-full items-center justify-between text-sm font-medium"><span>Pamokos šiame abonemente</span><ChevronRight className={cn("h-4 w-4 text-gold", showLessons && "rotate-90")} /></button>{showLessons && <ul className="mt-3 space-y-2">{lessons.map((l) => { const kind = l.lesson_kind === "individual" ? "Individuali" : l.lesson_kind === "po2" ? "Po 2" : "Grupinė"; const extra = l.lesson_kind === "individual" || (l.lesson_kind === "po2" && s.lesson_type !== "sportine_po2"); return <li key={l.id} className="rounded-xl border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex justify-between gap-3"><div><div className="text-sm">{l.slot_date} · {formatTime(l.slot_time)}</div><div className="text-xs text-muted-foreground">{kind}{l.horse_name ? " · 🐎 " + l.horse_name : ""}{l.slot_capacity ? " · talpa " + l.slot_capacity : ""}</div></div><div className="text-right">{l.lesson_price != null ? <div className="text-sm font-semibold text-gold">{l.lesson_price.toFixed(2)} €</div> : <div className="text-xs font-semibold text-blush">Individualus tarifas</div>}<div className="text-[10px] text-muted-foreground">{extra ? "mokama atskirai" : l.status === "cancelled" ? "atšaukta" : "įskaičiuota"}</div></div></div></li>; })}</ul>}</div>}
+    {lessons && <div className="mt-4 border-t border-gold/10 pt-3"><button type="button" onClick={() => setShowLessons(v => !v)} className="flex w-full items-center justify-between text-sm font-medium"><span>Pamokos šiame abonemente</span><ChevronRight className={cn("h-4 w-4 text-gold", showLessons && "rotate-90")} /></button>{showLessons && <ul className="mt-3 space-y-2">{lessons.map((l) => { const kind = l.lesson_kind === "individual" ? "Individuali" : l.lesson_kind === "po2" ? "Po 2" : "Grupinė"; const extra = l.lesson_kind === "individual" || (l.lesson_kind === "po2" && s.lesson_type !== "sportine_po2"); return <li key={l.id} className="rounded-xl border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex justify-between gap-3"><div><div className="text-sm">{l.slot_date} · {formatTime(l.slot_time)}</div><div className="text-xs text-muted-foreground">{kind}{l.horse_name ? " · 🐎 " + l.horse_name : ""}{l.slot_capacity ? " · talpa " + l.slot_capacity : ""}</div></div><div className="text-right">{l.lesson_price != null ? <div className="text-sm font-semibold text-gold">{l.lesson_price.toFixed(2)} €</div> : <div className="text-xs font-semibold text-blush">Individualus tarifas</div>}<div className="text-[10px] text-muted-foreground">{extra ? "mokama atskirai" : l.status === "cancelled" ? "atšaukta" : l.status === "completed" ? "įskaičiuota" : "rezervuota (dar neįvyko)"}</div></div></div></li>; })}</ul>}</div>}
   </div>;
 }

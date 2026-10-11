@@ -1169,6 +1169,7 @@ export type Database = {
           lesson_type: string
           lessons_total: number
           lessons_used: number
+          manual_used_adjustment: number
           paid: boolean
           price: number
           purchase_date: string
@@ -1186,6 +1187,7 @@ export type Database = {
           lesson_type?: string
           lessons_total: number
           lessons_used?: number
+          manual_used_adjustment?: number
           paid?: boolean
           price: number
           purchase_date: string
@@ -1203,6 +1205,7 @@ export type Database = {
           lesson_type?: string
           lessons_total?: number
           lessons_used?: number
+          manual_used_adjustment?: number
           paid?: boolean
           price?: number
           purchase_date?: string

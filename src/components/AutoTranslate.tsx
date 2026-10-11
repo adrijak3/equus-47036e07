@@ -263,7 +263,7 @@ const PHRASES: Array<[string, string]> = [
   ["Abonementas ištrintas", "Lesson package deleted"], ["Abonementas pridėtas", "Lesson package added"],
   ["Žinutė išsiųsta", "Message sent"], ["Rašykite čia...", "Write here..."], ["Perskaityta", "Read"], ["Išsiųsta", "Sent"],
   ["Pakeisti treniruočių skaičių", "Change number of lessons"], ["Spauskite, kad pažymėtumėte kaip apmokėtą", "Click to mark as paid"],
-  ["Ištrinti šį abonementą", "Delete this lesson package"], ["Įvyko (nesiskaičiuoja)", "Completed (not counted)"],
+  ["Ištrinti šį abonementą", "Delete this lesson package"], ["Įvyko (nesiskaičiuoja)", "Completed (not counted)"], ["rezervuota (dar neįvyko)", "booked (not taken yet)"], ["įskaičiuota", "counted"],
 
   ["Apžvalga", "Overview"], ["Tvarkaraštis", "Schedule"], ["Atšaukimai", "Cancellations"], ["Žinutės", "Messages"],
   ["Aktyvūs abonementai", "Active lesson packages"], ["Neapmokėti abonementai", "Unpaid lesson packages"],
