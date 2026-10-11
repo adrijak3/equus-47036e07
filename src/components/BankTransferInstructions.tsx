@@ -8,7 +8,7 @@ const body = [
   "Treniruočių kiekis: ",
   "Suma: ",
   "",
-  "Sveiki, norėčiau įsigyti abonementą bankiniu pavedimu. Prašau atsiųsti mokėjimo informaciją.",
+  "Ačiū.",
 ].join("\n");
 const mailtoHref = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
@@ -27,9 +27,9 @@ export function BankTransferInstructions() {
             Abonementas pavedimu
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Pirmiausia išsiųskite užklausą el. paštu. Gavę administracijos atsakymą,
+            Pirmiausia išsiųskite užklausą el. paštu. Gavę sąskaitą,
             atlikite pavedimą ir atsiųskite mokėjimo patvirtinimą. Patvirtinus mokėjimą,
-            abonementą rankiniu būdu pridėsime prie jūsų paskyros.
+            abonementą pridėsime prie jūsų paskyros.
           </p>
         </div>
       </div>
@@ -39,21 +39,21 @@ export function BankTransferInstructions() {
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-sm font-semibold text-gold">1</span>
           <p className="mt-3 text-sm font-semibold">Išsiųskite užklausą</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Užpildykite žemiau pateiktą laiško šabloną ir išsiųskite jį administracijai.
+            Užpildykite žemiau pateiktą laiško šabloną ir išsiųskite jį paštu.
           </p>
         </li>
         <li className="rounded-xl border border-gold/10 bg-background/35 p-4">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-sm font-semibold text-gold">2</span>
           <p className="mt-3 text-sm font-semibold">Palaukite atsakymo</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Sulaukite administracijos atsakymo su mokėjimo informacija. Iki tol pavedimo neatlikite.
+            Sulaukite atsakymo su sąskaita.
           </p>
         </li>
         <li className="rounded-xl border border-gold/10 bg-background/35 p-4">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-sm font-semibold text-gold">3</span>
           <p className="mt-3 text-sm font-semibold">Atsiųskite patvirtinimą</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Atlikę pavedimą, tuo pačiu el. paštu atsiųskite mokėjimo patvirtinimą.
+            Atlikę pavedimą, tuo pačiu el. paštu (jojimomokykla@gmail.com) atsiųskite mokėjimo patvirtinimą.
           </p>
         </li>
       </ol>
@@ -74,7 +74,7 @@ export function BankTransferInstructions() {
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2.5 text-sm font-semibold text-gold transition-colors hover:bg-gold/15"
           >
             <Mail className="h-4 w-4" />
-            Paruošti el. laišką
+            Siųsti el. laišką:
             <ArrowRight className="h-4 w-4" />
           </a>
           <p className="text-xs text-muted-foreground">
@@ -83,7 +83,7 @@ export function BankTransferInstructions() {
         </div>
       </div>
       <p className="mt-4 text-xs leading-5 text-muted-foreground">
-        Svarbu: abonementas paskyroje atsiras tik po to, kai administracija gaus ir patvirtins mokėjimą.
+        Svarbu: abonementas paskyroje atsiras tik po to, kai patvirtinsime Jūsų mokėjimą.
       </p>
     </section>
   );
