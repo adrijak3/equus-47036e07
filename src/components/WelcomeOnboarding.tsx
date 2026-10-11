@@ -316,8 +316,7 @@ export function WelcomeOnboarding() {
     };
   }, [open, step]);
 
-  const canFinish =
-    readToEnd && accepted && rulesViewed.size === RULES.length && !saving;
+  const canFinish = accepted && !saving;
 
   const progressLabel = useMemo(
     () => `${step}/6`,
@@ -803,7 +802,7 @@ export function WelcomeOnboarding() {
                     Pasiekėte taisyklių apačią
                   </span>
                 ) : (
-                  "Slinkite iki pat apačios, tada galėsite patvirtinti taisykles."
+                  "Perskaitykite taisykles ir pažymėkite patvirtinimą apačioje."
                 )}
               </div>
             </motion.div>
@@ -880,16 +879,10 @@ export function WelcomeOnboarding() {
         <div className="border-t border-border bg-card px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-7">
           {step === 4 && (
             <label
-              className={cn(
-                "mb-3 flex items-start gap-3 rounded-2xl border p-3.5 transition-opacity",
-                !readToEnd || rulesViewed.size !== RULES.length
-                  ? "border-border opacity-55"
-                  : "border-gold/30 bg-gold/5",
-              )}
+              className="mb-3 flex items-start gap-3 rounded-2xl border border-gold/30 bg-gold/5 p-3.5"
             >
               <Checkbox
                 checked={accepted}
-                disabled={!(readToEnd && rulesViewed.size === RULES.length)}
                 onCheckedChange={(value) => setAccepted(value === true)}
               />
               <span className="text-sm leading-6">
@@ -920,7 +913,7 @@ export function WelcomeOnboarding() {
               <Button
                 variant="gold"
                 onClick={handleNext}
-                disabled={!accepted || !readToEnd || rulesViewed.size !== RULES.length}
+                disabled={!accepted || saving}
               >
                 Toliau
                 <ChevronRight className="h-4 w-4" />
