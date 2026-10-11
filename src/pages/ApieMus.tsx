@@ -41,7 +41,7 @@ export default function ApieMus() {
           </div>
           <h2 className="mt-4 font-display text-2xl text-gold">Jojimo galimybės</h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Galite rinktis grupines, treniruotes poroje arba individualias pamokas. Treniruotis
+            Galite rinktis grupines jojimo pamokas, treniruotes poroje arba individualias pamokas. Treniruotis
             galima mokyklos žirgais arba su savo žirgu; kainas ir abonementų variantus rasite
             atskirame kainų puslapyje.
           </p>
