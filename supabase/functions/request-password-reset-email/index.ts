@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const siteUrl = Deno.env.get("EQUUS_SITE_URL") || "https://equus-47036e07.pages.dev";
+    const siteUrl = Deno.env.get("EQUUS_SITE_URL") || "https://equusjm.pages.dev";
     if (!supabaseUrl || !serviceRoleKey) return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
 
     const body = await req.json().catch(() => ({}));
