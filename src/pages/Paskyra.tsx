@@ -19,6 +19,7 @@ import { FloralAccent } from "@/components/Decorations";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
+import { BankTransferInstructions } from "@/components/BankTransferInstructions";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { disablePushNotifications, enablePushNotifications, getPushSubscription, pushNotificationsSupported, syncPushLanguage } from "@/lib/pushNotifications";
@@ -432,6 +433,7 @@ export default function Paskyra() {
 
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
+          <BankTransferInstructions />
           <Section title="Mano QR kodas" icon={<QrCode className="h-4 w-4" />}>
             <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
               <div>

@@ -49,6 +49,7 @@ const NAV_GUEST = [
     label: "Kainos",
     icon: Tag,
   },
+  { to: "/apie-mus", label: "Apie mus", icon: UsersIcon },
   { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
   { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
   {
@@ -67,6 +68,7 @@ const NAV_USER = [
   { to: "/", label: "Pagrindinis", icon: Home },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag },
+  { to: "/apie-mus", label: "Apie mus", icon: UsersIcon, menuOnly: true },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
   { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
   { to: "/paskyra?tab=profile", label: "Paskyra", icon: UserIcon },
@@ -77,6 +79,7 @@ const NAV_ADMIN = [
   { to: "/admin", label: "Pagrindinis", icon: Home },
   { to: "/galerija", label: "Galerija", icon: Images },
   { to: "/kainos", label: "Kainos", icon: Tag, mobileBottomOnly: true },
+  { to: "/apie-mus", label: "Apie mus", icon: UsersIcon },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays, mobileBottomOnly: true },
   { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox, mobileBottomOnly: true },
   { to: "/admin?section=subs", label: "Abonementai", icon: Wallet, mobileBottomOnly: true },
@@ -103,6 +106,7 @@ const NAV_TRAINER = [
     label: "Kainos",
     icon: Tag,
   },
+  { to: "/apie-mus", label: "Apie mus", icon: UsersIcon },
   { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
   { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
   {
@@ -600,6 +604,12 @@ export default function Layout({
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs">
+            <Link
+              to="/apie-mus"
+              className="text-foreground/70 underline underline-offset-4 transition-colors hover:text-gold"
+            >
+              Apie mus
+            </Link>
             <Link
               to="/privatumo-politika"
               className="text-foreground/70 underline underline-offset-4 transition-colors hover:text-gold"

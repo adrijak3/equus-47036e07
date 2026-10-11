@@ -1,3 +1,5 @@
+import { BankTransferInstructions } from "@/components/BankTransferInstructions";
+
 export default function Kainos() {
   return (
     <div className="container max-w-4xl py-12 sm:py-20">
@@ -66,6 +68,10 @@ export default function Kainos() {
             <Row label="1 mėnuo" price="450 €" />
           </ul>
         </section>
+      </div>
+
+      <div className="mt-8">
+        <BankTransferInstructions />
       </div>
     </div>
   );

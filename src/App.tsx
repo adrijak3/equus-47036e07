@@ -23,6 +23,7 @@ import { PageLoader } from "@/components/PageLoader";
 const Grafikas = lazy(() => import("./pages/Grafikas"));
 const Pradzia = lazy(() => import("./pages/Pradzia"));
 const Kainos = lazy(() => import("./pages/Kainos"));
+const ApieMus = lazy(() => import("./pages/ApieMus"));
 const Galerija = lazy(() => import("./pages/Galerija"));
 const Paskyra = lazy(() => import("./pages/Paskyra"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -102,6 +103,7 @@ const App = () => (
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
                   <Route path="/kainos" element={<Kainos />} />
+                  <Route path="/apie-mus" element={<ApieMus />} />
                   <Route
                     path="/galerija"
                     element={
