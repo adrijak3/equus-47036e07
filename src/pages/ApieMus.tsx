@@ -49,18 +49,18 @@ export default function ApieMus() {
       </section>
 
       <section className="mt-7 rounded-2xl border border-gold/15 bg-background/30 p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-gold/70">Kaip pradėti</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-gold/70">Kaip pradėti?</p>
         <h2 className="mt-2 font-display text-3xl text-gradient-gold">Trys paprasti žingsniai</h2>
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           <div>
             <p className="font-display text-2xl text-gold">01</p>
             <h3 className="mt-2 font-semibold">Peržiūrėkite grafiką</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">Išsirinkite jums tinkamą laiką ir susipažinkite su laisvomis treniruotėmis.</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">Jei esate joję pas mus - galite registruotis treniruotei grafike. Jei nesate niekada pas mus buvę - eikite į puslapį 'Registracija'.</p>
           </div>
           <div>
             <p className="font-display text-2xl text-gold">02</p>
-            <h3 className="mt-2 font-semibold">Pasirinkite treniruotę</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">Peržiūrėkite kainas ir pasirinkite jums tinkamiausią pamokos ar abonemento variantą.</p>
+            <h3 className="mt-2 font-semibold">Pasirinkite abonemento tipą</h3>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">Peržiūrėkite mūsų kainas ir pasirinkite jums tinkamiausią pamokos ar abonemento variantą.</p>
           </div>
           <div>
             <p className="font-display text-2xl text-gold">03</p>
@@ -80,7 +80,7 @@ export default function ApieMus() {
           </a>
           <a href="tel:+37065822872" className="flex items-start gap-3 rounded-xl border border-gold/10 p-4 transition-colors hover:border-gold/30">
             <Phone className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
-            <span className="text-sm leading-6"><span className="block font-semibold">Telefonas</span>+370 658 22872</span>
+            <span className="text-sm leading-6"><span className="block font-semibold">Telefonas</span>+370 658 22872 arba +370 628 76090</span>
           </a>
           <a href="mailto:jojimokykla@gmail.com" className="flex items-start gap-3 rounded-xl border border-gold/10 p-4 transition-colors hover:border-gold/30">
             <Mail className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
