@@ -1,6 +1,6 @@
 import { ArrowRight, Mail } from "lucide-react";
 
-const recipient = "jojimokykla@gmail.com";
+const recipient = "jojimomokykla@gmail.com";
 const subject = "Equus abonementas – bankinis pavedimas";
 const body = [
   "Vardas Pavardė: ",
