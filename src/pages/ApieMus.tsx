@@ -219,9 +219,9 @@ export default function ApieMus() {
             <Phone className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
             <span className="text-sm leading-6"><span className="block font-semibold">Telefonas</span>+370 658 22872 arba +370 628 76090</span>
           </a>
-          <a href="mailto:jojimokykla@gmail.com" className="flex items-start gap-3 rounded-xl border border-gold/10 p-4 transition-colors hover:border-gold/30">
+          <a href="mailto:jojimomokykla@gmail.com" className="flex items-start gap-3 rounded-xl border border-gold/10 p-4 transition-colors hover:border-gold/30">
             <Mail className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
-            <span className="break-words text-sm leading-6"><span className="block font-semibold">El. paštas</span>jojimokykla@gmail.com</span>
+            <span className="break-words text-sm leading-6"><span className="block font-semibold">El. paštas</span>jojimomokykla@gmail.com</span>
           </a>
         </div>
       </section>
