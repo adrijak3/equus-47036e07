@@ -4,12 +4,10 @@ import { MessageCircle, X, MapPin, Phone, MessageSquare, Sparkles, CalendarDays,
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 
-// Where the two "write to us" buttons lead. These are Facebook share links, so
-// they open the page / profile (in the Facebook app on phones) and the visitor
-// taps "Message" there. For a direct Messenger chat, swap them for
-// https://m.me/<facebook-username> (the username is in the page / profile settings).
-const EQUUS_MESSENGER_URL = "https://www.facebook.com/share/1DMbB1Hvy1/";
-const ADRIJA_MESSENGER_URL = "https://www.facebook.com/share/1FQX6CtMMT/";
+// Where the two "write to us" buttons lead: direct Messenger chats (m.me links).
+// Equus Jojimo Mokykla page = general questions; Adrija = website problems / other questions.
+const EQUUS_MESSENGER_URL = "https://m.me/100063701673482";
+const ADRIJA_MESSENGER_URL = "https://m.me/adriija.kalikaite";
 
 const FAQ_DATA = {
   lt: [
