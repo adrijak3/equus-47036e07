@@ -36,7 +36,7 @@ const RULES = [
     key: "subscription",
     icon: Tag,
     title: "Abonementas",
-    teaser: "4, 8 ar 12 treniruočių viename pakete.",
+    teaser: "4, 8 ar 12 treniruočių.",
     body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą. Jei abonemento neturite, nuo 2026-10-18 galite turėti vieną būsimą įprastą rezervaciją be abonemento.",
   },
   {
@@ -57,7 +57,7 @@ const RULES = [
     key: "contract",
     icon: FileText,
     title: "Sutartis ir saugumas",
-    teaser: "Prieš pirmą treniruotę – pasirašyta sutartis.",
+    teaser: "Prieš pirmą treniruotę – BŪTINAI pasirašyta sutartis.",
     body: "Prieš pirmąją treniruotę būtina pasirašyti jojimo paslaugų sutartį. Laikykitės trenerio nurodymų, žirgyno taisyklių ir atvykite su tinkama apranga bei avalyne.",
   },
 ] as const;
@@ -71,7 +71,7 @@ const GUIDE = [
   },
   {
     title: "2 · Patvirtinkite raitelį",
-    description: "Galite rezervuoti tik save arba pridėti kartu lankantį raitelį.",
+    description: "Galite rezervuoti arba save, arba du asmenis.",
     icon: UserRound,
     mock: "rider",
   },
@@ -347,7 +347,7 @@ export function WelcomeOnboarding() {
     await refreshProfile();
     setSaving(false);
     setOpen(false);
-    toast.success("Sveiki atvykę į Equus 🐴");
+    toast.success("Sveiki atvykę į Equus! 🐴");
   };
 
   return (
