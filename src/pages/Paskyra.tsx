@@ -272,7 +272,7 @@ export default function Paskyra() {
     if (error) { toast.error(error.message); return; }
     if (!data?.ok) { toast.error(data?.message ?? "Nepavyko pridėti"); return; }
     if (data?.requested) {
-      toast.success("Prašymas išsiųstas administracijai");
+      toast.success("Prašymas išsiųstas!:)");
     } else {
       toast.success("Nuolatinis laikas pridėtas");
     }
@@ -428,7 +428,7 @@ export default function Paskyra() {
               <div>
                 <p className="text-sm font-medium">Kliento QR kodas</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Šis QR skirtas darbuotojams peržiūrėti kliento abonementą. Naujo abonemento užklausą pateikite aukščiau.
+                  Šis QR skirtas peržiūrėti Jūsų abonementą + jį patvirtinti (mokėjimą). Naujo abonemento užklausą pateikite aukščiau.
                 </p>
               </div>
               <Button variant="outlineGold" onClick={() => navigate("/mano-qr")} className="shrink-0">
@@ -483,7 +483,7 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* MESSAGES */}
-        <TabsContent value="messages" className="space-y-4"><Section title="Susisiekti su administracija" icon={<MessageSquare className="w-4 h-4" />}><div className="p-5"><p className="mb-3 text-sm text-muted-foreground">Parašykite klausimą ar informaciją. Administracija atsakys čia.</p><Textarea id="msg" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} maxLength={2000} rows={3} placeholder="Jūsų žinutė…" /><div className="mt-3 flex justify-end"><Button variant="gold" disabled={sending || !msgBody.trim()} onClick={sendMessage}>Siųsti žinutę</Button></div></div></Section>{messages.length > 0 && <Section title="Pokalbis" icon={<Inbox className="w-4 h-4" />}><ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">{messages.map((m) => <li key={m.id} className={cn("px-5 py-3", m.from_admin && "bg-gold/5")}><div className="flex items-baseline justify-between gap-2 mb-1"><span className={cn("text-xs", m.from_admin ? "text-gold" : "text-muted-foreground")}>{m.from_admin ? "Administracija" : "Jūs"}</span><span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span></div><div className="text-sm whitespace-pre-wrap">{m.body}</div></li>)}</ul></Section>}</TabsContent>
+        <TabsContent value="messages" className="space-y-4"><Section title="Susisiekti su administracija" icon={<MessageSquare className="w-4 h-4" />}><div className="p-5"><p className="mb-3 text-sm text-muted-foreground">Atsakysiu kuo galima skubiau.</p><Textarea id="msg" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} maxLength={2000} rows={3} placeholder="Jūsų žinutė…" /><div className="mt-3 flex justify-end"><Button variant="gold" disabled={sending || !msgBody.trim()} onClick={sendMessage}>Siųsti žinutę</Button></div></div></Section>{messages.length > 0 && <Section title="Pokalbis" icon={<Inbox className="w-4 h-4" />}><ul className="divide-y divide-gold/5 max-h-[500px] overflow-auto">{messages.map((m) => <li key={m.id} className={cn("px-5 py-3", m.from_admin && "bg-gold/5")}><div className="flex items-baseline justify-between gap-2 mb-1"><span className={cn("text-xs", m.from_admin ? "text-gold" : "text-muted-foreground")}>{m.from_admin ? "Administracija" : "Jūs"}</span><span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span></div><div className="text-sm whitespace-pre-wrap">{m.body}</div></li>)}</ul></Section>}</TabsContent>
 
         {/* PERMANENT SLOTS */}
         <TabsContent value="permanent" className="space-y-4">
