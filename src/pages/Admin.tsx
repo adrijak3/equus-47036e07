@@ -51,7 +51,6 @@ export default function Admin() {
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [focusUserId, setFocusUserId] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [params] = useSearchParams();
   useEffect(() => {
     const s = params.get("section");
@@ -100,6 +99,19 @@ export default function Admin() {
   ];
   const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
 
+  // Sections grouped by what the admin is doing. Every section stays reachable.
+  const navGroups: { id: string; label: string; short: string; items: string[] }[] = [
+    { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule"] },
+    { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "registrations"] },
+    { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "vacations"] },
+    { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "settings"] },
+  ];
+  const itemsOf = (g: (typeof navGroups)[number]) =>
+    g.items.map((v) => navItems.find((n) => n.value === v)).filter(Boolean) as typeof navItems;
+  const groupBadge = (g: (typeof navGroups)[number]) =>
+    itemsOf(g).reduce((sum, n) => sum + (n.badge ?? 0), 0);
+  const activeGroup = navGroups.find((g) => g.items.includes(section)) ?? navGroups[0];
+
   const renderNavItem = (n: (typeof navItems)[number]) => {
     const Icon = n.icon;
     const active = section === n.value;
@@ -135,57 +147,74 @@ export default function Admin() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-        {/* Sidebar (desktop) */}
+        {/* Sidebar (desktop): all sections visible, grouped */}
         <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant space-y-0.5">
-            {navItems.filter((n) => ["overview","schedule","users","subs","registrations","messages","settings"].includes(n.value)).map(renderNavItem)}
-
-            <div className="my-2 border-t border-gold/10 pt-2">
-              <button
-                type="button"
-                onClick={() => setMoreOpen((v) => !v)}
-                className="w-full flex items-center justify-between px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-gold"
-              >
-                <span>Daugiau įrankių</span>
-                <ChevronDown className={cn("w-4 h-4 transition-transform", moreOpen && "rotate-180")} />
-              </button>
-              {moreOpen && (
-                <div className="space-y-0.5">
-                  {navItems.filter((n) => !["overview","schedule","users","subs","registrations","messages","settings"].includes(n.value)).map(renderNavItem)}
-                </div>
-              )}
-            </div>
+          <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant">
+            {navGroups.map((g, i) => (
+              <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-gold/10 pt-2")}>
+                <p className="px-3 pb-1 pt-1 text-xs text-muted-foreground">{g.label}</p>
+                <div className="space-y-0.5">{itemsOf(g).map(renderNavItem)}</div>
+              </div>
+            ))}
           </nav>
         </aside>
 
-        {/* Mobile nav */}
-        <div className="lg:hidden -mt-2 mb-4 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-2">
-            {navItems.map((n) => {
-              const Icon = n.icon;
-              const active = section === n.value;
+        {/* Mobile nav: pick a group, then a section inside it */}
+        <div className="lg:hidden -mt-2 mb-4 space-y-2">
+          <div className="grid grid-cols-4 gap-1 rounded-xl border border-gold/15 bg-gradient-card p-1">
+            {navGroups.map((g) => {
+              const active = activeGroup.id === g.id;
+              const badge = groupBadge(g);
               return (
                 <button
-                  key={n.value}
+                  key={g.id}
                   type="button"
-                  onClick={() => setSection(n.value)}
+                  onClick={() => {
+                    if (!active) setSection(g.items[0]);
+                  }}
                   className={cn(
-                    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors",
-                    active
-                      ? "border-gold/40 bg-gold/10 text-gold"
-                      : "border-gold/15 bg-gradient-card text-foreground/70 hover:border-gold/30 hover:text-gold",
+                    "relative flex min-h-10 items-center justify-center gap-1 rounded-lg px-1 text-xs font-medium transition-colors",
+                    active ? "bg-gold/15 text-gold" : "text-foreground/70 hover:text-gold",
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{n.label}</span>
-                  {!!n.badge && n.badge > 0 && (
-                    <span className="min-w-4 h-4 rounded-full bg-gold px-1 text-[9px] font-bold text-background">
-                      {n.badge}
+                  <span className="truncate">{g.short}</span>
+                  {badge > 0 && (
+                    <span className="min-w-4 h-4 rounded-full bg-gold px-1 text-[9px] font-bold leading-4 text-background">
+                      {badge}
                     </span>
                   )}
                 </button>
               );
             })}
+          </div>
+          <div className="overflow-x-auto pb-1">
+            <div className="flex min-w-max gap-2">
+              {itemsOf(activeGroup).map((n) => {
+                const Icon = n.icon;
+                const active = section === n.value;
+                return (
+                  <button
+                    key={n.value}
+                    type="button"
+                    onClick={() => setSection(n.value)}
+                    className={cn(
+                      "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors",
+                      active
+                        ? "border-gold/40 bg-gold/10 text-gold"
+                        : "border-gold/15 bg-gradient-card text-foreground/70 hover:border-gold/30 hover:text-gold",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{n.label}</span>
+                    {!!n.badge && n.badge > 0 && (
+                      <span className="min-w-4 h-4 rounded-full bg-gold px-1 text-[9px] font-bold text-background">
+                        {n.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
