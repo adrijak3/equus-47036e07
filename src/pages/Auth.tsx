@@ -137,7 +137,7 @@ export default function Auth() {
     }
     toast.success("Sveiki sugrįžę!");
     navigate(
-      typeof redirectTo === "string" && redirectTo.startsWith("/") ? redirectTo : "/",
+      typeof redirectTo === "string" && redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/",
       { replace: true },
     );
   };
