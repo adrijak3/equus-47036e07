@@ -90,6 +90,128 @@ USING (
   )
 );
 
+-- Approved historical selections also occupy package capacity. They are stored
+-- against the request rather than rewriting old booking rows, so count them
+-- beside the normal booking commitments. The existing booking filters stay as-is.
+CREATE OR REPLACE FUNCTION public.subscription_committed_lessons(
+  _subscription_id uuid
+)
+RETURNS smallint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $committed_with_request_selections$
+  SELECT LEAST(
+    32767,
+    COALESCE((
+      SELECT COUNT(*) FILTER (
+        WHERE s.start_pending = false
+          AND b.status IN ('active', 'pending_cancel', 'completed')
+          AND b.counts_in_subscription IS NOT FALSE
+          AND (
+            public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 0
+            OR public.booking_matches_subscription_package(
+              b.id,
+              COALESCE(
+                s.package_type,
+                CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+              )
+            ) IS TRUE
+          )
+          AND b.slot_date BETWEEN s.start_from_date AND s.expires_at
+      )::integer
+      FROM public.bookings b
+      JOIN public.subscriptions s ON s.id = _subscription_id
+      WHERE b.subscription_id = _subscription_id
+    ), 0)
+    + COALESCE((
+      SELECT COUNT(*)::integer
+      FROM public.subscription_purchase_requests r
+      JOIN public.subscription_purchase_request_lessons rl
+        ON rl.request_id = r.id
+      WHERE r.subscription_id = _subscription_id
+        AND r.status = 'approved'
+    ), 0)
+  )::smallint;
+$committed_with_request_selections$;
+
+-- A fully-consumed queued package cannot justify new bookings.
+CREATE OR REPLACE FUNCTION public.pending_subscription_can_cover_slot(
+  _user_id uuid,
+  _slot_date date,
+  _slot_time time
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $pending_usable_with_request_selections$
+DECLARE
+  v_capacity integer;
+  v_package_type text;
+BEGIN
+  v_capacity := public.equus_effective_slot_capacity(_slot_date, _slot_time);
+
+  IF v_capacity <= 0 THEN
+    RETURN false;
+  END IF;
+
+  v_package_type := CASE
+    WHEN v_capacity = 1 THEN 'individual'
+    WHEN v_capacity = 2 THEN 'po2'
+    ELSE 'group'
+  END;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.subscriptions s
+    WHERE s.user_id = _user_id
+      AND s.paid = true
+      AND s.cancelled_at IS NULL
+      AND s.start_pending = false
+      AND COALESCE(s.lessons_total, 0) > 0
+      AND public.subscription_committed_lessons(s.id) < s.lessons_total
+      AND s.start_from_date IS NOT NULL
+      AND s.expires_at IS NOT NULL
+      AND s.expires_at >= (now() AT TIME ZONE 'Europe/Vilnius')::date
+  ) THEN
+    RETURN false;
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.subscriptions s
+    WHERE s.user_id = _user_id
+      AND s.paid = true
+      AND s.cancelled_at IS NULL
+      AND s.start_pending = true
+      AND s.lessons_used < s.lessons_total
+      AND public.subscription_committed_lessons(s.id) < s.lessons_total
+      AND (
+        (v_package_type = 'group' AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) = 'group')
+        OR
+        (v_package_type = 'po2' AND COALESCE(
+          s.package_type,
+          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+        ) IN ('group', 'po2'))
+      )
+  );
+END;
+$pending_usable_with_request_selections$;
+
+REVOKE ALL
+ON FUNCTION public.pending_subscription_can_cover_slot(uuid,date,time)
+FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE
+ON FUNCTION public.pending_subscription_can_cover_slot(uuid,date,time)
+TO authenticated, service_role;
+
 -- Private JSON formatter shared by the narrowly-authorized RPCs below.
 CREATE OR REPLACE FUNCTION public.subscription_purchase_request_payload(
   _request_id uuid
