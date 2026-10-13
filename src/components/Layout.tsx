@@ -91,7 +91,6 @@ const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLi
 const STAFF_QR_REQUESTS_NAV = { to: "/admin/qr-uzklausos", label: "QR užklausos", icon: QrCode };
 
 const NAV_TRAINER = [
-  STAFF_QR_REQUESTS_NAV,
   {
     to: "/",
     label: "Pradžia",
@@ -114,6 +113,7 @@ const NAV_TRAINER = [
     label: "Informacija",
     icon: Info,
   },
+  STAFF_QR_REQUESTS_NAV,
 ];
 
 export default function Layout({
