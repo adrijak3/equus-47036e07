@@ -90,6 +90,86 @@ USING (
   )
 );
 
+-- Count approved selected past lessons as used independently of admin offsets.
+-- Normal booking counting conditions, especially today's 20:00 gate, are unchanged.
+-- The manual-notes table is checked dynamically so this migration also works
+-- in databases where that separate historical migration has not yet been applied.
+CREATE OR REPLACE FUNCTION public.subscription_auto_used(_subscription_id uuid)
+RETURNS smallint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $subscription_auto_used_with_requests$
+DECLARE
+  v_used smallint := 0;
+  v_manual_used integer := 0;
+  v_selected_used integer := 0;
+  v_local_date date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
+BEGIN
+  IF _subscription_id IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  SELECT COUNT(*)::smallint
+    INTO v_used
+  FROM public.bookings b
+  JOIN public.subscriptions s
+    ON s.id = _subscription_id
+  WHERE b.subscription_id = _subscription_id
+    AND b.status = 'completed'
+    AND b.counts_in_subscription IS NOT FALSE
+    AND b.slot_date BETWEEN
+      COALESCE(s.start_from_date, s.purchase_date)
+      AND s.expires_at
+    AND (
+      b.slot_date < v_local_date
+      OR (
+        b.slot_date = v_local_date
+        AND current_setting('equus.allow_daily_subscription_usage_update', true) = 'true'
+      )
+    )
+    AND public.booking_matches_subscription_package(
+      b.id,
+      COALESCE(
+        s.package_type,
+        CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+      )
+    );
+
+  IF to_regclass('public.subscription_manual_lessons') IS NOT NULL THEN
+    EXECUTE
+      'SELECT COUNT(*)::integer
+         FROM public.subscription_manual_lessons
+        WHERE subscription_id = $1'
+      INTO v_manual_used
+      USING _subscription_id;
+  END IF;
+
+  SELECT COUNT(*)::integer
+    INTO v_selected_used
+  FROM public.subscription_purchase_request_lessons rl
+  JOIN public.subscription_purchase_requests r
+    ON r.id = rl.request_id
+  WHERE r.subscription_id = _subscription_id
+    AND r.status = 'approved';
+
+  RETURN LEAST(
+    32767,
+    COALESCE(v_used, 0)::integer
+      + COALESCE(v_manual_used, 0)
+      + COALESCE(v_selected_used, 0)
+  )::smallint;
+END;
+$subscription_auto_used_with_requests$;
+
+REVOKE ALL
+ON FUNCTION public.subscription_auto_used(uuid)
+FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE
+ON FUNCTION public.subscription_auto_used(uuid)
+TO service_role;
+
 -- Approved historical selections also occupy package capacity. They are stored
 -- against the request rather than rewriting old booking rows, so count them
 -- beside the normal booking commitments. The existing booking filters stay as-is.
@@ -670,7 +750,6 @@ DECLARE
   v_purchase jsonb;
   v_subscription_id uuid;
   v_lessons_used smallint;
-  v_manual_adjustment smallint;
   v_today date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
   v_previous_financial_setting text := current_setting(
     'equus.allow_subscription_financial_update',
@@ -796,10 +875,8 @@ BEGIN
 
   v_subscription_id := (v_purchase->>'subscription_id')::uuid;
 
-  -- Keep the historical selections linked to the approved request, but do
-  -- not rewrite old booking rows or make them eligible for future auto-allocation.
-  -- The permanent manual offset makes each selected completed lesson count as
-  -- used immediately and remain counted after the daily 20:00 reconciliation.
+  -- Preserve the selected history on the request itself; do not rewrite old
+  -- booking rows or alter future booking allocation.
   PERFORM set_config(
     'equus.allow_subscription_financial_update',
     'true',
@@ -808,11 +885,8 @@ BEGIN
 
   UPDATE public.subscriptions
   SET
-    manual_used_adjustment = (
-      COALESCE(manual_used_adjustment, 0) + v_selected_count
-    )::smallint,
-    -- If every lesson is already accounted for by the selected history, do not
-    -- leave an exhausted package stuck in the queued/first-lesson state.
+    -- If every lesson is covered by the selected past history, do not leave an
+    -- exhausted package stuck in the queued/first-lesson state.
     start_pending = CASE
       WHEN v_selected_count = v_request.lessons_total THEN false
       ELSE start_pending
@@ -825,8 +899,22 @@ BEGIN
       WHEN v_selected_count = v_request.lessons_total THEN v_today + 30
       ELSE expires_at
     END
-  WHERE id = v_subscription_id
-  RETURNING manual_used_adjustment INTO v_manual_adjustment;
+  WHERE id = v_subscription_id;
+
+  -- Mark the request approved before reconciling so subscription_auto_used()
+  -- can count the selected historical lessons from their durable request links.
+  UPDATE public.subscription_purchase_requests
+  SET
+    status = 'approved',
+    subscription_id = v_subscription_id,
+    approved_at = now(),
+    approved_by = v_actor
+  WHERE id = v_request.id
+    AND status = 'pending';
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'REQUEST_ALREADY_PROCESSED';
+  END IF;
 
   PERFORM public.reconcile_subscription_usage(v_subscription_id);
 
@@ -849,15 +937,6 @@ BEGIN
   FROM public.subscriptions
   WHERE id = v_subscription_id;
 
-  UPDATE public.subscription_purchase_requests
-  SET
-    status = 'approved',
-    subscription_id = v_subscription_id,
-    approved_at = now(),
-    approved_by = v_actor
-  WHERE id = v_request.id
-    AND status = 'pending';
-
   INSERT INTO public.subscription_audit_log (
     actor_user_id,
     target_user_id,
@@ -878,7 +957,6 @@ BEGIN
       'payment_method', v_request.payment_method,
       'price_eur', v_request.price_eur,
       'selected_past_lessons', v_selected_count,
-      'manual_used_adjustment', v_manual_adjustment,
       'lessons_used', v_lessons_used
     ),
     jsonb_build_object(
