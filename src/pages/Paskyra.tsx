@@ -474,6 +474,7 @@ export default function Paskyra() {
                           lesson_kind: b.lesson_kind,
                         }))}
                     />
+                    <SubscriptionManualLessons subscriptionId={s.id} />
                   </div>
                 );
               })}
@@ -505,6 +506,45 @@ export default function Paskyra() {
       </Tabs>
 
 
+    </div>
+  );
+}
+
+function SubscriptionManualLessons({ subscriptionId }: { subscriptionId: string }) {
+  type ManualLessonNote = { id: string; note: string; created_at: string };
+  const [rows, setRows] = useState<ManualLessonNote[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await (supabase as any)
+        .from("subscription_manual_lessons")
+        .select("id, note, created_at")
+        .eq("subscription_id", subscriptionId)
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load subscription manual lessons:", error);
+        setRows([]);
+        return;
+      }
+      setRows((data ?? []) as ManualLessonNote[]);
+    })();
+    return () => { cancelled = true; };
+  }, [subscriptionId]);
+
+  if (rows.length === 0) return null;
+  return (
+    <div className="mt-3 rounded-xl border border-gold/15 bg-gradient-card p-3">
+      <h4 className="text-xs uppercase tracking-wider text-gold/80 mb-2">Papildomai įskaitytos pamokos</h4>
+      <ul className="space-y-2">
+        {rows.map((lesson) => (
+          <li key={lesson.id} className="rounded-lg border border-gold/10 bg-background/30 px-3 py-2">
+            <p className="text-[10px] text-muted-foreground">{new Date(lesson.created_at).toLocaleString("lt-LT")}</p>
+            <p className="mt-1 text-sm whitespace-pre-wrap break-words">{lesson.note}</p>
+            <p className="mt-1 text-[10px] text-gold/80">Įskaityta kaip 1 panaudota pamoka</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
