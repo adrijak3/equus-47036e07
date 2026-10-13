@@ -104,8 +104,6 @@ DECLARE
   v_actor uuid := auth.uid();
   v_sub public.subscriptions%ROWTYPE;
   v_lesson public.subscription_manual_lessons%ROWTYPE;
-  v_auto smallint;
-  v_effective_used integer;
   v_new_used smallint;
 BEGIN
   IF v_actor IS NULL THEN
@@ -132,16 +130,6 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'SUBSCRIPTION_NOT_FOUND';
-  END IF;
-
-  v_auto := public.subscription_auto_used(_subscription_id);
-  v_effective_used := GREATEST(
-    0,
-    LEAST(v_sub.lessons_total, v_auto::integer + COALESCE(v_sub.manual_used_adjustment, 0))
-  );
-
-  IF v_effective_used >= v_sub.lessons_total THEN
-    RAISE EXCEPTION 'SUBSCRIPTION_HAS_NO_REMAINING_LESSONS';
   END IF;
 
   INSERT INTO public.subscription_manual_lessons (
