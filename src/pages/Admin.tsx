@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -2511,6 +2512,11 @@ function SubDetailDialog({
   };
   const [copyFrom, setCopyFrom] = useState(defaultFrom);
   const [copyUntil, setCopyUntil] = useState(() => formatDateISO(new Date()));
+  type ManualLessonRow = { id: string; note: string; created_at: string };
+  const [manualLessons, setManualLessons] = useState<ManualLessonRow[]>([]);
+  const [manualLessonOpen, setManualLessonOpen] = useState(false);
+  const [manualLessonText, setManualLessonText] = useState("");
+  const [savingManualLesson, setSavingManualLesson] = useState(false);
   useEffect(() => { setLiveSub(sub); }, [sub]);
   const refreshSub = async () => { const { data } = await supabase.from("subscriptions").select("*").eq("id", sub.id).maybeSingle(); if (data) setLiveSub(data as any); };
   const enrichHorses = async (bookings: any[]): Promise<HistoryRow[]> => {
@@ -2551,11 +2557,102 @@ function SubDetailDialog({
       .order("slot_time", { ascending: true });
     setFreeRows(await enrichHorses(free ?? []));
 
+    const { data: manualData, error: manualError } = await (supabase as any)
+      .from("subscription_manual_lessons")
+      .select("id, note, created_at")
+      .eq("subscription_id", sub.id)
+      .order("created_at", { ascending: false });
+    if (manualError) {
+      console.error("Failed to load subscription manual lessons:", manualError);
+      setManualLessons([]);
+    } else {
+      setManualLessons((manualData ?? []) as ManualLessonRow[]);
+    }
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sub.id]);
   const detach = async (bookingId: string) => { if (!confirm("Atkabinti šią treniruotę nuo abonemento?")) return; const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: null } as any); if (error) { toast.error(error.message); return; } toast.success("Atkabinta nuo abonemento (treniruotė nepanaikinta)"); load(); refreshSub(); onChanged(); };
   const attach = async (bookingId: string) => { const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any); if (error) { toast.error(error.message); return; } toast.success("Priskirta abonementui"); load(); refreshSub(); onChanged(); };
+  const addManualLesson = async () => {
+    const note = manualLessonText.trim();
+    if (!note) { toast.error("Įrašykite pamokos aprašymą."); return; }
+    setSavingManualLesson(true);
+    const { error } = await (supabase as any).rpc("admin_add_subscription_manual_lesson", {
+      _subscription_id: sub.id,
+      _note: note,
+    });
+    setSavingManualLesson(false);
+    if (error) {
+      toast.error("Nepavyko pridėti pamokos: " + error.message);
+      return;
+    }
+    setManualLessonText("");
+    setManualLessonOpen(false);
+    toast.success("Pamoka įrašyta ir įskaičiuota į abonementą.");
+    await load();
+    await refreshSub();
+    onChanged();
+  };
+  const removeManualLesson = async (lesson: ManualLessonRow) => {
+    if (!confirm("Pašalinti šį rankiniu būdu įrašytos pamokos įrašą? Panaudotų pamokų skaičius bus perskaičiuotas.")) return;
+    const { error } = await (supabase as any).rpc("admin_remove_subscription_manual_lesson", {
+      _manual_lesson_id: lesson.id,
+    });
+    if (error) { toast.error("Nepavyko pašalinti įrašo: " + error.message); return; }
+    toast.success("Pamokos įrašas pašalintas; panaudotų pamokų skaičius atnaujintas.");
+    await load();
+    await refreshSub();
+    onChanged();
+  };
+  const copyRecentHistory = async () => {
+    const today = new Date();
+    const from = formatDateISO(new Date(today.getFullYear(), today.getMonth() - 2, today.getDate()));
+    const until = formatDateISO(today);
+    const bookingLines = rows.slice().reverse().map((r) => {
+      const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+      });
+      const status = r.status === "cancelled"
+        ? "atšaukta"
+        : r.counts_in_subscription === false
+          ? "neskaičiuojama"
+          : r.status === "completed" ? "įvyko" : "rezervuota";
+      const details = [date + " · " + formatTime(r.slot_time)];
+      if (r.is_individual) details.push("individuali");
+      if (r.horse_name) details.push("🐎 " + r.horse_name);
+      return "* " + details.join(" · ") + " — " + status;
+    });
+    const manualLines = manualLessons.slice().reverse().map((lesson) => {
+      const date = new Date(lesson.created_at).toLocaleDateString("lt-LT", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+      });
+      return "* " + date + " — " + lesson.note;
+    });
+    const message = [
+      "──────────── ♡ ────────────",
+      "🐴 EQUUS ABONEMENTO ISTORIJA",
+      userName,
+      "",
+      "📅 Pamokų rezervacijų laikotarpis: " + from + " → " + until,
+      "",
+      "REZERVACIJOS (pastarieji 2 mėnesiai)",
+      ...(bookingLines.length ? bookingLines : ["* Rezervacijų šiame laikotarpyje nėra."]),
+      "",
+      "RANKINIU BŪDU ĮSKAITYTOS PAMOKOS (išsaugoti įrašai)",
+      ...(manualLines.length ? manualLines : ["* Papildomų įrašų nėra."]),
+      "",
+      "♡ Rezervacijų įrašų: " + rows.length,
+      "♡ Rankiniu būdu įskaitytų pamokų įrašų: " + manualLessons.length,
+      "──────────── ♡ ────────────",
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(message);
+      toast.success("Abonemento istorija nukopijuota ✓");
+    } catch {
+      toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus.");
+    }
+  };
   const counted = rows.filter((r) => r.status !== "cancelled" && r.counts_in_subscription !== false);
   const cancelled = rows.filter((r) => r.status === "cancelled" || r.counts_in_subscription === false);
   // The database counter is authoritative; allocated future/active bookings are not used lessons.
@@ -2580,14 +2677,98 @@ function SubDetailDialog({
       <DialogContent className="bg-gradient-card border-gold/20 max-w-lg">
         <DialogHeader><DialogTitle className="font-display text-xl text-gradient-gold">{userName} · abonimento detalės</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
-          <div className="rounded-md bg-gold/5 border border-gold/15 px-3 py-2 tabular-nums"><div className="text-base">Įvykusios treniruotės: <span className="text-gold">{displayUsed}/{liveSub.lessons_total}</span></div><div className="text-xs text-muted-foreground mt-1">{liveSub.purchase_date} → {liveSub.expires_at}</div><div className="mt-2 flex flex-wrap items-center gap-2">{Number((liveSub as any).manual_used_adjustment ?? 0) !== 0 && <span className="text-[11px] text-muted-foreground">Rankiniu būdu pakeista: {Number((liveSub as any).manual_used_adjustment) > 0 ? "+" : ""}{Number((liveSub as any).manual_used_adjustment)}</span>}<button type="button" onClick={async () => { const { error } = await (supabase as any).rpc("admin_recalculate_subscription_usage", { _subscription_id: sub.id, _clear_manual: false }); if (error) { toast.error(error.message); return; } toast.success("Perskaičiuota pagal įvykusias pamokas"); await refreshSub(); onChanged(); }} className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Perskaičiuoti</button>{Number((liveSub as any).manual_used_adjustment ?? 0) !== 0 && <button type="button" onClick={async () => { if (!confirm("Pašalinti rankinį pakeitimą ir grįžti prie automatinio skaičiavimo?")) return; const { error } = await (supabase as any).rpc("admin_recalculate_subscription_usage", { _subscription_id: sub.id, _clear_manual: true }); if (error) { toast.error(error.message); return; } toast.success("Grąžintas automatinis skaičiavimas"); await refreshSub(); onChanged(); }} className="text-[11px] px-2 py-1 rounded border border-blush/40 text-blush hover:bg-blush/10">Grąžinti automatinį skaičiavimą</button>}</div></div>
+          <div className="rounded-md bg-gold/5 border border-gold/15 px-3 py-2 tabular-nums">
+            <div className="text-base">Panaudotos pamokos: <span className="text-gold">{displayUsed}/{liveSub.lessons_total}</span></div>
+            <div className="text-xs text-muted-foreground mt-1">{liveSub.purchase_date} → {liveSub.expires_at}</div>
+            {Number((liveSub as any).manual_used_adjustment ?? 0) !== 0 && (
+              <div className="mt-2 text-[11px] text-muted-foreground">
+                Rankinis skaičiaus koregavimas prie automatinio skaičiaus: {Number((liveSub as any).manual_used_adjustment) > 0 ? "+" : ""}{Number((liveSub as any).manual_used_adjustment)} pam.
+              </div>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Automatiškai skaičiuojamos įvykusios ir abonementui priskirtos rezervacijos. Šiandienos rezervacijos į panaudotų pamokų skaičių įtraukiamos pagal esamą 20:00 atnaujinimą. Rankiniu būdu įrašytos pamokos taip pat įskaičiuojamos.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={async () => {
+                const { error } = await (supabase as any).rpc("admin_recalculate_subscription_usage", { _subscription_id: sub.id, _clear_manual: false });
+                if (error) { toast.error(error.message); return; }
+                toast.success("Panaudotų pamokų skaičius perskaičiuotas; rankinis koregavimas paliktas.");
+                await refreshSub(); onChanged();
+              }} className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">
+                Perskaičiuoti pagal įvykusias rezervacijas
+              </button>
+              {Number((liveSub as any).manual_used_adjustment ?? 0) !== 0 && (
+                <button type="button" onClick={async () => {
+                  if (!confirm("Bus pašalintas tik rankinis +/- skaičiaus koregavimas. Panaudotų pamokų skaičius bus perskaičiuotas pagal įvykusias rezervacijas ir išsaugotus rankinių pamokų įrašus. Įrašai nebus ištrinti. Tęsti?")) return;
+                  const { error } = await (supabase as any).rpc("admin_recalculate_subscription_usage", { _subscription_id: sub.id, _clear_manual: true });
+                  if (error) { toast.error(error.message); return; }
+                  toast.success("Rankinis koregavimas pašalintas; išsaugoti pamokų įrašai palikti.");
+                  await refreshSub(); onChanged();
+                }} className="text-[11px] px-2 py-1 rounded border border-blush/40 text-blush hover:bg-blush/10">
+                  Pašalinti rankinį koregavimą
+                </button>
+              )}
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("period"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Kopijuoti</button><button type="button" onClick={() => { setCopyMode("details"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/20 text-foreground/75 hover:bg-gold/10 inline-flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Datos + laikai + žirgai</button></div>
-          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("unpaid"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Neapmokėtos pamokos</button><button type="button" onClick={async () => { const remaining = liveSub.lessons_total - counted.length; if (remaining <= 0) { toast.error("Abonementas pilnas"); return; } const { data: bks } = await supabase.from("bookings").select("id").eq("user_id", sub.user_id).eq("status", "completed").neq("counts_in_subscription", false).is("subscription_id", null).gte("slot_date", liveSub.purchase_date).lte("slot_date", liveSub.expires_at).order("slot_date", { ascending: true }).limit(remaining); const ids = (bks ?? []).map((b: any) => b.id); if (ids.length === 0) { toast.message("Neįskaičiuotų pamokų nėra šio abonemento laikotarpyje"); return; } let assigned = 0; for (const bookingId of ids) { const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any); if (error) { toast.error(error.message); break; } assigned += 1; } if (assigned === 0) return; toast.success("Priskirta " + assigned); load(); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Auto-priskirti šio abonemento įvykusias</button><button type="button" onClick={async () => { const txt = prompt("Kiek pamokų jau panaudota? (0–" + liveSub.lessons_total + ")", String(liveSub.lessons_used)); if (txt === null) return; const n = parseInt(txt); if (!Number.isFinite(n) || n < 0 || n > liveSub.lessons_total) { toast.error("Neteisingas skaičius"); return; } const { error } = await (supabase as any).rpc("admin_adjust_subscription_used", { _subscription_id: sub.id, _new_lessons_used: n, _reason: "Pakeitė administracija abonemento lange" }); if (error) { toast.error(error.message); return; } toast.success("Atnaujinta"); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Pridėti rankiniu būdu</button></div>
-          {loading ? <p className="text-muted-foreground italic">Kraunama…</p> : <><div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · pastarųjų 2 mėn. ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => void copyRecentHistory()} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><History className="w-3.5 h-3.5" /> Istorija (2 mėn.)</button>
+            <button type="button" onClick={() => { setManualLessonText(""); setManualLessonOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Pridėti pamoką</button>
+          </div>
+          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("unpaid"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Neapmokėtos pamokos</button><button type="button" onClick={async () => { const remaining = liveSub.lessons_total - counted.length; if (remaining <= 0) { toast.error("Abonementas pilnas"); return; } const { data: bks } = await supabase.from("bookings").select("id").eq("user_id", sub.user_id).eq("status", "completed").neq("counts_in_subscription", false).is("subscription_id", null).gte("slot_date", liveSub.purchase_date).lte("slot_date", liveSub.expires_at).order("slot_date", { ascending: true }).limit(remaining); const ids = (bks ?? []).map((b: any) => b.id); if (ids.length === 0) { toast.message("Neįskaičiuotų pamokų nėra šio abonemento laikotarpyje"); return; } let assigned = 0; for (const bookingId of ids) { const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any); if (error) { toast.error(error.message); break; } assigned += 1; } if (assigned === 0) return; toast.success("Priskirta " + assigned); load(); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Auto-priskirti šio abonemento įvykusias</button><button type="button" onClick={async () => { const txt = prompt("Įrašykite bendrą panaudotų pamokų skaičių (0–" + liveSub.lessons_total + "), įskaitant rankiniu būdu įrašytas pamokas. Tai NUSTATO bendrą skaičių, o ne prideda pamokų.", String(liveSub.lessons_used)); if (txt === null) return; const n = parseInt(txt); if (!Number.isFinite(n) || n < 0 || n > liveSub.lessons_total) { toast.error("Neteisingas skaičius"); return; } const { error } = await (supabase as any).rpc("admin_adjust_subscription_used", { _subscription_id: sub.id, _new_lessons_used: n, _reason: "Pakeitė administracija abonemento lange" }); if (error) { toast.error(error.message); return; } toast.success("Atnaujinta"); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Koreguoti panaudotų pamokų skaičių</button></div>
+          {loading ? <p className="text-muted-foreground italic">Kraunama…</p> : <>
+            <div>
+              <h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Rankiniu būdu įrašytos pamokos ({manualLessons.length})</h4>
+              {manualLessons.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Papildomų pamokų įrašų nėra.</p>
+              ) : (
+                <ul className="space-y-2 max-h-56 overflow-auto">
+                  {manualLessons.map((lesson) => (
+                    <li key={lesson.id} className="flex items-start justify-between gap-3 rounded border border-gold/10 bg-background/30 px-2 py-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-muted-foreground">{new Date(lesson.created_at).toLocaleString("lt-LT")}</div>
+                        <p className="text-sm whitespace-pre-wrap break-words">{lesson.note}</p>
+                        <p className="text-[10px] text-gold/80 mt-1">Įskaityta kaip 1 panaudota pamoka</p>
+                      </div>
+                      <button type="button" onClick={() => void removeManualLesson(lesson)} className="shrink-0 text-[11px] text-muted-foreground hover:text-destructive">Pašalinti</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · pastarųjų 2 mėn. ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>Uždaryti</Button></DialogFooter>
       </DialogContent>
       <Dialog open={copyOpen} onOpenChange={setCopyOpen}><DialogContent className="bg-gradient-card border-gold/20 max-w-md"><DialogHeader><DialogTitle className="font-display text-xl text-gradient-gold">Kopijuoti žinutę</DialogTitle><DialogDescription>Pasirinkite formatą ir laikotarpį.</DialogDescription></DialogHeader><div className="space-y-4"><div className="grid grid-cols-1 gap-2"><button type="button" onClick={() => setCopyMode("period")} className={cn("text-left rounded-md border px-3 py-2 text-sm", copyMode === "period" ? "border-gold/50 bg-gold/10 text-gold" : "border-gold/15")}>Pamokos pagal laikotarpį</button><button type="button" onClick={() => setCopyMode("unpaid")} className={cn("text-left rounded-md border px-3 py-2 text-sm", copyMode === "unpaid" ? "border-gold/50 bg-gold/10 text-gold" : "border-gold/15")}>Neapmokėtos pamokos</button><button type="button" onClick={() => setCopyMode("details")} className={cn("text-left rounded-md border px-3 py-2 text-sm", copyMode === "details" ? "border-gold/50 bg-gold/10 text-gold" : "border-gold/15")}>Datos + laikai + žirgai</button></div><div className="grid grid-cols-2 gap-3"><div><Label>Nuo</Label><Input type="date" value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} /></div><div><Label>Iki</Label><Input type="date" value={copyUntil} onChange={(e) => setCopyUntil(e.target.value)} /></div></div>{copyMode === "unpaid" && <p className="text-xs text-muted-foreground">Neapmokėtos nustatomos pagal esamą logiką: aktyvios / įvykusios pamokos, kurios nėra priskirtos abonementui.</p>}<DialogFooter><Button variant="ghost" onClick={() => setCopyOpen(false)}>Atšaukti</Button><Button variant="gold" onClick={copyMessage}><Copy className="w-4 h-4" /> Kopijuoti</Button></DialogFooter></div></DialogContent></Dialog>
+      <Dialog open={manualLessonOpen} onOpenChange={(open) => { if (!savingManualLesson) setManualLessonOpen(open); }}>
+        <DialogContent className="bg-gradient-card border-gold/20 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-gradient-gold">Pridėti pamoką</DialogTitle>
+            <DialogDescription>
+              Įrašas bus matomas raiteliui ir administracijai, bus išsaugotas, kol administratorius jį pašalins, ir bus įskaičiuotas kaip viena panaudota pamoka.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="subscription-manual-lesson-note">Pamokos aprašymas</Label>
+            <Textarea
+              id="subscription-manual-lesson-note"
+              value={manualLessonText}
+              onChange={(e) => setManualLessonText(e.target.value)}
+              maxLength={2000}
+              rows={4}
+              placeholder="Pvz., treniruotė į laukus su Jolita, 13 dieną"
+            />
+            <p className="text-xs text-muted-foreground">Atskiro datos ar laiko pasirinkimo nėra — datą ir kitą informaciją įrašykite į tekstą.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" disabled={savingManualLesson} onClick={() => setManualLessonOpen(false)}>Atšaukti</Button>
+            <Button variant="gold" disabled={savingManualLesson || !manualLessonText.trim()} onClick={() => void addManualLesson()}>
+              <Plus className="mr-2 h-4 w-4" /> Pridėti pamoką
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
