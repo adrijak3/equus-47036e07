@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,6 +79,18 @@ const horseLabel = (value?: string | null) =>
 const paymentLabel = (value?: string | null) =>
   value === "bank_transfer" ? "Bankiniu pavedimu" : value === "cash" ? "Grynais" : value === "other" ? "Kita" : "—";
 
+function extractSubscriptionRequestId(value: string) {
+  try {
+    const url = new URL(value.trim());
+    const parts = url.pathname.split("/").filter(Boolean);
+    const index = parts.lastIndexOf("qr-uzklausa");
+    if (index >= 0 && parts[index + 1]) return parts[index + 1];
+  } catch {
+    // Non-URL values are checked as ordinary client QR content below.
+  }
+  return null;
+}
+
 function extractToken(value: string) {
   const trimmed = value.trim();
   if (trimmed.startsWith(PREFIX)) return trimmed.slice(PREFIX.length).trim();
@@ -106,6 +118,7 @@ function subscriptionType(s: Subscription) {
 
 export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
   const { user, isAdmin, isHalfAdmin } = useAuth();
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(null);
   const [scannedToken, setScannedToken] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
@@ -160,6 +173,14 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
   }, [user]);
 
   const resolve = useCallback(async (raw: string) => {
+    const requestId = extractSubscriptionRequestId(raw);
+    if (requestId) {
+      await stopScanner();
+      setScannerOpen(false);
+      navigate(`/qr-uzklausa/${requestId}`);
+      return;
+    }
+
     const extracted = extractToken(raw);
     if (!extracted) return;
 
@@ -195,7 +216,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
 
     setClient(result);
     setManual("");
-  }, [stopScanner]);
+  }, [stopScanner, navigate]);
 
   useEffect(() => {
     if (!scanner && user) void loadOwnQr();
@@ -259,11 +280,16 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
             </div>
             <h2 className="mt-5 text-2xl font-display">Paruošta skenuoti</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Klientas parodo savo QR kodą. Jūs jį nuskenuojate telefonu.
+              Nuskenuokite kliento QR arba naujo abonemento užklausos QR. Užklausos QR atvers mokėjimo patvirtinimą.
             </p>
-            <Button variant="gold" size="lg" className="mt-6" onClick={() => void startScanner()}>
-              <Camera className="mr-2 h-5 w-5" /> Skenuoti QR
-            </Button>
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <Button variant="gold" size="lg" onClick={() => void startScanner()}>
+                <Camera className="mr-2 h-5 w-5" /> Skenuoti QR
+              </Button>
+              <Button variant="outlineGold" size="lg" asChild>
+                <Link to="/admin/qr-uzklausos">QR užklausos</Link>
+              </Button>
+            </div>
           </div>
         )}
 
@@ -326,7 +352,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
     );
   }
 
-  const qrValue = token ? PREFIX + token : "";
+  const qrValue = token ? `${window.location.origin}/qr/${token}` : "";
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
@@ -334,7 +360,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70">Mano paskyra</p>
         <h1 className="mt-2 text-4xl font-display text-gradient-gold">Mano QR kodas</h1>
         <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
-          Parodykite šį kodą Laurai, jei norite įsigyti abonementą.
+          Parodykite šį kliento QR Laurai, kad ji galėtų atidaryti Jūsų paskyros informaciją.
         </p>
       </div>
 
@@ -368,7 +394,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-gold/10 bg-background/40 p-4 text-left">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Parodyti šį kodą trenerei.
+            Šis QR atidaro kliento informaciją Equus sistemoje. Naujo abonemento užklausą pateikite skiltyje „Abonementas“.
           </p>
         </div>
       </div>
@@ -838,5 +864,100 @@ function SubscriptionPurchaseDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+
+/** A real Equus URL target for the existing client-identification QR code.
+ * It intentionally remains separate from the new cash-payment request QR flow.
+ */
+export function QrCodeLandingPage() {
+  const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
+  const { isAdmin, isHalfAdmin } = useAuth();
+  const [client, setClient] = useState<ClientResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+
+  const loadClient = useCallback(async () => {
+    if (!token) {
+      setClient(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await (supabase as any).rpc("resolve_client_qr", {
+      _token: token,
+    });
+
+    if (error || !data?.client?.id) {
+      setClient(null);
+      setLoading(false);
+      toast.error("QR kodas neatpažintas arba nebegalioja.");
+      return;
+    }
+
+    const { data: todayContext } = await (supabase as any).rpc(
+      "qr_today_subscription_context",
+      { _user_id: data.client.id },
+    );
+
+    setClient({
+      ...(data as ClientResult),
+      today_subscription_context: todayContext ?? null,
+    });
+    setLoading(false);
+  }, [token]);
+
+  useEffect(() => {
+    void loadClient();
+  }, [loadClient]);
+
+  return (
+    <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <Link to="/admin/skenuoti" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-gold">
+        <ArrowLeft className="h-4 w-4" /> Grįžti į QR skenavimą
+      </Link>
+
+      {loading ? (
+        <p className="mt-6 rounded-2xl border border-gold/10 bg-background/30 p-5 text-sm text-muted-foreground">
+          Kraunama kliento informacija…
+        </p>
+      ) : client ? (
+        <>
+          <ClientResultCard
+            result={client}
+            isAdmin={isAdmin}
+            isHalfAdmin={isHalfAdmin}
+            onPurchase={() => setPurchaseOpen(true)}
+            onRescan={() => navigate("/admin/skenuoti")}
+          />
+          <SubscriptionPurchaseDialog
+            open={purchaseOpen}
+            onOpenChange={setPurchaseOpen}
+            client={client}
+            isHalfAdmin={isHalfAdmin}
+            onPurchased={async () => {
+              setPurchaseOpen(false);
+              await loadClient();
+            }}
+          />
+        </>
+      ) : (
+        <section className="mt-6 rounded-3xl border border-destructive/20 bg-destructive/5 p-6">
+          <h1 className="font-display text-2xl">Nepavyko atidaryti QR</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Prisijunkite darbuotojo paskyra ir nuskenuokite aktualų QR kodą dar kartą.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="gold" onClick={() => navigate("/admin/skenuoti")}>Skenuoti iš naujo</Button>
+            <Button variant="outlineGold" asChild>
+              <Link to="/admin/qr-uzklausos">Atidaryti QR užklausas</Link>
+            </Button>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
