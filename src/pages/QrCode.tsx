@@ -269,7 +269,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
           <p className="mt-5 text-xs uppercase tracking-[0.25em] text-gold/70">Klientai</p>
           <h1 className="text-4xl font-display text-gradient-gold">Skenuoti kliento QR</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Nuskenuokite kliento QR ir peržiūrėkite jo abonementą bei, jei turite teisę, atlikite pirkimą.
+            Nuskenuokite kliento QR ir peržiūrėkite jo abonementą, patvirtinkite mokėjimą.
           </p>
         </div>
 
@@ -360,7 +360,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70">Mano paskyra</p>
         <h1 className="mt-2 text-4xl font-display text-gradient-gold">Mano QR kodas</h1>
         <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
-          Parodykite šį kliento QR Laurai, kad ji galėtų atidaryti Jūsų paskyros informaciją.
+          Parodykite šį QR kodą.
         </p>
       </div>
 
@@ -634,7 +634,7 @@ function SubscriptionPurchaseDialog({
     if (error) {
       toast.error(
         error.message?.includes("PRICE_NOT_CONFIGURED")
-          ? "Šio varianto kaina nesukonfigūruota."
+          ? "Nenustatyta kaina dar tiek daug treniruočių:(."
           : error.message?.includes("INVALID_PAYMENT_METHOD")
             ? "Šis mokėjimo būdas dar nesukonfigūruotas."
             : error.message,
