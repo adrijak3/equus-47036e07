@@ -475,8 +475,8 @@ function ClientResultCard({
           </div>
         )}
 
-        {client.today_subscription_context?.today_uses_current_subscription &&
-          client.today_subscription_context?.today_uses_next_subscription === false &&
+        {result.today_subscription_context?.today_uses_current_subscription &&
+          result.today_subscription_context?.today_uses_next_subscription === false &&
           nextSub && (
             <div className="mt-4 rounded-2xl border border-blush/20 bg-blush/5 p-4">
               <p className="font-medium text-blush">Šiandienos treniruotė priklauso ankstesniam abonementui</p>
