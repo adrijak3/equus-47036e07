@@ -1,0 +1,1 @@
+export { SubscriptionPurchaseRequestQrPage as default } from "@/components/SubscriptionPurchaseRequests";
