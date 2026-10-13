@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { SubscriptionCard } from "@/pages/Paskyra";
@@ -30,6 +30,7 @@ import { History } from "lucide-react";
 import { ImagePlus } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
 import { loadHorseNamesForBookings } from "@/lib/horseNames";
+import { SubscriptionPurchaseRequestsPanel } from "@/components/SubscriptionPurchaseRequests";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; trainer_name?: string | null; }
 interface CancelReq {
@@ -90,6 +91,7 @@ export default function Admin() {
     { value: "cancels", label: "Atšaukimai", icon: Inbox, badge: cancelAlerts, badgeCls: "bg-blush text-white" },
     { value: "users", label: "Klientai", icon: Users },
     { value: "subs", label: "Abonimentai", icon: Wallet },
+    { value: "qrRequests", label: "QR užklausos", icon: QrCode },
     { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
     { value: "registrations", label: "Registracijos", icon: ClipboardPenLine, badge: alerts.registrations, badgeCls: "bg-gold text-background" },
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
@@ -103,7 +105,7 @@ export default function Admin() {
   // Sections grouped by what the admin is doing. Every section stays reachable.
   const navGroups: { id: string; label: string; short: string; items: string[] }[] = [
     { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule"] },
-    { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "registrations"] },
+    { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations"] },
     { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "vacations"] },
     { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "settings"] },
   ];
@@ -244,6 +246,9 @@ export default function Admin() {
             </TabsContent>
             <TabsContent value="subs">
               <SubsTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+            </TabsContent>
+            <TabsContent value="qrRequests">
+              <SubscriptionPurchaseRequestsPanel />
             </TabsContent>
             <TabsContent value="messages"><MessagesTab /></TabsContent>
             <TabsContent value="registrations"><AdminPublicRequests /></TabsContent>
