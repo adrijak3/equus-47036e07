@@ -38,6 +38,9 @@ const Reviews = lazy(() => import("./pages/Reviews"));
 const PrivatumoPolitika = lazy(() => import("./pages/PrivatumoPolitika"));
 const TaisyklesIrSalygos = lazy(() => import("./pages/TaisyklesIrSalygos"));
 const QrCodePage = lazy(() => import("./pages/QrCode"));
+const QrCodeLandingPage = lazy(() => import("./pages/QrCode").then((m) => ({ default: m.QrCodeLandingPage })));
+const SubscriptionPurchaseRequestsPage = lazy(() => import("./pages/SubscriptionPurchaseRequests"));
+const SubscriptionPurchaseRequestQr = lazy(() => import("./pages/SubscriptionPurchaseRequestQr"));
 const SlapukuPolitika = lazy(() => import("./pages/SlapukuPolitika"));
 const HalfAdminSubscriptions = lazy(() => import("./pages/HalfAdminSubscriptions"));
 
@@ -123,7 +126,10 @@ const App = () => (
                   <Route path="/taisykles-ir-salygos" element={<TaisyklesIrSalygos />} />
                   <Route path="/slapuku-politika" element={<SlapukuPolitika />} />
                   <Route path="/mano-qr" element={<RequireAuth><QrCodePage /></RequireAuth>} />
+                  <Route path="/qr/:token" element={<RequireAuth staffOnly><QrCodeLandingPage /></RequireAuth>} />
+                  <Route path="/qr-uzklausa/:requestId" element={<RequireAuth staffOnly><SubscriptionPurchaseRequestQr /></RequireAuth>} />
                   <Route path="/admin/skenuoti" element={<RequireAuth staffOnly><QrCodePage scanner /></RequireAuth>} />
+                  <Route path="/admin/qr-uzklausos" element={<RequireAuth staffOnly><SubscriptionPurchaseRequestsPage /></RequireAuth>} />
                   <Route path="/half-admin/abonementai" element={<RequireAuth staffOnly><HalfAdminSubscriptions /></RequireAuth>} />
 
                   <Route
