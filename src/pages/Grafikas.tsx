@@ -220,6 +220,7 @@ export default function Grafikas() {
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
   const calendarScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -353,8 +354,23 @@ export default function Grafikas() {
     [weekStart],
   );
 
+  // Desktop shows one day at a time (picked in the day strip).
+  // Default: today if it is in this week, otherwise Monday.
+  const activeDayIdx =
+    selectedDay ??
+    (() => {
+      const t = new Date();
+      t.setHours(0, 0, 0, 0);
+      const i = days.findIndex((d) => d.getTime() === t.getTime());
+      return i >= 0 ? i : 0;
+    })();
+
   useEffect(() => {
-    if (!pendingScrollToToday) return;
+    setSelectedDay(null);
+  }, [weekStart]);
+
+  useEffect(() => {
+    if (!pendingScrollToToday || loading) return;
 
     const timeout = setTimeout(() => {
       const todayMs = (() => {
@@ -382,7 +398,7 @@ export default function Grafikas() {
         } else {
           day?.scrollIntoView({
             behavior: "smooth",
-            block: "center",
+            block: "start",
           });
         }
       }
@@ -391,7 +407,7 @@ export default function Grafikas() {
     }, 80);
 
     return () => clearTimeout(timeout);
-  }, [pendingScrollToToday, days]);
+  }, [pendingScrollToToday, days, loading]);
 
   const weekEnd = days[6];
 
@@ -3233,14 +3249,12 @@ export default function Grafikas() {
             variant="outlineGold"
             size="sm"
             onClick={() => {
-              setWeekStart(
-                startOfWeek(
-                  new Date(),
-                ),
-              );
-              setPendingScrollToToday(
-                true,
-              );
+              const thisWeek = startOfWeek(new Date());
+              setSelectedDay(null);
+              if (thisWeek.getTime() !== weekStart.getTime()) {
+                setWeekStart(thisWeek);
+              }
+              setPendingScrollToToday(true);
             }}
           >
             📅 {t("today")}
@@ -3299,14 +3313,17 @@ export default function Grafikas() {
               : "Loading schedule"
           }
         >
-          <div className="mx-auto flex max-w-[1240px] gap-3 overflow-hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+          <div className="mx-auto flex max-w-[720px] gap-3 overflow-hidden sm:max-w-none sm:grid sm:grid-cols-2 lg:block">
             {Array.from({
               length: 7,
             }).map(
               (_, index) => (
                 <div
                   key={index}
-                  className="min-w-[84vw] space-y-3 sm:min-w-0"
+                  className={cn(
+                    "min-w-[84vw] space-y-3 sm:min-w-0",
+                    index > 0 && "lg:hidden",
+                  )}
                 >
                   <div className="h-20 animate-pulse rounded-2xl border border-gold/10 bg-card/55" />
 
@@ -3391,13 +3408,57 @@ export default function Grafikas() {
               ],
             }}
           >
+            {calendarView === "week" && (
+              <div
+                role="tablist"
+                className="mx-auto mb-6 hidden max-w-[720px] justify-center gap-2 lg:flex"
+              >
+                {days.map((date, idx) => {
+                  const isActive = idx === activeDayIdx;
+                  const isTodayTab = date.getTime() === today.getTime();
+                  const isPastTab = date.getTime() < today.getTime();
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setSelectedDay(idx)}
+                      className={cn(
+                        "flex w-[88px] flex-col items-center rounded-xl border px-2 py-2.5 transition-colors",
+                        isActive
+                          ? "border-gold/60 bg-gold/15 text-gold shadow-sm"
+                          : "border-gold/20 bg-gradient-card text-foreground/70 hover:border-gold/40 hover:text-gold",
+                        isPastTab && !isActive && "opacity-60",
+                      )}
+                    >
+                      <span className="text-[11px] font-bold tracking-wide">
+                        {weekdayShort[idx]}
+                      </span>
+                      <span className="font-display text-xl leading-tight tabular-nums">
+                        {String(date.getDate()).padStart(2, "0")}
+                      </span>
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "mt-0.5 h-1.5 w-1.5 rounded-full",
+                          isTodayTab ? "bg-gold" : "bg-transparent",
+                        )}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div
               ref={calendarScrollRef}
               className={cn(
                 "gap-4 sm:gap-3",
                 calendarView ===
                   "week"
-                  ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-x-auto sm:px-0 sm:pb-3 lg:mx-auto lg:flex lg:max-w-[1240px] lg:snap-none lg:flex-wrap lg:justify-center lg:gap-4 lg:overflow-visible lg:pb-0"
+                  ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-x-auto sm:px-0 sm:pb-3 lg:mx-auto lg:block lg:max-w-[720px] lg:snap-none lg:overflow-visible lg:pb-0"
                   : "mx-auto grid w-full max-w-5xl grid-cols-1 lg:grid-cols-2",
               )}
             >
@@ -3452,7 +3513,10 @@ export default function Grafikas() {
                         "relative flex flex-col gap-2",
                         calendarView ===
                           "week" &&
-                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none lg:w-[calc((100%_-_2rem)/3)] xl:w-[calc((100%_-_3rem)/4)]",
+                          "min-w-[78vw] max-w-[360px] snap-center scroll-mt-24 sm:min-w-0 sm:max-w-none lg:w-full",
+                        calendarView === "week" &&
+                          idx !== activeDayIdx &&
+                          "lg:hidden",
                         calendarView ===
                           "list" &&
                           "rounded-3xl border border-gold/10 bg-card/25 p-3 shadow-sm sm:p-4",
@@ -4405,7 +4469,7 @@ export default function Grafikas() {
                                             onClick={() => void requestClosedSlot(date, slot.slot_time)}
                                             className="block w-full text-center text-[10px] text-gold hover:underline"
                                           >
-                                            {language === "lt" ? "Prašyti Equus" : "Request Equus"}
+                                            {language === "lt" ? "Last minute registracijos prašymas" : "Request Equus"}
                                           </button>
                                         </div>
                                       ) : !isFull ? (
@@ -4749,7 +4813,7 @@ export default function Grafikas() {
               </div>
 
               <div className="text-xs text-muted-foreground mt-1">
-                Vienkartinis atšaukimas — kitos savaitės liks.
+                Vienkartinis atšaukimas.
               </div>
             </button>
 
@@ -5034,7 +5098,7 @@ export default function Grafikas() {
               Atšaukti registraciją
             </DialogTitle>
             <DialogDescription>
-              Registracija atlikta ką tik, todėl galite ją tiesiog pašalinti, jei paspaudėte per klaidą.
+              Jei paspaudėte per klaidą, viskas ok, galite atsišaukti;
             </DialogDescription>
           </DialogHeader>
 
@@ -5045,7 +5109,7 @@ export default function Grafikas() {
                 Registravausi per klaidą
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Registracija bus visiškai pašalinta: nebus skaičiuojama abonemente ir nebus rodoma treniruočių istorijoje. Galima tik 2 val. nuo registracijos.
+                :)
               </p>
             </div>
           </div>
@@ -5114,7 +5178,7 @@ export default function Grafikas() {
             </DialogTitle>
 
             <DialogDescription>
-              Slot atsilaisvins iš karto. Administracija nuspręs, ar pamoka skaičiuojama abonemente.
+              Vieta atsilaisvins iš karto:)
             </DialogDescription>
           </DialogHeader>
 
@@ -5727,7 +5791,7 @@ export default function Grafikas() {
               </select>
               <p className="text-xs text-muted-foreground">
                 {language === "lt"
-                  ? "Galima rinktis bet kokio tipo treniruotę. Pilnos treniruotės ir laikas, kai pasirinktas tas pats žirgas, nerodomi."
+                  ? "Galima rinktis bet kokio tipo treniruotę."
                   : "Any training type can be selected. Full slots and times where the same horse is already chosen are hidden."}
               </p>
             </div>
@@ -5813,7 +5877,7 @@ export default function Grafikas() {
 
             <DialogTitle className="font-display text-2xl text-gradient-gold">
               {language === "lt"
-                ? "Pamoka užregistruota!"
+                ? "Pamoka užregistruota!:)"
                 : "Lesson booked!"}
             </DialogTitle>
 
