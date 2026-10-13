@@ -2584,9 +2584,7 @@ function SubDetailDialog({
     });
     setSavingManualLesson(false);
     if (error) {
-      toast.error(error.message?.includes("SUBSCRIPTION_HAS_NO_REMAINING_LESSONS")
-        ? "Šiame abonemente nebeliko nepanaudotų pamokų."
-        : "Nepavyko pridėti pamokos: " + error.message);
+      toast.error("Nepavyko pridėti pamokos: " + error.message);
       return;
     }
     setManualLessonText("");
