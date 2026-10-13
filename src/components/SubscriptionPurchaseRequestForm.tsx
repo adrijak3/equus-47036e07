@@ -61,19 +61,19 @@ function requestStatusLabel(status: RequestStatus) {
 
 function requestErrorMessage(message: string) {
   if (message.includes("PENDING_REQUEST_EXISTS")) {
-    return "Jau turite laukiančią abonemento užklausą. Pirmiausia palaukite jos sprendimo.";
+    return "Jau turite laukiančią abonemento užklausą. Pirmiausia palaukite jos patvirtinimo, tuomet tik galėsit prisidėti naują abonementą, jei reikia:)";
   }
   if (message.includes("PENDING_SUBSCRIPTION_ALREADY_EXISTS")) {
     return "Jau turite abonementą, kuris laukia pirmos treniruotės.";
   }
   if (message.includes("PRICE_NOT_CONFIGURED")) {
-    return "Šiam abonemento variantui kaina dar nesukonfigūruota.";
+    return "Šiam abonemento variantui kaina dar nesukonfigūruota:(";
   }
   if (message.includes("TOO_MANY_PAST_LESSONS")) {
-    return "Negalite pasirinkti daugiau praeitų pamokų nei abonemente yra treniruočių.";
+    return "Negalite pasirinkti daugiau praeitų pamokų nei abonemente yra treniruočių...";
   }
   if (message.includes("PAST_LESSON_NOT_ELIGIBLE")) {
-    return "Viena iš pasirinktų pamokų nebeatitinka sąlygų. Atnaujinkite sąrašą ir bandykite dar kartą.";
+    return "Viena iš pasirinktų pamokų nebepriklauso 2 sav. laikotarpiui, tas tas pamokas atskirai sudėsim;).";
   }
   if (message.includes("INVALID_LESSON_COUNT")) {
     return "Pasirinkite treniruočių skaičių nuo 1 iki 12.";
@@ -225,8 +225,8 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
 
     toast.success(
       paymentMethod === "cash"
-        ? "Užklausa sukurta. Parodykite QR kodą Laurai."
-        : "Užklausa perduota administracijai. Mokėjimą patvirtinsime gavę pavedimą.",
+        ? "Užklausa sukurta. Parodykite QR kodą Laurai:)."
+        : "Užklausa perduota! Mokėjimą patvirtinsime gavę pavedimą;)",
     );
     setSelectedLessonIds([]);
     await load();
@@ -239,7 +239,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
       <Section title="Pateikti abonemento užklausą" icon={<CreditCard className="h-4 w-4" />}>
         <div className="space-y-5 p-5">
           <p className="text-sm leading-6 text-muted-foreground">
-            Pasirinkite abonementą ir mokėjimo būdą. Abonementas paskyroje atsiras tik tada, kai Laura patvirtins mokėjimą.
+            Pasirinkite abonementą ir mokėjimo būdą. Abonementas paskyroje atsiras tik tada, kai Laura patvirtins, kad mokėjimas įvyko (nuskenavus QR kodą)
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -324,7 +324,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               <div>
                 <h3 className="font-display text-xl text-gold">Praėjusios treniruotės</h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Galite pasirinkti įvykusias (pažymėtas „įvykdyta“) treniruotes iš paskutinių 14 kalendorinių dienų, įskaitant šiandieną. Jos bus įskaitytos kaip panaudotos tik patvirtinus mokėjimą.
+                  Galite pasirinkti įvykusias treniruotes iš paskutinių 14 kalendorinių dienų, įskaitant šiandieną. Jos bus įskaitytos kaip panaudotos tik patvirtinus mokėjimą:)
                 </p>
               </div>
               <span className="rounded-full border border-gold/15 px-3 py-1 text-xs tabular-nums">
@@ -336,7 +336,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               <p className="mt-3 text-sm text-muted-foreground">Kraunamas treniruočių sąrašas…</p>
             ) : pastLessons.length === 0 ? (
               <p className="mt-3 rounded-xl border border-gold/10 bg-background/30 p-4 text-sm text-muted-foreground">
-                Per paskutines 14 dienų tinkamų įvykusių treniruočių nėra.
+                Per paskutines 14 dienų įvykusių treniruočių nėra..
               </p>
             ) : (
               <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
@@ -371,7 +371,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             <p className="text-sm font-medium">Mokėjimo būdas</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {paymentMethod === "bank_transfer"
-                ? "Bankinio pavedimo užklausa iškart pateks į administracijos „QR užklausų“ sąrašą. QR kodo rodyti Laurai nereikės; abonementas atsiras po mokėjimo patvirtinimo."
+                ? "Bankinio pavedimo užklausa iškart pateks į užklausas.QR kodo rodyti Laurai nereikės; abonementas atsiras po mokėjimo patvirtinimo!:)"
                 : "Pateikus užklausą bus sugeneruotas QR kodas. Parodykite jį Laurai, kad ji atidarytų užklausą ir patvirtintų gautą mokėjimą."}
             </p>
           </div>
@@ -430,13 +430,13 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                     <div className="mx-auto mt-3 w-fit rounded-xl bg-white p-3">
                       <QRCodeSVG value={window.location.origin + "/qr-uzklausa/" + request.id} size={220} level="M" includeMargin />
                     </div>
-                    <p className="mt-2 text-xs text-muted-foreground">QR atidaro šią užklausą Equus sistemoje. Jis patvirtinimo neatlieka automatiškai.</p>
+                    <p className="mt-2 text-xs text-muted-foreground">QR atidaro šią užklausą.</p>
                   </div>
                 )}
                 {request.status === "pending" && request.payment_method === "bank_transfer" && (
                   <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
                     <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-                    Užklausa pateikta administracijai. Kai pavedimas bus gautas ir patikrintas, Laura patvirtins mokėjimą.
+                    Užklausa pateikta! Kai pavedimas bus gautas ir patikrintas, prie paskyros atsiras abonementas:).
                   </p>
                 )}
                 {request.status === "approved" && request.subscription_id && (
