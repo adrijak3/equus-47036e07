@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,8 @@ const isEmail = (s: string) => /\S+@\S+\.\S+/.test(s);
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = (location.state as { from?: unknown } | null)?.from;
   const [params] = useSearchParams();
   const [tab, setTab] = useState(params.get("tab") === "signup" ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
@@ -134,7 +136,10 @@ export default function Auth() {
       return;
     }
     toast.success("Sveiki sugrįžę!");
-    navigate("/");
+    navigate(
+      typeof redirectTo === "string" && redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/",
+      { replace: true },
+    );
   };
 
   const submitForgot = async () => {

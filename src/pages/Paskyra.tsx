@@ -19,7 +19,7 @@ import { FloralAccent } from "@/components/Decorations";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
-import { BankTransferInstructions } from "@/components/BankTransferInstructions";
+import { SubscriptionPurchaseRequestForm } from "@/components/SubscriptionPurchaseRequestForm";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { disablePushNotifications, enablePushNotifications, getPushSubscription, pushNotificationsSupported, syncPushLanguage } from "@/lib/pushNotifications";
@@ -422,13 +422,13 @@ export default function Paskyra() {
 
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
-          <BankTransferInstructions />
-          <Section title="Mano QR kodas" icon={<QrCode className="h-4 w-4" />}>
+          <SubscriptionPurchaseRequestForm riderId={acting} />
+          <Section title="Kliento QR kodas" icon={<QrCode className="h-4 w-4" />}>
             <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium">Mano QR kodas</p>
+                <p className="text-sm font-medium">Kliento QR kodas</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Parodykite QR trenerei Laurai arba Jolitai.
+                  Šis QR skirtas darbuotojams peržiūrėti kliento abonementą. Naujo abonemento užklausą pateikite aukščiau.
                 </p>
               </div>
               <Button variant="outlineGold" onClick={() => navigate("/mano-qr")} className="shrink-0">
