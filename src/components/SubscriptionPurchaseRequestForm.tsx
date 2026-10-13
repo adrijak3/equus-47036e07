@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { CalendarClock, CheckCircle2, Clock3, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -103,9 +103,17 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
     [prices, lessonsTotal, packageType, horseType],
   );
   const pendingRequest = requests.find((r) => r.status === "pending");
+  const availableQuantities = useMemo(
+    () => Array.from(new Set(
+      prices
+        .filter((row) => row.package_type === packageType && row.horse_type === horseType)
+        .map((row) => Number(row.lessons_total)),
+    )).sort((a, b) => a - b),
+    [prices, packageType, horseType],
+  );
 
-  const load = async () => {
-    if (!riderId || !user) {
+  const load = useCallback(async () => {
+    if (!riderId || !user?.id) {
       setPrices([]);
       setPastLessons([]);
       setRequests([]);
@@ -148,12 +156,18 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
     }
 
     setLoading(false);
-  };
+  }, [riderId, user?.id]);
 
   useEffect(() => {
     void load();
     // The active account/profile is the rider whose bookings and subscription are used.
-  }, [riderId, user?.id]);
+  }, [load]);
+
+  useEffect(() => {
+    if (availableQuantities.length > 0 && !availableQuantities.includes(lessonsTotal)) {
+      setLessonsTotal(availableQuantities[0]);
+    }
+  }, [availableQuantities, lessonsTotal]);
 
   useEffect(() => {
     if (selectedLessonIds.length > lessonsTotal) {
@@ -238,7 +252,9 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                 disabled={loading || !!pendingRequest}
                 className="h-11 w-full rounded-lg border border-gold/20 bg-background px-3 text-sm"
               >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                {availableQuantities.length === 0 ? (
+                  <option value={lessonsTotal}>Nėra aktyvių kainų</option>
+                ) : availableQuantities.map((n) => (
                   <option key={n} value={n}>{n} {n === 1 ? "treniruotė" : "treniruotės"}</option>
                 ))}
               </select>
