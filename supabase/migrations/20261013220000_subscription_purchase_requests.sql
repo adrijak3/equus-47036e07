@@ -27,6 +27,14 @@ CREATE INDEX subscription_purchase_requests_status_created_idx
 CREATE INDEX subscription_purchase_requests_user_created_idx
   ON public.subscription_purchase_requests(user_id, created_at DESC);
 
+-- Riders need to read the active public price matrix to see the price before
+-- submitting. Existing staff policy continues to allow staff to see inactive rows.
+DROP POLICY IF EXISTS "Riders view active subscription prices" ON public.subscription_prices;
+CREATE POLICY "Riders view active subscription prices"
+ON public.subscription_prices
+FOR SELECT TO authenticated
+USING (active IS TRUE);
+
 CREATE UNIQUE INDEX subscription_purchase_requests_one_pending_per_user
   ON public.subscription_purchase_requests(user_id)
   WHERE status = 'pending';
