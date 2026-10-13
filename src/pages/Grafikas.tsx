@@ -369,7 +369,12 @@ export default function Grafikas() {
         const day = dayRefs.current[idx];
         const scroller = calendarScrollRef.current;
 
-        if (calendarView === "week" && day && scroller) {
+        if (
+          calendarView === "week" &&
+          day &&
+          scroller &&
+          scroller.scrollWidth > scroller.clientWidth + 1
+        ) {
           scroller.scrollTo({
             left: Math.max(0, day.offsetLeft - 16),
             behavior: "smooth",
@@ -3294,7 +3299,7 @@ export default function Grafikas() {
               : "Loading schedule"
           }
         >
-          <div className="flex gap-3 overflow-hidden sm:grid sm:grid-cols-2 lg:grid-cols-7">
+          <div className="mx-auto flex max-w-[1240px] gap-3 overflow-hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
             {Array.from({
               length: 7,
             }).map(
@@ -3392,7 +3397,7 @@ export default function Grafikas() {
                 "gap-4 sm:gap-3",
                 calendarView ===
                   "week"
-                  ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-x-auto sm:px-0 sm:pb-3 lg:flex lg:min-w-max lg:overflow-x-auto lg:gap-3 lg:[scrollbar-width:thin]"
+                  ? "-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-x-auto sm:px-0 sm:pb-3 lg:mx-auto lg:flex lg:max-w-[1240px] lg:snap-none lg:flex-wrap lg:justify-center lg:gap-4 lg:overflow-visible lg:pb-0"
                   : "mx-auto grid w-full max-w-5xl grid-cols-1 lg:grid-cols-2",
               )}
             >
@@ -3447,7 +3452,7 @@ export default function Grafikas() {
                         "relative flex flex-col gap-2",
                         calendarView ===
                           "week" &&
-                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none lg:w-[290px] lg:min-w-[290px] lg:max-w-[290px]",
+                          "min-w-[78vw] max-w-[360px] snap-center sm:min-w-0 sm:max-w-none lg:w-[calc((100%_-_2rem)/3)] xl:w-[calc((100%_-_3rem)/4)]",
                         calendarView ===
                           "list" &&
                           "rounded-3xl border border-gold/10 bg-card/25 p-3 shadow-sm sm:p-4",
@@ -3488,7 +3493,7 @@ export default function Grafikas() {
                                 : "text-sm sm:text-[11px]",
                             )}
                           >
-                            <span className="sm:hidden xl:inline">
+                            <span className="sm:hidden lg:inline">
                               {
                                 weekdayNames[
                                   idx
@@ -3496,7 +3501,7 @@ export default function Grafikas() {
                               }
                             </span>
 
-                            <span className="hidden sm:inline xl:hidden">
+                            <span className="hidden sm:inline lg:hidden">
                               {
                                 weekdayShort[
                                   idx
