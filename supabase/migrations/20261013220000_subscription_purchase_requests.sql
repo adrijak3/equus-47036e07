@@ -671,6 +671,7 @@ DECLARE
   v_subscription_id uuid;
   v_lessons_used smallint;
   v_manual_adjustment smallint;
+  v_today date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
   v_previous_financial_setting text := current_setting(
     'equus.allow_subscription_financial_update',
     true
@@ -806,9 +807,24 @@ BEGIN
   );
 
   UPDATE public.subscriptions
-  SET manual_used_adjustment = (
-    COALESCE(manual_used_adjustment, 0) + v_selected_count
-  )::smallint
+  SET
+    manual_used_adjustment = (
+      COALESCE(manual_used_adjustment, 0) + v_selected_count
+    )::smallint,
+    -- If every lesson is already accounted for by the selected history, do not
+    -- leave an exhausted package stuck in the queued/first-lesson state.
+    start_pending = CASE
+      WHEN v_selected_count = v_request.lessons_total THEN false
+      ELSE start_pending
+    END,
+    start_from_date = CASE
+      WHEN v_selected_count = v_request.lessons_total THEN v_today
+      ELSE start_from_date
+    END,
+    expires_at = CASE
+      WHEN v_selected_count = v_request.lessons_total THEN v_today + 30
+      ELSE expires_at
+    END
   WHERE id = v_subscription_id
   RETURNING manual_used_adjustment INTO v_manual_adjustment;
 
