@@ -1,6 +1,6 @@
 -- Equus: rider-submitted abonemento requests with optional cash QR.
--- This is additive. Existing booking eligibility, allocation and the 20:00
--- completed-lesson reconciliation flow remain unchanged.
+-- Approved selected history is counted in usage and package commitments.
+-- The completed-booking filters and their daily 20:00 gate remain unchanged.
 
 CREATE TABLE public.subscription_purchase_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
