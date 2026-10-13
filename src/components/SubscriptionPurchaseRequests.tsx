@@ -135,20 +135,20 @@ function PurchaseRequestCard({
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-xs text-muted-foreground">Praeitų pamokų įskaityti neprašoma.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Praeitų pamokų įskaityti nepasirinko nei vienos.</p>
         )}
       </div>
 
       {current.payment_method === "bank_transfer" && current.status === "pending" && (
         <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
           <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-          Bankinį pavedimą patikrinkite sąskaitoje ir tada patvirtinkite mokėjimą.
+          Bankinį pavedimą patvirtinti per banką ir tuomet tik patvirtinti
         </p>
       )}
       {current.payment_method === "cash" && current.status === "pending" && (
         <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
           <QrCode className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-          Grynais sumokėjus, patvirtinkite mokėjimą. QR atveria šią užklausą.
+          Grynais sumokėjus, patvirtinkite mokėjimą. QR kodas atveria šią užklausą:)
         </p>
       )}
       {current.status === "approved" && current.subscription_id && (
@@ -289,7 +289,7 @@ export function SubscriptionPurchaseRequestQrPage() {
       <header className="mb-6 mt-5">
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70">Equus · mokėjimas</p>
         <h1 className="mt-2 font-display text-4xl text-gradient-gold">Abonemento užklausa</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Patikrinkite raitelio duomenis ir pasirinktas praeitas pamokas, tada patvirtinkite mokėjimą.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Jei viskas ok - patvirtinam.</p>
       </header>
 
       {loading ? (
