@@ -28,6 +28,7 @@ import {
   X,
   Images,
   ScanLine,
+  QrCode,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -87,8 +88,10 @@ const NAV_ADMIN = [
 ];
 
 const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };
+const STAFF_QR_REQUESTS_NAV = { to: "/admin/qr-uzklausos", label: "QR užklausos", icon: QrCode };
 
 const NAV_TRAINER = [
+  STAFF_QR_REQUESTS_NAV,
   {
     to: "/",
     label: "Pradžia",
@@ -165,6 +168,7 @@ export default function Layout({
   const halfAdminItems = isHalfAdmin && !isAdmin
     ? [
         { to: "/admin/skenuoti", label: "QR kodo skenavimas", icon: ScanLine },
+        STAFF_QR_REQUESTS_NAV,
         { to: "/half-admin/abonementai", label: "Abonementai", icon: Wallet },
       ]
     : [];
