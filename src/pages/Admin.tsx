@@ -43,6 +43,7 @@ interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean;
+  package_type?: "group" | "po2" | null;
   start_from_date?: string | null; start_pending?: boolean;
   lesson_type?: string;
   covered_riders?: 1 | 2;
@@ -2637,6 +2638,8 @@ function SubDetailDialog({
   const [loading, setLoading] = useState(true);
   const [liveSub, setLiveSub] = useState<Sub>(sub);
   const [freeRows, setFreeRows] = useState<HistoryRow[]>([]);
+  const [slotRules, setSlotRules] = useState<any[]>([]);
+  const [slotOverrides, setSlotOverrides] = useState<any[]>([]);
   const [copyOpen, setCopyOpen] = useState(false);
   const [copyMode, setCopyMode] = useState<"period" | "unpaid" | "details">("period");
   const defaultFrom = () => {
@@ -2657,6 +2660,45 @@ function SubDetailDialog({
     const horseByBooking = await loadHorseNamesForBookings(bookings, sub.user_id);
     return bookings.map((b: any) => ({ ...b, horse_name: horseByBooking[b.id] ?? null }));
   };
+
+  // Match the database's booking_matches_subscription_package() rules so the
+  // admin cannot attach a lesson that the usage counter will ignore.
+  const bookingMatchesSubscription = (
+    booking: { slot_date: string; slot_time: string; counts_in_subscription?: boolean | null },
+    rules: any[] = slotRules,
+    overrides: any[] = slotOverrides,
+  ) => {
+    const startDate = liveSub.start_from_date || liveSub.purchase_date;
+    const endDate = liveSub.expires_at;
+    if (booking.counts_in_subscription === false) return false;
+    if (booking.slot_date < startDate || (endDate && booking.slot_date > endDate)) return false;
+
+    const override = overrides.find((item) =>
+      item.slot_date === booking.slot_date
+      && String(item.slot_time).slice(0, 5) === String(booking.slot_time).slice(0, 5),
+    );
+    let capacity: number;
+    if (override) {
+      capacity = Number(override.max_capacity);
+    } else {
+      const dow = dbDayOfWeek(new Date(booking.slot_date + "T12:00:00"));
+      const matchingSlots = rules
+        .filter((item) =>
+          String(item.slot_time).slice(0, 5) === String(booking.slot_time).slice(0, 5)
+          && (
+            item.one_off_date === booking.slot_date
+            || (item.one_off_date == null && Number(item.day_of_week) === dow)
+          ),
+        )
+        .sort((a, b) => Number(b.max_capacity) - Number(a.max_capacity));
+      capacity = matchingSlots.length ? Number(matchingSlots[0].max_capacity) : 5;
+    }
+
+    const packageType = liveSub.package_type
+      ?? (liveSub.lesson_type === "sportine_po2" ? "po2" : "group");
+    return packageType === "po2" ? capacity === 2 : packageType === "group" ? capacity >= 3 : false;
+  };
+
   const load = async () => {
     setLoading(true);
 
@@ -2678,17 +2720,36 @@ function SubDetailDialog({
       .order("slot_time", { ascending: false });
     setRows(await enrichHorses(data ?? []));
 
-    const { data: free } = await supabase
-      .from("bookings")
-      .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual")
-      .eq("user_id", sub.user_id)
-      .is("subscription_id", null)
-      .eq("status", "completed")
-      .gte("slot_date", historyFrom)
-      .lte("slot_date", historyUntil)
-      .order("slot_date", { ascending: true })
-      .order("slot_time", { ascending: true });
-    setFreeRows(await enrichHorses(free ?? []));
+    const [freeResult, slotResult, overrideResult] = await Promise.all([
+      supabase
+        .from("bookings")
+        .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual")
+        .eq("user_id", sub.user_id)
+        .is("subscription_id", null)
+        .eq("status", "completed")
+        .gte("slot_date", historyFrom)
+        .lte("slot_date", historyUntil)
+        .order("slot_date", { ascending: true })
+        .order("slot_time", { ascending: true }),
+      supabase
+        .from("time_slots")
+        .select("day_of_week, slot_time, max_capacity, one_off_date")
+        .eq("active", true),
+      (supabase as any)
+        .from("slot_overrides")
+        .select("slot_date, slot_time, max_capacity"),
+    ]);
+    const currentSlotRules = (slotResult.data ?? []) as any[];
+    const currentSlotOverrides = (overrideResult.data ?? []) as any[];
+    setSlotRules(currentSlotRules);
+    setSlotOverrides(currentSlotOverrides);
+
+    // The counter only includes completed lessons inside the subscription dates
+    // and matching the package capacity (group vs. po 2).
+    const eligibleFree = ((freeResult.data ?? []) as any[]).filter((booking) =>
+      bookingMatchesSubscription(booking, currentSlotRules, currentSlotOverrides),
+    );
+    setFreeRows(await enrichHorses(eligibleFree));
 
     const { data: manualData, error: manualError } = await (supabase as any)
       .from("subscription_manual_lessons")
@@ -2706,12 +2767,25 @@ function SubDetailDialog({
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sub.id]);
   const detach = async (bookingId: string) => { if (!confirm("Atkabinti šią treniruotę nuo abonemento?")) return; const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: null } as any); if (error) { toast.error(error.message); return; } toast.success("Atkabinta nuo abonemento (treniruotė nepanaikinta)"); load(); refreshSub(); onChanged(); };
-  const attach = async (bookingId: string) => { const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any); if (error) { toast.error(error.message); return; } toast.success("Priskirta abonementui"); load(); refreshSub(); onChanged(); };
+  const attach = async (bookingId: string) => {
+    if (Number(liveSub.lessons_used ?? 0) >= Number(liveSub.lessons_total ?? 0)) {
+      toast.error("Abonementas pilnas. Patikrinkite panaudotų pamokų skaičių prieš priskirdami dar vieną.");
+      return;
+    }
+    const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Priskirta abonementui");
+    await load();
+    await refreshSub();
+    onChanged();
+  };
   const addManualLesson = async () => {
     const note = manualLessonText.trim();
     if (!note) { toast.error("Įrašykite pamokos aprašymą."); return; }
+    const previousUsed = Number(liveSub.lessons_used ?? 0);
+    const totalLessons = Number(liveSub.lessons_total ?? 0);
     setSavingManualLesson(true);
-    const { error } = await (supabase as any).rpc("admin_add_subscription_manual_lesson", {
+    const { data, error } = await (supabase as any).rpc("admin_add_subscription_manual_lesson", {
       _subscription_id: sub.id,
       _note: note,
     });
@@ -2722,10 +2796,19 @@ function SubDetailDialog({
     }
     setManualLessonText("");
     setManualLessonOpen(false);
-    toast.success("Pamoka įrašyta ir įskaičiuota į abonementą.");
     await load();
     await refreshSub();
     onChanged();
+
+    const returnedUsed = Number((data as any)?.lessons_used);
+    const updatedUsed = Number.isFinite(returnedUsed) ? returnedUsed : previousUsed;
+    if (previousUsed >= totalLessons) {
+      toast.message("Pamokos įrašas išsaugotas, bet abonementas jau pilnas (" + previousUsed + "/" + totalLessons + "), todėl skaitiklis nepadidėjo.");
+    } else if (updatedUsed <= previousUsed) {
+      toast.warning("Pamokos įrašas išsaugotas, bet panaudotų pamokų skaičius nepadidėjo (" + previousUsed + "/" + totalLessons + "). Patikrinkite rankinį koregavimą šiame abonemente.");
+    } else {
+      toast.success("Pamoka įrašyta ir įskaičiuota į abonementą (" + updatedUsed + "/" + totalLessons + ").");
+    }
   };
   const removeManualLesson = async (lesson: ManualLessonRow) => {
     if (!confirm("Pašalinti šį rankiniu būdu įrašytos pamokos įrašą? Panaudotų pamokų skaičius bus perskaičiuotas.")) return;
@@ -2848,7 +2931,44 @@ function SubDetailDialog({
             <button type="button" onClick={() => void copyRecentHistory()} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><History className="w-3.5 h-3.5" /> Istorija (2 mėn.)</button>
             <button type="button" onClick={() => { setManualLessonText(""); setManualLessonOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Pridėti pamoką</button>
           </div>
-          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("unpaid"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Neapmokėtos pamokos</button><button type="button" onClick={async () => { const remaining = liveSub.lessons_total - counted.length; if (remaining <= 0) { toast.error("Abonementas pilnas"); return; } const { data: bks } = await supabase.from("bookings").select("id").eq("user_id", sub.user_id).eq("status", "completed").neq("counts_in_subscription", false).is("subscription_id", null).gte("slot_date", liveSub.purchase_date).lte("slot_date", liveSub.expires_at).order("slot_date", { ascending: true }).limit(remaining); const ids = (bks ?? []).map((b: any) => b.id); if (ids.length === 0) { toast.message("Neįskaičiuotų pamokų nėra šio abonemento laikotarpyje"); return; } let assigned = 0; for (const bookingId of ids) { const { error } = await supabase.rpc("admin_set_booking_subscription" as any, { _booking_id: bookingId, _subscription_id: sub.id } as any); if (error) { toast.error(error.message); break; } assigned += 1; } if (assigned === 0) return; toast.success("Priskirta " + assigned); load(); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Auto-priskirti šio abonemento įvykusias</button><button type="button" onClick={async () => { const txt = prompt("Įrašykite bendrą panaudotų pamokų skaičių (0–" + liveSub.lessons_total + "), įskaitant rankiniu būdu įrašytas pamokas. Tai NUSTATO bendrą skaičių, o ne prideda pamokų.", String(liveSub.lessons_used)); if (txt === null) return; const n = parseInt(txt); if (!Number.isFinite(n) || n < 0 || n > liveSub.lessons_total) { toast.error("Neteisingas skaičius"); return; } const { error } = await (supabase as any).rpc("admin_adjust_subscription_used", { _subscription_id: sub.id, _new_lessons_used: n, _reason: "Pakeitė administracija abonemento lange" }); if (error) { toast.error(error.message); return; } toast.success("Atnaujinta"); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Koreguoti panaudotų pamokų skaičių</button></div>
+          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("unpaid"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Neapmokėtos pamokos</button><button type="button" onClick={async () => {
+            const remaining = Math.max(0, Number(liveSub.lessons_total) - Number(liveSub.lessons_used ?? 0));
+            if (remaining <= 0) { toast.error("Abonementas pilnas"); return; }
+            const startDate = liveSub.start_from_date || liveSub.purchase_date;
+            const { data: bks, error: bookingError } = await supabase
+              .from("bookings")
+              .select("id, slot_date, slot_time, counts_in_subscription")
+              .eq("user_id", sub.user_id)
+              .eq("status", "completed")
+              .is("subscription_id", null)
+              .gte("slot_date", startDate)
+              .lte("slot_date", liveSub.expires_at)
+              .order("slot_date", { ascending: true })
+              .order("slot_time", { ascending: true })
+              .limit(1000);
+            if (bookingError) { toast.error(bookingError.message); return; }
+            const eligible = ((bks ?? []) as any[])
+              .filter((booking) => bookingMatchesSubscription(booking))
+              .slice(0, remaining);
+            if (eligible.length === 0) {
+              toast.message("Tinkamų neįskaičiuotų įvykusių pamokų šiam abonementui nėra");
+              return;
+            }
+            let assigned = 0;
+            for (const booking of eligible) {
+              const { error } = await supabase.rpc("admin_set_booking_subscription" as any, {
+                _booking_id: booking.id,
+                _subscription_id: sub.id,
+              } as any);
+              if (error) { toast.error(error.message); break; }
+              assigned += 1;
+            }
+            if (assigned === 0) return;
+            toast.success("Priskirta ir perskaičiuota " + assigned + " pam.");
+            await load();
+            await refreshSub();
+            onChanged();
+          }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Auto-priskirti šio abonemento įvykusias</button><button type="button" onClick={async () => { const txt = prompt("Įrašykite bendrą panaudotų pamokų skaičių (0–" + liveSub.lessons_total + "), įskaitant rankiniu būdu įrašytas pamokas. Tai NUSTATO bendrą skaičių, o ne prideda pamokų.", String(liveSub.lessons_used)); if (txt === null) return; const n = parseInt(txt); if (!Number.isFinite(n) || n < 0 || n > liveSub.lessons_total) { toast.error("Neteisingas skaičius"); return; } const { error } = await (supabase as any).rpc("admin_adjust_subscription_used", { _subscription_id: sub.id, _new_lessons_used: n, _reason: "Pakeitė administracija abonemento lange" }); if (error) { toast.error(error.message); return; } toast.success("Atnaujinta"); await refreshSub(); onChanged(); }} className="text-xs px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10">Koreguoti panaudotų pamokų skaičių</button></div>
           {loading ? <p className="text-muted-foreground italic">Kraunama…</p> : <>
             <div>
               <h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Rankiniu būdu įrašytos pamokos ({manualLessons.length})</h4>
