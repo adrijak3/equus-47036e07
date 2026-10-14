@@ -423,7 +423,7 @@ export default function Paskyra() {
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
           <SubscriptionPurchaseRequestForm riderId={acting} />
-{subs.length === 0 ? (
+          {subs.length === 0 ? (
             <Empty text="Nėra abonementų" />
           ) : (
             <ClientSubscriptionCards subs={subs} bookings={bookings} />
