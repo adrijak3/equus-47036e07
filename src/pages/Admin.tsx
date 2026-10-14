@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
-import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO } from "@/lib/equus";
+import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO, canonicalBookings, dbDayOfWeek, SINGLE_LESSON_PRICE } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
@@ -43,6 +43,7 @@ interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string; paid: boolean;
+  start_from_date?: string | null; start_pending?: boolean;
   lesson_type?: string;
   covered_riders?: 1 | 2;
 }
@@ -1929,6 +1930,7 @@ function StatsTab() {
 function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; onClearFocus?: () => void } = {}) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
+  const [subscriptionBookings, setSubscriptionBookings] = useState<any[]>([]);
   const [filter, setFilter] = useState("");
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(false);
   const [subFilter, setSubFilter] = useState<"all" | "with" | "without">("all");
@@ -1952,8 +1954,10 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       supabase.from("subscriptions").select("*").order("purchase_date", { ascending: false }),
       supabase.from("subscription_prices").select("lessons_total, package_type, horse_type, price_eur").eq("active", true),
     ]);
+    const loadedSubs = (s.data ?? []) as any[];
     setProfiles(p.data ?? []);
-    setSubs((s.data ?? []) as any);
+    setSubs(loadedSubs);
+    setDetailSub((current) => current ? loadedSubs.find((item) => item.id === current.id) ?? current : null);
     setSubscriptionPrices(
       Object.fromEntries(
         ((priceRows.data ?? []) as any[]).map((x: any) => [
@@ -1962,8 +1966,101 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
         ]),
       ),
     );
+
+    // Use the same lesson records and database counter as the client's Abonementai view.
+    const riderIds = Array.from(new Set(loadedSubs.map((item) => item.user_id).filter(Boolean))) as string[];
+    if (!riderIds.length) {
+      setSubscriptionBookings([]);
+      return;
+    }
+
+    const { data: lessonRows, error: lessonError } = await supabase
+      .from("bookings")
+      .select("id, user_id, slot_date, slot_time, status, counts_in_subscription, subscription_id, is_individual")
+      .in("user_id", riderIds)
+      .order("slot_date")
+      .order("slot_time");
+
+    if (lessonError) {
+      console.error("Failed to load subscription lesson rows:", lessonError);
+      setSubscriptionBookings([]);
+      return;
+    }
+
+    const rawBookings = (lessonRows ?? []) as any[];
+    if (!rawBookings.length) {
+      setSubscriptionBookings([]);
+      return;
+    }
+
+    // The client canonicalizes bookings per rider before showing subscription history.
+    const rowsByRider = new Map<string, any[]>();
+    for (const booking of rawBookings) {
+      const riderId = booking.user_id ?? "";
+      rowsByRider.set(riderId, [...(rowsByRider.get(riderId) ?? []), booking]);
+    }
+    const canonicalRows = Array.from(rowsByRider.values()).flatMap((rows) => canonicalBookings(rows));
+    const displayRows = canonicalRows.filter((booking: any) => !!booking.subscription_id);
+    if (!displayRows.length) {
+      setSubscriptionBookings([]);
+      return;
+    }
+
+    const [slotResult, overrideResult, assignmentResult] = await Promise.all([
+      supabase.from("time_slots").select("day_of_week, slot_time, max_capacity").eq("active", true).is("one_off_date", null),
+      (supabase as any).from("slot_overrides").select("slot_date, slot_time, max_capacity"),
+      supabase.from("horse_assignments").select("booking_id, horse_id").in("booking_id", displayRows.map((b: any) => b.id)),
+    ]);
+    const slotRows = (slotResult.data ?? []) as any[];
+    const overrideRows = (overrideResult.data ?? []) as any[];
+    const assignments = (assignmentResult.data ?? []) as any[];
+    const horseIds = Array.from(new Set(assignments.map((item) => item.horse_id).filter(Boolean))) as string[];
+    let horseRows: any[] = [];
+    if (horseIds.length) {
+      const { data } = await supabase.from("horses").select("id, name").in("id", horseIds);
+      horseRows = data ?? [];
+    }
+    const horseNameById: Record<string, string> = Object.fromEntries(horseRows.map((horse) => [horse.id, horse.name]));
+    const horseIdByBooking: Record<string, string> = Object.fromEntries(assignments.map((item) => [item.booking_id, item.horse_id]));
+    const getCapacity = (date: string, time: string) => {
+      const override = overrideRows.find((item) => item.slot_date === date && item.slot_time === time);
+      if (override) return Number(override.max_capacity);
+      const dow = dbDayOfWeek(new Date(date + "T12:00:00"));
+      const slot = slotRows.find((item) => Number(item.day_of_week) === dow && item.slot_time === time);
+      return slot ? Number(slot.max_capacity) : null;
+    };
+
+    setSubscriptionBookings(displayRows.map((booking: any) => {
+      const capacity = getCapacity(booking.slot_date, booking.slot_time);
+      const kind = booking.is_individual ? "individual" : capacity !== null && capacity <= 2 ? "po2" : "group";
+      const horseId = horseIdByBooking[booking.id];
+      return {
+        ...booking,
+        horse_name: horseId ? horseNameById[horseId] ?? null : null,
+        slot_capacity: capacity,
+        lesson_kind: kind,
+        lesson_price: kind === "individual" ? SINGLE_LESSON_PRICE.individual : kind === "po2" ? SINGLE_LESSON_PRICE.po2 : SINGLE_LESSON_PRICE.group,
+      };
+    }));
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+
+    // Keep the counter fresh when the database accounting engine updates a subscription.
+    const channel = supabase
+      .channel("admin-subscriptions-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "subscriptions" }, () => {
+        void load();
+      })
+      .subscribe();
+    const handleFocus = () => { void load(); };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      void supabase.removeChannel(channel);
+    };
+  }, []);
   useEffect(() => { setOpenUserId(focusUserId ?? null); }, [focusUserId]);
 
   const togglePaid = async (subId: string, p: boolean) => {
@@ -2267,13 +2364,33 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                   ) : (
                     <div className="grid sm:grid-cols-2 gap-3">
                       {us.map((s) => {
-                        const actual = s.lessons_used ?? 0;
+                        const actual = Number(s.lessons_used ?? 0);
+                        const remaining = Number(s.lessons_total) - actual;
+                        const expDays = s.expires_at ? Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000) : Infinity;
+                        const lowRemaining = !s.start_pending && (remaining <= 1 || (expDays <= 7 && expDays >= 0));
                         return (
+                          <div key={s.id} className="relative">
+                            {lowRemaining && (
+                              <div className="absolute -top-2 left-3 z-10 px-2 py-0.5 rounded-full bg-destructive/80 text-destructive-foreground text-[10px] uppercase tracking-wider font-semibold animate-pulse">
+                                {remaining <= 1 ? "Liko ≤1 treniruotė" : "Baigiasi po " + expDays + " d."}
+                              </div>
+                            )}
                           <SubscriptionCard
-                            key={s.id}
                             s={s as any}
                             effectiveUsed={actual}
                             showPaymentStatus
+                            lessons={subscriptionBookings
+                              .filter((booking) => booking.subscription_id === s.id)
+                              .map((booking) => ({
+                                id: booking.id,
+                                slot_date: booking.slot_date,
+                                slot_time: booking.slot_time,
+                                status: booking.status,
+                                horse_name: booking.horse_name,
+                                slot_capacity: booking.slot_capacity,
+                                lesson_price: booking.lesson_price,
+                                lesson_kind: booking.lesson_kind,
+                              }))}
                             onMarkPaid={!s.paid ? () => togglePaid(s.id, true) : undefined}
                             onEditLessons={() => editLessons(s)}
                             onEditUsed={() => editUsed(s)}
@@ -2323,6 +2440,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                               </div>
                             }
                           />
+                          </div>
                         );
                       })}
                     </div>
