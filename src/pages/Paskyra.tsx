@@ -439,46 +439,7 @@ export default function Paskyra() {
 {subs.length === 0 ? (
             <Empty text="Nėra abonementų" />
           ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {subs.map((s) => {
-                // The database counter is authoritative (same number admins and e-mails use):
-                // completed lessons plus any permanent admin correction.
-                const actualUsed = Number(s.lessons_used ?? 0);
-                const remaining = s.lessons_total - actualUsed;
-                const expDays = s.expires_at ? Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000) : Infinity;
-                const lowRemaining = !s.start_pending && (remaining <= 1 || (expDays <= 7 && expDays >= 0));
-                return (
-                  <div key={s.id} className="relative">
-                    {lowRemaining && (
-                      <div className="absolute -top-2 left-3 z-10 px-2 py-0.5 rounded-full bg-destructive/80 text-destructive-foreground text-[10px] uppercase tracking-wider font-semibold animate-pulse">
-                        {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
-                      </div>
-                    )}
-                    <SubscriptionCard
-                      s={s}
-                      effectiveUsed={actualUsed}
-                      onMarkPaid={undefined}
-                      onDelete={undefined}
-                      onEditLessons={undefined}
-                      lessons={bookings
-                        .filter((b) => b.subscription_id === s.id)
-                        .map((b) => ({
-                          id: b.id,
-                          slot_date: b.slot_date,
-                          slot_time: b.slot_time,
-                          status: b.status,
-                          is_individual: !!b.is_individual,
-                          horse_name: b.horse_name,
-                          slot_capacity: b.slot_capacity,
-                          lesson_price: b.lesson_price,
-                          lesson_kind: b.lesson_kind,
-                        }))}
-                    />
-                    <SubscriptionManualLessons subscriptionId={s.id} />
-                  </div>
-                );
-              })}
-            </div>
+            <ClientSubscriptionCards subs={subs} bookings={bookings} />
           )}
         </TabsContent>
 
@@ -510,7 +471,7 @@ export default function Paskyra() {
   );
 }
 
-function SubscriptionManualLessons({ subscriptionId }: { subscriptionId: string }) {
+export function SubscriptionManualLessons({ subscriptionId }: { subscriptionId: string }) {
   type ManualLessonNote = { id: string; note: string; created_at: string };
   const [rows, setRows] = useState<ManualLessonNote[]>([]);
   useEffect(() => {
@@ -1331,4 +1292,49 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
     {onDelete && <div className="mt-4 flex justify-end border-t border-gold/10 pt-3"><button type="button" onClick={() => onDelete(s.id)} className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"><Trash2 className="h-3 w-3" /> Ištrinti</button></div>}
     {lessons && <div className="mt-4 border-t border-gold/10 pt-3"><button type="button" onClick={() => setShowLessons(v => !v)} className="flex w-full items-center justify-between text-sm font-medium"><span>Pamokos šiame abonemente</span><ChevronRight className={cn("h-4 w-4 text-gold", showLessons && "rotate-90")} /></button>{showLessons && <ul className="mt-3 space-y-2">{lessons.map((l) => { const kind = l.lesson_kind === "individual" ? "Individuali" : l.lesson_kind === "po2" ? "Po 2" : "Grupinė"; const extra = l.lesson_kind === "individual" || (l.lesson_kind === "po2" && s.lesson_type !== "sportine_po2"); return <li key={l.id} className="rounded-xl border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex justify-between gap-3"><div><div className="text-sm">{l.slot_date} · {formatTime(l.slot_time)}</div><div className="text-xs text-muted-foreground">{kind}{l.horse_name ? " · 🐎 " + l.horse_name : ""}{l.slot_capacity ? " · talpa " + l.slot_capacity : ""}</div></div><div className="text-right">{l.lesson_price != null ? <div className="text-sm font-semibold text-gold">{l.lesson_price.toFixed(2)} €</div> : <div className="text-xs font-semibold text-blush">Individualus tarifas</div>}<div className="text-[10px] text-muted-foreground">{extra ? "mokama atskirai" : l.status === "cancelled" ? "atšaukta" : l.status === "completed" ? "įskaičiuota" : "rezervuota (dar neįvyko)"}</div></div></div></li>; })}</ul>}</div>}
   </div>;
+}
+
+
+/** Shared client-facing subscription cards used both by the rider account and admin preview. */
+export function ClientSubscriptionCards({ subs, bookings }: { subs: Subscription[]; bookings: Booking[] }) {
+  return (
+    <div className="grid sm:grid-cols-2 gap-4">
+      {subs.map((s) => {
+        const actualUsed = Number(s.lessons_used ?? 0);
+        const remaining = s.lessons_total - actualUsed;
+        const expDays = s.expires_at ? Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000) : Infinity;
+        const lowRemaining = !s.start_pending && (remaining <= 1 || (expDays <= 7 && expDays >= 0));
+        return (
+          <div key={s.id} className="relative">
+            {lowRemaining && (
+              <div className="absolute -top-2 left-3 z-10 px-2 py-0.5 rounded-full bg-destructive/80 text-destructive-foreground text-[10px] uppercase tracking-wider font-semibold animate-pulse">
+                {remaining <= 1 ? "Liko ≤1 treniruotė" : `Baigiasi po ${expDays} d.`}
+              </div>
+            )}
+            <SubscriptionCard
+              s={s}
+              effectiveUsed={actualUsed}
+              onMarkPaid={undefined}
+              onDelete={undefined}
+              onEditLessons={undefined}
+              lessons={bookings
+                .filter((b) => b.subscription_id === s.id)
+                .map((b) => ({
+                  id: b.id,
+                  slot_date: b.slot_date,
+                  slot_time: b.slot_time,
+                  status: b.status,
+                  is_individual: !!b.is_individual,
+                  horse_name: b.horse_name,
+                  slot_capacity: b.slot_capacity,
+                  lesson_price: b.lesson_price,
+                  lesson_kind: b.lesson_kind,
+                }))}
+            />
+            <SubscriptionManualLessons subscriptionId={s.id} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
