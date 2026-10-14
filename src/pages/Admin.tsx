@@ -2691,7 +2691,7 @@ function SubDetailDialog({
               </div>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
-              Automatiškai skaičiuojamos įvykusios ir abonementui priskirtos rezervacijos. Šiandienos rezervacijos į panaudotų pamokų skaičių įtraukiamos pagal esamą 20:00 atnaujinimą. Rankiniu būdu įrašytos pamokos taip pat įskaičiuojamos.
+              Automatiškai skaičiuojamos įvykusios ir abonementui priskirtos rezervacijos. Panaudotų pamokų skaičius atnaujinamas iš karto po priskyrimo, atkabininimo arba treniruotės pažymėjimo kaip įvykusios. Rankiniu būdu įrašytos pamokos taip pat įskaičiuojamos.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" onClick={async () => {
