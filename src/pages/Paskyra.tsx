@@ -423,19 +423,6 @@ export default function Paskyra() {
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
           <SubscriptionPurchaseRequestForm riderId={acting} />
-          <Section title="Kliento QR kodas" icon={<QrCode className="h-4 w-4" />}>
-            <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium">Kliento QR kodas</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Šis QR skirtas peržiūrėti Jūsų abonementą + jį patvirtinti (mokėjimą). Naujo abonemento užklausą pateikite aukščiau.
-                </p>
-              </div>
-              <Button variant="outlineGold" onClick={() => navigate("/mano-qr")} className="shrink-0">
-                <QrCode className="mr-2 h-4 w-4" /> Atidaryti QR
-              </Button>
-            </div>
-          </Section>
 {subs.length === 0 ? (
             <Empty text="Nėra abonementų" />
           ) : (
