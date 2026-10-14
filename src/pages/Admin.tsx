@@ -1974,20 +1974,30 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       return;
     }
 
-    const { data: lessonRows, error: lessonError } = await supabase
-      .from("bookings")
-      .select("id, user_id, slot_date, slot_time, status, counts_in_subscription, subscription_id, is_individual")
-      .in("user_id", riderIds)
-      .order("slot_date")
-      .order("slot_time");
+    // Page through results so clients with long lesson histories are not truncated
+    // by Supabase's default response limit.
+    const rawBookings: any[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data: lessonRows, error: lessonError } = await supabase
+        .from("bookings")
+        .select("id, user_id, slot_date, slot_time, status, counts_in_subscription, subscription_id, is_individual")
+        .in("user_id", riderIds)
+        .order("slot_date")
+        .order("slot_time")
+        .order("id")
+        .range(offset, offset + 999);
 
-    if (lessonError) {
-      console.error("Failed to load subscription lesson rows:", lessonError);
-      setSubscriptionBookings([]);
-      return;
+      if (lessonError) {
+        console.error("Failed to load subscription lesson rows:", lessonError);
+        setSubscriptionBookings([]);
+        return;
+      }
+
+      const page = (lessonRows ?? []) as any[];
+      rawBookings.push(...page);
+      if (page.length < 1000) break;
     }
 
-    const rawBookings = (lessonRows ?? []) as any[];
     if (!rawBookings.length) {
       setSubscriptionBookings([]);
       return;
