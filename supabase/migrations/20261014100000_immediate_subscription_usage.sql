@@ -141,3 +141,50 @@ FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE
 ON FUNCTION public.auto_allocate_completed_booking_to_subscription()
 TO service_role;
+
+
+-- Catch up only today's completed lessons. Explicitly detached/non-counting rows
+-- have counts_in_subscription = false, so this never reattaches them. The allocator
+-- itself still enforces the existing package/date/subscription eligibility rules.
+DO $current_day_subscription_usage_catchup$
+DECLARE
+  v_today date := (now() AT TIME ZONE 'Europe/Vilnius')::date;
+  v_booking_id uuid;
+  v_subscription_id uuid;
+BEGIN
+  FOR v_booking_id IN
+    SELECT b.id
+    FROM public.bookings b
+    WHERE b.slot_date = v_today
+      AND b.status = 'completed'
+      AND b.subscription_id IS NULL
+      AND b.counts_in_subscription IS NOT FALSE
+      AND b.is_paused_for_subscription IS NOT TRUE
+    ORDER BY b.slot_time, b.id
+  LOOP
+    BEGIN
+      PERFORM public.allocate_booking_to_subscription(v_booking_id);
+    EXCEPTION
+      WHEN OTHERS THEN
+        RAISE WARNING
+          'Equus same-day allocation catch-up failed for booking %: %',
+          v_booking_id, SQLERRM;
+    END;
+  END LOOP;
+
+  -- Reconcile only subscriptions that actually have a completed booking today.
+  -- This updates stale current-day counters without recalculating unrelated
+  -- subscriptions and preserves their admin correction offsets.
+  FOR v_subscription_id IN
+    SELECT DISTINCT b.subscription_id
+    FROM public.bookings b
+    WHERE b.slot_date = v_today
+      AND b.status = 'completed'
+      AND b.subscription_id IS NOT NULL
+      AND b.counts_in_subscription IS NOT FALSE
+      AND b.is_paused_for_subscription IS NOT TRUE
+  LOOP
+    PERFORM public.reconcile_subscription_usage(v_subscription_id);
+  END LOOP;
+END;
+$current_day_subscription_usage_catchup$;
