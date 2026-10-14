@@ -2782,7 +2782,7 @@ function SubDetailDialog({
   const addManualLesson = async () => {
     const note = manualLessonText.trim();
     if (!note) { toast.error("Įrašykite pamokos aprašymą."); return; }
-    const previousUsed = Number(liveSub.lessons_used ?? 0);
+    const fallbackPreviousUsed = Number(liveSub.lessons_used ?? 0);
     const totalLessons = Number(liveSub.lessons_total ?? 0);
     setSavingManualLesson(true);
     const { data, error } = await (supabase as any).rpc("admin_add_subscription_manual_lesson", {
@@ -2800,6 +2800,8 @@ function SubDetailDialog({
     await refreshSub();
     onChanged();
 
+    const returnedPreviousUsed = Number((data as any)?.old_lessons_used);
+    const previousUsed = Number.isFinite(returnedPreviousUsed) ? returnedPreviousUsed : fallbackPreviousUsed;
     const returnedUsed = Number((data as any)?.lessons_used);
     const updatedUsed = Number.isFinite(returnedUsed) ? returnedUsed : previousUsed;
     if (previousUsed >= totalLessons) {
@@ -2811,15 +2813,20 @@ function SubDetailDialog({
     }
   };
   const removeManualLesson = async (lesson: ManualLessonRow) => {
-    if (!confirm("Pašalinti šį rankiniu būdu įrašytos pamokos įrašą? Panaudotų pamokų skaičius bus perskaičiuotas.")) return;
-    const { error } = await (supabase as any).rpc("admin_remove_subscription_manual_lesson", {
+    if (!confirm("Pašalinti šį rankiniu būdu įrašytos pamokos įrašą? Panaudotų pamokų skaičius sumažės vienetu, jei jis didesnis už nulį.")) return;
+    const { data, error } = await (supabase as any).rpc("admin_remove_subscription_manual_lesson", {
       _manual_lesson_id: lesson.id,
     });
     if (error) { toast.error("Nepavyko pašalinti įrašo: " + error.message); return; }
-    toast.success("Pamokos įrašas pašalintas; panaudotų pamokų skaičius atnaujintas.");
     await load();
     await refreshSub();
     onChanged();
+    const updatedUsed = Number((data as any)?.lessons_used);
+    if (Number.isFinite(updatedUsed)) {
+      toast.success("Pamokos įrašas pašalintas. Panaudota: " + updatedUsed + "/" + liveSub.lessons_total + ".");
+    } else {
+      toast.success("Pamokos įrašas pašalintas; panaudotų pamokų skaičius atnaujintas.");
+    }
   };
   const copyRecentHistory = async () => {
     const today = new Date();
