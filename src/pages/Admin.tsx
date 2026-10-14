@@ -10,10 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO, canonicalBookings, dbDayOfWeek, SINGLE_LESSON_PRICE } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode, Eye } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
-import { SubscriptionCard } from "@/pages/Paskyra";
+import { ClientSubscriptionCards, SubscriptionCard } from "@/pages/Paskyra";
 import { cn } from "@/lib/utils";
 import { VacationsPanel } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
@@ -1947,6 +1947,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [saving, setSaving] = useState(false);
   const [subscriptionPrices, setSubscriptionPrices] = useState<Record<string, number>>({});
   const [detailSub, setDetailSub] = useState<Sub | null>(null);
+  const [clientPreviewFor, setClientPreviewFor] = useState<Profile | null>(null);
   const [openUserId, setOpenUserId] = useState<string | null>(focusUserId ?? null);
   const [uncoveredFor, setUncoveredFor] = useState<Profile | null>(null);
   const load = async () => {
@@ -2348,6 +2349,14 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                   </button>
                   <button
                     type="button"
+                    onClick={(e) => { e.preventDefault(); setClientPreviewFor(p); }}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-gold/25 bg-background/40 text-xs text-foreground/80 hover:text-gold hover:border-gold/50 hover:bg-gold/5 transition-colors"
+                    title="Peržiūrėti abonementus kaip klientas"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Kliento vaizdas</span><span className="sm:hidden">Vaizdas</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={(e) => { e.preventDefault(); setSelUser(p.id); setOpen(true); }}
                     className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-gradient-gold text-gold-foreground text-xs font-medium shadow-gold hover:brightness-110 transition-all"
                     title="Pridėti abonementą"
@@ -2611,6 +2620,35 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
         </Dialog>
       )}
 
+      {clientPreviewFor && (
+        <Dialog
+          open
+          onOpenChange={(isOpen) => { if (!isOpen) setClientPreviewFor(null); }}
+        >
+          <DialogContent className="bg-gradient-card border-gold/20 w-[calc(100%-2rem)] max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl text-gradient-gold">
+                {clientPreviewFor.full_name} · Abonementai
+              </DialogTitle>
+              <DialogDescription>
+                Kliento abonementų kortelės — naudojamas tas pats vaizdo komponentas kaip kliento paskyroje, be administratoriaus valdiklių.
+              </DialogDescription>
+            </DialogHeader>
+            {(() => {
+              const clientSubs = subs.filter((item) => item.user_id === clientPreviewFor.id);
+              const clientBookings = subscriptionBookings.filter((booking) => booking.user_id === clientPreviewFor.id);
+              return clientSubs.length === 0 ? (
+                <p className="py-8 text-center text-sm italic text-muted-foreground">Nėra abonementų</p>
+              ) : (
+                <ClientSubscriptionCards subs={clientSubs as any} bookings={clientBookings as any} />
+              );
+            })()}
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setClientPreviewFor(null)}>Uždaryti</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       {detailSub && (
         <SubDetailDialog
           sub={detailSub}
