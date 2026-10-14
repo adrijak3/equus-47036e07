@@ -42,7 +42,7 @@ interface CancelReq {
 interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
-  price: number; purchase_date: string; expires_at: string; paid: boolean;
+  price: number; purchase_date: string; expires_at: string | null; paid: boolean;
   package_type?: "group" | "po2" | null;
   start_from_date?: string | null; start_pending?: boolean;
   lesson_type?: string;
@@ -2433,19 +2433,21 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                                     <ListTree className="w-3 h-3" /> Pamokos
                                   </button>
 
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[11px] text-muted-foreground">Pratęsti:</span>
-                                    {[{ days: 1, label: "+1 d." }, { days: 7, label: "+1 sav." }, { days: 14, label: "+2 sav." }].map((opt) => (
-                                      <button
-                                        key={opt.days}
-                                        type="button"
-                                        onClick={() => extendExpiry(s, opt.days)}
-                                        className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
-                                      >
-                                        {opt.label}
-                                      </button>
-                                    ))}
-                                  </div>
+                                  {!s.start_pending && s.expires_at && (
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <span className="text-[11px] text-muted-foreground">Pratęsti:</span>
+                                      {[{ days: 1, label: "+1 d." }, { days: 7, label: "+1 sav." }, { days: 14, label: "+2 sav." }].map((opt) => (
+                                        <button
+                                          key={opt.days}
+                                          type="button"
+                                          onClick={() => extendExpiry(s, opt.days)}
+                                          className="text-[11px] px-2 py-1 rounded border border-gold/30 text-gold hover:bg-gold/10"
+                                        >
+                                          {opt.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
 
                                   {s.paid && (
                                     <button
