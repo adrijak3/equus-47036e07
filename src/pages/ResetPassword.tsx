@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,37 +9,52 @@ import { KeyRound } from "lucide-react";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const [ready, setReady] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [params] = useSearchParams();
+  const [email, setEmail] = useState(params.get("email") || "");
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (active) setReady(!!data.session);
-    };
-    checkSession();
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
-    });
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+  const [saving, setSaving] = useState(false);
 
   const savePassword = async () => {
-    if (password.length < 8) return toast.error("Slaptažodis turi būti bent 8 simbolių");
-    if (password !== password2) return toast.error("Slaptažodžiai nesutampa");
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setSaving(false);
-    if (error) {
-      toast.error("Ši atkūrimo nuoroda nebegalioja arba jau buvo panaudota.");
+    const normalizedEmail = email.trim().toLowerCase();
+    const recoveryCode = code.trim();
+    if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
+      toast.error("Įveskite teisingą el. pašto adresą");
       return;
     }
+    if (!recoveryCode) {
+      toast.error("Įveskite el. paštu gautą kodą");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Slaptažodis turi būti bent 8 simbolių");
+      return;
+    }
+    if (password !== password2) {
+      toast.error("Slaptažodžiai nesutampa");
+      return;
+    }
+
+    setSaving(true);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: recoveryCode,
+      type: "recovery",
+    });
+    if (verifyError) {
+      setSaving(false);
+      toast.error("Kodas neteisingas arba nebegalioja. Paprašykite naujo kodo.");
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setSaving(false);
+    if (updateError) {
+      toast.error("Nepavyko pakeisti slaptažodžio. Pabandykite dar kartą.");
+      return;
+    }
+
     await supabase.auth.signOut();
     toast.success("Slaptažodis pakeistas. Galite prisijungti.");
     navigate("/auth", { replace: true });
@@ -50,29 +65,33 @@ export default function ResetPassword() {
       <div className="bg-gradient-card border border-gold/15 rounded-lg p-6 sm:p-8 shadow-elegant">
         <div className="text-center mb-7">
           <KeyRound className="h-8 w-8 text-gold mx-auto mb-3" />
-          <h1 className="text-3xl font-display text-gradient-gold">Nustatyti naują slaptažodį</h1>
-          <p className="text-sm text-muted-foreground mt-2">Pasirinkite naują slaptažodį savo Equus paskyrai.</p>
+          <h1 className="text-3xl font-display text-gradient-gold">Atkurti slaptažodį</h1>
+          <p className="text-sm text-muted-foreground mt-2">Įveskite el. paštu gautą vienkartinį kodą ir pasirinkite naują slaptažodį.</p>
         </div>
-        {!ready ? (
-          <div className="text-center space-y-4">
-            <p className="text-sm text-muted-foreground">Atkūrimo nuoroda negalioja arba dar nebuvo patvirtinta.</p>
-            <Button variant="gold" className="w-full" onClick={() => navigate("/auth", { replace: true })}>Grįžti į prisijungimą</Button>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="reset-email">El. paštas</Label>
+            <Input id="reset-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="reset-password">Naujas slaptažodis</Label>
-              <Input id="reset-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="reset-password-2">Pakartokite slaptažodį</Label>
-              <Input id="reset-password-2" type="password" autoComplete="new-password" minLength={8} value={password2} onChange={(e) => setPassword2(e.target.value)} />
-            </div>
-            <Button variant="gold" className="w-full" onClick={savePassword} disabled={saving}>
-              {saving ? "Išsaugoma…" : "Nustatyti slaptažodį"}
-            </Button>
+          <div>
+            <Label htmlFor="reset-code">Vienkartinis kodas iš el. pašto</Label>
+            <Input id="reset-code" type="text" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} required />
           </div>
-        )}
+          <div>
+            <Label htmlFor="reset-password">Naujas slaptažodis</Label>
+            <Input id="reset-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <div>
+            <Label htmlFor="reset-password-2">Pakartokite slaptažodį</Label>
+            <Input id="reset-password-2" type="password" autoComplete="new-password" minLength={8} value={password2} onChange={(e) => setPassword2(e.target.value)} required />
+          </div>
+          <Button variant="gold" className="w-full" onClick={savePassword} disabled={saving}>
+            {saving ? "Tikrinama…" : "Patvirtinti kodą ir pakeisti slaptažodį"}
+          </Button>
+          <Button variant="outlineGold" className="w-full" onClick={() => navigate("/auth", { replace: true })} disabled={saving}>
+            Grįžti į prisijungimą
+          </Button>
+        </div>
       </div>
     </div>
   );
