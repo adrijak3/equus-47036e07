@@ -580,6 +580,41 @@ Deno.serve(async (req) => {
     if (eventError) throw eventError;
     if (!event) throw new Error("EMAIL_EVENT_NOT_FOUND");
 
+    // An exemption may have been added after this warning was queued.
+    // Re-check at send time so an already-pending warning cannot slip through.
+    if (event.event_type === "subscription_requirement_warning" && event.user_id) {
+      const { data: isExempt, error: exemptionError } = await supabase.rpc(
+        "is_subscription_rule_exempt",
+        { _user_id: event.user_id },
+      );
+      if (exemptionError) throw exemptionError;
+
+      if (isExempt === true) {
+        const { error: skipError } = await supabase
+          .from("email_events")
+          .update({
+            status: "skipped",
+            last_error: "Skipped: user is exempt from subscription requirements.",
+            processing_started_at: null,
+          })
+          .eq("id", eventId)
+          .eq("status", "processing");
+        if (skipError) throw skipError;
+
+        console.log("Equus subscription warning skipped for exempt user:", {
+          event_id: eventId,
+          user_id: event.user_id,
+        });
+        return json({
+          ok: true,
+          processed: true,
+          skipped: true,
+          event_id: eventId,
+          reason: "USER_EXEMPT_FROM_SUBSCRIPTION_REQUIREMENT",
+        });
+      }
+    }
+
     try {
       let recipientEmail = normalizeRecipientEmail(String(event.email ?? ""));
 
@@ -786,7 +821,7 @@ Deno.serve(async (req) => {
     }
 
     const processedCount = results.filter((result: any) => result?.processed === true).length;
-    const sentCount = results.filter((result: any) => result?.ok === true && result?.processed === true).length;
+    const sentCount = results.filter((result: any) => result?.ok === true && result?.processed === true && result?.skipped !== true).length;
 
     return json({
       ok: true,
