@@ -37,9 +37,15 @@ const STATUS_LT: Record<string, string> = {
   completed: "Įvykdyta",
 };
 
+// Only closed requests can be cleaned up; active and confirmed registrations stay protected.
+const isCleanupEligible = (row: any) =>
+  ["rejected", "cancelled", "completed"].includes(row.status);
+
 export function AdminPublicRequests() {
   const [rows, setRows] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [cleaning, setCleaning] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
@@ -55,7 +61,11 @@ export function AdminPublicRequests() {
       return;
     }
 
-    setRows(data ?? []);
+    const loadedRows = data ?? [];
+    setRows(loadedRows);
+    setSelectedIds((current) =>
+      new Set(loadedRows.filter((row: any) => isCleanupEligible(row) && current.has(row.id)).map((row: any) => row.id)),
+    );
   };
 
   useEffect(() => {
@@ -115,6 +125,55 @@ export function AdminPublicRequests() {
     }
   };
 
+  const cleanableRows = rows.filter(isCleanupEligible);
+  const selectedCleanableRows = cleanableRows.filter((row) => selectedIds.has(row.id));
+  const allCleanableSelected =
+    cleanableRows.length > 0 && selectedCleanableRows.length === cleanableRows.length;
+
+  const toggleRowSelection = (id: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleAllCleanable = () => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allCleanableSelected) cleanableRows.forEach((row) => next.delete(row.id));
+      else cleanableRows.forEach((row) => next.add(row.id));
+      return next;
+    });
+  };
+
+  const deleteSelectedRequests = async () => {
+    const ids = selectedCleanableRows.map((row) => row.id);
+    if (!ids.length) return;
+    if (!window.confirm(
+      `Ištrinti ${ids.length} pasirinktus užbaigtus registracijos įrašus? Aktyvios ir patvirtintos registracijos nebus trinamos. Šio veiksmo atšaukti negalima.`,
+    )) return;
+
+    setCleaning(true);
+    const { data, error } = await (supabase as any).rpc(
+      "admin_delete_public_registration_requests",
+      { _request_ids: ids },
+    );
+    setCleaning(false);
+
+    if (error) {
+      toast.error(error.message || "Nepavyko ištrinti registracijų");
+      return;
+    }
+
+    const removed = Number(data ?? ids.length);
+    toast.success(`Ištrinta ${removed} registracijos įrašų`);
+    setSelectedIds(new Set());
+    if (selected && ids.includes(selected.id)) setSelected(null);
+    await load();
+  };
+
   const clientUrl = selected?.public_token
     ? `${location.origin}/registracija/${selected.public_token}`
     : "";
@@ -160,44 +219,86 @@ export function AdminPublicRequests() {
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={toggleAllCleanable}
+          disabled={cleanableRows.length === 0 || cleaning}
+        >
+          {allCleanableSelected ? "Atžymėti užbaigtas" : "Pažymėti užbaigtas"} ({cleanableRows.length})
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => void deleteSelectedRequests()}
+          disabled={selectedCleanableRows.length === 0 || cleaning}
+        >
+          {cleaning ? "Trinama…" : `Ištrinti pasirinktus (${selectedCleanableRows.length})`}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Galima išvalyti tik atmestas, atšauktas ar įvykdytas registracijas. Aktyvios ir patvirtintos lieka.
+        </p>
+      </div>
+
       {rows.length === 0 ? (
         <p className="text-muted-foreground">Registracijos prašymų nėra.</p>
       ) : (
-        rows.map((row) => (
-          <button
-            key={row.id}
-            type="button"
-            onClick={() => {
-              setSelected(row);
-              setDate(row.proposed_date || row.requested_date || "");
-              setTime(
-                String(row.proposed_time || row.requested_time || "").slice(
-                  0,
-                  5,
-                ),
-              );
-              setNote(row.admin_note || "");
-            }}
-            className="w-full rounded-xl border border-gold/15 bg-gradient-card p-4 text-left"
-          >
-            <div className="flex justify-between gap-3">
-              <div>
-                <div className="font-semibold">
-                  {row.first_name} {row.last_name}
+        rows.map((row) => {
+          const canClean = isCleanupEligible(row);
+          return (
+            <div
+              key={row.id}
+              className="flex items-stretch gap-2 rounded-xl border border-gold/15 bg-gradient-card"
+            >
+              <label
+                className={`flex items-start p-4 ${canClean ? "cursor-pointer" : "cursor-not-allowed opacity-35"}`}
+                title={canClean ? "Pažymėti ištrynimui" : "Aktyvios ir patvirtintos registracijos nešalinamos"}
+              >
+                <input
+                  type="checkbox"
+                  checked={canClean && selectedIds.has(row.id)}
+                  disabled={!canClean || cleaning}
+                  onChange={(event) => toggleRowSelection(row.id, event.target.checked)}
+                  aria-label={`Pažymėti ${row.first_name} ${row.last_name} registraciją ištrynimui`}
+                  className="mt-1 h-4 w-4 accent-[hsl(var(--gold))]"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(row);
+                  setDate(row.proposed_date || row.requested_date || "");
+                  setTime(
+                    String(row.proposed_time || row.requested_time || "").slice(
+                      0,
+                      5,
+                    ),
+                  );
+                  setNote(row.admin_note || "");
+                }}
+                className="min-w-0 flex-1 py-4 pr-4 text-left"
+              >
+                <div className="flex justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">
+                      {row.first_name} {row.last_name}
+                    </div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {SERVICE_NAMES[row.service_type] ?? "Sportinė jojimo treniruotė"}
+                      {row.service_type === "sportine" &&
+                        ` · ${EXPERIENCE_NAMES[row.experience_level] ?? row.experience_level}`}
+                      {` · ${row.phone} · ${row.email}`}
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-xs text-gold">
+                    {STATUS_LT[row.status] ?? row.status}
+                  </span>
                 </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {SERVICE_NAMES[row.service_type] ?? "Sportinė jojimo treniruotė"}
-                  {row.service_type === "sportine" &&
-                    ` · ${EXPERIENCE_NAMES[row.experience_level] ?? row.experience_level}`}
-                  {` · ${row.phone} · ${row.email}`}
-                </div>
-              </div>
-              <span className="text-xs text-gold">
-                {STATUS_LT[row.status] ?? row.status}
-              </span>
+              </button>
             </div>
-          </button>
-        ))
+          );
+        })
       )}
 
       <Dialog
