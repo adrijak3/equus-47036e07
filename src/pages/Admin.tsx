@@ -1935,6 +1935,8 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const [filter, setFilter] = useState("");
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(false);
   const [subFilter, setSubFilter] = useState<"all" | "with" | "without">("all");
+  const [selectedSubIds, setSelectedSubIds] = useState<Set<string>>(new Set());
+  const [bulkDeletingSubs, setBulkDeletingSubs] = useState(false);
 
   // Add dialog
   const [open, setOpen] = useState(false);
@@ -1959,6 +1961,9 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     const loadedSubs = (s.data ?? []) as any[];
     setProfiles(p.data ?? []);
     setSubs(loadedSubs);
+    setSelectedSubIds((current) =>
+      new Set([...current].filter((id) => loadedSubs.some((sub) => sub.id === id))),
+    );
     setDetailSub((current) => current ? loadedSubs.find((item) => item.id === current.id) ?? current : null);
     setSubscriptionPrices(
       Object.fromEntries(
@@ -2144,8 +2149,46 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
       return;
     }
 
+    setSelectedSubIds((current) => {
+      const next = new Set(current);
+      next.delete(s.id);
+      return next;
+    });
+    if (detailSub?.id === s.id) setDetailSub(null);
     toast.success("Abonementas ištrintas");
     load();
+  };
+
+  const deleteSelectedSubs = async () => {
+    const targets = subs.filter((s) => selectedSubIds.has(s.id));
+    if (!targets.length) return;
+    if (!window.confirm(
+      `Ištrinti ${targets.length} pasirinktus abonementus? Rezervacijos nebus ištrintos, bet bus atkabintos nuo abonementų. Veiksmas negrįžtamas.`,
+    )) return;
+
+    setBulkDeletingSubs(true);
+    const deletedIds: string[] = [];
+    const failed: { id: string; message: string }[] = [];
+
+    for (const target of targets) {
+      const { error } = await supabase.rpc("admin_delete_subscription", {
+        _subscription_id: target.id,
+      });
+      if (error) failed.push({ id: target.id, message: error.message });
+      else deletedIds.push(target.id);
+    }
+
+    setBulkDeletingSubs(false);
+    setSelectedSubIds(new Set(failed.map((item) => item.id)));
+    if (detailSub && deletedIds.includes(detailSub.id)) setDetailSub(null);
+
+    if (deletedIds.length) {
+      toast.success(`Ištrinta ${deletedIds.length} abonementų`);
+    }
+    if (failed.length) {
+      toast.error(`Nepavyko ištrinti ${failed.length} abonementų. ${failed[0].message}`);
+    }
+    await load();
   };
 
   const addSub = async () => {
@@ -2269,6 +2312,10 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     return true;
   });
 
+  const visibleSubscriptionIds = filteredProfiles.flatMap((profile) =>
+    subs.filter((sub) => sub.user_id === profile.id).map((sub) => sub.id),
+  );
+
   return (
     <div className="space-y-3">
       {focusUserId && (
@@ -2306,6 +2353,31 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
           Neapmokėti
         </label>
         <div className="flex-1" />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setSelectedSubIds(new Set(visibleSubscriptionIds))}
+          disabled={visibleSubscriptionIds.length === 0 || bulkDeletingSubs}
+        >
+          Pažymėti rodomus ({visibleSubscriptionIds.length})
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setSelectedSubIds(new Set())}
+          disabled={selectedSubIds.size === 0 || bulkDeletingSubs}
+        >
+          Atžymėti
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => void deleteSelectedSubs()}
+          disabled={selectedSubIds.size === 0 || bulkDeletingSubs}
+        >
+          <Trash2 className="h-4 w-4" />
+          {bulkDeletingSubs ? "Trinama…" : `Ištrinti pasirinktus (${selectedSubIds.size})`}
+        </Button>
         <Button variant="gold" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Naujas abonementas</Button>
       </div>
 
@@ -2395,6 +2467,24 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                                 {remaining <= 1 ? "Liko ≤1 treniruotė" : "Baigiasi po " + expDays + " d."}
                               </div>
                             )}
+                          <label className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <input
+                              type="checkbox"
+                              checked={selectedSubIds.has(s.id)}
+                              disabled={bulkDeletingSubs}
+                              onChange={(event) => {
+                                setSelectedSubIds((current) => {
+                                  const next = new Set(current);
+                                  if (event.target.checked) next.add(s.id);
+                                  else next.delete(s.id);
+                                  return next;
+                                });
+                              }}
+                              className="h-4 w-4 accent-gold"
+                              aria-label={`Pažymėti ${s.lessons_total} treniruočių abonementą ištrynimui`}
+                            />
+                            Pažymėti šį abonementą ištrynimui
+                          </label>
                           <SubscriptionCard
                             s={s as any}
                             effectiveUsed={actual}
