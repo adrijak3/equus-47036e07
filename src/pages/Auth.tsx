@@ -162,9 +162,10 @@ export default function Auth() {
       return;
     }
 
-    toast.success("Jei paskyra su šiuo el. paštu egzistuoja, netrukus gausite slaptažodžio atkūrimo laišką.");
+    toast.success("Jei paskyra su šiuo el. paštu egzistuoja, netrukus gausite atkūrimo kodą.");
     setForgotOpen(false);
     setFpEmail("");
+    navigate(`/reset-password?email=${encodeURIComponent(email)}`);
   };
 
   return (
