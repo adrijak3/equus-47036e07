@@ -13,7 +13,9 @@ export type EquusTheme =
   | "midnight"
   | "forest"
   | "goldleaf"
-  | "sage";
+  | "sage"
+  | "monochrome"
+  | "warm-neutral";
 export type ResolvedTheme = Exclude<EquusTheme, "automatic">;
 export type AppearanceMode = "automatic" | "light" | "dark";
 
@@ -42,6 +44,8 @@ const validThemes: EquusTheme[] = [
   "forest",
   "goldleaf",
   "sage",
+  "monochrome",
+  "warm-neutral",
 ];
 const validModes: AppearanceMode[] = ["automatic", "light", "dark"];
 
@@ -63,7 +67,7 @@ function initialMode(): AppearanceMode {
 }
 
 function naturalMode(theme: ResolvedTheme): "light" | "dark" {
-  return ["spring", "summer", "ocean", "lavender", "sage"].includes(theme) ? "light" : "dark";
+  return ["spring", "summer", "ocean", "lavender", "sage", "monochrome", "warm-neutral"].includes(theme) ? "light" : "dark";
 }
 
 function applyTheme(theme: ResolvedTheme, mode: "light" | "dark") {
