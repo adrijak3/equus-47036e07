@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       email: user.email,
       options: { redirectTo },
     });
-    if (linkError || !linkData?.properties?.action_link) {
+    if (linkError || !linkData?.properties?.email_otp) {
       console.error("Password reset link generation failed:", linkError);
       return json({ ok: true });
     }
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       event_type: "password_reset",
       user_id: user.id,
       email: user.email,
-      payload: { reset_url: linkData.properties.action_link, test: false },
+      payload: { recovery_code: linkData.properties.email_otp, test: false },
       status: "pending",
     });
     if (queueError) {
