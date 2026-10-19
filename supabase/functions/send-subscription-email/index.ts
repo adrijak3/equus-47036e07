@@ -95,9 +95,9 @@ function describeError(error: unknown): string {
 function trainingHistoryHtml(trainings: any[]) {
   if (!trainings.length) {
     return `
-      <div style="margin-top:20px;padding:16px;border-radius:16px;background:#fff8fa;border:1px solid #f1d6df;">
-        <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Jūsų treniruotės</div>
-        <p style="margin:8px 0 0;color:#8b737c;font-size:13px;line-height:1.6;">
+      <div style="margin-top:20px;padding:16px;border-radius:16px;background:#f7f4ee;border:1px solid #dfd7cb;">
+        <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Jūsų treniruotės</div>
+        <p style="margin:8px 0 0;color:#777268;font-size:13px;line-height:1.6;">
           Šiame abonemente užbaigtų treniruočių dar nėra.
         </p>
       </div>`;
@@ -105,27 +105,27 @@ function trainingHistoryHtml(trainings: any[]) {
 
   const rows = trainings.map((t) => `
     <tr>
-      <td style="padding:9px 6px 9px 0;border-bottom:1px solid #f2e4e9;color:#5f4b53;white-space:nowrap;">
+      <td style="padding:9px 6px 9px 0;border-bottom:1px solid #e7e1d7;color:#454239;white-space:nowrap;">
         ${esc(formatDate(t.slot_date))}
-        ${t.slot_time ? `<br><span style="font-size:12px;color:#a18a93;">${esc(formatTime(t.slot_time))}</span>` : ""}
+        ${t.slot_time ? `<br><span style="font-size:12px;color:#969084;">${esc(formatTime(t.slot_time))}</span>` : ""}
       </td>
-      <td style="padding:9px 6px;border-bottom:1px solid #f2e4e9;color:#5f4b53;">
+      <td style="padding:9px 6px;border-bottom:1px solid #e7e1d7;color:#454239;">
         ${esc(lessonKindLabel(t.lesson_kind, t.is_individual))}
       </td>
-      <td style="padding:9px 0 9px 6px;border-bottom:1px solid #f2e4e9;color:#5f4b53;text-align:right;">
+      <td style="padding:9px 0 9px 6px;border-bottom:1px solid #e7e1d7;color:#454239;text-align:right;">
         ${esc(t.horse_name || "—")}
       </td>
     </tr>`).join("");
 
   return `
-    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff8fa;border:1px solid #f1d6df;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Jūsų treniruotės šiame abonemente</div>
+    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#f7f4ee;border:1px solid #dfd7cb;">
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Jūsų treniruotės šiame abonemente</div>
       <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
         <thead>
           <tr>
-            <th style="padding:7px 6px 7px 0;text-align:left;color:#9a7f89;font-size:11px;font-weight:700;">Data</th>
-            <th style="padding:7px 6px;text-align:left;color:#9a7f89;font-size:11px;font-weight:700;">Treniruotė</th>
-            <th style="padding:7px 0 7px 6px;text-align:right;color:#9a7f89;font-size:11px;font-weight:700;">Žirgas</th>
+            <th style="padding:7px 6px 7px 0;text-align:left;color:#827c70;font-size:11px;font-weight:700;">Data</th>
+            <th style="padding:7px 6px;text-align:left;color:#827c70;font-size:11px;font-weight:700;">Treniruotė</th>
+            <th style="padding:7px 0 7px 6px;text-align:right;color:#827c70;font-size:11px;font-weight:700;">Žirgas</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -287,7 +287,7 @@ async function sendGmailEmail(
   return { response, data };
 }
 
-function pinkShell(title: string, subtitle: string, inner: string) {
+function emailShell(title: string, subtitle: string, inner: string) {
   return `
 <!doctype html>
 <html lang="lt">
@@ -296,25 +296,22 @@ function pinkShell(title: string, subtitle: string, inner: string) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Equus</title>
 </head>
-<body style="margin:0;background:#fff6f8;color:#33252a;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:620px;margin:0 auto;padding:30px 16px;">
-    <div style="background:linear-gradient(135deg,#fff0f4,#f8dbe5);border:1px solid #efc5d3;border-radius:24px;padding:28px 28px 24px;box-shadow:0 8px 30px rgba(160,80,105,.10);">
-      <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#a55d78;font-weight:700;">Equus Jojimo Mokykla</div>
-      <h1 style="margin:2px 0 8px;font-size:28px;line-height:1.2;color:#6f3049;">${esc(title)}</h1>
-      <p style="margin:0;color:#805d69;font-size:15px;line-height:1.6;">${esc(subtitle)}</p>
+<body style="margin:0;background:#f5f2ec;color:#35342e;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:26px 14px;">
+    <div style="background:linear-gradient(145deg,#f0e9dd,#e7dfd1);border:1px solid #dcd2c3;border-radius:18px;padding:24px 24px 21px;">
+      <div style="font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#6a6b5e;font-weight:700;">♞ &nbsp; Equus Jojimo Mokykla</div>
+      <h1 style="margin:12px 0 7px;font-size:27px;line-height:1.25;font-weight:600;color:#35342e;">${esc(title)}</h1>
+      <p style="margin:0;color:#69665c;font-size:14px;line-height:1.65;">${esc(subtitle)}</p>
     </div>
-    <div style="margin-top:14px;background:#fff;border:1px solid #efdce3;border-radius:20px;padding:24px 26px;box-shadow:0 4px 18px rgba(160,80,105,.06);">
+    <div style="margin-top:12px;background:#fffdfa;border:1px solid #e2dbd0;border-radius:16px;padding:22px 22px;box-shadow:0 5px 20px rgba(55,48,38,.04);">
       ${inner}
+      <p style="margin:22px 0 0;padding-top:16px;border-top:1px solid #e7e1d7;color:#68645a;font-size:12px;line-height:1.65;">
+        Turite klausimų? Parašykite mums: <a href="mailto:equusjojimomokykla@gmail.com" style="color:#555b4d;text-decoration:underline;">equusjojimomokykla@gmail.com</a>
+      </p>
     </div>
-    <p style="margin:20px 4px 0;color:#9a7f89;font-size:12px;line-height:1.6;text-align:center;">
-      Šis laiškas išsiųstas automatiškai iš Equus Jojimo Mokyklos sistemos.<br>
-      This email was sent automatically by the Equus Riding School system.
+    <p style="margin:18px 4px 0;color:#827c70;font-size:11px;line-height:1.6;text-align:center;">
+      Laišką gavote iš Equus Jojimo Mokyklos sistemos.
     </p>
-    <div style="margin:24px 4px 0;padding-top:16px;border-top:1px solid #eadde2;color:#8f7b83;font-size:10.5px;line-height:1.65;text-align:left;">
-      Pastaba: šiame laiške, įskaitant jo priedus, esanti informacija yra konfidenciali ir skirta tik adresatui. Jeigu Jūs nesate nurodytas adresatas, prašome įsidėmėti, kad bet koks šiame laiške esančios informacijos platinimas, dauginimas, kopijavimas ar naudojimas yra griežtai draudžiamas. Jeigu Jūs per klaidą gavote šį laišką, mes atsiprašome už sutrukdymą ir prašome nedelsiant informuoti siuntėją elektroniniu paštu
-      <a href="mailto:equusjojimomokykla@gmail.com" style="color:#8f6474;text-decoration:none;">equusjojimomokykla@gmail.com</a>
-      bei ištrinti laišką ir visus jo priedus iš Jūsų sistemos. Dėkojame.
-    </div>
   </div>
 </body>
 </html>`;
@@ -326,25 +323,25 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
   );
   const inner = `
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}, Jūsų abonemento pirkimas sėkmingai užregistruotas.</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! Jūsų abonementas paruoštas. Žemiau rasite jo informaciją.</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;">
-      <tr><td style="padding:8px 0;color:#8b737c;">Pamokos</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td></tr>
-      <tr><td style="padding:8px 0;color:#8b737c;">Tipas</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td></tr>
-      <tr><td style="padding:8px 0;color:#8b737c;">Žirgai</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(horseLabel(subscription.horse_type))}</td></tr>
-      <tr><td style="padding:8px 0;color:#8b737c;">Sumokėta</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatEur(subscription.price)}</td></tr>
-      <tr><td style="padding:8px 0;color:#8b737c;">Pirkimo data</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatDate(subscription.purchase_date)}</td></tr>
-      <tr><td style="padding:8px 0;color:#8b737c;">Galioja iki</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatDate(subscription.expires_at)}</td></tr>
+      <tr><td style="padding:8px 0;color:#777268;">Pamokos</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td></tr>
+      <tr><td style="padding:8px 0;color:#777268;">Tipas</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td></tr>
+      <tr><td style="padding:8px 0;color:#777268;">Žirgai</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(horseLabel(subscription.horse_type))}</td></tr>
+      <tr><td style="padding:8px 0;color:#777268;">Sumokėta</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatEur(subscription.price)}</td></tr>
+      <tr><td style="padding:8px 0;color:#777268;">Pirkimo data</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatDate(subscription.purchase_date)}</td></tr>
+      <tr><td style="padding:8px 0;color:#777268;">Galioja iki</td><td style="padding:8px 0;text-align:right;font-weight:600;">${formatDate(subscription.expires_at)}</td></tr>
     </table>
-    <div style="margin-top:18px;padding:16px;border-radius:14px;background:#fff4f7;text-align:center;">
-      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a55d78;">Liko pamokų</div>
-      <div style="font-size:40px;font-weight:700;color:#6f3049;margin-top:5px;">${remaining}</div>
-      <div style="font-size:13px;color:#8b737c;">${Number(subscription.lessons_used ?? 0)} panaudota iš ${Number(subscription.lessons_total)}</div>
+    <div style="margin-top:18px;padding:16px;border-radius:14px;background:#f0ebe2;text-align:center;">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#777568;">Liko pamokų</div>
+      <div style="font-size:40px;font-weight:700;color:#393a34;margin-top:5px;">${remaining}</div>
+      <div style="font-size:13px;color:#777268;">${Number(subscription.lessons_used ?? 0)} panaudota iš ${Number(subscription.lessons_total)}</div>
     </div>
     ${trainingHistoryHtml(trainings)}
-    <div style="margin-top:20px;padding:14px 16px;border-radius:14px;background:#fff0f5;border:1px solid #f0cbd8;text-align:center;color:#805d69;font-size:13px;line-height:1.6;">
-      Ačiū, kad renkatės Equus Jojimo Mokyklą.
+    <div style="margin-top:20px;padding:14px 16px;border-radius:14px;background:#eee7db;border:1px solid #d9d0c2;text-align:center;color:#69645a;font-size:13px;line-height:1.6;">
+      Ačiū, kad jodinėjate su Equus. Iki susitikimo žirgyne!
     </div>`;
-  return pinkShell("Abonementas patvirtintas", "Jūsų Equus abonemento informacija", inner);
+  return emailShell("Abonementas patvirtintas", "Jūsų Equus abonemento informacija", inner);
 }
 
 function subscriptionExpiringHtml(clientName: string, payload: any) {
@@ -362,22 +359,22 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
     : "Liko viena įskaičiuota treniruotė, tačiau šiuo metu jai nėra priskirtos būsimos rezervacijos.";
 
   const inner = `
-    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)},</p>
+    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}!</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
-      Norime priminti, kad Jūsų abonemente <strong>liko ${remaining} treniruotė</strong>.
+      Mažas priminimas: Jūsų abonemente <strong>liko ${remaining} treniruotė</strong>.
     </p>
-    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Liko abonemente</div>
-      <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">1 treniruotė</div>
-      <div style="font-size:13px;color:#8b737c;margin-top:7px;line-height:1.6;">
+    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;">
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Liko abonemente</div>
+      <div style="font-size:25px;font-weight:700;color:#393a34;margin-top:6px;">1 treniruotė</div>
+      <div style="font-size:13px;color:#777268;margin-top:7px;line-height:1.6;">
         ${esc(finalTrainingText)}
       </div>
-      ${expiresAt ? `<div style="font-size:13px;color:#8b737c;margin-top:5px;">Abonementas galioja iki ${esc(expiresAt)}.</div>` : ""}
+      ${expiresAt ? `<div style="font-size:13px;color:#777268;margin-top:5px;">Abonementas galioja iki ${esc(expiresAt)}.</div>` : ""}
     </div>
-    <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
+    <p style="margin:18px 0 0;color:#686258;font-size:14px;line-height:1.7;">
       Jei norėsite tęsti treniruotes, kitu abonementu galite pasirūpinti iš anksto.
     </p>`;
-  return pinkShell("Liko 1 treniruotė abonemente", "Mažas priminimas apie likutį", inner);
+  return emailShell("Liko 1 treniruotė abonemente", "Trumpas priminimas apie abonemento likutį", inner);
 }
 
 function globalAnnouncementHtml(clientName: string, payload: any) {
@@ -387,22 +384,22 @@ function globalAnnouncementHtml(clientName: string, payload: any) {
   const bodyEn = String(payload?.body_en || "");
   const url = String(payload?.url || "/grafikas");
   const inner = `
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)},</p>
-    <div style="padding:16px 18px;border-radius:15px;background:#fff4f7;border:1px solid #f1d6df;">
-      <h2 style="margin:0;color:#6f3049;font-size:20px;">${esc(titleLt)}</h2>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}!</p>
+    <div style="padding:16px 18px;border-radius:15px;background:#f0ebe2;border:1px solid #dfd7cb;">
+      <h2 style="margin:0;color:#393a34;font-size:20px;">${esc(titleLt)}</h2>
       <p style="margin:10px 0 0;white-space:pre-wrap;font-size:15px;line-height:1.7;">${esc(bodyLt)}</p>
     </div>
-    <div style="margin-top:18px;padding-top:18px;border-top:1px solid #eee0e5;">
-      <h3 style="margin:0;color:#6f3049;font-size:16px;">${esc(titleEn)}</h3>
-      <p style="margin:8px 0 0;white-space:pre-wrap;color:#705e66;font-size:14px;line-height:1.7;">${esc(bodyEn)}</p>
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e4ddd2;">
+      <h3 style="margin:0;color:#393a34;font-size:16px;">${esc(titleEn)}</h3>
+      <p style="margin:8px 0 0;white-space:pre-wrap;color:#686258;font-size:14px;line-height:1.7;">${esc(bodyEn)}</p>
     </div>
     <div style="margin-top:20px;text-align:center;">
       <a href="https://equusjm.pages.dev${url.startsWith("/") ? url : "/" + url}"
-         style="display:inline-block;padding:12px 20px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">
+         style="display:inline-block;padding:12px 20px;border-radius:999px;background:#5b6153;color:#fff;text-decoration:none;font-weight:700;">
         Atidaryti Equus / Open Equus
       </a>
     </div>`;
-  return pinkShell(titleLt, "Svarbi informacija iš Equus", inner);
+  return emailShell(titleLt, "Naujiena iš Equus", inner);
 }
 
 
@@ -411,40 +408,40 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
   const bookingTime = formatTime(payload?.booking_time);
   const deadline = formatDate(payload?.deadline);
   const inner = `
-    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)},</p>
+    <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}!</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
       Jūsų artimiausia treniruotė yra <strong>${esc(bookingDate)} ${esc(bookingTime)}</strong>.
     </p>
-    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#a55d78;">Abonemento terminas</div>
-      <div style="font-size:25px;font-weight:700;color:#6f3049;margin-top:6px;">${esc(deadline)} · 20:00</div>
-      <div style="font-size:13px;color:#8b737c;margin-top:6px;line-height:1.6;">
-        Iki šio termino reikia įsigyti abonementą. Jei abonementas nebus įsigytas, vėlesnės nuolatinės rezervacijos bus laikinai sustabdytos.
+    <div style="margin-top:20px;padding:18px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;">
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Abonemento terminas</div>
+      <div style="font-size:25px;font-weight:700;color:#393a34;margin-top:6px;">${esc(deadline)} · 20:00</div>
+      <div style="font-size:13px;color:#777268;margin-top:6px;line-height:1.6;">
+        Abonementą reikėtų įsigyti iki šio laiko. Jei iki tol jo neįsigysite, vėlesnės nuolatinės rezervacijos bus laikinai sustabdytos.
       </div>
     </div>
-    <p style="margin:18px 0 0;color:#765f68;font-size:14px;line-height:1.7;">
-      Viena artimiausia rezervacija gali likti kaip viena būsima treniruotė be abonemento. Įsigijus abonementą, ši rezervacija gali būti priskirta naujam abonementui.
+    <p style="margin:18px 0 0;color:#686258;font-size:14px;line-height:1.7;">
+      Viena artimiausia rezervacija gali likti ir be abonemento. Įsigijus naują abonementą, ją bus galima jam priskirti.
     </p>`;
-  return pinkShell("!SVARBU! Abonementas reikalingas", "Priminimas dėl būsimos treniruotės", inner);
+  return emailShell("Abonementas reikalingas", "Priminimas apie būsimą treniruotę", inner);
 }
 
 function passwordResetHtml(clientName: string, payload: any) {
   const recoveryCode = String(payload?.recovery_code || "");
   const resetUrl = String(payload?.reset_url || "");
   const action = recoveryCode
-    ? '<div style="margin:24px 0;padding:20px 12px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;text-align:center;"><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a55d78;">Jūsų vienkartinis kodas</div><div style="font-size:34px;letter-spacing:8px;font-weight:700;color:#6f3049;margin-top:10px;">' + esc(recoveryCode) + '</div><p style="margin:12px 0 0;color:#8b737c;font-size:12px;">Įveskite šį kodą Equus slaptažodžio atkūrimo puslapyje.</p></div>'
-    : '<div style="margin:24px 0;text-align:center;"><a href="' + esc(resetUrl) + '" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">Nustatyti naują slaptažodį</a></div>';
+    ? '<div style="margin:24px 0;padding:20px 12px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;text-align:center;"><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#777568;">Jūsų vienkartinis kodas</div><div style="font-size:34px;letter-spacing:8px;font-weight:700;color:#393a34;margin-top:10px;">' + esc(recoveryCode) + '</div><p style="margin:12px 0 0;color:#777268;font-size:12px;">Įveskite šį kodą Equus slaptažodžio atkūrimo puslapyje.</p></div>'
+    : '<div style="margin:24px 0;text-align:center;"><a href="' + esc(resetUrl) + '" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#5b6153;color:#fff;text-decoration:none;font-weight:700;">Nustatyti naują slaptažodį</a></div>';
   const inner =
     '<p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Sveiki, ' +
     esc(clientName) +
     ',</p>' +
-    '<p style="margin:0;font-size:15px;line-height:1.7;">Gavome prašymą pakeisti Jūsų Equus paskyros slaptažodį.</p>' +
+    '<p style="margin:0;font-size:15px;line-height:1.7;">Gavome prašymą pakeisti Equus paskyros slaptažodį.</p>' +
     (recoveryCode
-      ? '<p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">Naudokite žemiau pateiktą vienkartinį kodą, kad patvirtintumėte savo el. paštą ir pasirinktumėte naują slaptažodį.</p>'
-      : '<p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">Paspauskite žemiau esantį mygtuką ir nustatykite naują slaptažodį. Ši nuoroda skirta tik Jums ir yra vienkartinė.</p>') +
+      ? '<p style="margin:10px 0 0;color:#686258;font-size:14px;line-height:1.7;">Naudokite žemiau pateiktą vienkartinį kodą, kad patvirtintumėte savo el. paštą ir pasirinktumėte naują slaptažodį.</p>'
+      : '<p style="margin:10px 0 0;color:#686258;font-size:14px;line-height:1.7;">Paspauskite žemiau esantį mygtuką ir nustatykite naują slaptažodį. Ši nuoroda skirta tik Jums ir yra vienkartinė.</p>') +
     action +
-    '<p style="margin:0;color:#9a7f89;font-size:12px;line-height:1.7;">Jei šio prašymo nepateikėte, tiesiog ignoruokite šį laišką.</p>';
-  return pinkShell("Slaptažodžio atkūrimas", "Equus Jojimo Mokyklos paskyros saugumo pranešimas", inner);
+    '<p style="margin:0;color:#827c70;font-size:12px;line-height:1.7;">Jei šio prašymo nepateikėte, tiesiog ignoruokite šį laišką.</p>';
+  return emailShell("Slaptažodžio atkūrimas", "Equus paskyros slaptažodžio atkūrimas", inner);
 }
 
 async function getSubscriptionTrainingHistory(supabase: any, subscriptionId: string) {
