@@ -225,6 +225,11 @@ export default function Auth() {
                   ? "El. paštas patvirtintas. Dabar galite prisijungti prie Equus."
                   : "Į jūsų el. paštą išsiuntėme patvirtinimo nuorodą. Atidarykite ją ir tada prisijunkite."}
               </p>
+              {emailConfirmationSent && !confirmed && (
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  Jei laiškas dar neatėjo, palaukite kelias minutes ir patikrinkite šlamšto aplanką.
+                </p>
+              )}
             </div>
           )}
 
