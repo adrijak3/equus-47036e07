@@ -96,9 +96,9 @@ function trainingHistoryHtml(trainings: any[]) {
   if (!trainings.length) {
     return `
       <div style="margin-top:20px;padding:16px;border-radius:16px;background:#f7f4ee;border:1px solid #dfd7cb;">
-        <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Jūsų treniruotės</div>
+        <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">jūsų treniruotės</div>
         <p style="margin:8px 0 0;color:#777268;font-size:13px;line-height:1.6;">
-          Šiame abonemente užbaigtų treniruočių dar nėra.
+          Kol kas šiame abonemente dar nėra užbaigtų treniruočių.
         </p>
       </div>`;
   }
@@ -119,7 +119,7 @@ function trainingHistoryHtml(trainings: any[]) {
 
   return `
     <div style="margin-top:20px;padding:18px;border-radius:16px;background:#f7f4ee;border:1px solid #dfd7cb;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Jūsų treniruotės šiame abonemente</div>
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Treniruotės šiame abonemente</div>
       <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
         <thead>
           <tr>
@@ -323,7 +323,7 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     Number(subscription.lessons_total) - Number(subscription.lessons_used ?? 0),
   );
   const inner = `
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! Jūsų abonementas paruoštas. Žemiau rasite jo informaciją.</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Sveiki, ${esc(clientName)}! jūsų abonementas paruoštas. Žemiau rasite jo informaciją.</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;">
       <tr><td style="padding:8px 0;color:#777268;">Pamokos</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(subscription.lessons_total)}</td></tr>
       <tr><td style="padding:8px 0;color:#777268;">Tipas</td><td style="padding:8px 0;text-align:right;font-weight:600;">${esc(packageLabel(subscription.package_type))}</td></tr>
@@ -341,7 +341,7 @@ function subscriptionPurchaseHtml(clientName: string, subscription: any, trainin
     <div style="margin-top:20px;padding:14px 16px;border-radius:14px;background:#eee7db;border:1px solid #d9d0c2;text-align:center;color:#69645a;font-size:13px;line-height:1.6;">
       Ačiū, kad jodinėjate su Equus. Iki susitikimo žirgyne!
     </div>`;
-  return emailShell("Abonementas patvirtintas", "Jūsų Equus abonemento informacija", inner);
+  return emailShell("Abonementas patvirtintas", "Abonemento informacija", inner);
 }
 
 function subscriptionExpiringHtml(clientName: string, payload: any) {
@@ -361,7 +361,7 @@ function subscriptionExpiringHtml(clientName: string, payload: any) {
   const inner = `
     <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}!</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
-      Mažas priminimas: Jūsų abonemente <strong>liko ${remaining} treniruotė</strong>.
+      Mažas priminimas: jūsų abonemente <strong>liko ${remaining} treniruotė</strong>.
     </p>
     <div style="margin-top:20px;padding:18px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;">
       <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Liko abonemente</div>
@@ -410,10 +410,10 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
   const inner = `
     <p style="margin:0;font-size:15px;line-height:1.7;">Sveiki, ${esc(clientName)}!</p>
     <p style="margin:10px 0 0;font-size:15px;line-height:1.7;">
-      Jūsų artimiausia treniruotė yra <strong>${esc(bookingDate)} ${esc(bookingTime)}</strong>.
+      jūsų artimiausia treniruotė yra <strong>${esc(bookingDate)} ${esc(bookingTime)}</strong>.
     </p>
     <div style="margin-top:20px;padding:18px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;">
-      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Abonemento terminas</div>
+      <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#777568;">Iki kada įsigyti abonementą</div>
       <div style="font-size:25px;font-weight:700;color:#393a34;margin-top:6px;">${esc(deadline)} · 20:00</div>
       <div style="font-size:13px;color:#777268;margin-top:6px;line-height:1.6;">
         Abonementą reikėtų įsigyti iki šio laiko. Jei iki tol jo neįsigysite, vėlesnės nuolatinės rezervacijos bus laikinai sustabdytos.
@@ -429,12 +429,12 @@ function passwordResetHtml(clientName: string, payload: any) {
   const recoveryCode = String(payload?.recovery_code || "");
   const resetUrl = String(payload?.reset_url || "");
   const action = recoveryCode
-    ? '<div style="margin:24px 0;padding:20px 12px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;text-align:center;"><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#777568;">Jūsų vienkartinis kodas</div><div style="font-size:34px;letter-spacing:8px;font-weight:700;color:#393a34;margin-top:10px;">' + esc(recoveryCode) + '</div><p style="margin:12px 0 0;color:#777268;font-size:12px;">Įveskite šį kodą Equus slaptažodžio atkūrimo puslapyje.</p></div>'
+    ? '<div style="margin:24px 0;padding:20px 12px;border-radius:16px;background:#f0ebe2;border:1px solid #dfd7cb;text-align:center;"><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#777568;">jūsų vienkartinis kodas</div><div style="font-size:34px;letter-spacing:8px;font-weight:700;color:#393a34;margin-top:10px;">' + esc(recoveryCode) + '</div><p style="margin:12px 0 0;color:#777268;font-size:12px;">Įveskite šį kodą Equus slaptažodžio atkūrimo puslapyje.</p></div>'
     : '<div style="margin:24px 0;text-align:center;"><a href="' + esc(resetUrl) + '" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#5b6153;color:#fff;text-decoration:none;font-weight:700;">Nustatyti naują slaptažodį</a></div>';
   const inner =
     '<p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Sveiki, ' +
     esc(clientName) +
-    ',</p>' +
+    '!</p>' +
     '<p style="margin:0;font-size:15px;line-height:1.7;">Gavome prašymą pakeisti Equus paskyros slaptažodį.</p>' +
     (recoveryCode
       ? '<p style="margin:10px 0 0;color:#686258;font-size:14px;line-height:1.7;">Naudokite žemiau pateiktą vienkartinį kodą, kad patvirtintumėte savo el. paštą ir pasirinktumėte naują slaptažodį.</p>'
@@ -704,17 +704,17 @@ Deno.serve(async (req) => {
         } catch (historyError) {
           throw new Error("SUBSCRIPTION_TRAINING_HISTORY_FAILED: " + describeError(historyError));
         }
-        subject = "Jūsų Equus abonementas patvirtintas";
+        subject = "Equus abonementas patvirtintas";
         html = subscriptionPurchaseHtml(clientName, subscription, trainings);
       }
 
       if (event.event_type === "subscription_expiring") {
-        subject = "!SVARBU! Jūsų Equus abonementas netrukus baigsis";
+        subject = "!SVARBU! Abonementas netrukus baigsis";
         html = subscriptionExpiringHtml(clientName, event.payload || {});
       }
 
       if (event.event_type === "subscription_requirement_warning") {
-        subject = "!SVARBU! Abonementas reikalingas prieš Jūsų kitą treniruotę";
+        subject = "!SVARBU! Reikia abonemento prieš kitą treniruotę";
         html = subscriptionRequirementWarningHtml(clientName, event.payload || {});
       }
 
