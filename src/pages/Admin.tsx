@@ -2708,6 +2708,8 @@ function SubDetailDialog({
     rules: any[] = slotRules,
     overrides: any[] = slotOverrides,
   ) => {
+    // Queued packages must not receive lessons before their start date is activated.
+    if (liveSub.start_pending) return false;
     const startDate = liveSub.start_from_date || liveSub.purchase_date;
     const endDate = liveSub.expires_at;
     if (booking.counts_in_subscription === false) return false;
@@ -2942,7 +2944,11 @@ function SubDetailDialog({
         <div className="space-y-3 text-sm">
           <div className="rounded-md bg-gold/5 border border-gold/15 px-3 py-2 tabular-nums">
             <div className="text-base">Panaudotos pamokos: <span className="text-gold">{displayUsed}/{liveSub.lessons_total}</span></div>
-            <div className="text-xs text-muted-foreground mt-1">{liveSub.purchase_date} → {liveSub.expires_at}</div>
+            {liveSub.start_pending ? (
+              <div className="text-xs text-muted-foreground mt-1">Laukia ankstesnio abonemento pabaigos · galiojimo datos dar nenustatytos</div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-1">{liveSub.start_from_date || liveSub.purchase_date} → {liveSub.expires_at}</div>
+            )}
             {Number((liveSub as any).manual_used_adjustment ?? 0) !== 0 && (
               <div className="mt-2 text-[11px] text-muted-foreground">
                 Rankinis skaičiaus koregavimas prie automatinio skaičiaus: {Number((liveSub as any).manual_used_adjustment) > 0 ? "+" : ""}{Number((liveSub as any).manual_used_adjustment)} pam.
@@ -2979,6 +2985,7 @@ function SubDetailDialog({
             <button type="button" onClick={() => { setManualLessonText(""); setManualLessonOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 inline-flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Pridėti pamoką</button>
           </div>
           <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setCopyMode("unpaid"); setCopyFrom(defaultFrom()); setCopyUntil(formatDateISO(new Date())); setCopyOpen(true); }} className="text-xs px-2.5 py-1.5 rounded border border-blush/30 text-blush hover:bg-blush/10 inline-flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Neapmokėtos pamokos</button><button type="button" onClick={async () => {
+            if (liveSub.start_pending) { toast.message("Šis abonementas dar laukia ankstesnio abonemento pabaigos."); return; }
             const remaining = Math.max(0, Number(liveSub.lessons_total) - Number(liveSub.lessons_used ?? 0));
             if (remaining <= 0) { toast.error("Abonementas pilnas"); return; }
             const startDate = liveSub.start_from_date || liveSub.purchase_date;
