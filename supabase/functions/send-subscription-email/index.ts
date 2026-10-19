@@ -429,17 +429,21 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
 }
 
 function passwordResetHtml(clientName: string, payload: any) {
+  const recoveryCode = String(payload?.recovery_code || "");
   const resetUrl = String(payload?.reset_url || "");
+  const action = recoveryCode
+    ? '<div style="margin:24px 0;padding:20px 12px;border-radius:16px;background:#fff4f7;border:1px solid #f1d6df;text-align:center;"><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a55d78;">Jūsų vienkartinis kodas</div><div style="font-size:34px;letter-spacing:8px;font-weight:700;color:#6f3049;margin-top:10px;">' + esc(recoveryCode) + '</div><p style="margin:12px 0 0;color:#8b737c;font-size:12px;">Įveskite šį kodą Equus slaptažodžio atkūrimo puslapyje.</p></div>'
+    : '<div style="margin:24px 0;text-align:center;"><a href="' + esc(resetUrl) + '" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">Nustatyti naują slaptažodį</a></div>';
   const inner =
     '<p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Sveiki, ' +
     esc(clientName) +
     ',</p>' +
     '<p style="margin:0;font-size:15px;line-height:1.7;">Gavome prašymą pakeisti Jūsų Equus paskyros slaptažodį.</p>' +
-    '<p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">Paspauskite žemiau esantį mygtuką ir nustatykite naują slaptažodį. Ši nuoroda skirta tik Jums ir yra vienkartinė.</p>' +
-    '<div style="margin:24px 0;text-align:center;">' +
-    '<a href="' + esc(resetUrl) + '" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#d989a5;color:#fff;text-decoration:none;font-weight:700;">Nustatyti naują slaptažodį</a>' +
-    '</div>' +
-    '<p style="margin:0;color:#9a7f89;font-size:12px;line-height:1.6;">Jei šio prašymo nepateikėte, tiesiog ignoruokite šį laišką.</p>';
+    (recoveryCode
+      ? '<p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">Naudokite žemiau pateiktą vienkartinį kodą, kad patvirtintumėte savo el. paštą ir pasirinktumėte naują slaptažodį.</p>'
+      : '<p style="margin:10px 0 0;color:#765f68;font-size:14px;line-height:1.7;">Paspauskite žemiau esantį mygtuką ir nustatykite naują slaptažodį. Ši nuoroda skirta tik Jums ir yra vienkartinė.</p>') +
+    action +
+    '<p style="margin:0;color:#9a7f89;font-size:12px;line-height:1.7;">Jei šio prašymo nepateikėte, tiesiog ignoruokite šį laišką.</p>';
   return pinkShell("Slaptažodžio atkūrimas", "Equus Jojimo Mokyklos paskyros saugumo pranešimas", inner);
 }
 
