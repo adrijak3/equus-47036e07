@@ -15,3 +15,14 @@ verify_jwt = false
 
 [functions.send-test-resend-email]
 verify_jwt = false
+
+# These endpoints authenticate their own requests: the email worker checks
+# EQUUS_CRON_SECRET, while the Gmail OAuth callback verifies signed state.
+[functions.send-subscription-email]
+verify_jwt = false
+
+[functions.gmail-oauth-start]
+verify_jwt = false
+
+[functions.gmail-oauth-callback]
+verify_jwt = false
