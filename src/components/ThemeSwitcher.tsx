@@ -120,6 +120,22 @@ const THEMES: Array<{
     preview: "from-[#E9E5D6] via-[#A5AF79] to-[#4E5944]",
     swatches: ["#E9E5D6", "#A5AF79", "#75825E", "#4E5944"],
   },
+  {
+    value: "monochrome",
+    label: { lt: "Monochrominė", en: "Monochrome" },
+    icon: Moon,
+    description: { lt: "Juoda, balta ir ramūs pilki atspalviai.", en: "Black, white and calm shades of grey." },
+    preview: "from-[#F4F4F2] via-[#858585] to-[#171717]",
+    swatches: ["#F4F4F2", "#D4D4D0", "#777777", "#171717"],
+  },
+  {
+    value: "warm-neutral",
+    label: { lt: "Šilti neutralūs", en: "Warm neutral" },
+    icon: Leaf,
+    description: { lt: "Kreminė, akmens, rusvai pilka ir anglies spalvos.", en: "Cream, stone, taupe and charcoal." },
+    preview: "from-[#F5F0E7] via-[#B9AD9C] to-[#383631]",
+    swatches: ["#F5F0E7", "#DED5C8", "#A69A88", "#383631"],
+  },
 ];
 
 const MODES: Array<{
