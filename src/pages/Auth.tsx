@@ -99,7 +99,9 @@ export default function Auth() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      // Keep the OAuth return URL on the established site root. This avoids\n      // requiring /auth/callback to be separately whitelisted in Supabase Auth.\n      // The dedicated callback route remains available for existing links/configs.\n      options: { redirectTo: window.location.origin },
+      // Keep the OAuth return URL on the established site root. This avoids\n      // requiring /auth/callback to be separately whitelisted in Supabase Auth.\n      // The dedicated callback route remains available for existing links/configs.\n      // Complete the PKCE exchange on the dedicated callback route before navigating home.
+      // Ensure this exact URL is allowlisted in Supabase Auth Redirect URLs.
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) { setLoading(false); toast.error(error.message); }
   };
