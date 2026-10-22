@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { CalendarClock, CheckCircle2, Clock3, CreditCard } from "lucide-react";
+import { CalendarClock, CheckCircle2, Clock3, CreditCard, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +44,17 @@ type PurchaseRequest = {
   subscription_id?: string | null;
   selected_past_lessons: PastLesson[];
 };
+
+type BankTransferEmailDraft = {
+  requestId: string;
+  riderName: string;
+  lessonsTotal: number;
+  packageType: PackageType;
+  horseType: HorseType;
+  priceEur: number;
+};
+
+type RiderAgeType = "" | "adult" | "child";
 
 function dateLabel(value: string) {
   return new Date(value + "T12:00:00").toLocaleDateString("lt-LT", {
@@ -93,6 +105,10 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false);
+  const [emailDraft, setEmailDraft] = useState<BankTransferEmailDraft | null>(null);
+  const [emailRiderName, setEmailRiderName] = useState("");
+  const [emailRiderAgeType, setEmailRiderAgeType] = useState<RiderAgeType>("");
 
   const currentPrice = useMemo(
     () => prices.find((row) =>
@@ -223,16 +239,70 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
       return;
     }
 
-    toast.success(
-      paymentMethod === "cash"
-        ? "Užklausa sukurta. Parodykite QR kodą Laurai:)."
-        : "Užklausa perduota! Mokėjimą patvirtinsime gavę pavedimą;)",
-    );
     setSelectedLessonIds([]);
+
+    if (paymentMethod === "cash") {
+      toast.success("Užklausa sukurta. Parodykite QR kodą Laurai:).");
+    } else {
+      toast.success("Užklausa išsaugota. Užbaikite pavedimą el. paštu.");
+      openBankTransferEmail({
+        requestId: String(data.request_id),
+        riderName: currentRiderName,
+        lessonsTotal,
+        packageType,
+        horseType,
+        priceEur: Number(data.price_eur ?? currentPrice.price_eur),
+      });
+    }
     await load();
   };
 
-  const riderName = activeProfileName || profile?.full_name || "raiteliui";
+  const currentRiderName = (activeProfileName || profile?.full_name || "").trim();
+  const riderName = currentRiderName || "raiteliui";
+
+  const openBankTransferEmail = (draft: BankTransferEmailDraft) => {
+    setEmailDraft(draft);
+    setEmailRiderName(draft.riderName.trim());
+    setEmailRiderAgeType("");
+    setBankTransferDialogOpen(true);
+  };
+
+  const openPreparedEmail = () => {
+    if (!emailDraft) return;
+    const trimmedName = emailRiderName.trim();
+    if (!trimmedName) {
+      toast.error("Įrašykite raitelio vardą ir pavardę.");
+      return;
+    }
+    if (!emailRiderAgeType) {
+      toast.error("Pasirinkite, ar raitelis yra suaugęs, ar vaikas.");
+      return;
+    }
+
+    const riderTypeLabel = emailRiderAgeType === "child" ? "Vaikas" : "Suaugęs";
+    const subject = `Equus abonemento užklausa – ${trimmedName}`;
+    const body = [
+      "Sveiki,",
+      "",
+      "Norėčiau įsigyti Equus abonementą bankiniu pavedimu.",
+      "",
+      `Raitelio vardas ir pavardė: ${trimmedName}`,
+      `Raitelis: ${riderTypeLabel} (nurodomas raitelis, ne mokėtojas)`,
+      `Treniruočių kiekis: ${emailDraft.lessonsTotal}`,
+      `Treniruočių tipas: ${emailDraft.packageType === "group" ? "Grupinė" : "Po 2"}`,
+      `Žirgas: ${emailDraft.horseType === "school" ? "Mokyklos žirgas" : "Nuosavas žirgas"}`,
+      `Suma: ${Number(emailDraft.priceEur).toFixed(2)} €`,
+      `Equus užklausos ID: ${emailDraft.requestId}`,
+      "",
+      "Prisegu bankinio pavedimo patvirtinimą (mokėjimo įrodymą).",
+      "Prašau patvirtinti abonemento užklausą, kai mokėjimas bus gautas ir patikrintas.",
+      "",
+      "Ačiū!",
+    ].join("\\n");
+    const mailto = `mailto:jojimomokykla@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+    setBankTransferDialogOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -371,7 +441,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             <p className="text-sm font-medium">Mokėjimo būdas</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {paymentMethod === "bank_transfer"
-                ? "Bankinio pavedimo užklausa iškart pateks į užklausas.QR kodo rodyti Laurai nereikės; abonementas atsiras po mokėjimo patvirtinimo!:)"
+                ? "Pateikus užklausą atsidarys paruoštas el. laiškas adresu jojimomokykla@gmail.com. Prisegkite mokėjimo įrodymą ir paspauskite „Siųsti“. Jei uždarysite langą, laišką galėsite paruošti iš naujo savo paskyroje."
                 : "Pateikus užklausą bus sugeneruotas QR kodas. Parodykite jį Laurai, kad ji atidarytų užklausą ir patvirtintų gautą mokėjimą."}
             </p>
           </div>
@@ -434,10 +504,28 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                   </div>
                 )}
                 {request.status === "pending" && request.payment_method === "bank_transfer" && (
-                  <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
-                    <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-                    Užklausa pateikta! Kai pavedimas bus gautas ir patikrintas, prie paskyros atsiras abonementas:).
-                  </p>
+                  <div className="mt-3 space-y-3">
+                    <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+                      Užklausa išsaugota. Išsiųskite laišką adresu jojimomokykla@gmail.com ir prisegkite mokėjimo įrodymą. Abonementas atsiras, kai mokėjimas bus gautas ir patvirtintas.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => openBankTransferEmail({
+                        requestId: request.id,
+                        riderName: (request.rider_name || currentRiderName).trim(),
+                        lessonsTotal: request.lessons_total,
+                        packageType: request.package_type,
+                        horseType: request.horse_type,
+                        priceEur: Number(request.price_eur),
+                      })}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Paruošti el. laišką
+                    </Button>
+                  </div>
                 )}
                 {request.status === "approved" && request.subscription_id && (
                   <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
@@ -454,6 +542,79 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
           {loading && <span className="sr-only">Kraunama</span>}
         </div>
       </Section>
+
+      <Dialog open={bankTransferDialogOpen} onOpenChange={setBankTransferDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Paruošti bankinio pavedimo el. laišką</DialogTitle>
+            <DialogDescription>
+              Užklausa išsaugota paskyroje. Patikrinkite duomenis, atidarykite paruoštą laišką, prisegkite mokėjimo įrodymą ir išsiųskite jį savo el. pašto programoje.
+            </DialogDescription>
+          </DialogHeader>
+
+          {emailDraft && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-gold/15 bg-background/40 p-4 text-sm">
+                <p><span className="text-muted-foreground">Kam:</span> <span className="font-medium">jojimomokykla@gmail.com</span></p>
+                <p className="mt-1"><span className="text-muted-foreground">Abonementas:</span> {emailDraft.lessonsTotal} treniruotės · {emailDraft.packageType === "group" ? "Grupinė" : "Po 2"} · {emailDraft.horseType === "school" ? "Mokyklos žirgas" : "Nuosavas žirgas"}</p>
+                <p className="mt-1"><span className="text-muted-foreground">Suma:</span> {Number(emailDraft.priceEur).toFixed(2)} €</p>
+              </div>
+
+              <div>
+                <label htmlFor="bank-email-rider-name" className="mb-1.5 block text-sm font-medium">
+                  Raitelio vardas ir pavardė
+                </label>
+                <input
+                  id="bank-email-rider-name"
+                  value={emailRiderName}
+                  onChange={(event) => setEmailRiderName(event.target.value)}
+                  autoComplete="name"
+                  className="h-11 w-full rounded-lg border border-gold/20 bg-background px-3 text-sm"
+                  placeholder="Vardas Pavardė"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="bank-email-rider-age" className="mb-1.5 block text-sm font-medium">
+                  Raitelis (ne mokėtojas)
+                </label>
+                <select
+                  id="bank-email-rider-age"
+                  value={emailRiderAgeType}
+                  onChange={(event) => setEmailRiderAgeType(event.target.value as RiderAgeType)}
+                  className="h-11 w-full rounded-lg border border-gold/20 bg-background px-3 text-sm"
+                  required
+                >
+                  <option value="">Pasirinkite</option>
+                  <option value="adult">Suaugęs</option>
+                  <option value="child">Vaikas</option>
+                </select>
+              </div>
+
+              <p className="text-xs leading-5 text-muted-foreground">
+                Laiškas nebus išsiųstas automatiškai. Atsidarius el. paštui, prie laiško pridėkite bankinio pavedimo patvirtinimą arba kitą mokėjimo įrodymą ir patys paspauskite „Siųsti“.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setBankTransferDialogOpen(false)}>
+              Uždaryti
+            </Button>
+            <Button
+              type="button"
+              variant="gold"
+              className="gap-2"
+              onClick={openPreparedEmail}
+              disabled={!emailDraft || !emailRiderName.trim() || !emailRiderAgeType}
+            >
+              <Mail className="h-4 w-4" />
+              Atidaryti el. paštą
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
