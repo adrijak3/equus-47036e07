@@ -298,7 +298,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
       "Prašau patvirtinti abonemento užklausą, kai mokėjimas bus gautas ir patikrintas.",
       "",
       "Ačiū!",
-    ].join("\\n");
+    ].join("\n");
     const mailto = `mailto:jojimomokykla@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
     setBankTransferDialogOpen(false);
