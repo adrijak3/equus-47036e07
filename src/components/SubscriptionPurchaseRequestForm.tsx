@@ -47,14 +47,13 @@ type PurchaseRequest = {
 
 type BankTransferEmailDraft = {
   requestId: string;
+  riderId: string;
   riderName: string;
   lessonsTotal: number;
   packageType: PackageType;
   horseType: HorseType;
   priceEur: number;
 };
-
-type RiderAgeType = "" | "adult" | "child";
 
 function dateLabel(value: string) {
   return new Date(value + "T12:00:00").toLocaleDateString("lt-LT", {
@@ -107,8 +106,6 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
   const [submitting, setSubmitting] = useState(false);
   const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false);
   const [emailDraft, setEmailDraft] = useState<BankTransferEmailDraft | null>(null);
-  const [emailRiderName, setEmailRiderName] = useState("");
-  const [emailRiderAgeType, setEmailRiderAgeType] = useState<RiderAgeType>("");
 
   const currentPrice = useMemo(
     () => prices.find((row) =>
@@ -247,6 +244,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
       toast.success("Užklausa išsaugota. Užbaikite pavedimą el. paštu.");
       openBankTransferEmail({
         requestId: String(data.request_id),
+        riderId: riderId,
         riderName: currentRiderName,
         lessonsTotal,
         packageType,
@@ -262,43 +260,28 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
 
   const openBankTransferEmail = (draft: BankTransferEmailDraft) => {
     setEmailDraft(draft);
-    setEmailRiderName(draft.riderName.trim());
-    setEmailRiderAgeType("");
     setBankTransferDialogOpen(true);
   };
 
+  const riderTypeLabelFor = (targetRiderId: string) => {
+    const isChildRider =
+      !!user &&
+      (targetRiderId !== user.id || user.user_metadata?.phone_is_parent === true);
+    return isChildRider ? "Vaikas" : "Suaugęs";
+  };
+
+  const getBankTransferEmailBody = (draft: BankTransferEmailDraft) => [
+    "Sveiki, norėčiau įsigyti abonementą",
+    `Kiekis: ${draft.lessonsTotal}`,
+    `Suma: ${Number(draft.priceEur).toFixed(2)} €`,
+    `Raitelis: ${draft.riderName.trim()} (${riderTypeLabelFor(draft.riderId)})`,
+  ].join("\n");
+
   const openPreparedEmail = () => {
     if (!emailDraft) return;
-    const trimmedName = emailRiderName.trim();
-    if (!trimmedName) {
-      toast.error("Įrašykite raitelio vardą ir pavardę.");
-      return;
-    }
-    if (!emailRiderAgeType) {
-      toast.error("Pasirinkite, ar raitelis yra suaugęs, ar vaikas.");
-      return;
-    }
-
-    const riderTypeLabel = emailRiderAgeType === "child" ? "Vaikas" : "Suaugęs";
-    const subject = `Equus abonemento užklausa – ${trimmedName}`;
-    const body = [
-      "Sveiki,",
-      "",
-      "Norėčiau įsigyti Equus abonementą bankiniu pavedimu.",
-      "",
-      `Raitelio vardas ir pavardė: ${trimmedName}`,
-      `Raitelis: ${riderTypeLabel} (nurodomas raitelis, ne mokėtojas)`,
-      `Treniruočių kiekis: ${emailDraft.lessonsTotal}`,
-      `Treniruočių tipas: ${emailDraft.packageType === "group" ? "Grupinė" : "Po 2"}`,
-      `Žirgas: ${emailDraft.horseType === "school" ? "Mokyklos žirgas" : "Nuosavas žirgas"}`,
-      `Suma: ${Number(emailDraft.priceEur).toFixed(2)} €`,
-      `Equus užklausos ID: ${emailDraft.requestId}`,
-      "",
-      "Prisegu bankinio pavedimo patvirtinimą (mokėjimo įrodymą).",
-      "Prašau patvirtinti abonemento užklausą, kai mokėjimas bus gautas ir patikrintas.",
-      "",
-      "Ačiū!",
-    ].join("\n");
+    const trimmedName = emailDraft.riderName.trim() || riderName;
+    const subject = `Abonemento užklausa – ${trimmedName}`;
+    const body = getBankTransferEmailBody({ ...emailDraft, riderName: trimmedName });
     const mailto = `mailto:jojimomokykla@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
     setBankTransferDialogOpen(false);
@@ -515,6 +498,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                       className="gap-2"
                       onClick={() => openBankTransferEmail({
                         requestId: request.id,
+                        riderId: request.user_id,
                         riderName: (request.rider_name || currentRiderName).trim(),
                         lessonsTotal: request.lessons_total,
                         packageType: request.package_type,
@@ -546,9 +530,9 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
       <Dialog open={bankTransferDialogOpen} onOpenChange={setBankTransferDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Paruošti bankinio pavedimo el. laišką</DialogTitle>
+            <DialogTitle>Paruoštas abonemento el. laiškas</DialogTitle>
             <DialogDescription>
-              Užklausa išsaugota paskyroje. Patikrinkite duomenis, atidarykite paruoštą laišką, prisegkite mokėjimo įrodymą ir išsiųskite jį savo el. pašto programoje.
+              Užklausa išsaugota paskyroje. Atidarykite paruoštą laišką ir prieš siųsdami būtinai pridėkite mokėjimo įrodymą.
             </DialogDescription>
           </DialogHeader>
 
@@ -556,44 +540,12 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             <div className="space-y-4">
               <div className="rounded-xl border border-gold/15 bg-background/40 p-4 text-sm">
                 <p><span className="text-muted-foreground">Kam:</span> <span className="font-medium">jojimomokykla@gmail.com</span></p>
-                <p className="mt-1"><span className="text-muted-foreground">Abonementas:</span> {emailDraft.lessonsTotal} treniruotės · {emailDraft.packageType === "group" ? "Grupinė" : "Po 2"} · {emailDraft.horseType === "school" ? "Mokyklos žirgas" : "Nuosavas žirgas"}</p>
-                <p className="mt-1"><span className="text-muted-foreground">Suma:</span> {Number(emailDraft.priceEur).toFixed(2)} €</p>
               </div>
-
-              <div>
-                <label htmlFor="bank-email-rider-name" className="mb-1.5 block text-sm font-medium">
-                  Raitelio vardas ir pavardė
-                </label>
-                <input
-                  id="bank-email-rider-name"
-                  value={emailRiderName}
-                  onChange={(event) => setEmailRiderName(event.target.value)}
-                  autoComplete="name"
-                  className="h-11 w-full rounded-lg border border-gold/20 bg-background px-3 text-sm"
-                  placeholder="Vardas Pavardė"
-                  required
-                />
+              <div className="whitespace-pre-line rounded-xl border border-gold/15 bg-background/30 p-4 text-sm leading-6">
+                {getBankTransferEmailBody(emailDraft)}
               </div>
-
-              <div>
-                <label htmlFor="bank-email-rider-age" className="mb-1.5 block text-sm font-medium">
-                  Raitelis (ne mokėtojas)
-                </label>
-                <select
-                  id="bank-email-rider-age"
-                  value={emailRiderAgeType}
-                  onChange={(event) => setEmailRiderAgeType(event.target.value as RiderAgeType)}
-                  className="h-11 w-full rounded-lg border border-gold/20 bg-background px-3 text-sm"
-                  required
-                >
-                  <option value="">Pasirinkite</option>
-                  <option value="adult">Suaugęs</option>
-                  <option value="child">Vaikas</option>
-                </select>
-              </div>
-
               <p className="text-xs leading-5 text-muted-foreground">
-                Laiškas nebus išsiųstas automatiškai. Atsidarius el. paštui, prie laiško pridėkite bankinio pavedimo patvirtinimą arba kitą mokėjimo įrodymą ir patys paspauskite „Siųsti“.
+                Šis laiškas automatiškai neišsiunčiamas. El. pašto programoje prisegkite bankinio pavedimo patvirtinimą arba kitą mokėjimo įrodymą ir paspauskite „Siųsti“.
               </p>
             </div>
           )}
@@ -607,7 +559,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               variant="gold"
               className="gap-2"
               onClick={openPreparedEmail}
-              disabled={!emailDraft || !emailRiderName.trim() || !emailRiderAgeType}
+              disabled={!emailDraft}
             >
               <Mail className="h-4 w-4" />
               Atidaryti el. paštą
