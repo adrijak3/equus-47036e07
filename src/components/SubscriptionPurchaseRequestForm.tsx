@@ -424,7 +424,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             <p className="text-sm font-medium">Mokėjimo būdas</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {paymentMethod === "bank_transfer"
-                ? "Pateikus užklausą atsidarys paruoštas el. laiškas adresu jojimomokykla@gmail.com. Prisegkite mokėjimo įrodymą ir paspauskite „Siųsti“. Jei uždarysite langą, laišką galėsite paruošti iš naujo savo paskyroje."
+                ? "Pateikus užklausą atsidarys paruoštas el. laiškas adresu jojimomokykla@gmail.com. Išsiuntę užklausą, sulauksite sąskaitos apmokėjimui. Apmokėję sąskaitą, atsiųskite mokėjimo patvirtinimą. Jei uždarysite langą, laišką galėsite paruošti iš naujo savo paskyroje."
                 : "Pateikus užklausą bus sugeneruotas QR kodas. Parodykite jį Laurai, kad ji atidarytų užklausą ir patvirtintų gautą mokėjimą."}
             </p>
           </div>
@@ -490,7 +490,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                   <div className="mt-3 space-y-3">
                     <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
                       <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-                      Užklausa išsaugota. Išsiųskite laišką adresu jojimomokykla@gmail.com ir prisegkite mokėjimo įrodymą. Abonementas atsiras, kai mokėjimas bus gautas ir patvirtintas.
+                      Užklausa išsaugota. Išsiųskite laišką adresu jojimomokykla@gmail.com. Administracija atsiųs sąskaitą apmokėjimui; apmokėję ją, atsiųskite mokėjimo patvirtinimą. Abonementas atsiras, kai mokėjimas bus patvirtintas.
                     </p>
                     <Button
                       type="button"
@@ -532,7 +532,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
           <DialogHeader>
             <DialogTitle>Paruoštas abonemento el. laiškas</DialogTitle>
             <DialogDescription>
-              Užklausa išsaugota paskyroje. Atidarykite paruoštą laišką ir prieš siųsdami būtinai pridėkite mokėjimo įrodymą.
+              Užklausa išsaugota paskyroje. Atidarykite paruoštą laišką ir išsiųskite užklausą. Sąskaitą apmokėjimui gausite vėliau.
             </DialogDescription>
           </DialogHeader>
 
@@ -545,7 +545,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                 {getBankTransferEmailBody(emailDraft)}
               </div>
               <p className="text-xs leading-5 text-muted-foreground">
-                Šis laiškas automatiškai neišsiunčiamas. El. pašto programoje prisegkite bankinio pavedimo patvirtinimą arba kitą mokėjimo įrodymą ir paspauskite „Siųsti“.
+                Laiškas bus atidarytas jūsų el. pašto programoje. Šiame etape jokio mokėjimo įrodymo pridėti nereikia.
               </p>
             </div>
           )}
