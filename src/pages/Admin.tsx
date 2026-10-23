@@ -43,7 +43,7 @@ interface Profile { id: string; full_name: string; phone: string | null; }
 interface Sub {
   id: string; user_id: string; lessons_total: number; lessons_used: number;
   price: number; purchase_date: string; expires_at: string | null; paid: boolean;
-  package_type?: "group" | "po2" | null;
+  package_type?: "group" | "po2" | "individual" | null;
   start_from_date?: string | null; start_pending?: boolean;
   lesson_type?: string;
   covered_riders?: 1 | 2;
@@ -2794,7 +2794,7 @@ function SubDetailDialog({
   // Match the database's booking_matches_subscription_package() rules so the
   // admin cannot attach a lesson that the usage counter will ignore.
   const bookingMatchesSubscription = (
-    booking: { slot_date: string; slot_time: string; counts_in_subscription?: boolean | null },
+    booking: { slot_date: string; slot_time: string; counts_in_subscription?: boolean | null; is_individual?: boolean | null },
     rules: any[] = slotRules,
     overrides: any[] = slotOverrides,
   ) => {
@@ -2828,7 +2828,7 @@ function SubDetailDialog({
 
     const packageType = liveSub.package_type
       ?? (liveSub.lesson_type === "sportine_po2" ? "po2" : "group");
-    return packageType === "po2" ? capacity === 2 : packageType === "group" ? capacity >= 3 : false;
+    return packageType === "individual" ? (booking.is_individual === true || capacity === 1) : packageType === "po2" ? capacity === 2 : packageType === "group" ? capacity >= 3 : false;
   };
 
   const load = async () => {
