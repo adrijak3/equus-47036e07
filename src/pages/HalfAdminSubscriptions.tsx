@@ -22,7 +22,7 @@ type Row = {
   email?: string;
 };
 
-const packageLabel = (v?: string | null) => v === "po2" ? "Po 2" : v === "group" ? "Grupinė" : "—";
+const packageLabel = (v?: string | null) => v === "po2" ? "Po 2" : v === "group" ? "Grupinė" : v === "individual" ? "Individuali" : "—";
 const horseLabel = (v?: string | null) => v === "own" ? "Privatus žirgas" : v === "school" ? "Mokyklos žirgas" : "—";
 
 export default function HalfAdminSubscriptions() {
