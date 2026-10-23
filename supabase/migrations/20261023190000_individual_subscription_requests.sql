@@ -42,6 +42,8 @@ AS $$
     FROM public.bookings b
     WHERE b.id = _booking_id
       AND CASE
+        WHEN _package_type = 'individual'
+          THEN b.is_individual IS TRUE OR public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 1
         WHEN b.is_individual IS TRUE
              OR public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 1
           THEN false
