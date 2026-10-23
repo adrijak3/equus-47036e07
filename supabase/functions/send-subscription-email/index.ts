@@ -42,6 +42,7 @@ function formatDate(value: unknown) {
 function packageLabel(value: string | null | undefined) {
   if (value === "po2") return "Asmeninės pamokos po 2";
   if (value === "group") return "Grupinės pamokos";
+  if (value === "individual") return "Individualios pamokos";
   return value || "—";
 }
 
