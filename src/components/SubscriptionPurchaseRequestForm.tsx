@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/components/SubscriptionRequestUi";
 import { formatTime } from "@/lib/equus";
 
-type PackageType = "group" | "po2";
+type PackageType = "group" | "po2" | "individual";
 type HorseType = "school" | "own";
 type PaymentMethod = "bank_transfer" | "cash";
 type RequestStatus = "pending" | "approved" | "rejected";
@@ -324,6 +324,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               >
                 <option value="group">Grupinė</option>
                 <option value="po2">Po 2</option>
+                <option value="individual">Individuali (1 asmuo)</option>
               </select>
             </div>
 
@@ -360,7 +361,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Pasirinktas abonementas</p>
             <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="font-display text-2xl text-gold">{lessonsTotal} treniruotės · {packageType === "group" ? "Grupinė" : "Po 2"}</p>
+                <p className="font-display text-2xl text-gold">{lessonsTotal} treniruotės · {packageType === "group" ? "Grupinė" : packageType === "po2" ? "Po 2" : "Individuali"}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{horseType === "school" ? "Mokyklos žirgais" : "Nuosavu žirgu"}</p>
               </div>
               <p className="font-display text-3xl text-gradient-gold tabular-nums">
