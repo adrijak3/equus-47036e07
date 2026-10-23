@@ -455,7 +455,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               <div key={request.id} className="rounded-2xl border border-gold/15 bg-background/30 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium">{request.lessons_total} treniruotės · {request.package_type === "group" ? "Grupinė" : "Po 2"}</p>
+                    <p className="font-medium">{request.lessons_total} treniruotės · {request.package_type === "group" ? "Grupinė" : request.package_type === "po2" ? "Po 2" : "Individuali"}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {request.horse_type === "school" ? "Mokyklos žirgais" : "Nuosavu žirgu"} · {request.payment_method === "bank_transfer" ? "Bankinis pavedimas" : "Grynais"} · {Number(request.price_eur).toFixed(2)} €
                     </p>
