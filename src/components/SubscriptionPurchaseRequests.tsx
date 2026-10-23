@@ -20,7 +20,7 @@ export type SubscriptionPurchaseRequest = {
   user_id: string;
   rider_name: string | null;
   lessons_total: number;
-  package_type: "group" | "po2";
+  package_type: "group" | "po2" | "individual";
   horse_type: "school" | "own";
   payment_method: PaymentMethod;
   price_eur: number;
@@ -106,7 +106,7 @@ function PurchaseRequestCard({
         <div className="min-w-0">
           <p className="font-display text-2xl text-gold">{current.rider_name || "Raitelis be vardo"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {current.lessons_total} treniruotės · {current.package_type === "group" ? "Grupinė" : "Po 2"} · {current.horse_type === "school" ? "Mokyklos žirgais" : "Nuosavu žirgu"}
+            {current.lessons_total} treniruotės · {current.package_type === "group" ? "Grupinė" : current.package_type === "po2" ? "Po 2" : "Individuali"} · {current.horse_type === "school" ? "Mokyklos žirgais" : "Nuosavu žirgu"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {current.payment_method === "bank_transfer" ? "Bankinis pavedimas" : "Grynais"} · pateikta {new Date(current.created_at).toLocaleString("lt-LT")}
