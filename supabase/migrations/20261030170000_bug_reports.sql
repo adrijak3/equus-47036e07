@@ -31,6 +31,7 @@ CREATE POLICY "Anyone can submit bug reports"
     AND length(error_message) BETWEEN 1 AND 1500
     AND length(page_path) BETWEEN 1 AND 300
     AND occurrence_count >= 3
+    AND (user_id IS NULL OR user_id = auth.uid())
   );
 
 DROP POLICY IF EXISTS "Admins can read bug reports" ON public.bug_reports;
