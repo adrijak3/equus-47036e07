@@ -17,6 +17,7 @@ const SERVICE_NAMES: Record<string, string> = {
   mazylio_30: "Mažylio svajonė · 30 min.",
   mazylio_45: "Mažylio svajonė · 45 min.",
   sportine: "Sportinė jojimo treniruotė",
+  individuali: "Individuali jojimo treniruotė",
 };
 
 const EXPERIENCE_NAMES: Record<string, string> = {
@@ -179,7 +180,7 @@ export function AdminPublicRequests() {
     : "";
 
   const clientMessage = selected
-    ? `Sveiki, ${selected.first_name}!\n\nGavome Jūsų registracijos užklausą į Equus Jojimo Mokyklą.\n\nRegistracijos būseną ir administracijos siūlomą laiką galite peržiūrėti čia:\n${clientUrl}\n\n${selected.service_type === "mazylio_30" ? "Mažylio svajonė 30 min. kaina – 20 €." : selected.service_type === "mazylio_45" ? "Mažylio svajonė 45 min. kaina – 35 €." : "Sportinės jojimo treniruotės kaina: grupinė – 40 €, porinė – 45 €, individuali – 50 €."}\n\nPatvirtinus laiką taikomos Equus treniruočių atšaukimo taisyklės.\n\nJeigu turite klausimų, parašykite mums.\n\nSu pagarba,\nEquus Jojimo Mokykla`
+    ? `Sveiki, ${selected.first_name}!\n\nGavome Jūsų registracijos užklausą į Equus Jojimo Mokyklą.\n\nRegistracijos būseną ir administracijos siūlomą laiką galite peržiūrėti čia:\n${clientUrl}\n\n${selected.service_type === "mazylio_30" ? "Mažylio svajonė 30 min. kaina – 20 €." : selected.service_type === "mazylio_45" ? "Mažylio svajonė 45 min. kaina – 35 €." : selected.service_type === "individuali" ? "Individualios jojimo treniruotės kaina – 50 €. Pasirinktas laikas nėra garantuojamas – administracija netrukus susisieks su Jumis ir suderins treniruotės laiką." : "Sportinės jojimo treniruotės kaina: grupinė – 40 €, porinė – 45 €."}\n\nPatvirtinus laiką taikomos Equus treniruočių atšaukimo taisyklės.\n\nJeigu turite klausimų, parašykite mums.\n\nSu pagarba,\nEquus Jojimo Mokykla`
     : "";
 
   const copyText = async (value: string, success: string) => {
@@ -286,7 +287,7 @@ export function AdminPublicRequests() {
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {SERVICE_NAMES[row.service_type] ?? "Sportinė jojimo treniruotė"}
-                      {row.service_type === "sportine" &&
+                      {["sportine", "individuali"].includes(row.service_type) &&
                         ` · ${EXPERIENCE_NAMES[row.experience_level] ?? row.experience_level}`}
                       {` · ${row.phone} · ${row.email}`}
                     </div>
@@ -331,7 +332,7 @@ export function AdminPublicRequests() {
                   <b>Trukmė:</b> {selected.duration_minutes ?? 45} min.
                 </p>
                 <p>
-                  <b>Kaina:</b> {selected.service_type === "sportine" ? "40 / 45 / 50 (pagal treniruotės tipą)" : selected.price_eur ?? (selected.service_type === "mazylio_30" ? 20 : 35)}
+                  <b>Kaina:</b> {selected.price_eur ?? (selected.service_type === "individuali" ? 50 : selected.service_type === "mazylio_30" ? 20 : selected.service_type === "mazylio_45" ? 35 : "40 / 45 (pagal treniruotės tipą)")}
                 </p>
                 {selected.service_type === "sportine" && (
                   <p>
