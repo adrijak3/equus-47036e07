@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendReservationReceived } from "@/lib/emailjs";
+import { reportHandledError } from "@/components/BugReporter";
 
 const LEVELS = [
   {
@@ -171,6 +172,7 @@ export default function PublicRegistration() {
       );
 
       if (error) {
+        reportHandledError(error, "Viešos registracijos laikų užkrovimas");
         setRegistrationError(`Nepavyko užkrauti laikų. ${error.message}`);
         return;
       }
@@ -260,6 +262,7 @@ export default function PublicRegistration() {
     setBusy(false);
 
     if (error) {
+      reportHandledError(error, "Viešos registracijos pateikimas");
       setRegistrationError(`Nepavyko pateikti registracijos. ${error.message}`);
       return;
     }
@@ -291,6 +294,7 @@ export default function PublicRegistration() {
       });
       setEmailFailed(false);
     } catch (error) {
+      reportHandledError(error, "Registracijos patvirtinimo el. laiško siuntimas");
       console.error("EmailJS send failed:", error);
       setEmailFailed(true);
     }
@@ -323,6 +327,7 @@ export default function PublicRegistration() {
       );
 
       if (error || data?.ok === false) {
+        if (error) reportHandledError(error, "Kliento atsakymo į registracijos pasiūlymą išsaugojimas");
         window.alert(`Nepavyko išsaugoti atsakymo.\n\nKlaida: ${error?.message || "Nežinoma klaida"}`);
         return;
       }
