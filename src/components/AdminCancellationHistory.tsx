@@ -155,7 +155,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
       </div>
 
       <p className="text-[11px] italic text-muted-foreground">
-        Atšaukimų istorija saugoma visam laikui — įrašai netrinami.
+        Atšaukimų istorija automatiškai išvaloma kiekvieną pirmadienį — paliekami tik šios savaitės įrašai.
       </p>
 
       {loading ? (
