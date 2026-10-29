@@ -29,7 +29,9 @@ const STORAGE_KEY = "equus_bug_occurrences_v1";
 const PROMPT_KEY = "equus_bug_prompted_v1";
 
 function safeMessage(value: unknown) {
-  const raw = value instanceof Error ? value.message : String(value ?? "Nežinoma klaida");
+  const details = value && typeof value === "object" ? value as { message?: string; code?: string } : null;
+  const base = value instanceof Error ? value.message : details?.message ?? String(value ?? "Nežinoma klaida");
+  const raw = details?.code ? `${base} (kodas: ${details.code})` : base;
   return raw.replace(/https?:\/\/[^\s)]+/g, "[URL]").slice(0, 1500);
 }
 
