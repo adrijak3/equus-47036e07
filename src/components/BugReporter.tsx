@@ -111,24 +111,26 @@ export function BugReporter() {
   const submit = async () => {
     if (!pending || sending) return;
     setSending(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await (supabase as any).from("bug_reports").insert({
-      fingerprint: pending.fingerprint,
-      error_name: pending.errorName,
-      error_message: pending.message,
-      error_code: pending.errorCode,
-      page_path: pending.pagePath,
-      stack_trace: pending.stack,
-      occurrence_count: pending.occurrenceCount,
-      user_id: userData.user?.id ?? null,
-      user_agent: navigator.userAgent.slice(0, 500),
-    });
-    setSending(false);
-    if (!error) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await (supabase as any).from("bug_reports").insert({
+        fingerprint: pending.fingerprint,
+        error_name: pending.errorName,
+        error_message: pending.message,
+        error_code: pending.errorCode,
+        page_path: pending.pagePath,
+        stack_trace: pending.stack,
+        occurrence_count: pending.occurrenceCount,
+        user_id: userData.user?.id ?? null,
+        user_agent: navigator.userAgent.slice(0, 500),
+      });
+      if (error) throw error;
       setPending(null);
       toast.success("Ačiū! Klaidos pranešimas išsiųstas administracijai.");
-    } else {
+    } catch {
       toast.error("Nepavyko išsiųsti pranešimo. Bandykite dar kartą.");
+    } finally {
+      setSending(false);
     }
   };
 
