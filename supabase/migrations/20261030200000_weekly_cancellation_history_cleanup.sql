@@ -39,3 +39,6 @@ SELECT cron.schedule(
   '15 0 * * 1',
   $$SELECT public.cleanup_old_cancellations();$$
 );
+
+-- Apply the retention rule immediately as well as on the weekly schedule.
+SELECT public.cleanup_old_cancellations();
