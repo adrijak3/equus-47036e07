@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export function reportHandledError(error: unknown, context: string) {
+  window.dispatchEvent(new CustomEvent("equus:app-error", { detail: { error, context } }));
+}
 
 type PendingBug = {
   fingerprint: string;
@@ -79,6 +84,12 @@ export function BugReporter() {
       }
     };
 
+    const onHandledError = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      const error = detail?.error;
+      const context = String(detail?.context || "Programos veiksmas");
+      record(error?.name || "ApplicationError", context + ": " + safeMessage(error), error?.stack);
+    };
     const onError = (event: ErrorEvent) => {
       record(event.error?.name || "JavaScriptError", event.message || event.error?.message, event.error?.stack);
     };
@@ -88,9 +99,11 @@ export function BugReporter() {
     };
 
     window.addEventListener("error", onError);
+    window.addEventListener("equus:app-error", onHandledError);
     window.addEventListener("unhandledrejection", onRejection);
     return () => {
       window.removeEventListener("error", onError);
+      window.removeEventListener("equus:app-error", onHandledError);
       window.removeEventListener("unhandledrejection", onRejection);
     };
   }, []);
