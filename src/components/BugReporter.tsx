@@ -45,7 +45,6 @@ function fingerprintFor(name: string, message: string, path: string) {
 export function BugReporter() {
   const [pending, setPending] = useState<PendingBug | null>(null);
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     const record = (name: string, messageValue: unknown, stack?: string | null) => {
@@ -80,7 +79,6 @@ export function BugReporter() {
           stack: stack ? stack.slice(0, 6000) : null,
           occurrenceCount,
         });
-        setSent(false);
       }
     };
 
@@ -125,7 +123,6 @@ export function BugReporter() {
     });
     setSending(false);
     if (!error) {
-      setSent(true);
       setPending(null);
     }
   };
