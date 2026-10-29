@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendReservationReceived } from "@/lib/emailjs";
@@ -73,6 +74,15 @@ const SERVICES = [
     duration: 45,
     minAge: 10,
     icon: Users,
+  },
+  {
+    value: "individuali",
+    title: "Individuali jojimo treniruotė",
+    description: "Asmeninė treniruotė su treneriu. Kaina – 50 €. Laikas nėra garantuojamas – administracija netrukus susisieks ir suderins Jums tinkamą laiką.",
+    price: 50,
+    duration: 45,
+    minAge: 10,
+    icon: UserRound,
   },
 ] as const;
 
@@ -205,7 +215,7 @@ export default function PublicRegistration() {
   );
 
   const stepOneValid = Boolean(
-    service && (service !== "sportine" || level),
+    service && (!["sportine", "individuali"].includes(service) || level),
   );
 
   const remaining = (slot: Slot) =>
@@ -219,7 +229,7 @@ export default function PublicRegistration() {
 
   const submit = async () => {
     if (!service || !validInfo || !rules || !privacyConsent) return;
-    if (service === "sportine" && !level) return;
+    if ((service === "sportine" || service === "individuali") && !level) return;
 
     if (!needsAdminSelectedTime && !selected) {
       setRegistrationError("Pasirinkite pageidaujamą laiką.");
@@ -238,7 +248,7 @@ export default function PublicRegistration() {
         _age: age,
         _emergency_contact: form.emergency.trim(),
         _service_type: service,
-        _experience_level: service === "sportine" ? level : "beginner",
+        _experience_level: service === "sportine" || service === "individuali" ? level : "beginner",
         _experience_notes: form.experienceNotes.trim() || null,
         _preferred_times: form.preferredTimes.trim() || null,
         _requested_date: selected?.slot_date ?? null,
@@ -550,7 +560,7 @@ export default function PublicRegistration() {
                           {item.description}
                         </p>
                         <p className="mt-2 text-sm font-medium text-gold">
-                          {item.value === "sportine" ? "40–45 €" : `${item.price} €`} · nuo {item.minAge} m.
+                          {item.value === "sportine" ? "Grupinė – 40 € · porinė – 45 €" : `${item.price} €`} · nuo {item.minAge} m.
                         </p>
                       </div>
                     </div>
@@ -559,7 +569,7 @@ export default function PublicRegistration() {
               })}
             </div>
 
-            {service === "sportine" && (
+            {(service === "sportine" || service === "individuali") && (
               <div className="mt-8">
                 <h3 className="font-display text-2xl">Jojimo patirtis</h3>
                 <div className="mt-4 grid gap-3">
@@ -706,8 +716,7 @@ export default function PublicRegistration() {
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Rodomi tik artimiausių 2 savaičių porinių ir grupinių
-                  treniruočių laikai. Individualios treniruotės čia
-                  nesiūlomos.
+                  treniruočių laikai.
                 </p>
                 <div className="mt-5">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -831,7 +840,7 @@ export default function PublicRegistration() {
               <p>
                 <b>Užsiėmimas:</b> {selectedService.title}
               </p>
-              {service === "sportine" && (
+              {(service === "sportine" || service === "individuali") && (
                 <p>
                   <b>Patirtis:</b>{" "}
                   {LEVELS.find((item) => item.value === level)?.title}
@@ -849,6 +858,11 @@ export default function PublicRegistration() {
               <p>
                 <b>Kaina:</b> {selectedPrice ?? (service === "sportine" ? "40–45" : selectedService.price)} €
               </p>
+              {service === "individuali" && (
+                <p className="text-sm text-muted-foreground">
+                  Pasirinktas laikas nėra garantuojamas. Administracija netrukus susisieks su Jumis ir suderins individualios treniruotės laiką.
+                </p>
+              )}
             </div>
 
             <div className="mt-5 rounded-2xl border border-gold/20 bg-gold/5 p-4">
