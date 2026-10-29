@@ -334,7 +334,7 @@ export function AdminPublicRequests() {
                 <p>
                   <b>Kaina:</b> {selected.price_eur ?? (selected.service_type === "individuali" ? 50 : selected.service_type === "mazylio_30" ? 20 : selected.service_type === "mazylio_45" ? 35 : "40 / 45 (pagal treniruotės tipą)")}
                 </p>
-                {selected.service_type === "sportine" && (
+                {["sportine", "individuali"].includes(selected.service_type) && (
                   <p>
                     <b>Patirtis:</b>{" "}
                     {EXPERIENCE_NAMES[selected.experience_level] ??
