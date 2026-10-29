@@ -27,10 +27,12 @@ import { AdminCancellationHistory } from "@/components/AdminCancellationHistory"
 import { UsersSection } from "@/components/admin/UsersSection";
 import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders";
 import { History } from "lucide-react";
+import { Bug } from "lucide-react";
 import { ImagePlus } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
 import { loadHorseNamesForBookings } from "@/lib/horseNames";
 import { SubscriptionPurchaseRequestsPanel } from "@/components/SubscriptionPurchaseRequests";
+import { AdminBugReports } from "@/components/AdminBugReports";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; trainer_name?: string | null; }
 interface CancelReq {
@@ -97,6 +99,7 @@ export default function Admin() {
     { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
     { value: "registrations", label: "Registracijos", icon: ClipboardPenLine, badge: alerts.registrations, badgeCls: "bg-gold text-background" },
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
+    { value: "bugReports", label: "Pranešimai apie klaidas", icon: Bug },
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
     { value: "cancelHistory", label: "Atšaukimų istorija", icon: History },
@@ -109,7 +112,7 @@ export default function Admin() {
     { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule"] },
     { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations"] },
     { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "vacations"] },
-    { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "settings"] },
+    { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "bugReports", "settings"] },
   ];
   const itemsOf = (g: (typeof navGroups)[number]) =>
     g.items.map((v) => navItems.find((n) => n.value === v)).filter(Boolean) as typeof navItems;
@@ -255,6 +258,7 @@ export default function Admin() {
             <TabsContent value="messages"><MessagesTab /></TabsContent>
             <TabsContent value="registrations"><AdminPublicRequests /></TabsContent>
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
+            <TabsContent value="bugReports"><AdminBugReports /></TabsContent>
             <TabsContent value="duplicates"><AdminDuplicateBookings /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
