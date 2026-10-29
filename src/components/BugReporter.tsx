@@ -32,7 +32,7 @@ function safeMessage(value: unknown) {
   const details = value && typeof value === "object" ? value as { message?: string; code?: string } : null;
   const base = value instanceof Error ? value.message : details?.message ?? String(value ?? "Nežinoma klaida");
   const raw = details?.code ? `${base} (kodas: ${details.code})` : base;
-  return raw.replace(/https?:\/\/[^\s)]+/g, "[URL]").slice(0, 1500);
+  return raw.replace(/https?:\/\/[^\s)]+/g, "[URL]").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[el. paštas]").slice(0, 1500);
 }
 
 function getErrorCode(message: string) {
@@ -78,7 +78,7 @@ export function BugReporter() {
           errorName: name.slice(0, 120),
           errorCode: getErrorCode(message),
           pagePath,
-          stack: stack ? stack.slice(0, 6000) : null,
+          stack: stack ? stack.replace(/https?:\/\/[^\s)]+/g, "[URL]").slice(0, 6000) : null,
           occurrenceCount,
         });
       }
