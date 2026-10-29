@@ -111,6 +111,7 @@ export default function PublicRegistration() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [emailFailed, setEmailFailed] = useState(false);
+  const [registrationError, setRegistrationError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [existing, setExisting] = useState<any>(null);
   const [clientNote, setClientNote] = useState("");
@@ -160,7 +161,7 @@ export default function PublicRegistration() {
       );
 
       if (error) {
-        toast.error("Nepavyko užkrauti laikų");
+        setRegistrationError(`Nepavyko užkrauti laikų. ${error.message}`);
         return;
       }
 
@@ -221,7 +222,7 @@ export default function PublicRegistration() {
     if (service === "sportine" && !level) return;
 
     if (!needsAdminSelectedTime && !selected) {
-      toast.error("Pasirinkite pageidaujamą laiką");
+      setRegistrationError("Pasirinkite pageidaujamą laiką.");
       return;
     }
 
@@ -249,7 +250,7 @@ export default function PublicRegistration() {
     setBusy(false);
 
     if (error) {
-      toast.error(error.message);
+      setRegistrationError(`Nepavyko pateikti registracijos. ${error.message}`);
       return;
     }
 
@@ -312,7 +313,7 @@ export default function PublicRegistration() {
       );
 
       if (error || data?.ok === false) {
-        toast.error(error?.message || "Nepavyko išsaugoti atsakymo");
+        window.alert(`Nepavyko išsaugoti atsakymo.\n\nKlaida: ${error?.message || "Nežinoma klaida"}`);
         return;
       }
 
@@ -475,6 +476,21 @@ export default function PublicRegistration() {
       </div>
     );
   }
+
+
+      <Dialog open={Boolean(registrationError)} onOpenChange={(open) => !open && setRegistrationError("")}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Nepavyko atlikti veiksmo</DialogTitle>
+            <DialogDescription className="whitespace-pre-wrap break-words">
+              {registrationError}
+            </DialogDescription>
+          </DialogHeader>
+          <Button variant="gold" className="w-full" onClick={() => setRegistrationError("")}>
+            Supratau
+          </Button>
+        </DialogContent>
+      </Dialog>
 
   return (
     <div className="container max-w-4xl py-10 sm:py-14">
