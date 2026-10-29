@@ -287,7 +287,7 @@ export default function PublicRegistration() {
         customer_link: publicToken
           ? `${location.origin}/registracija/${publicToken}`
           : location.origin,
-        status_message: "Gavome Jūsų registracijos užklausą.",
+        status_message: service === "individuali" ? "Individualios treniruotės laikas nėra garantuojamas. Administracija netrukus susisieks su Jumis ir suderins tinkamą laiką." : "Gavome Jūsų registracijos užklausą.",
       });
       setEmailFailed(false);
     } catch (error) {
@@ -463,6 +463,7 @@ export default function PublicRegistration() {
             ) : (
               <div className="space-y-3 text-sm leading-6 text-muted-foreground">
                 <p>Dėkojame! Gavome Jūsų registracijos užklausą.</p>
+                {service === "individuali" && <p>Individualios treniruotės laikas nėra garantuojamas. Administracija netrukus susisieks su Jumis ir suderins tinkamą laiką.</p>}
                 <p>Į Jūsų el. paštą išsiuntėme patvirtinimo laišką.</p>
                 <p>Jame rasite nuorodą, kurioje galėsite:</p>
                 <ul className="list-none space-y-1 pl-1">
@@ -696,12 +697,10 @@ export default function PublicRegistration() {
             {needsAdminSelectedTime ? (
               <div className="mt-5 rounded-2xl border border-gold/20 bg-gold/5 p-5">
                 <p className="font-medium">
-                  Tikslų laiką pasiūlys ir patvirtins administracija.
+                  {service === "individuali" ? "Individualios treniruotės laikas nėra garantuojamas." : "Tikslų laiką pasiūlys ir patvirtins administracija."}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Parašykite, kurios dienos ir valandos jums patogiausios.
-                  Registracija bus patvirtinta tik jums sutikus su pasiūlytu
-                  laiku.
+                  {service === "individuali" ? "Gavusi registracijos užklausą, Equus administracija netrukus susisieks su Jumis ir suderins individualios treniruotės laiką. Parašykite, kurios dienos ir valandos Jums patogiausios." : "Parašykite, kurios dienos ir valandos jums patogiausios. Registracija bus patvirtinta tik jums sutikus su pasiūlytu laiku."}
                 </p>
                 <Textarea
                   className="mt-4"
