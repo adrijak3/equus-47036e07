@@ -63,13 +63,13 @@ export function BugReporter() {
 
       const occurrenceCount = (Number(counts[fingerprint]) || 0) + 1;
       counts[fingerprint] = occurrenceCount;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(counts));
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(counts)); } catch { /* reporting still works without persistent counts */ }
 
       const lastPrompt = Number(prompted[fingerprint]) || 0;
       const now = Date.now();
       if (occurrenceCount >= 3 && now - lastPrompt > 24 * 60 * 60 * 1000) {
         prompted[fingerprint] = now;
-        localStorage.setItem(PROMPT_KEY, JSON.stringify(prompted));
+        try { localStorage.setItem(PROMPT_KEY, JSON.stringify(prompted)); } catch { /* ignore storage restrictions */ }
         setPending({
           fingerprint,
           message,
@@ -124,6 +124,9 @@ export function BugReporter() {
     setSending(false);
     if (!error) {
       setPending(null);
+      toast.success("Ačiū! Klaidos pranešimas išsiųstas administracijai.");
+    } else {
+      toast.error("Nepavyko išsiųsti pranešimo. Bandykite dar kartą.");
     }
   };
 
