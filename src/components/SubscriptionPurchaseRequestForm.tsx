@@ -84,7 +84,7 @@ function requestErrorMessage(message: string) {
     return "Negalite pasirinkti daugiau praeitų pamokų nei abonemente yra treniruočių...";
   }
   if (message.includes("PAST_LESSON_NOT_ELIGIBLE")) {
-    return "Viena iš pasirinktų pamokų nebepriklauso 2 sav. laikotarpiui, tas tas pamokas atskirai sudėsim;).";
+    return "Viena iš pasirinktų pamokų nebepriklauso 30 dienų laikotarpiui, tas tas pamokas atskirai sudėsim;).";
   }
   if (message.includes("INVALID_LESSON_COUNT")) {
     return "Pasirinkite treniruočių skaičių nuo 1 iki 12.";
@@ -378,7 +378,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               <div>
                 <h3 className="font-display text-xl text-gold">Praėjusios treniruotės</h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Galite pasirinkti įvykusias treniruotes iš paskutinių 14 kalendorinių dienų, įskaitant šiandieną. Jos bus įskaitytos kaip panaudotos tik patvirtinus mokėjimą:)
+                  Galite pasirinkti įvykusias treniruotes iš paskutinių 30 kalendorinių dienų, įskaitant šiandieną. Jos bus įskaitytos kaip panaudotos tik patvirtinus mokėjimą:)
                 </p>
               </div>
               <span className="rounded-full border border-gold/15 px-3 py-1 text-xs tabular-nums">
@@ -390,7 +390,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
               <p className="mt-3 text-sm text-muted-foreground">Kraunamas treniruočių sąrašas…</p>
             ) : pastLessons.length === 0 ? (
               <p className="mt-3 rounded-xl border border-gold/10 bg-background/30 p-4 text-sm text-muted-foreground">
-                Per paskutines 14 dienų įvykusių treniruočių nėra..
+                Per paskutines 30 dienų įvykusių tinkamų treniruočių nėra.
               </p>
             ) : (
               <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
