@@ -73,7 +73,7 @@ async function sendGmail(to: string, subject: string, html: string) {
     body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" }),
   });
   const tokenData = await tokenResponse.json();
-  if (!tokenResponse.ok || !tokenData.access_token) throw new Error("GOOGLE_TOKEN_REFRESH_FAILED");
+  if (!tokenResponse.ok || !tokenData.access_token) throw new Error(`GOOGLE_TOKEN_REFRESH_FAILED: HTTP ${tokenResponse.status} ${JSON.stringify(tokenData)}`);
 
   const from = Deno.env.get("GMAIL_FROM_EMAIL") || "Equus Jojimo Mokykla <equusjojimomokykla@gmail.com>";
   const mime = [
