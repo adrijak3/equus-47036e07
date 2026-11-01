@@ -239,3 +239,116 @@ FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE
 ON FUNCTION public.pending_subscription_can_cover_slot(uuid,date,time)
 TO authenticated, service_role;
+
+
+-- When staff attaches a completed one-off lesson to a subscription, convert
+-- its full separate-lesson fee into only the upgrade difference:
+-- group -> po2 / individual, or po2 -> individual.
+CREATE OR REPLACE FUNCTION public.admin_set_booking_subscription(
+  _booking_id uuid,
+  _subscription_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $admin_set_booking_subscription_history$
+DECLARE
+  old_sub uuid;
+  v_sub public.subscriptions%ROWTYPE;
+  v_package_type text;
+  v_package_unit_price numeric(10,2);
+  v_extra_fee numeric(10,2) := 0;
+BEGIN
+  IF auth.uid() IS NULL
+     OR NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'NOT_ALLOWED';
+  END IF;
+
+  SELECT subscription_id
+    INTO old_sub
+  FROM public.bookings
+  WHERE id = _booking_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'BOOKING_NOT_FOUND';
+  END IF;
+
+  IF _subscription_id IS NOT NULL THEN
+    SELECT *
+      INTO v_sub
+    FROM public.subscriptions
+    WHERE id = _subscription_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'SUBSCRIPTION_NOT_FOUND';
+    END IF;
+
+    v_package_type := COALESCE(
+      v_sub.package_type,
+      CASE WHEN v_sub.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+    );
+    v_package_unit_price := CASE
+      WHEN COALESCE(v_sub.lessons_total, 0) > 0
+        THEN v_sub.price / v_sub.lessons_total
+      ELSE 0
+    END;
+
+    SELECT CASE
+      WHEN (b.is_individual IS TRUE
+            OR public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 1)
+           AND v_package_type IN ('group', 'po2')
+        THEN GREATEST(50 - v_package_unit_price, 0)
+      WHEN public.equus_effective_slot_capacity(b.slot_date, b.slot_time) = 2
+           AND v_package_type = 'group'
+        THEN GREATEST(45 - v_package_unit_price, 0)
+      ELSE 0
+    END
+      INTO v_extra_fee
+    FROM public.bookings b
+    WHERE b.id = _booking_id;
+  END IF;
+
+  PERFORM set_config(
+    'equus.allow_subscription_financial_update',
+    'true',
+    true
+  );
+
+  UPDATE public.bookings
+  SET
+    subscription_id = _subscription_id,
+    counts_in_subscription = (_subscription_id IS NOT NULL),
+    extra_fee_eur = CASE
+      WHEN _subscription_id IS NOT NULL THEN COALESCE(v_extra_fee, 0)
+      ELSE extra_fee_eur
+    END,
+    updated_at = now()
+  WHERE id = _booking_id;
+
+  IF old_sub IS NOT NULL THEN
+    PERFORM public.reconcile_subscription_usage(old_sub);
+  END IF;
+
+  IF _subscription_id IS NOT NULL
+     AND _subscription_id IS DISTINCT FROM old_sub THEN
+    PERFORM public.reconcile_subscription_usage(_subscription_id);
+  END IF;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'previous_subscription', old_sub,
+    'subscription', _subscription_id,
+    'extra_fee_eur', CASE WHEN _subscription_id IS NOT NULL THEN COALESCE(v_extra_fee, 0) ELSE NULL END
+  );
+END;
+$admin_set_booking_subscription_history$;
+
+REVOKE ALL
+ON FUNCTION public.admin_set_booking_subscription(uuid,uuid)
+FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE
+ON FUNCTION public.admin_set_booking_subscription(uuid,uuid)
+TO authenticated, service_role;
