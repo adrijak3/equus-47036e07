@@ -2767,7 +2767,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 function SubDetailDialog({
   sub, userName, onClose, onChanged,
 }: { sub: Sub; userName: string; onClose: () => void; onChanged: () => void }) {
-  type HistoryRow = { id: string; slot_date: string; slot_time: string; status: string; counts_in_subscription: boolean; is_individual?: boolean; horse_name?: string | null };
+  type HistoryRow = { id: string; slot_date: string; slot_time: string; status: string; counts_in_subscription: boolean; is_individual?: boolean; extra_fee_eur?: number; extra_fee_paid?: boolean; horse_name?: string | null };
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveSub, setLiveSub] = useState<Sub>(sub);
@@ -2798,7 +2798,7 @@ function SubDetailDialog({
   // Match the database's booking_matches_subscription_package() rules so the
   // admin cannot attach a lesson that the usage counter will ignore.
   const bookingMatchesSubscription = (
-    booking: { slot_date: string; slot_time: string; counts_in_subscription?: boolean | null; is_individual?: boolean | null },
+    booking: { slot_date: string; slot_time: string; counts_in_subscription?: boolean | null; is_individual?: boolean | null; extra_fee_paid?: boolean | null },
     rules: any[] = slotRules,
     overrides: any[] = slotOverrides,
   ) => {
@@ -2806,8 +2806,13 @@ function SubDetailDialog({
     if (liveSub.start_pending) return false;
     const startDate = liveSub.start_from_date || liveSub.purchase_date;
     const endDate = liveSub.expires_at;
-    if (booking.counts_in_subscription === false) return false;
-    if (booking.slot_date < startDate || (endDate && booking.slot_date > endDate)) return false;
+    const historyStart = new Date(`${startDate}T12:00:00`);
+    historyStart.setDate(historyStart.getDate() - 30);
+    const earliestEligibleDate = formatDateISO(historyStart);
+    // A lesson explicitly marked as separately paid must stay outside the package.
+    // Non-counting lessons with no recorded separate payment can be assigned now.
+    if (booking.counts_in_subscription === false && booking.extra_fee_paid === true) return false;
+    if (booking.slot_date < earliestEligibleDate || (endDate && booking.slot_date > endDate)) return false;
 
     const override = overrides.find((item) =>
       item.slot_date === booking.slot_date
@@ -2832,7 +2837,10 @@ function SubDetailDialog({
 
     const packageType = liveSub.package_type
       ?? (liveSub.lesson_type === "sportine_po2" ? "po2" : "group");
-    return packageType === "individual" ? (booking.is_individual === true || capacity === 1) : packageType === "po2" ? capacity === 2 : packageType === "group" ? capacity >= 3 : false;
+    const isIndividual = booking.is_individual === true || capacity === 1;
+    return packageType === "individual"
+      ? isIndividual
+      : packageType === "group" || packageType === "po2";
   };
 
   const load = async () => {
@@ -2859,7 +2867,7 @@ function SubDetailDialog({
     const [freeResult, slotResult, overrideResult] = await Promise.all([
       supabase
         .from("bookings")
-        .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual")
+        .select("id, slot_date, slot_time, status, counts_in_subscription, is_individual, extra_fee_eur, extra_fee_paid")
         .eq("user_id", sub.user_id)
         .is("subscription_id", null)
         .eq("status", "completed")
@@ -3083,13 +3091,16 @@ function SubDetailDialog({
             const remaining = Math.max(0, Number(liveSub.lessons_total) - Number(liveSub.lessons_used ?? 0));
             if (remaining <= 0) { toast.error("Abonementas pilnas"); return; }
             const startDate = liveSub.start_from_date || liveSub.purchase_date;
+            const historyStart = new Date(`${startDate}T12:00:00`);
+            historyStart.setDate(historyStart.getDate() - 30);
+            const earliestEligibleDate = formatDateISO(historyStart);
             const { data: bks, error: bookingError } = await supabase
               .from("bookings")
-              .select("id, slot_date, slot_time, counts_in_subscription")
+              .select("id, slot_date, slot_time, counts_in_subscription, is_individual, extra_fee_eur, extra_fee_paid")
               .eq("user_id", sub.user_id)
               .eq("status", "completed")
               .is("subscription_id", null)
-              .gte("slot_date", startDate)
+              .gte("slot_date", earliestEligibleDate)
               .lte("slot_date", liveSub.expires_at)
               .order("slot_date", { ascending: true })
               .order("slot_time", { ascending: true })
@@ -3137,7 +3148,7 @@ function SubDetailDialog({
                 </ul>
               )}
             </div>
-            <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · pastarųjų 2 mėn. ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
+            <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · 30 d. iki pradžios ir abonemento galiojimo metu ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>Uždaryti</Button></DialogFooter>
       </DialogContent>
