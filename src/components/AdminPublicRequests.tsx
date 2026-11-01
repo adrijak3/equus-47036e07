@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, ExternalLink, Mail, MessageSquareText } from "lucide-react";
-import { sendReservationStatus } from "@/lib/emailjs";
+import { sendPublicRegistrationEmail } from "@/lib/public-registration-email";
 
 const SERVICE_NAMES: Record<string, string> = {
   mazylio_30: "Mažylio svajonė · 30 min.",
@@ -80,21 +80,9 @@ export function AdminPublicRequests() {
   ) => {
     if (!selected) return;
     try {
-      await sendReservationStatus({
-        customer_email: selected.email,
-        customer_name: `${selected.first_name} ${selected.last_name}`.trim(),
-        reservation_date: reservationDate ?? selected.proposed_date ?? selected.requested_date ?? "",
-        reservation_time: String(
-          reservationTime ?? selected.proposed_time ?? selected.requested_time ?? "",
-        ).slice(0, 5),
-        service_name: SERVICE_NAMES[selected.service_type] ?? "Sportinė jojimo treniruotė",
-        customer_link: selected.public_token
-          ? `${location.origin}/registracija/${selected.public_token}`
-          : location.origin,
-        status_message: statusMessage,
-      });
+      await sendPublicRegistrationEmail(selected.id, "status");
     } catch (error) {
-      console.error("EmailJS status send failed:", error);
+      console.error("Gmail registration status email failed:", error);
       toast.error("Būsena atnaujinta, bet el. laiško išsiųsti nepavyko.");
     }
   };
