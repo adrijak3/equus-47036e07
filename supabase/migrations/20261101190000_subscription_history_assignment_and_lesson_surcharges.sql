@@ -203,23 +203,21 @@ BEGIN
       AND s.lessons_used < s.lessons_total
       AND public.subscription_committed_lessons(s.id) < s.lessons_total
       AND (
-        (v_package_type = 'group' AND COALESCE(
+        COALESCE(
           s.package_type,
           CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-        ) = 'group')
-        OR
-        (v_package_type = 'individual' AND COALESCE(s.package_type, CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END) = 'individual')
-        OR
-        (v_package_type = 'po2' AND COALESCE(
-          s.package_type,
-          CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
-        ) IN ('group', 'po2'))
+        ) IN ('group', 'po2')
+        OR (
+          COALESCE(
+            s.package_type,
+            CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
+          ) = 'individual'
+          AND v_package_type = 'individual'
+        )
       )
   );
 END;
 $pending_usable_with_request_selections$;
-
-
 
 REVOKE ALL
 ON FUNCTION public.pending_subscription_can_cover_slot(uuid,date,time)
