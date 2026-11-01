@@ -27,7 +27,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { sendReservationReceived } from "@/lib/emailjs";
+import { sendPublicRegistrationEmail } from "@/lib/public-registration-email";
 import { reportHandledError } from "@/components/BugReporter";
 
 const LEVELS = [
@@ -279,23 +279,11 @@ export default function PublicRegistration() {
 
     // Email delivery must never fail or undo the saved registration.
     try {
-      await sendReservationReceived({
-        customer_email: form.email.trim(),
-        customer_name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
-        reservation_date: selected?.slot_date ?? "",
-        reservation_time: selected?.slot_time
-          ? String(selected.slot_time).slice(0, 5)
-          : "",
-        service_name: selectedService?.title ?? "",
-        customer_link: publicToken
-          ? `${location.origin}/registracija/${publicToken}`
-          : location.origin,
-        status_message: service === "individuali" ? "Individualios treniruotės laikas nėra garantuojamas. Administracija netrukus susisieks su Jumis ir suderins tinkamą laiką." : "Gavome Jūsų registracijos užklausą.",
-      });
+      await sendPublicRegistrationEmail(result.id, "received", publicToken);
       setEmailFailed(false);
     } catch (error) {
       reportHandledError(error, "Registracijos patvirtinimo el. laiško siuntimas");
-      console.error("EmailJS send failed:", error);
+      console.error("Gmail registration email failed:", error);
       setEmailFailed(true);
     }
 
