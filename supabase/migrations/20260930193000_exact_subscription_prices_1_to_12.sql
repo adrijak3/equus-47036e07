@@ -24,7 +24,7 @@ VALUES
 
   (3,  'group', 'school', 112.00, true),
   (3,  'group', 'own',    105.00, true),
-  (3,  'po2',   'school', 125.00, true),
+  (3,  'po2',   'school', 127.00, true),
   (3,  'po2',   'own',    120.00, true),
 
   (4,  'group', 'school', 150.00, true),
@@ -34,7 +34,7 @@ VALUES
 
   (5,  'group', 'school', 185.00, true),
   (5,  'group', 'own',    175.00, true),
-  (5,  'po2',   'school', 210.00, true),
+  (5,  'po2',   'school', 212.00, true),
   (5,  'po2',   'own',    200.00, true),
 
   (6,  'group', 'school', 225.00, true),
@@ -44,7 +44,7 @@ VALUES
 
   (7,  'group', 'school', 260.00, true),
   (7,  'group', 'own',    245.00, true),
-  (7,  'po2',   'school', 295.00, true),
+  (7,  'po2',   'school', 297.00, true),
   (7,  'po2',   'own',    280.00, true),
 
   (8,  'group', 'school', 280.00, true),
@@ -55,7 +55,7 @@ VALUES
   (9,  'group', 'school', 315.00, true),
   (9,  'group', 'own',    290.00, true),
   (9,  'po2',   'school', 360.00, true),
-  (9,  'po2',   'own',    335.00, true),
+  (9,  'po2',   'own',    337.00, true),
 
   (10, 'group', 'school', 350.00, true),
   (10, 'group', 'own',    325.00, true),
@@ -63,9 +63,9 @@ VALUES
   (10, 'po2',   'own',    375.00, true),
 
   (11, 'group', 'school', 385.00, true),
-  (11, 'group', 'own',    355.00, true),
+  (11, 'group', 'own',    357.00, true),
   (11, 'po2',   'school', 440.00, true),
-  (11, 'po2',   'own',    410.00, true),
+  (11, 'po2',   'own',    412.00, true),
 
   (12, 'group', 'school', 400.00, true),
   (12, 'group', 'own',    360.00, true),
