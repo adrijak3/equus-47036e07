@@ -36,6 +36,13 @@ BEGIN
         s.package_type,
         CASE WHEN s.lesson_type = 'sportine_po2' THEN 'po2' ELSE 'group' END
       )
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.subscription_purchase_request_lessons rl
+      JOIN public.subscription_purchase_requests r ON r.id = rl.request_id
+      WHERE rl.booking_id = b.id
+        AND r.status = 'approved'
     );
 
   -- Keep supporting older installations where the optional notes table was
@@ -101,6 +108,13 @@ AS $committed_with_request_selections$
             ) IS TRUE
           )
           AND b.slot_date BETWEEN (COALESCE(s.start_from_date, s.purchase_date) - 30) AND s.expires_at
+          AND NOT EXISTS (
+            SELECT 1
+            FROM public.subscription_purchase_request_lessons rl
+            JOIN public.subscription_purchase_requests r ON r.id = rl.request_id
+            WHERE rl.booking_id = b.id
+              AND r.status = 'approved'
+          )
       )::integer
       FROM public.bookings b
       JOIN public.subscriptions s ON s.id = _subscription_id
