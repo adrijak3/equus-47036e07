@@ -142,19 +142,16 @@ export const SINGLE_LESSON_PRICE = {
 export function calculateSubPriceByType(lessons: number, type: LessonType): number {
   if (lessons <= 0) return 0;
 
-  const tiers: Record<string, Record<number, number>> = {
-    sportine: { 4: 150, 8: 280, 12: 400 },
-    sportine_po2: { 4: 170, 8: 320, 12: 480 },
-    nuosavu_zirgu: { 4: 140, 8: 260, 12: 360 },
-    nesportine: { 4: 140, 8: 260, 12: 360 },
+  const prices: Record<string, number[]> = {
+    sportine: [40, 75, 112, 150, 185, 225, 260, 280, 315, 350, 385, 400],
+    sportine_po2: [45, 85, 127, 170, 212, 255, 297, 320, 360, 400, 440, 480],
+    nuosavu_zirgu: [40, 70, 105, 140, 175, 210, 245, 260, 290, 325, 357, 360],
+    nesportine: [40, 70, 105, 140, 175, 210, 245, 260, 290, 325, 357, 360],
   };
 
-  const tierPrices = tiers[type] ?? tiers.sportine;
-  const tier = lessons <= 7 ? 4 : lessons <= 11 ? 8 : 12;
-  const tierPrice = tierPrices[tier];
-  return Math.round((lessons * tierPrice / tier) * 100) / 100;
+  const list = prices[type] ?? prices.sportine;
+  return list[lessons - 1] ?? 0;
 }
-
 export function slotDateTime(slot_date: string, slot_time: string): Date {
   return new Date(`${slot_date}T${slot_time.length === 5 ? slot_time + ":00" : slot_time}`);
 }
