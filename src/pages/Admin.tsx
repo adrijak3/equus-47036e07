@@ -2853,6 +2853,10 @@ function SubDetailDialog({
       new Date(today.getFullYear(), today.getMonth() - 2, today.getDate()),
     );
     const historyUntil = formatDateISO(today);
+    const subscriptionStart = liveSub.start_from_date || liveSub.purchase_date;
+    const eligibleHistoryDate = new Date(`${subscriptionStart}T12:00:00`);
+    eligibleHistoryDate.setDate(eligibleHistoryDate.getDate() - 30);
+    const eligibleHistoryFrom = formatDateISO(eligibleHistoryDate);
 
     const { data } = await supabase
       .from("bookings")
@@ -2871,7 +2875,7 @@ function SubDetailDialog({
         .eq("user_id", sub.user_id)
         .is("subscription_id", null)
         .eq("status", "completed")
-        .gte("slot_date", historyFrom)
+        .gte("slot_date", eligibleHistoryFrom)
         .lte("slot_date", historyUntil)
         .order("slot_date", { ascending: true })
         .order("slot_time", { ascending: true }),
