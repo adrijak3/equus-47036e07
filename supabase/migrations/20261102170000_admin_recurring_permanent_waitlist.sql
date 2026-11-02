@@ -170,6 +170,29 @@ BEGIN
           updated_at = now()
       WHERE id = v_next.id;
 
+      PERFORM public.queue_equus_notification(
+        v_next.user_id,
+        'PERMANENT_SLOT_ASSIGNED',
+        'Jums priskirtas nuolatinis laikas 🐴',
+        'Your recurring lesson time has been assigned 🐴',
+        format('Jums priskirtas nuolatinis laikas: %s, %s. Būsimos pamokos įtrauktos į grafiką.',
+          CASE v_next.day_of_week
+            WHEN 1 THEN 'pirmadieniais' WHEN 2 THEN 'antradieniais'
+            WHEN 3 THEN 'trečiadieniais' WHEN 4 THEN 'ketvirtadieniais'
+            WHEN 5 THEN 'penktadieniais' WHEN 6 THEN 'šeštadieniais'
+            ELSE 'sekmadieniais' END,
+          to_char(v_next.slot_time, 'HH24:MI')),
+        format('Your recurring lesson time is %s at %s. Future lessons have been added to your schedule.',
+          CASE v_next.day_of_week
+            WHEN 1 THEN 'Mondays' WHEN 2 THEN 'Tuesdays'
+            WHEN 3 THEN 'Wednesdays' WHEN 4 THEN 'Thursdays'
+            WHEN 5 THEN 'Fridays' WHEN 6 THEN 'Saturdays'
+            ELSE 'Sundays' END,
+          to_char(v_next.slot_time, 'HH24:MI')),
+        '/grafikas',
+        format('permanent-slot-assigned:%s', v_next.id)
+      );
+
       PERFORM public.materialize_permanent_bookings(v_today + 1, v_today + 120);
     END IF;
   END IF;
