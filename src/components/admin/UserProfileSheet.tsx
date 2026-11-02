@@ -268,25 +268,13 @@ Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negr�
     if (!confirm(`Pašalinti nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?
 
 Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
-    const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
-    if (e1) { toast.error(e1.message); return; }
-    const todayISO = formatDateISO(new Date());
-    const { data: future } = await supabase
-      .from("bookings")
-      .select("id, slot_date")
-      .eq("user_id", row.user_id)
-      .eq("slot_time", row.slot_time)
-      .eq("status", "active")
-      .gte("slot_date", todayISO);
-    const ids = (future ?? [])
-      .filter((b: any) => {
-        const d = new Date(b.slot_date + "T00:00:00");
-        const dow = d.getDay() === 0 ? 7 : d.getDay();
-        return dow === row.day_of_week;
-      })
-      .map((b: any) => b.id);
-    if (ids.length > 0) await supabase.from("bookings").update({ status: "cancelled" }).in("id", ids);
-    toast.success(`Pašalinta. Atšaukta ${ids.length} būsimų pamokų.`);
+    const { data, error } = await (supabase as any).rpc("admin_remove_permanent_slot_and_promote", {
+      _permanent_slot_id: row.id,
+    });
+    if (error || !data?.ok) { toast.error(data?.message ?? error?.message ?? "Nepavyko pašalinti"); return; }
+    toast.success(data.promoted_user_id
+      ? `Pašalinta. Vietą automatiškai gavo kitas papildomų nuolatinių laukęs raitelis. Atšaukta ${data.cancelled_bookings ?? 0} būsimų pamokų.`
+      : `Pašalinta. Atšaukta ${data.cancelled_bookings ?? 0} būsimų pamokų.`);
     notifyAndReload();
   };
 
