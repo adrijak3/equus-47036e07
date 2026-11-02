@@ -3548,6 +3548,10 @@ function PermanentSlotsAdminTab() {
   const [timeSlots, setTimeSlots] = useState<TimeSlotLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<any[]>([]);
+  const [waitlist, setWaitlist] = useState<any[]>([]);
+  const [waitlistUser, setWaitlistUser] = useState("");
+  const [waitlistDay, setWaitlistDay] = useState(1);
+  const [waitlistTime, setWaitlistTime] = useState("");
 
   // Add dialog
   const [open, setOpen] = useState(false);
@@ -3560,11 +3564,12 @@ function PermanentSlotsAdminTab() {
 
   const load = async () => {
     setLoading(true);
-    const [r, p, t, rq] = await Promise.all([
+    const [r, p, t, rq, wq] = await Promise.all([
       supabase.from("permanent_slots").select("*").order("day_of_week").order("slot_time"),
       supabase.from("profiles").select("id, full_name, phone").order("full_name"),
-      supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
+      supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).is("one_off_date", null).order("day_of_week").order("slot_time"),
       (supabase as any).from("permanent_slot_requests").select("*").eq("status", "pending").order("created_at"),
+      (supabase as any).from("permanent_slot_waitlist").select("*").eq("status", "pending").order("created_at"),
     ]);
     const profs = p.data ?? [];
     const nameMap = Object.fromEntries(profs.map((x) => [x.id, x.full_name]));
@@ -3572,6 +3577,7 @@ function PermanentSlotsAdminTab() {
     setProfiles(profs);
     setTimeSlots(t.data ?? []);
     setRequests((rq.data ?? []).map((x: any) => ({ ...x, profile_name: nameMap[x.user_id] ?? "—" })));
+    setWaitlist((wq.data ?? []).map((x: any) => ({ ...x, profile_name: nameMap[x.user_id] ?? "—" })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -3580,30 +3586,13 @@ function PermanentSlotsAdminTab() {
     if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?
 
 Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos kartotis.`)) return;
-    // 1) Delete the recurring rule
-    const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
-    if (e1) { toast.error(e1.message); return; }
-    // 2) Cancel all future active bookings for this user at this weekday/time
-    const todayISO = new Date().toISOString().slice(0, 10);
-    const { data: future } = await supabase
-      .from("bookings")
-      .select("id, slot_date")
-      .eq("user_id", row.user_id)
-      .eq("slot_time", row.slot_time)
-      .eq("status", "active")
-      .gte("slot_date", todayISO);
-    const ids = (future ?? [])
-      .filter((b) => {
-        // map Postgres dow (0=Sun..6=Sat) → app dow (1=Mon..7=Sun)
-        const d = new Date(b.slot_date + "T00:00:00");
-        const dow = d.getDay() === 0 ? 7 : d.getDay();
-        return dow === row.day_of_week;
-      })
-      .map((b) => b.id);
-    if (ids.length > 0) {
-      await supabase.from("bookings").update({ status: "cancelled" }).in("id", ids);
-    }
-    toast.success(`Pašalinta. Atšaukta ${ids.length} būsimų pamokų.`);
+    const { data, error } = await (supabase as any).rpc("admin_remove_permanent_slot_and_promote", {
+      _permanent_slot_id: row.id,
+    });
+    if (error || !data?.ok) { toast.error(data?.message ?? error?.message ?? "Nepavyko pašalinti"); return; }
+    toast.success(data.promoted_user_id
+      ? `Pašalinta. Atlaisvinta vieta automatiškai pasiūlyta kitam laukiančiam raiteliui. Atšaukta ${data.cancelled_bookings ?? 0} būsimų pamokų.`
+      : `Pašalinta. Atšaukta ${data.cancelled_bookings ?? 0} būsimų pamokų.`);
     load();
   };
 
@@ -3639,6 +3628,25 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos ka
     load();
   };
 
+  const addWaitlist = async () => {
+    if (!waitlistUser || !waitlistTime) { toast.error("Pasirinkite vartotoją, dieną ir laiką"); return; }
+    const { data, error } = await (supabase as any).rpc("admin_add_permanent_waitlist", {
+      _user_id: waitlistUser, _day_of_week: waitlistDay, _slot_time: waitlistTime,
+    });
+    if (error || !data?.ok) { toast.error(data?.message ?? error?.message ?? "Nepavyko pridėti"); return; }
+    toast.success("Pridėta į papildomų nuolatinių laukiamąjį.");
+    setWaitlistUser(""); setWaitlistTime("");
+    load();
+  };
+
+  const removeWaitlist = async (id: string) => {
+    const { data, error } = await (supabase as any).rpc("admin_remove_permanent_waitlist_entry", { _entry_id: id });
+    if (error || !data?.ok) { toast.error(data?.message ?? error?.message ?? "Nepavyko pašalinti"); return; }
+    toast.success("Pašalinta iš laukiamojo.");
+    load();
+  };
+
+  const slotsForWaitlistDay = timeSlots.filter((s) => s.day_of_week === waitlistDay);
   const slotsForSelDay = timeSlots.filter((s) => s.day_of_week === selDay);
 
   const byDay: Record<number, Record<string, PermSlotRow[]>> = {};
@@ -3660,6 +3668,33 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos ka
           ))}</div>
         </div>
       )}
+      <div className="mb-5 rounded-lg border border-gold/20 bg-gold/5 p-4 space-y-3">
+        <div>
+          <h3 className="font-display text-xl text-gradient-gold">Papildomi nuolatiniai</h3>
+          <p className="text-xs text-muted-foreground">Atskiras, nesibaigiantis laukiamasis konkrečiai savaitės dienai ir laikui. Atlaisvinus nuolatinę vietą, pirmas eilėje automatiškai perkeliamas į nuolatinius.</p>
+        </div>
+        <div className="grid sm:grid-cols-4 gap-2">
+          <select value={waitlistUser} onChange={(e) => setWaitlistUser(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <option value="">— vartotojas —</option>
+            {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+          </select>
+          <select value={waitlistDay} onChange={(e) => { setWaitlistDay(Number(e.target.value)); setWaitlistTime(""); }} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
+          </select>
+          <select value={waitlistTime} onChange={(e) => setWaitlistTime(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <option value="">— laikas —</option>
+            {slotsForWaitlistDay.map((slot) => <option key={slot.id} value={slot.slot_time}>{formatTime(slot.slot_time)}</option>)}
+          </select>
+          <Button variant="gold" onClick={addWaitlist} disabled={!waitlistUser || !waitlistTime}><Plus className="w-4 h-4"/> Įtraukti</Button>
+        </div>
+        {waitlist.length ? <div className="space-y-2">{waitlist.map((entry, index) => (
+          <div key={entry.id} className="flex items-center justify-between gap-3 rounded-md border border-gold/10 bg-background/40 px-3 py-2 text-sm">
+            <span><span className="text-muted-foreground mr-2">{index + 1}.</span><strong>{entry.profile_name}</strong><span className="text-muted-foreground"> · {WEEKDAYS_LT[entry.day_of_week - 1]} · {formatTime(entry.slot_time)}</span></span>
+            <button onClick={() => removeWaitlist(entry.id)} className="text-muted-foreground hover:text-destructive" title="Pašalinti iš laukiamojo"><Trash2 className="w-4 h-4"/></button>
+          </div>
+        ))}</div> : <p className="text-sm text-muted-foreground">Papildomų nuolatinių laukiančiųjų nėra.</p>}
+      </div>
+
       <div className="flex justify-end mb-4">
         <Button variant="gold" onClick={() => setOpen(true)}>
           <Plus className="w-4 h-4" /> Pridėti nuolatinį laiką
