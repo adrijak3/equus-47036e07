@@ -438,13 +438,7 @@ export default function Paskyra() {
         {/* PERMANENT SLOTS */}
         <TabsContent value="permanent" className="space-y-4">
           <UserDuplicateBookings userId={acting} />
-          <PermanentSlotsSection
-            permanents={permanents}
-            availableSlots={availableSlots}
-            requests={permanentRequests}
-            onAdd={addPermanent}
-            onRemove={removePermanent}
-          />
+          <ReadOnlyRecurringCard permanents={permanents} />
         </TabsContent>
 
         {/* VACATIONS */}
