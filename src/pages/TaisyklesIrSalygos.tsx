@@ -21,7 +21,7 @@ export default function TaisyklesIrSalygos() {
 
     <Section icon={Building2} title="Paslaugų teikėjas ir kontaktai">
       <p>Paslaugas teikia <strong>VšĮ Jojimo mokykla „Equus“</strong>, įmonės kodas 302754824, Pakamšės g. 7, Daučionys, 14245 Vilniaus r. sav.</p>
-      <p>Dėl registracijos, atsiskaitymo ar taisyklių kreipkitės telefonu <a href="tel:+37062876090" className="text-gold underline">+370 628 76 090</a> arba el. paštu <a href="mailto:jojimomokykla@gmail.com" className="text-gold underline">jojimomokykla@gmail.com</a>.</p>
+      <p>Dėl registracijos, atsiskaitymo ar taisyklių kreipkitės telefonu <a href="tel:+37065822872" className="text-gold underline">+370 658 22872</a> arba el. paštu <a href="mailto:jojimomokykla@gmail.com" className="text-gold underline">jojimomokykla@gmail.com</a>.</p>
     </Section>
 
     <Section icon={FileText} title="Registracija ir paslaugų sutartis">
