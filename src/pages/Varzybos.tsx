@@ -233,22 +233,26 @@ export default function Varzybos() {
                   )}
                 </div>
 
-                {user && canJoin && (
-                  <div className="space-y-3 border-b border-gold/15 bg-background/20 p-5 sm:px-8">
-                    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><UserRound className="h-4 w-4 text-gold" /> {editingThisEvent ? "Redaguoti savo pasirinkimą" : "Pridėti žirgą į norinčiųjų sąrašą"}</div>{editingThisEvent && <button type="button" className="text-xs text-muted-foreground underline" onClick={() => { setEditingEntry(null); setChosenHorses(v=>({...v,[event.id]:""})); setHeights(v=>({...v,[event.id]:""})); }}>Atšaukti redagavimą</button>}</div>
+                {user && ownEntries.length > 0 && (
+                  <div className="border-b border-border/60 px-5 py-4 sm:px-8">
                     {ownEntries.length > 0 && <div className="space-y-2 rounded-xl border border-border/60 bg-background/25 p-3">
                       <p className="text-xs font-medium text-muted-foreground">Mano pasirinkimai · {ownEntries.length}</p>
                       {ownEntries.map(entry => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <span className="text-foreground">{entry.horse_name} <span className="text-muted-foreground">· {formatJumpHeights(entry.height_text)}</span></span>
-                        <div className="flex items-center gap-3 text-xs"><button type="button" onClick={() => editOwnEntry(entry)} className="text-gold hover:underline">Redaguoti</button><button type="button" onClick={() => removeOwnEntry(entry)} className="text-destructive hover:underline">Ištrinti</button></div>
+                        <div className="flex items-center gap-3 text-xs"><button type="button" onClick={() => editOwnEntry(entry)} disabled={!canJoin} className="text-gold hover:underline disabled:opacity-30">Redaguoti</button><button type="button" onClick={() => removeOwnEntry(entry)} className="text-destructive hover:underline">Ištrinti</button></div>
                       </div>)}
                     </div>}
+                  </div>
+                )}
+                {user && canJoin && (
+                  <div className="space-y-3 border-b border-gold/15 bg-background/20 p-5 sm:px-8">
+                    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><UserRound className="h-4 w-4 text-gold" /> {editingThisEvent ? "Redaguoti savo pasirinkimą" : "Pridėti žirgą į norinčiųjų sąrašą"}</div>{editingThisEvent && <button type="button" className="text-xs text-muted-foreground underline" onClick={() => { setEditingEntry(null); setChosenHorses(v=>({...v,[event.id]:""})); setHeights(v=>({...v,[event.id]:""})); }}>Atšaukti redagavimą</button>}</div>
                     <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                       <div className="space-y-1.5">
                         <Label>Žirgas</Label>
                         <select value={chosenHorses[event.id] ?? ""} onChange={e => setChosenHorses(s => ({ ...s, [event.id]: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground">
                           <option value="">Pasirinkite žirgą</option>
-                          {horses.filter(h => h.active || h.id === editingEntry?.horse_id).map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                          {horses.filter(h => h.active || h.id === editingEntry?.horse_id).map(h => <option key={h.id} value={h.id} disabled={ownEntries.some(e => e.horse_id === h.id && e.id !== editingEntry?.id)}>{h.name}{ownEntries.some(e => e.horse_id === h.id && e.id !== editingEntry?.id) ? " (jau pasirinktas)" : ""}</option>)}
                         </select>
                       </div>
                       <div className="space-y-1.5"><Label>Norimas šokti aukštis</Label><Input value={heights[event.id] ?? ""} maxLength={80} onChange={e => setHeights(s => ({ ...s, [event.id]: e.target.value }))} placeholder="Pvz. 60–80 cm" /></div>
