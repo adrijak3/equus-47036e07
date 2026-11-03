@@ -994,7 +994,7 @@ export default function Grafikas() {
 
     const state = trainerGroupState(
       levels,
-      Math.min(4, cap),
+      cap,
     );
 
     return {
@@ -2553,13 +2553,11 @@ export default function Grafikas() {
             (p) => p.id === userId,
           )?.riding_level,
         ),
-        Math.min(
-          4,
-          getCapacity(
-            date,
-            time,
-            slot.max_capacity,
-          ),
+        getCapacity(
+          date,
+          time,
+          slot.max_capacity,
+          slot.trainer_name,
         ),
       );
 
