@@ -157,8 +157,8 @@ export default function Varzybos() {
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-gold/80"><Trophy className="h-4 w-4" /> Equus renginiai</div>
         <h1 className="font-display text-4xl text-gradient-gold sm:text-5xl">Varžybos</h1>
         <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-          Artėjančios varžybos ir norinčių dalyvauti sąrašas. Pasirinkite žirgą ir įrašykite aukštį, kurį norėtumėte šokti.
-          Dalyvių vardai ir pasirinkimai šiame puslapyje matomi visiems.
+          Artėjančios varžybos ir norinčių dalyvauti sąrašas bus matomi čia.
+          <span className="mt-3 block">Norint patekti į norinčiųjų sąrašą - pasirinkite žirgą, su kuriuo norite dalyvauti bei įrašykite aukštį(-ius), kurį(-iuos) norėtumėte šokti. Vardai ir pasirinkimai šiame puslapyje matomi visiems.</span>
         </p>
         <div className="gold-divider max-w-[150px]" />
       </header>
@@ -246,7 +246,7 @@ export default function Varzybos() {
                 )}
                 {user && canJoin && (
                   <div className="space-y-3 border-b border-gold/15 bg-background/20 p-5 sm:px-8">
-                    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><UserRound className="h-4 w-4 text-gold" /> {editingThisEvent ? "Redaguoti savo pasirinkimą" : "Pridėti žirgą į norinčiųjų sąrašą"}</div>{editingThisEvent && <button type="button" className="text-xs text-muted-foreground underline" onClick={() => { setEditingEntry(null); setChosenHorses(v=>({...v,[event.id]:""})); setHeights(v=>({...v,[event.id]:""})); }}>Atšaukti redagavimą</button>}</div>
+                    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><UserRound className="h-4 w-4 text-gold" /> {editingThisEvent ? "Redaguoti savo pasirinkimą" : "Pasirinkite žirgą, su kuriuo norite startuoti"}</div>{editingThisEvent && <button type="button" className="text-xs text-muted-foreground underline" onClick={() => { setEditingEntry(null); setChosenHorses(v=>({...v,[event.id]:""})); setHeights(v=>({...v,[event.id]:""})); }}>Atšaukti redagavimą</button>}</div>
                     <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                       <div className="space-y-1.5">
                         <Label>Žirgas</Label>
@@ -259,14 +259,14 @@ export default function Varzybos() {
                       <Button variant="gold" disabled={pending === event.id} onClick={() => join(event)}>{editingThisEvent ? "Išsaugoti pakeitimus" : "Pridėti žirgą"}</Button>
                     </div>
 
-                    <p className="text-xs text-muted-foreground">Tai norinčiųjų sąrašas, ne oficiali registracija į varžybas. Jūsų vardas, žirgas ir aukštis bus matomi visiems.</p>
+                    <p className="text-xs text-muted-foreground">Svarbu! Jūsų norimi šokti aukščiai nėra baigtiniai - galutinį sąrašą ir jūsų šokamus aukščius patvirtina Laura</p>
                   </div>
                 )}
                 {!user && <div className="border-b border-gold/15 px-5 py-4 text-sm text-muted-foreground sm:px-8">Norite įtraukti save? <Link to="/auth" className="font-semibold text-gold underline">Prisijunkite</Link>.</div>}
                 {!canJoin && <div className="border-b border-gold/15 px-5 py-3 text-xs text-muted-foreground sm:px-8">Norinčiųjų registracija uždaryta.</div>}
 
                 <div className="space-y-4 p-5 sm:p-8">
-                  <div className="flex items-center gap-2"><Trophy className="h-4 w-4 text-gold" /><h3 className="font-display text-xl text-foreground">Varžybų norintys</h3></div>
+                  <div className="flex items-center gap-2"><Trophy className="h-4 w-4 text-gold" /><h3 className="font-display text-xl text-foreground">Norinčiųjų į varžybas sąrašas</h3></div>
                   {sortedGroups.length === 0 ? <p className="py-5 text-center text-sm text-muted-foreground">Dar niekas neužsiregistravo į norinčiųjų sąrašą.</p> : sortedGroups.map(([horseId, group], index) => (
                     <div key={horseId}>
                       {index > 0 && <div className="my-6 flex items-center gap-3 text-gold/55"><div className="h-px flex-1 bg-gold/20"/><span className="text-xs tracking-[0.4em]">✦ · ✦</span><div className="h-px flex-1 bg-gold/20"/></div>}
