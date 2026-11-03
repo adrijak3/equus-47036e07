@@ -839,16 +839,32 @@ export default function Grafikas() {
     date: Date,
     time: string,
     baseCapacity: number,
+    trainerName?: string | null,
   ) => {
     const dateISO = formatDateISO(date);
 
     const o = overrides.find(
       (x) =>
         x.slot_date === dateISO &&
-        x.slot_time === time,
+        x.slot_time.slice(0, 5) === time.slice(0, 5),
     );
+    if (o) return o.max_capacity;
 
-    return o ? o.max_capacity : baseCapacity;
+    // Prefer the current date's explicit lesson over the recurring template.
+    // If duplicate templates exist, do not accidentally display the largest
+    // capacity: that can offer a fifth place when the intended limit is four.
+    const matching = slots.filter(
+      (s) =>
+        s.slot_time.slice(0, 5) === time.slice(0, 5) &&
+        (trainerName === undefined || s.trainer_name === trainerName) &&
+        (s.one_off_date === dateISO ||
+          (!s.one_off_date && s.day_of_week === dbDayOfWeek(date))),
+    );
+    const oneOff = matching.filter((s) => s.one_off_date === dateISO);
+    const applicable = oneOff.length ? oneOff : matching;
+    return applicable.length
+      ? Math.min(...applicable.map((s) => s.max_capacity))
+      : baseCapacity;
   };
 
   const riderLevel = (
@@ -947,6 +963,7 @@ export default function Grafikas() {
       date,
       time,
       slot.max_capacity,
+      slot.trainer_name,
     );
 
     const isJolita =
@@ -1714,6 +1731,20 @@ export default function Grafikas() {
         result.message ??
           "Nepavyko atšaukti treniruotės.",
       );
+      await loadData();
+      return;
+    }
+
+    // Verify the RPC actually changed or deleted the booking before
+    // displaying success (RLS can hide cancelled rows after the update).
+    const { data: persisted, error: verifyError } = await supabase
+      .from("bookings")
+      .select("status")
+      .eq("id", booking.id)
+      .maybeSingle();
+
+    if (verifyError || persisted?.status === "active" || persisted?.status === "pending_cancel") {
+      toast.error("Atšaukimas nepatvirtintas. Patikrinkite registraciją.");
       await loadData();
       return;
     }
