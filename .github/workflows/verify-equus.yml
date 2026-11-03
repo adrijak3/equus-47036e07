@@ -1,0 +1,29 @@
+name: Verify Equus frontend
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'vite.config.*'
+      - 'tsconfig*.json'
+      - '.github/workflows/verify-equus.yml'
+  push:
+    branches:
+      - 'fix/equus-security-health-competition-ui-20261103'
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Compile frontend
+        run: npm run build
+      - name: Check TypeScript
+        run: npx tsc -p tsconfig.app.json --noEmit
