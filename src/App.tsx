@@ -44,6 +44,7 @@ const SubscriptionPurchaseRequestsPage = lazy(() => import("./pages/Subscription
 const SubscriptionPurchaseRequestQr = lazy(() => import("./pages/SubscriptionPurchaseRequestQr"));
 const SlapukuPolitika = lazy(() => import("./pages/SlapukuPolitika"));
 const HalfAdminSubscriptions = lazy(() => import("./pages/HalfAdminSubscriptions"));
+const Varzybos = lazy(() => import("./pages/Varzybos"));
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
+                  <Route path="/varzybos" element={<Varzybos />} />
                   <Route path="/kainos" element={<Kainos />} />
                   <Route path="/apie-mus" element={<RequireAuth adminOnly><ApieMus /></RequireAuth>} />
                   <Route

@@ -29,6 +29,7 @@ import {
   Images,
   ScanLine,
   QrCode,
+  Trophy,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const NAV_GUEST = [
+  { to: "/varzybos", label: "Varžybos", icon: Trophy },
   {
     to: "/",
     label: "Grafikas",
@@ -65,6 +67,7 @@ const NAV_GUEST = [
 ];
 
 const NAV_USER = [
+  { to: "/varzybos", label: "Varžybos", icon: Trophy },
   { to: "/", label: "Pagrindinis", icon: Home },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag },
@@ -75,6 +78,7 @@ const NAV_USER = [
 ];
 
 const NAV_ADMIN = [
+  { to: "/varzybos", label: "Varžybos", icon: Trophy },
   { to: "/admin", label: "Pagrindinis", icon: Home },
   { to: "/galerija", label: "Galerija", icon: Images },
   { to: "/kainos", label: "Kainos", icon: Tag, mobileBottomOnly: true },
@@ -91,6 +95,7 @@ const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLi
 const STAFF_QR_REQUESTS_NAV = { to: "/admin/qr-uzklausos", label: "QR užklausos", icon: QrCode };
 
 const NAV_TRAINER = [
+  { to: "/varzybos", label: "Varžybos", icon: Trophy },
   {
     to: "/",
     label: "Pradžia",
