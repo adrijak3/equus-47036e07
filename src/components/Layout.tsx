@@ -179,7 +179,7 @@ export default function Layout({
             onClick={close}
             className="group flex items-center gap-2.5"
           >
-            <span className="text-gradient-gold font-display text-2xl tracking-wide">
+            <span className="text-foreground font-display text-2xl tracking-wide">
               Equus
             </span>
 
@@ -192,7 +192,7 @@ export default function Layout({
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
             onClick={() => setOpen((current) => !current)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-md border border-gold/20 transition-colors hover:border-gold/50"
+            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 transition-colors hover:bg-muted/40"
           >
             {open ? (
               <X className="h-5 w-5 text-gold" />
@@ -224,13 +224,13 @@ export default function Layout({
           animate={{ x: open ? 0 : "100%" }}
           transition={{ type: "spring", stiffness: 320, damping: 32 }}
           className={cn(
-            "bg-gradient-card absolute right-0 top-0 flex h-full w-full flex-col border-l border-gold/20 shadow-elegant sm:w-96",
+            "bg-background absolute right-0 top-0 flex h-full w-full flex-col border-l border-border/70 shadow-xl sm:w-96",
             "will-change-transform",
           )}
         >
           {/* Meniu antraštė */}
           <div className="flex h-16 items-center justify-between border-b border-gold/10 px-6">
-            <span className="text-gradient-gold font-display text-xl">
+            <span className="text-foreground font-display text-xl">
               Meniu
             </span>
 
@@ -256,7 +256,7 @@ export default function Layout({
                     to={to}
                     onClick={close}
                     className={cn(
-                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                      "group flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 transition-colors",
                       isAdmin && mobileBottomOnly && "hidden sm:flex",
                       active
                         ? "border-gold bg-gold/10 text-gold"
@@ -265,7 +265,7 @@ export default function Layout({
                   >
                     <Icon className="h-4 w-4" />
 
-                    <span className="font-display text-base tracking-wide">
+                    <span className="text-sm font-medium tracking-normal">
                       {label}
                     </span>
                   </Link>
@@ -283,69 +283,20 @@ export default function Layout({
                         to={to}
                         onClick={close}
                         className={cn(
-                          "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                          "group flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 transition-colors",
                           active
                             ? "border-gold bg-gold/10 text-gold"
                             : "border-transparent text-foreground/80 hover:border-gold/30 hover:bg-gold/5 hover:text-gold",
                         )}
                       >
                         <Icon className="h-4 w-4" />
-                        <span className="font-display text-base tracking-wide">{label}</span>
+                        <span className="text-sm font-medium tracking-normal">{label}</span>
                       </Link>
                     );
                   })}
                 </div>
               )}
 
-              {/* Administratoriaus skiltis */}
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={close}
-                  className={cn(
-                    "flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
-                    location.pathname.startsWith("/admin")
-                      ? "border-gold bg-gold/10 text-gold"
-                      : "border-transparent text-blush hover:bg-gold/5",
-                  )}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-
-                  <span className="font-display text-base tracking-wide">
-                    Admin
-                  </span>
-                </Link>
-              )}
-
-              {/* Vienintelė blizganti trenerio skiltis */}
-              {isTrainer && (
-                <Link
-                  to="/trener"
-                  onClick={close}
-                  className={cn(
-                    "relative flex items-center gap-4 overflow-hidden rounded-md border px-4 py-3.5 transition-all",
-                    "border-gold/30 bg-gradient-to-r from-gold/5 via-gold/15 to-gold/5",
-                    "hover:border-gold/60 hover:shadow-gold",
-                    location.pathname.startsWith("/trener")
-                      ? "border-gold/70 text-gold shadow-gold"
-                      : "text-gold/90",
-                  )}
-                >
-                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-
-                  <Sparkles className="relative z-10 h-4 w-4" />
-
-                  <span className="relative z-10 font-display text-base tracking-wide">
-                    Trenerio sritis
-                  </span>
-                </Link>
-              )}
-              <InstallMenuAction onDone={close} />
-            </nav>
-{/* Kalbos ir išvaizdos valdikliai */}
-            <div className="sticky bottom-0 z-10 space-y-3 border-t border-gold/10 bg-background/90 px-4 py-4 backdrop-blur-xl">
-              <LanguageSwitcher />
-              <EffectsToggle />
               {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
               {user && (
               <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-gold/20 bg-card/70">
