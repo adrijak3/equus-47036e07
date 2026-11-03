@@ -457,6 +457,7 @@ export type Database = {
       }
       horses: {
         Row: {
+          allowed_weekdays: number[]
           active: boolean
           created_at: string
           id: string
@@ -465,6 +466,7 @@ export type Database = {
           notes: string | null
         }
         Insert: {
+          allowed_weekdays?: number[]
           active?: boolean
           created_at?: string
           id?: string
@@ -473,6 +475,7 @@ export type Database = {
           notes?: string | null
         }
         Update: {
+          allowed_weekdays?: number[]
           active?: boolean
           created_at?: string
           id?: string
