@@ -30,6 +30,7 @@ import {
   ScanLine,
   QrCode,
   Trophy,
+  type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,9 @@ import { EquusHelpWidget } from "@/components/EquusHelpWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-const NAV_GUEST = [
+type NavigationItem = { to: string; label: string; icon: LucideIcon; menuOnly?: boolean; mobileBottomOnly?: boolean };
+
+const NAV_GUEST: NavigationItem[] = [
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
   {
     to: "/",
@@ -66,59 +69,37 @@ const NAV_GUEST = [
   },
 ];
 
-const NAV_USER = [
-  { to: "/varzybos", label: "Varžybos", icon: Trophy },
+const NAV_USER: NavigationItem[] = [
   { to: "/", label: "Pagrindinis", icon: Home },
-  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
-  { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
-  { to: "/paskyra?tab=profile", label: "Paskyra", icon: UserIcon },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
+  { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
+  { to: "/varzybos", label: "Varžybos", icon: Trophy },
+  { to: "/paskyra", label: "Paskyra ir abonementas", icon: UserIcon },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
+  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
 
-const NAV_ADMIN = [
+const NAV_ADMIN: NavigationItem[] = [
+  { to: "/admin", label: "Žirgyno valdymas", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
-  { to: "/admin", label: "Pagrindinis", icon: Home },
-  { to: "/galerija", label: "Galerija", icon: Images },
-  { to: "/kainos", label: "Kainos", icon: Tag, mobileBottomOnly: true },
-  { to: "/apie-mus", label: "Apie mus", icon: UsersIcon },
-  { to: "/grafikas", label: "Grafikas", icon: CalendarDays, mobileBottomOnly: true },
-  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox, mobileBottomOnly: true },
-  { to: "/admin?section=subs", label: "Abonementai", icon: Wallet, mobileBottomOnly: true },
   { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
-  { to: "/admin?section=cancelHistory", label: "Atšaukimų istorija", icon: History },
-  { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
+  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
+  { to: "/admin?section=health", label: "Rezervacijų būklė", icon: ShieldCheck },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true, mobileBottomOnly: false },
+  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
 
 const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };
 const STAFF_QR_REQUESTS_NAV = { to: "/admin/qr-uzklausos", label: "QR užklausos", icon: QrCode };
 
-const NAV_TRAINER = [
+const NAV_TRAINER: NavigationItem[] = [
+  { to: "/", label: "Pradžia", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
-  {
-    to: "/",
-    label: "Pradžia",
-    icon: Home,
-  },
-  {
-    to: "/grafikas",
-    label: "Grafikas",
-    icon: Calendar,
-  },
-  {
-    to: "/kainos",
-    label: "Kainos",
-    icon: Tag,
-  },
-  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
-  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
-  {
-    to: "/informacija",
-    label: "Informacija",
-    icon: Info,
-  },
-  STAFF_QR_REQUESTS_NAV,
+  { to: "/trener", label: "Trenerio sritis", icon: UsersIcon },
+  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine, menuOnly: true },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
 ];
 
 export default function Layout({
@@ -194,14 +175,14 @@ export default function Layout({
   return (
     <div className="min-h-screen flex flex-col">
       {/* Viršutinė juosta */}
-      <header className="sticky top-0 z-40 border-b border-gold/10 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
         <div className="container flex h-16 items-center justify-between">
           <Link
             to="/"
             onClick={close}
             className="group flex items-center gap-2.5"
           >
-            <span className="text-gradient-gold font-display text-2xl tracking-wide">
+            <span className="text-foreground font-display text-2xl tracking-wide">
               Equus
             </span>
 
@@ -214,7 +195,7 @@ export default function Layout({
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
             onClick={() => setOpen((current) => !current)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-md border border-gold/20 transition-colors hover:border-gold/50"
+            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 transition-colors hover:bg-muted/40"
           >
             {open ? (
               <X className="h-5 w-5 text-gold" />
@@ -246,13 +227,13 @@ export default function Layout({
           animate={{ x: open ? 0 : "100%" }}
           transition={{ type: "spring", stiffness: 320, damping: 32 }}
           className={cn(
-            "bg-gradient-card absolute right-0 top-0 flex h-full w-full flex-col border-l border-gold/20 shadow-elegant sm:w-96",
+            "bg-background absolute right-0 top-0 flex h-full w-full flex-col border-l border-border/70 shadow-xl sm:w-96",
             "will-change-transform",
           )}
         >
           {/* Meniu antraštė */}
           <div className="flex h-16 items-center justify-between border-b border-gold/10 px-6">
-            <span className="text-gradient-gold font-display text-xl">
+            <span className="text-foreground font-display text-xl">
               Meniu
             </span>
 
@@ -278,7 +259,7 @@ export default function Layout({
                     to={to}
                     onClick={close}
                     className={cn(
-                      "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                      "group flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 transition-colors",
                       isAdmin && mobileBottomOnly && "hidden sm:flex",
                       active
                         ? "border-gold bg-gold/10 text-gold"
@@ -287,7 +268,7 @@ export default function Layout({
                   >
                     <Icon className="h-4 w-4" />
 
-                    <span className="font-display text-base tracking-wide">
+                    <span className="text-sm font-medium tracking-normal">
                       {label}
                     </span>
                   </Link>
@@ -305,69 +286,20 @@ export default function Layout({
                         to={to}
                         onClick={close}
                         className={cn(
-                          "group flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
+                          "group flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 transition-colors",
                           active
                             ? "border-gold bg-gold/10 text-gold"
                             : "border-transparent text-foreground/80 hover:border-gold/30 hover:bg-gold/5 hover:text-gold",
                         )}
                       >
                         <Icon className="h-4 w-4" />
-                        <span className="font-display text-base tracking-wide">{label}</span>
+                        <span className="text-sm font-medium tracking-normal">{label}</span>
                       </Link>
                     );
                   })}
                 </div>
               )}
 
-              {/* Administratoriaus skiltis */}
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={close}
-                  className={cn(
-                    "flex items-center gap-4 rounded-md border-l-2 px-4 py-3.5 transition-all",
-                    location.pathname.startsWith("/admin")
-                      ? "border-gold bg-gold/10 text-gold"
-                      : "border-transparent text-blush hover:bg-gold/5",
-                  )}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-
-                  <span className="font-display text-base tracking-wide">
-                    Admin
-                  </span>
-                </Link>
-              )}
-
-              {/* Vienintelė blizganti trenerio skiltis */}
-              {isTrainer && (
-                <Link
-                  to="/trener"
-                  onClick={close}
-                  className={cn(
-                    "relative flex items-center gap-4 overflow-hidden rounded-md border px-4 py-3.5 transition-all",
-                    "border-gold/30 bg-gradient-to-r from-gold/5 via-gold/15 to-gold/5",
-                    "hover:border-gold/60 hover:shadow-gold",
-                    location.pathname.startsWith("/trener")
-                      ? "border-gold/70 text-gold shadow-gold"
-                      : "text-gold/90",
-                  )}
-                >
-                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-
-                  <Sparkles className="relative z-10 h-4 w-4" />
-
-                  <span className="relative z-10 font-display text-base tracking-wide">
-                    Trenerio sritis
-                  </span>
-                </Link>
-              )}
-              <InstallMenuAction onDone={close} />
-            </nav>
-{/* Kalbos ir išvaizdos valdikliai */}
-            <div className="sticky bottom-0 z-10 space-y-3 border-t border-gold/10 bg-background/90 px-4 py-4 backdrop-blur-xl">
-              <LanguageSwitcher />
-              <EffectsToggle />
               {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
               {user && (
               <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-gold/20 bg-card/70">
@@ -409,7 +341,7 @@ export default function Layout({
                 )}
               </div>
               )}
-            </div>
+            </nav>
           </div>
 
           {/* Paskyros dalis apačioje */}
@@ -541,10 +473,10 @@ export default function Layout({
                     NAV_TRAINER[1],
                     NAV_TRAINER[2],
                     STAFF_QR_NAV,
-                    { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
+                    { to: "/trener", label: "Trenerio sritis", icon: UsersIcon },
                   ]
                 : NAV_USER
-            ).filter(({ menuOnly }) => !menuOnly).map(({ to, label, icon: Icon }) => {
+            ).filter((item) => !("menuOnly" in item && item.menuOnly)).map(({ to, label, icon: Icon }) => {
               const active = isLinkActive(to);
               return (
                 <Link

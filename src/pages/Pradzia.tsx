@@ -7,7 +7,6 @@ import {
   Clock3,
   MapPin,
   AlertCircle,
-  Sparkles,
   Users,
   XCircle,
 } from "lucide-react";
@@ -276,11 +275,11 @@ export default function Pradzia() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8 sm:mb-10"
       >
-        <p className="mb-2 text-xs uppercase tracking-[0.25em] text-gold/70">
+        <p className="mb-2 text-xs uppercase tracking-[0.15em] text-muted-foreground">
           {getGreeting()}
         </p>
-        <h1 className="font-display text-4xl text-gradient-gold sm:text-6xl">
-          {firstName || "Equus"} <span aria-hidden="true">👋</span>
+        <h1 className="font-display text-4xl text-foreground sm:text-5xl">
+          {firstName || "Equus"}
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
           {isAdmin
@@ -320,7 +319,7 @@ export default function Pradzia() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.06 }}
-              className="rounded-xl border border-gold/15 bg-gradient-card p-4 shadow-soft"
+              className="rounded-xl border border-border/60 bg-background/70 p-4"
             >
               <Icon className="mb-3 h-5 w-5 text-gold" />
               <div className="font-display text-3xl text-foreground">{value}</div>
@@ -338,13 +337,13 @@ export default function Pradzia() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
           className={cn(
-            "relative overflow-hidden rounded-2xl border bg-gradient-card p-6 shadow-elegant sm:p-8",
+            "relative overflow-hidden rounded-2xl border bg-background/70 p-6 sm:p-8",
             closeToLesson
               ? "border-gold/55 shadow-gold equus-next-lesson"
-              : "border-gold/20",
+              : "border-border/60",
           )}
         >
-          <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-gold/[0.08] blur-3xl" />
+
 
           <div className="relative">
             <div className="mb-6 flex items-center justify-between gap-4">
@@ -387,7 +386,7 @@ export default function Pradzia() {
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-gold/20 bg-gold/[0.07] p-4">
+                <div className="mt-4 rounded-xl border border-border/60 bg-gold/[0.07] p-4">
                   <div className="text-xs uppercase tracking-wider text-gold/70">
                     Iki treniruotės liko
                   </div>
@@ -424,10 +423,10 @@ export default function Pradzia() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.14 }}
-            className="rounded-2xl border border-gold/15 bg-gradient-card p-5 shadow-soft"
+            className="rounded-2xl border border-border/60 bg-background/70 p-5"
           >
             <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-gold" />
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
               <h2 className="font-display text-xl text-foreground">Šį mėnesį</h2>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
@@ -449,7 +448,7 @@ export default function Pradzia() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="rounded-2xl border border-gold/15 bg-gradient-card p-5 shadow-soft"
+            className="rounded-2xl border border-border/60 bg-background/70 p-5"
           >
             <h2 className="font-display text-xl text-foreground">
               Greita prieiga

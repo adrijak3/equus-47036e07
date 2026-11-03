@@ -227,7 +227,7 @@ Visi jo duomenys (pamokos, abonementai, žinutės, nuolatiniai laikai) bus negr�
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti šį abonementą (${s.lessons_used}/${s.lessons_total})? Šis veiksmas negrįžtamas.`)) return;
 
-    const { error } = await supabase.rpc("admin_delete_subscription", {
+    const { error } = await (supabase as any).rpc("admin_delete_subscription", {
       _subscription_id: s.id,
     });
 

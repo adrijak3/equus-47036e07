@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import AdminBookingHealth from "@/components/admin/AdminBookingHealth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO, canonicalBookings, dbDayOfWeek, SINGLE_LESSON_PRICE } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode, Eye } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, CalendarDays, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode, Eye } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { ClientSubscriptionCards, SubscriptionCard } from "@/pages/Paskyra";
@@ -101,6 +102,7 @@ export default function Admin() {
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
     { value: "bugReports", label: "Pranešimai apie klaidas", icon: Bug },
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
+    { value: "health", label: "Rezervacijų būklė", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
     { value: "cancelHistory", label: "Atšaukimų istorija", icon: History },
     { value: "settings", label: "Nustatymai", icon: Settings },
@@ -111,7 +113,7 @@ export default function Admin() {
   const navGroups: { id: string; label: string; short: string; items: string[] }[] = [
     { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule"] },
     { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations"] },
-    { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "vacations"] },
+    { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "health", "vacations"] },
     { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "bugReports", "settings"] },
   ];
   const itemsOf = (g: (typeof navGroups)[number]) =>
@@ -129,10 +131,10 @@ export default function Admin() {
         type="button"
         onClick={() => setSection(n.value)}
         className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
+          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors relative",
           active
-            ? "bg-gold/15 text-gold border border-gold/30"
-            : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
+            ? "bg-muted text-foreground border border-border/70 font-medium"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/55 border border-transparent",
         )}
       >
         <Icon className="w-4 h-4 shrink-0" />
@@ -150,16 +152,17 @@ export default function Admin() {
     <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-14">
       <header className="mb-6 animate-fade-up">
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
-        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">Valdymas</h1>
-        <div className="gold-divider mt-4 max-w-[120px]" />
+        <h1 className="text-3xl sm:text-4xl font-display text-foreground">Žirgyno valdymas</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Grafikas, raiteliai ir svarbiausi dienos darbai vienoje vietoje.</p>
+        
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
         {/* Sidebar (desktop): all sections visible, grouped */}
         <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant">
+          <nav className="bg-background/90 border border-border/60 rounded-xl p-2 shadow-sm">
             {navGroups.map((g, i) => (
-              <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-gold/10 pt-2")}>
+              <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-border/60 pt-2")}>
                 <p className="px-3 pb-1 pt-1 text-xs text-muted-foreground">{g.label}</p>
                 <div className="space-y-0.5">{itemsOf(g).map(renderNavItem)}</div>
               </div>
@@ -260,6 +263,7 @@ export default function Admin() {
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
             <TabsContent value="bugReports"><AdminBugReports /></TabsContent>
             <TabsContent value="duplicates"><AdminDuplicateBookings /></TabsContent>
+            <TabsContent value="health"><AdminBookingHealth /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
             <TabsContent value="settings" className="space-y-6">
@@ -849,18 +853,21 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
   }, []);
 
   const cards = [
-    { label: "Vartotojai", value: stats.users, icon: Users, go: "users", cls: "" },
+    { label: "Šios savaitės treniruotės", value: stats.weekBookings, icon: CalendarCog, go: "schedule", cls: "" },
+    { label: "Laukiantys atšaukimai", value: alerts.pending, icon: Inbox, go: "cancels", cls: alerts.pending > 0 ? "border-destructive/40 bg-destructive/5" : "" },
+    { label: "Naujos žinutės", value: alerts.unread, icon: MessageSquare, go: "messages", cls: "" },
+    { label: "Neapmokėti abonementai", value: stats.unpaidSubs, icon: AlertCircle, go: "subs", cls: stats.unpaidSubs > 0 ? "border-destructive/40 bg-destructive/5" : "" },
+    { label: "Klientai", value: stats.users, icon: Users, go: "users", cls: "" },
     { label: "Aktyvūs abonementai", value: stats.activeSubs, icon: Wallet, go: "subs", cls: "" },
-    { label: "Neapmokėti abonementai", value: stats.unpaidSubs, icon: AlertCircle, go: "subs", cls: stats.unpaidSubs > 0 ? "border-blush/40 bg-blush/5" : "" },
-    { label: "Šios sav. treniruotės", value: stats.weekBookings, icon: CalendarCog, go: "schedule", cls: "" },
-    { label: "Atostogose / greitai", value: stats.onVacation, icon: Palmtree, go: "vacations", cls: stats.onVacation > 0 ? "border-gold/40 bg-gold/5" : "" },
-    { label: "Nauj. žinutės", value: alerts.unread, icon: MessageSquare, go: "messages", cls: alerts.unread > 0 ? "border-gold/40 bg-gold/5" : "" },
-    { label: "Laukiantys atšaukimai", value: alerts.pending, icon: Inbox, go: "cancels", cls: alerts.pending > 0 ? "border-blush/40 bg-blush/5" : "" },
+    { label: "Atostogose / netrukus", value: stats.onVacation, icon: CalendarDays, go: "vacations", cls: "" },
   ];
 
   return (
     <div className="space-y-4">
-      <SubscriptionReminders onFocusUser={onFocusUser} onShowAll={() => onGo("subs")} />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div><h2 className="font-display text-2xl text-foreground">Dienos darbai</h2><p className="text-sm text-muted-foreground">Svarbiausi veiksmai prieš prasidedant treniruotėms.</p></div>
+        <button type="button" onClick={() => onGo("health")} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Patikrinti rezervacijų būklę</button>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {cards.map((c) => {
         const Icon = c.icon;
@@ -869,19 +876,20 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
             key={c.label}
             onClick={() => onGo(c.go)}
             className={cn(
-              "text-left p-4 rounded-lg border transition-all hover:border-gold/50 hover:shadow-gold group",
-              c.cls || "border-gold/15 bg-gradient-card",
+              "text-left p-4 rounded-xl border border-border/60 bg-background/70 transition-colors hover:border-foreground/30 group",
+              c.cls || "border-border/60 bg-background/70",
             )}
           >
             <div className="flex items-center justify-between mb-2">
-              <Icon className="w-4 h-4 text-gold/70 group-hover:text-gold" />
+              <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
             </div>
-            <div className="font-display text-3xl text-gradient-gold tabular-nums">{c.value}</div>
+            <div className="font-display text-3xl text-foreground tabular-nums">{c.value}</div>
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{c.label}</div>
           </button>
         );
       })}
       </div>
+      <div className="pt-4"><SubscriptionReminders onFocusUser={onFocusUser} onShowAll={() => onGo("subs")} /></div>
     </div>
   );
 }
@@ -2144,7 +2152,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti abonementą (${s.lessons_used}/${s.lessons_total})? Šis veiksmas negrįžtamas.`)) return;
 
-    const { error } = await supabase.rpc("admin_delete_subscription", {
+    const { error } = await (supabase as any).rpc("admin_delete_subscription", {
       _subscription_id: s.id,
     });
 
@@ -2175,7 +2183,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     const failed: { id: string; message: string }[] = [];
 
     for (const target of targets) {
-      const { error } = await supabase.rpc("admin_delete_subscription", {
+      const { error } = await (supabase as any).rpc("admin_delete_subscription", {
         _subscription_id: target.id,
       });
       if (error) failed.push({ id: target.id, message: error.message });

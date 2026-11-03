@@ -15,7 +15,7 @@ import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { FloralAccent } from "@/components/Decorations";
+
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
@@ -38,6 +38,7 @@ interface Booking {
   lesson_price?: number | null;
   lesson_kind?: "individual" | "po2" | "group";
   extra_fee_paid?: boolean;
+  is_grace_booking?: boolean;
 }
 interface Subscription {
   id: string;
@@ -51,7 +52,7 @@ interface Subscription {
   expires_at: string | null;
   paid: boolean;
   lesson_type?: string;
-  covered_riders?: 1 | 2;
+  covered_riders?: number;
 }
 interface PermanentSlot {
   id: string;
@@ -307,10 +308,18 @@ export default function Paskyra() {
   };
 
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
+  const currentDay = formatDateISO(new Date());
+  const nextLesson = bookings
+    .filter(b => b.status === "active" && b.slot_date >= currentDay)
+    .sort((a,b) => (a.slot_date + a.slot_time).localeCompare(b.slot_date + b.slot_time))[0];
+  const currentSubscription = subs.find(s => s.paid && (!s.expires_at || s.expires_at >= currentDay));
+  const remainingLessons = currentSubscription
+    ? Math.max(0, currentSubscription.lessons_total - currentSubscription.lessons_used)
+    : null;
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14 relative">
-      <FloralAccent className="absolute -top-4 -right-12 hidden md:block" size={140} delay={0.3} rotate={25} />
+
 
       <motion.header
         initial={{ opacity: 0, y: 14 }}
@@ -318,14 +327,14 @@ export default function Paskyra() {
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className="mb-8"
       >
-        <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Sveiki sugrįžę</p>
-        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">{activeProfileName || profile?.full_name || "—"}</h1>
+        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground mb-2">Mano Equus</p>
+        <h1 className="text-3xl sm:text-4xl font-display text-foreground">{activeProfileName || profile?.full_name || "—"}</h1>
         {isLinked && (
           <p className="text-xs text-blush/80 mt-1 italic">
             Aktyvus profilis: {activeProfileName} · perjungti meniu
           </p>
         )}
-        <div className="gold-divider mt-4 max-w-[120px]" />
+
       </motion.header>
 
       <VacationBanner userId={acting} />
@@ -340,14 +349,38 @@ export default function Paskyra() {
 
         {/* PROFILE OVERVIEW */}
         <TabsContent value="profile" className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Artimiausia treniruotė</p>
+              {nextLesson ? <>
+                <p className="mt-3 font-display text-2xl text-foreground">{nextLesson.slot_date}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{formatTime(nextLesson.slot_time)} {nextLesson.horse_name ? " · Žirgas: " + nextLesson.horse_name : ""}</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/paskyra?tab=lessons")}>Peržiūrėti pamokas</Button>
+              </> : <>
+                <p className="mt-3 text-sm text-foreground">Artimiausių treniruočių nėra.</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/grafikas")}>Atidaryti grafiką</Button>
+              </>}
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Abonementas</p>
+              <p className="mt-3 font-display text-2xl text-foreground">{remainingLessons === null ? "Nėra aktyvaus" : remainingLessons + " tren."}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{currentSubscription?.expires_at ? "Galioja iki " + currentSubscription.expires_at : "Peržiūrėkite abonemento sąlygas"}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/paskyra?tab=subs")}>Mano abonementas</Button>
+            </div>
+          </div>
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Mano QR" icon={<QrCode className="h-4 w-4" />} onClick={() => navigate("/mano-qr")} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
-            <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
-            <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
           </div>
+          <details className="rounded-xl border border-border/60 bg-background/40 p-4">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Daugiau paskyros nustatymų</summary>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
+              <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
+            </div>
+          </details>
           <ReadOnlyRecurringCard permanents={permanents} />
           <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">

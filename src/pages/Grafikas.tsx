@@ -80,6 +80,7 @@ interface TimeSlot {
   day_of_week: number;
   slot_time: string;
   max_capacity: number;
+  active?: boolean;
   is_permanent_for: string | null;
   one_off_date?: string | null;
   trainer_name?: string | null;
@@ -476,7 +477,7 @@ export default function Grafikas() {
 
     const userIds = new Set<string>();
 
-    (bookingsRes.data ?? []).forEach((b) => {
+    (bookingsRes.data ?? []).forEach((b: any) => {
       if (b.user_id) userIds.add(b.user_id);
     });
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CalendarDays, ExternalLink, MapPin, Plus, Save, Trophy, UserRound, X, CheckCircle2 } from "lucide-react";
@@ -61,6 +61,7 @@ export default function Varzybos() {
   const [chosenHorses, setChosenHorses] = useState<Record<string, string>>({});
   const [heights, setHeights] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<EntryRow | null>(null);
 
   const load = useCallback(async () => {
     const [e, r, h] = await Promise.all([
@@ -79,13 +80,6 @@ export default function Varzybos() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
-
-  const myEntries = useMemo(() => new Map(entries.filter(e => e.user_id === user?.id).map(e => [e.event_id, e])), [entries, user?.id]);
-  useEffect(() => {
-    const hs: Record<string, string> = {}, ht: Record<string, string> = {};
-    for (const e of entries) if (e.user_id === user?.id) { hs[e.event_id] = e.horse_id; ht[e.event_id] = e.height_text; }
-    setChosenHorses(hs); setHeights(ht);
-  }, [entries, user?.id]);
 
   const saveEvent = async () => {
     if (!isAdmin || saving) return;
@@ -127,19 +121,28 @@ export default function Varzybos() {
     if (!user) { toast.error("Pirma prisijunkite."); return; }
     if (!horseId || !height) { toast.error("Pasirinkite žirgą ir įveskite norimą šokti aukštį."); return; }
     setPending(event.id);
-    const { data, error } = await (supabase as any).rpc("competition_join", { _event_id: event.id, _horse_id: horseId, _height_text: height });
+    const { data, error } = editingEntry?.event_id === event.id
+      ? await (supabase as any).rpc("competition_update_entry", { _entry_id: editingEntry.id, _horse_id: horseId, _height_text: height })
+      : await (supabase as any).rpc("competition_join", { _event_id: event.id, _horse_id: horseId, _height_text: height });
     setPending(null);
     if (error || !data?.ok) toast.error(error?.message ?? "Nepavyko užsiregistruoti.");
-    else { toast.success("Jūsų noras dalyvauti užregistruotas."); await load(); }
+    else { toast.success(editingEntry ? "Įrašas atnaujintas." : "Pridėtas naujas žirgo pasirinkimas."); setEditingEntry(null); setChosenHorses(v => ({...v,[event.id]: ""})); setHeights(v => ({...v,[event.id]:""})); await load(); }
   };
 
-  const leave = async (eventId: string) => {
-    if (!window.confirm("Pašalinti savo įrašą iš norinčių dalyvauti sąrašo?")) return;
-    setPending(eventId);
-    const { data, error } = await (supabase as any).rpc("competition_leave", { _event_id: eventId });
+  const editOwnEntry = (entry: EntryRow) => {
+    setEditingEntry(entry);
+    setChosenHorses(current => ({ ...current, [entry.event_id]: entry.horse_id }));
+    setHeights(current => ({ ...current, [entry.event_id]: entry.height_text }));
+  };
+  const removeOwnEntry = async (entry: EntryRow) => {
+    if (!window.confirm("Pašalinti šį savo žirgo pasirinkimą iš sąrašo?")) return;
+    setPending(entry.event_id);
+    const { data, error } = await (supabase as any).rpc("competition_remove_my_entry", { _entry_id: entry.id });
     setPending(null);
-    if (error || !data?.ok) toast.error(error?.message ?? "Nepavyko pašalinti.");
-    else { toast.success("Iš sąrašo pašalinta."); await load(); }
+    if (error || !data?.ok) { toast.error(error?.message ?? "Nepavyko pašalinti įrašo."); return; }
+    if (editingEntry?.id === entry.id) setEditingEntry(null);
+    toast.success("Jūsų įrašas pašalintas.");
+    await load();
   };
   const removeEntry = async (id: string) => {
     if (!window.confirm("Pašalinti šį dalyvį iš sąrašo?")) return;
@@ -204,7 +207,8 @@ export default function Varzybos() {
               groups.get(key)!.push(e);
             }
             const sortedGroups = [...groups.entries()].sort((a, b) => (a[1][0]?.horse_name ?? "").localeCompare(b[1][0]?.horse_name ?? "", "lt"));
-            const own = myEntries.get(event.id);
+            const ownEntries = eventEntries.filter(entry => entry.user_id === user?.id);
+            const editingThisEvent = editingEntry?.event_id === event.id;
             const past = event.event_date < new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Vilnius" });
             const canJoin = !past && event.registration_open;
             return (
@@ -229,21 +233,32 @@ export default function Varzybos() {
                   )}
                 </div>
 
+                {user && ownEntries.length > 0 && (
+                  <div className="border-b border-border/60 px-5 py-4 sm:px-8">
+                    {ownEntries.length > 0 && <div className="space-y-2 rounded-xl border border-border/60 bg-background/25 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">Mano pasirinkimai · {ownEntries.length}</p>
+                      {ownEntries.map(entry => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="text-foreground">{entry.horse_name} <span className="text-muted-foreground">· {formatJumpHeights(entry.height_text)}</span></span>
+                        <div className="flex items-center gap-3 text-xs"><button type="button" onClick={() => editOwnEntry(entry)} disabled={!canJoin} className="text-gold hover:underline disabled:opacity-30">Redaguoti</button><button type="button" onClick={() => removeOwnEntry(entry)} className="text-destructive hover:underline">Ištrinti</button></div>
+                      </div>)}
+                    </div>}
+                  </div>
+                )}
                 {user && canJoin && (
                   <div className="space-y-3 border-b border-gold/15 bg-background/20 p-5 sm:px-8">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground"><UserRound className="h-4 w-4 text-gold" /> {own ? "Jūsų pasirinkimas" : "Noriu dalyvauti"}</div>
+                    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><UserRound className="h-4 w-4 text-gold" /> {editingThisEvent ? "Redaguoti savo pasirinkimą" : "Pridėti žirgą į norinčiųjų sąrašą"}</div>{editingThisEvent && <button type="button" className="text-xs text-muted-foreground underline" onClick={() => { setEditingEntry(null); setChosenHorses(v=>({...v,[event.id]:""})); setHeights(v=>({...v,[event.id]:""})); }}>Atšaukti redagavimą</button>}</div>
                     <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                       <div className="space-y-1.5">
                         <Label>Žirgas</Label>
                         <select value={chosenHorses[event.id] ?? ""} onChange={e => setChosenHorses(s => ({ ...s, [event.id]: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground">
                           <option value="">Pasirinkite žirgą</option>
-                          {horses.filter(h => h.active || h.id === own?.horse_id).map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                          {horses.filter(h => h.active || h.id === editingEntry?.horse_id).map(h => <option key={h.id} value={h.id} disabled={ownEntries.some(e => e.horse_id === h.id && e.id !== editingEntry?.id)}>{h.name}{ownEntries.some(e => e.horse_id === h.id && e.id !== editingEntry?.id) ? " (jau pasirinktas)" : ""}</option>)}
                         </select>
                       </div>
                       <div className="space-y-1.5"><Label>Norimas šokti aukštis</Label><Input value={heights[event.id] ?? ""} maxLength={80} onChange={e => setHeights(s => ({ ...s, [event.id]: e.target.value }))} placeholder="Pvz. 60–80 cm" /></div>
-                      <Button variant="gold" disabled={pending === event.id} onClick={() => join(event)}>{own ? "Atnaujinti" : "Prisidėti"}</Button>
+                      <Button variant="gold" disabled={pending === event.id} onClick={() => join(event)}>{editingThisEvent ? "Išsaugoti pakeitimus" : "Pridėti žirgą"}</Button>
                     </div>
-                    {own && <button type="button" onClick={() => leave(event.id)} className="text-xs text-muted-foreground underline underline-offset-4 hover:text-destructive">Nebenoriu dalyvauti</button>}
+
                     <p className="text-xs text-muted-foreground">Tai norinčiųjų sąrašas, ne oficiali registracija į varžybas. Jūsų vardas, žirgas ir aukštis bus matomi visiems.</p>
                   </div>
                 )}
