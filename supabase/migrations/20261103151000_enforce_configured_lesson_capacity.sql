@@ -54,7 +54,7 @@ BEGIN
        AND (NEW.trainer_name IS NULL
             OR ts.trainer_name IS NOT DISTINCT FROM NEW.trainer_name)
      ORDER BY
-       (ts.one_off_date = NEW.slot_date) DESC,
+       (ts.one_off_date IS NOT NULL) DESC,
        (ts.trainer_name IS NOT DISTINCT FROM NEW.trainer_name) DESC,
        ts.max_capacity ASC,
        ts.id
