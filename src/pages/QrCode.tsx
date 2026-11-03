@@ -232,6 +232,7 @@ export default function QrCodePage({ scanner = false }: { scanner?: boolean }) {
 
     const instance = new Html5Qrcode("equus-qr-reader", {
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      verbose: false,
     });
 
     scannerRef.current = instance;
