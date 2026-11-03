@@ -14,7 +14,7 @@ ALTER TABLE public.horses
     allowed_weekdays IS NOT NULL
     AND array_position(allowed_weekdays, NULL) IS NULL
     AND allowed_weekdays <@ ARRAY[1,2,3,4,5,6,7]::integer[]
-    AND (SELECT COUNT(DISTINCT n) FROM unnest(allowed_weekdays) AS n) = cardinality(allowed_weekdays)
+    AND cardinality(allowed_weekdays) <= 7
   );
 
 CREATE OR REPLACE FUNCTION public.enforce_horse_weekday()
