@@ -33,6 +33,7 @@ interface Horse {
   notes: string | null;
   active: boolean;
   max_daily_rides: number;
+  allowed_weekdays: number[];
 }
 interface Booking {
   id: string;
@@ -119,17 +120,31 @@ function HorsesTab() {
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
   const [maxDailyRides, setMaxDailyRides] = useState(2);
+  const [allowedDays, setAllowedDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editLimit, setEditLimit] = useState(2);
+  const [editAllowedDays, setEditAllowedDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
+  const weekdays = ["Pirmadienis", "Antradienis", "Trečiadienis", "Ketvirtadienis", "Penktadienis", "Šeštadienis", "Sekmadienis"];
+  const toggleDay = (current: number[], day: number) => current.includes(day) ? current.filter(d => d !== day) : [...current, day].sort((a, b) => a - b);
+  const weekdayChecklist = (value: number[], onChange: (days: number[]) => void) => (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {weekdays.map((label, i) => (
+        <label key={i} className="flex items-center gap-2 text-xs text-foreground">
+          <input type="checkbox" checked={value.includes(i + 1)} onChange={() => onChange(toggleDay(value, i + 1))} />
+          {label}
+        </label>
+      ))}
+    </div>
+  );
   const [search, setSearch] = useState("");
 
   const load = async () => {
     const { data, error } = await supabase
       .from("horses")
-      .select("id, name, notes, active, max_daily_rides")
+      .select("id, name, notes, active, max_daily_rides, allowed_weekdays")
       .order("active", { ascending: false })
       .order("name");
     if (error) {
@@ -147,6 +162,7 @@ function HorsesTab() {
       name: name.trim(),
       notes: notes.trim() || null,
       max_daily_rides: Math.max(1, maxDailyRides),
+      allowed_weekdays: allowedDays,
     } as any);
     if (error) {
       toast.error(error.message.includes("duplicate") ? "Toks žirgo vardas jau yra." : error.message);
@@ -155,6 +171,7 @@ function HorsesTab() {
     setName("");
     setNotes("");
     setMaxDailyRides(2);
+    setAllowedDays([1, 2, 3, 4, 5, 6, 7]);
     toast.success("Žirgas pridėtas");
     void load();
   };
@@ -164,6 +181,7 @@ function HorsesTab() {
     setEditName(horse.name);
     setEditNotes(horse.notes ?? "");
     setEditLimit(horse.max_daily_rides ?? 2);
+    setEditAllowedDays(horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]);
   };
 
   const saveEdit = async (id: string) => {
@@ -172,6 +190,7 @@ function HorsesTab() {
       name: editName.trim(),
       notes: editNotes.trim() || null,
       max_daily_rides: Math.max(1, editLimit),
+      allowed_weekdays: editAllowedDays,
     } as any).eq("id", id);
     if (error) {
       toast.error(error.message);
@@ -231,6 +250,10 @@ function HorsesTab() {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label>Žirgas gali būti pasirenkamas šiomis dienomis</Label>
+          {weekdayChecklist(allowedDays, setAllowedDays)}
+        </div>
         <div className="flex justify-end">
           <Button variant="gold" onClick={add}>
             <Plus className="h-4 w-4" /> Pridėti žirgą
@@ -286,6 +309,10 @@ function HorsesTab() {
                     onChange={(e) => setEditLimit(Number(e.target.value) || 1)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Galimos savaitės dienos</Label>
+                  {weekdayChecklist(editAllowedDays, setEditAllowedDays)}
+                </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" onClick={() => setEditing(null)}>Atšaukti</Button>
                   <Button variant="gold" onClick={() => saveEdit(horse.id)}>
@@ -309,6 +336,7 @@ function HorsesTab() {
                   <p className="mt-2 text-xs text-muted-foreground">
                     Dienos limitas: <strong className="text-foreground">{horse.max_daily_rides ?? 2}</strong>
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">Galimos dienos: {weekdays.filter((_, i) => (horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(i + 1)).join(", ") || "Nėra"}</p>
                 </div>
 
                 <div className="flex shrink-0 gap-1">
@@ -378,7 +406,7 @@ function TodayAssignments() {
 
     const [b, h, a, r] = await Promise.all([
       supabase.from("bookings").select("*").eq("slot_date", date).eq("status", "active").order("slot_time"),
-      supabase.from("horses").select("id, name, notes, active, max_daily_rides").eq("active", true).order("name"),
+      supabase.from("horses").select("id, name, notes, active, max_daily_rides, allowed_weekdays").eq("active", true).order("name"),
       supabase.from("horse_assignments").select("*").eq("slot_date", date),
       supabase.from("horse_requests").select("*").eq("slot_date", date),
     ]);
@@ -452,6 +480,10 @@ function TodayAssignments() {
     }
 
     const selected = horses.find((horse) => horse.id === horseId);
+    if (selected && !(selected.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(new Date(`${booking.slot_date}T12:00:00`).getDay() || 7)) {
+      toast.error("Šis žirgas šią dieną nepasiekiamas.");
+      return;
+    }
     const currentUsage = usageFor(horseId, existing?.id);
     if (selected && currentUsage >= selected.max_daily_rides) {
       toast.error(`${selected.name} jau pasiekė dienos limitą (${selected.max_daily_rides}).`);
@@ -589,10 +621,14 @@ function TodayAssignments() {
                         {sortedHorses.map((horse) => {
                           const used = usageFor(horse.id, assignment?.id);
                           const limit = horse.max_daily_rides ?? 2;
-                          const disabled = used >= limit && assignment?.horse_id !== horse.id;
+                          const weekday = new Date(`${booking.slot_date}T12:00:00`).getDay() || 7;
+                          const dayUnavailable = !(horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(weekday);
+                          const sameSlotTaken = assigns.some(a => a.horse_id === horse.id && a.slot_time.slice(0, 5) === booking.slot_time.slice(0, 5) && a.id !== assignment?.id);
+                          const full = used >= limit && assignment?.horse_id !== horse.id;
+                          const disabled = dayUnavailable || sameSlotTaken || full;
                           return (
                             <option key={horse.id} value={horse.id} disabled={disabled}>
-                              {horse.name} ({used}/{limit}){disabled ? " – limitas" : ""}
+                              {horse.name} ({used}/{limit}){dayUnavailable ? " – nepasiekiamas šią dieną" : sameSlotTaken ? " – užimtas šiuo laiku" : full ? " – limitas" : ""}
                             </option>
                           );
                         })}

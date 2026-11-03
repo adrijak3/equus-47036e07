@@ -46,7 +46,7 @@ export interface GroupState {
 export function trainerGroupState(levels: RidingLevel[], hardMax = 4): GroupState {
   const total = levels.length;
   const beginners = levels.filter((l) => l === "beginner").length;
-  const maxAllowed = Math.min(hardMax, 4);
+  const maxAllowed = Math.max(0, hardMax);
   const free = Math.max(0, maxAllowed - total);
   return {
     total,
@@ -60,7 +60,7 @@ export function trainerGroupState(levels: RidingLevel[], hardMax = 4): GroupStat
 
 /** Explains why one more rider cannot join. Returns null when allowed. */
 export function blockReason(levels: RidingLevel[], _newLevel: RidingLevel, hardMax = 4): string | null {
-  const max = Math.min(hardMax, 4);
+  const max = Math.max(0, hardMax);
   if (levels.length + 1 > max) {
     return `Grupė pilna — maksimalus raitelių skaičius yra ${max}.`;
   }
