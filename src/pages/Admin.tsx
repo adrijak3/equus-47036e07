@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import AdminBookingHealth from "@/components/admin/AdminBookingHealth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +102,7 @@ export default function Admin() {
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
     { value: "bugReports", label: "Pranešimai apie klaidas", icon: Bug },
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
+    { value: "health", label: "Rezervacijų būklė", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
     { value: "cancelHistory", label: "Atšaukimų istorija", icon: History },
     { value: "settings", label: "Nustatymai", icon: Settings },
@@ -111,7 +113,7 @@ export default function Admin() {
   const navGroups: { id: string; label: string; short: string; items: string[] }[] = [
     { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule"] },
     { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations"] },
-    { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "vacations"] },
+    { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "health", "vacations"] },
     { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "bugReports", "settings"] },
   ];
   const itemsOf = (g: (typeof navGroups)[number]) =>
@@ -129,10 +131,10 @@ export default function Admin() {
         type="button"
         onClick={() => setSection(n.value)}
         className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-left transition-colors relative",
+          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors relative",
           active
-            ? "bg-gold/15 text-gold border border-gold/30"
-            : "text-foreground/70 hover:text-gold hover:bg-gold/5 border border-transparent",
+            ? "bg-muted text-foreground border border-border/70 font-medium"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/55 border border-transparent",
         )}
       >
         <Icon className="w-4 h-4 shrink-0" />
@@ -150,16 +152,17 @@ export default function Admin() {
     <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-14">
       <header className="mb-6 animate-fade-up">
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
-        <h1 className="text-4xl sm:text-5xl font-display text-gradient-gold">Valdymas</h1>
-        <div className="gold-divider mt-4 max-w-[120px]" />
+        <h1 className="text-3xl sm:text-4xl font-display text-foreground">Žirgyno valdymas</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Grafikas, raiteliai ir svarbiausi dienos darbai vienoje vietoje.</p>
+        
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
         {/* Sidebar (desktop): all sections visible, grouped */}
         <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="bg-gradient-card border border-gold/15 rounded-lg p-2 shadow-elegant">
+          <nav className="bg-background/90 border border-border/60 rounded-xl p-2 shadow-sm">
             {navGroups.map((g, i) => (
-              <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-gold/10 pt-2")}>
+              <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-border/60 pt-2")}>
                 <p className="px-3 pb-1 pt-1 text-xs text-muted-foreground">{g.label}</p>
                 <div className="space-y-0.5">{itemsOf(g).map(renderNavItem)}</div>
               </div>
@@ -260,6 +263,7 @@ export default function Admin() {
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
             <TabsContent value="bugReports"><AdminBugReports /></TabsContent>
             <TabsContent value="duplicates"><AdminDuplicateBookings /></TabsContent>
+            <TabsContent value="health"><AdminBookingHealth /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
             <TabsContent value="settings" className="space-y-6">
