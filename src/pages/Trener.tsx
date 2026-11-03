@@ -105,7 +105,7 @@ export default function Trener() {
             <TabsTrigger value="riders" className="min-h-11 whitespace-normal px-2 py-2 text-sm">Raiteliai</TabsTrigger>
             <TabsTrigger value="horses" className="min-h-11 whitespace-normal px-2 py-2 text-sm">Žirgų sąrašas</TabsTrigger>
           </TabsList>
-          <details className="rounded-xl border border-border/70 bg-background/40 p-3" open={undefined}>
+          <details className="rounded-xl border border-border/70 bg-background/40 p-3" >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-foreground">
               <span className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-muted-foreground" /> Kiti trenerio įrankiai {secondaryActive && <span className="text-xs text-muted-foreground">· {secondaryTabs.find(tab => tab.value === activeTab)?.label}</span>}</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -235,11 +235,12 @@ function HorsesTab() {
 
   return (
     <div className="space-y-5">
-      <section className="space-y-4 rounded-xl border border-border/70 bg-background/60 p-5">
-        <div className="flex items-center gap-2">
-          <Plus className="h-5 w-5 text-gold" />
-          <h2 className="font-display text-xl text-foreground">Pridėti žirgą</h2>
-        </div>
+      <details className="group rounded-xl border border-border/70 bg-background/60 p-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+          <span className="flex items-center gap-2 font-display text-lg text-foreground"><Plus className="h-4 w-4 text-muted-foreground" /> Pridėti naują žirgą</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="mt-5 space-y-4">
 
         <div className="grid gap-3 md:grid-cols-[1fr_1.4fr_150px]">
           <div>
@@ -271,7 +272,8 @@ function HorsesTab() {
             <Plus className="h-4 w-4" /> Pridėti žirgą
           </Button>
         </div>
-      </section>
+        </div>
+      </details>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-sm flex-1">
