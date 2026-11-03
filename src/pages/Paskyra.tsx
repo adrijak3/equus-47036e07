@@ -38,6 +38,7 @@ interface Booking {
   lesson_price?: number | null;
   lesson_kind?: "individual" | "po2" | "group";
   extra_fee_paid?: boolean;
+  is_grace_booking?: boolean;
 }
 interface Subscription {
   id: string;
@@ -51,7 +52,7 @@ interface Subscription {
   expires_at: string | null;
   paid: boolean;
   lesson_type?: string;
-  covered_riders?: 1 | 2;
+  covered_riders?: number;
 }
 interface PermanentSlot {
   id: string;
