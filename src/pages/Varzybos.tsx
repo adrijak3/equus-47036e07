@@ -30,6 +30,24 @@ function safeProgramUrl(value: string): string | null {
   catch { return null; }
 }
 
+/** Display-only formatting: preserve the saved height field exactly as entered. */
+function formatJumpHeights(value: string): string {
+  const raw = value.trim();
+  if (!raw) return raw;
+
+  // A list of numbers separated by spaces, dashes, commas or semicolons
+  // is displayed as separate jumps, e.g. 20-20-20 -> 20 cm.; 20 cm.; 20 cm.
+  const numericList = /^\d+(?:[.,]\d+)?(?:\s*cm)?(?:[\s;\-–/]+\d+(?:[.,]\d+)?(?:\s*cm)?)*$/i;
+  if (numericList.test(raw)) {
+    const values = [...raw.matchAll(/\d+(?:[.,]\d+)?/g)].map(match => match[0]);
+    return values.map((number, index) => number + " cm" + (index < values.length - 1 ? ".;" : "")).join(" ");
+  }
+
+  // When a rider writes prose, leave their words and punctuation intact;
+  // simply add cm next to numerical heights that do not already have it.
+  return raw.replace(/(\d+(?:[.,]\d+)?)(?!\s*cm\b)/gi, "$1 cm");
+}
+
 export default function Varzybos() {
   const { user, isAdmin } = useAuth();
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -244,7 +262,7 @@ export default function Varzybos() {
                         </div>
                         {group.map((entry, i) => <div key={entry.id} className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm ${i > 0 ? "border-t border-border/50" : ""}`}>
                           <span className="flex items-center gap-2 font-medium text-foreground">{entry.user_id === user?.id && <CheckCircle2 className="h-4 w-4 text-gold" />}{entry.participant_name}</span>
-                          <div className="flex items-center gap-3"><span className="rounded-full bg-gold/10 px-3 py-1 text-xs text-gold">{entry.height_text}</span>{isAdmin && <button type="button" onClick={() => removeEntry(entry.id)} title="Pašalinti dalyvį" className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4"/></button>}</div>
+                          <div className="flex items-center gap-3"><span className="rounded-full bg-gold/10 px-3 py-1 text-xs text-gold">{formatJumpHeights(entry.height_text)}</span>{isAdmin && <button type="button" onClick={() => removeEntry(entry.id)} title="Pašalinti dalyvį" className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4"/></button>}</div>
                         </div>)}
                       </div>
                     </div>
