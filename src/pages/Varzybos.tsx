@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CalendarDays, ExternalLink, MapPin, Plus, Save, Trophy, UserRound, X, ChevronDown, CheckCircle2 } from "lucide-react";
+import { CalendarDays, ExternalLink, MapPin, Plus, Save, Trophy, UserRound, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,8 +46,8 @@ export default function Varzybos() {
 
   const load = useCallback(async () => {
     const [e, r, h] = await Promise.all([
-      supabase.from("competition_events" as any).select("id,title,event_date,location,details,program_url,registration_open").order("event_date", { ascending: true }),
-      supabase.from("competition_entries" as any).select("id,event_id,user_id,participant_name,horse_id,horse_name,height_text"),
+      (supabase as any).from("competition_events").select("id,title,event_date,location,details,program_url,registration_open").order("event_date", { ascending: true }),
+      (supabase as any).from("competition_entries").select("id,event_id,user_id,participant_name,horse_id,horse_name,height_text"),
       supabase.from("horses").select("id,name,active").order("name"),
     ]);
     if (e.error || r.error || h.error) {
@@ -81,8 +81,8 @@ export default function Varzybos() {
       details: form.details.trim(), program_url: form.program_url.trim(), registration_open: form.registration_open,
     };
     const result = editingEvent
-      ? await supabase.from("competition_events" as any).update(values).eq("id", editingEvent).select("id")
-      : await supabase.from("competition_events" as any).insert({ ...values, created_by: user?.id }).select("id");
+      ? await (supabase as any).from("competition_events").update(values).eq("id", editingEvent).select("id")
+      : await (supabase as any).from("competition_events").insert({ ...values, created_by: user?.id }).select("id");
     setSaving(false);
     if (result.error || !result.data?.length) { toast.error(result.error?.message ?? "Nepavyko išsaugoti varžybų."); return; }
     toast.success("Varžybos išsaugotos.");
@@ -98,7 +98,7 @@ export default function Varzybos() {
 
   const removeEvent = async (event: EventRow) => {
     if (!isAdmin || !window.confirm(`Pašalinti varžybas „${event.title}“ ir visus jų dalyvių įrašus?`)) return;
-    const { error } = await supabase.from("competition_events" as any).delete().eq("id", event.id);
+    const { error } = await (supabase as any).from("competition_events").delete().eq("id", event.id);
     if (error) toast.error(error.message);
     else { toast.success("Varžybos pašalintos."); await load(); }
   };
