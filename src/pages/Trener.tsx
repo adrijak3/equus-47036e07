@@ -11,7 +11,8 @@ import { flushPushNotifications } from "@/lib/pushNotifications";
 import {
   Plus,
   Trash2,
-  Sparkles,
+  ClipboardList,
+  ChevronDown,
   Pencil,
   RotateCcw,
   Save,
@@ -68,6 +69,7 @@ interface HorseRequest {
 
 export default function Trener() {
   const { isTrainer, isAdmin, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState("mine");
 
   if (loading) return null;
   if (!isTrainer && !isAdmin) {
@@ -78,38 +80,48 @@ export default function Trener() {
     );
   }
 
+  const secondaryTabs = [
+    { value: "subs", label: "Abonementai" },
+    { value: "unpaid", label: "Nepriskirtos pamokos" },
+    { value: "cancel", label: "Atšaukti dienos treniruotes" },
+  ];
+  const secondaryActive = secondaryTabs.some(tab => tab.value === activeTab);
+
   return (
-    <div className="container max-w-6xl py-8 sm:py-14">
-      <header className="mb-8">
-        <p className="mb-2 text-xs uppercase tracking-[0.25em] text-gold/70">
-          Trenerio sritis
+    <div className="container max-w-6xl space-y-7 py-8 sm:py-12">
+      <header className="space-y-2 border-b border-border/70 pb-6">
+        <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">Trenerio sritis</p>
+        <h1 className="font-display text-3xl text-foreground sm:text-4xl">Žirgai ir treniruotės</h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          Peržiūrėkite artėjančias pamokas, paskirkite žirgus ir tvarkykite raitelių informaciją.
         </p>
-        <h1 className="flex items-center gap-3 font-display text-4xl text-gradient-gold sm:text-5xl">
-          <Sparkles className="h-8 w-8 text-gold" /> Žirgai ir paskyrimai
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Priskirkite žirgus treniruotėms, matykite dienos krūvį ir tvarkykite žirgų sąrašą.
-        </p>
-        <div className="gold-divider mt-4 max-w-[120px]" />
       </header>
 
-      <Tabs defaultValue="mine">
-        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 bg-background/50 sm:grid-cols-7">
-          <TabsTrigger value="mine">Mano treniruotės</TabsTrigger>
-          <TabsTrigger value="today">Paskirti žirgus</TabsTrigger>
-          <TabsTrigger value="riders">Mano raiteliai</TabsTrigger>
-          <TabsTrigger value="horses">Žirgų sąrašas</TabsTrigger>
-          <TabsTrigger value="subs">Abonementai</TabsTrigger>
-          <TabsTrigger value="unpaid">Nepriskirtos</TabsTrigger>
-          <TabsTrigger value="cancel">Dienos atšaukimas</TabsTrigger>
-        </TabsList>
-        <TabsContent value="mine"><MyLessons /></TabsContent>
-        <TabsContent value="today"><TodayAssignments /></TabsContent>
-        <TabsContent value="riders"><TrainerRidersTab /></TabsContent>
-        <TabsContent value="horses"><HorsesTab /></TabsContent>
-        <TabsContent value="subs"><SubsOverview /></TabsContent>
-        <TabsContent value="unpaid"><UnpaidLessonsOverview staff /></TabsContent>
-        <TabsContent value="cancel"><CancelDayTab /></TabsContent>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+        <div className="space-y-3">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl border border-border/70 bg-muted/30 p-1 sm:grid-cols-4">
+            <TabsTrigger value="mine" className="min-h-11 whitespace-normal px-2 py-2 text-sm">Mano pamokos</TabsTrigger>
+            <TabsTrigger value="today" className="min-h-11 whitespace-normal px-2 py-2 text-sm">Paskirti žirgus</TabsTrigger>
+            <TabsTrigger value="riders" className="min-h-11 whitespace-normal px-2 py-2 text-sm">Raiteliai</TabsTrigger>
+            <TabsTrigger value="horses" className="min-h-11 whitespace-normal px-2 py-2 text-sm">Žirgų sąrašas</TabsTrigger>
+          </TabsList>
+          <details className="rounded-xl border border-border/70 bg-background/40 p-3" open={undefined}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-foreground">
+              <span className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-muted-foreground" /> Kiti trenerio įrankiai {secondaryActive && <span className="text-xs text-muted-foreground">· {secondaryTabs.find(tab => tab.value === activeTab)?.label}</span>}</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </summary>
+            <TabsList className="mt-3 grid h-auto w-full grid-cols-1 gap-1 bg-transparent p-0 sm:grid-cols-3">
+              {secondaryTabs.map(tab => <TabsTrigger key={tab.value} value={tab.value} className="min-h-10 whitespace-normal rounded-lg border border-border/60 px-2 py-2 text-xs sm:text-sm">{tab.label}</TabsTrigger>)}
+            </TabsList>
+          </details>
+        </div>
+        <TabsContent value="mine" className="mt-0"><MyLessons /></TabsContent>
+        <TabsContent value="today" className="mt-0"><TodayAssignments /></TabsContent>
+        <TabsContent value="riders" className="mt-0"><TrainerRidersTab /></TabsContent>
+        <TabsContent value="horses" className="mt-0"><HorsesTab /></TabsContent>
+        <TabsContent value="subs" className="mt-0"><SubsOverview /></TabsContent>
+        <TabsContent value="unpaid" className="mt-0"><UnpaidLessonsOverview staff /></TabsContent>
+        <TabsContent value="cancel" className="mt-0"><CancelDayTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -223,7 +235,7 @@ function HorsesTab() {
 
   return (
     <div className="space-y-5">
-      <section className="space-y-4 rounded-xl border border-gold/15 bg-gradient-card p-5">
+      <section className="space-y-4 rounded-xl border border-border/70 bg-background/60 p-5">
         <div className="flex items-center gap-2">
           <Plus className="h-5 w-5 text-gold" />
           <h2 className="font-display text-xl text-foreground">Pridėti žirgą</h2>
@@ -239,7 +251,7 @@ function HorsesTab() {
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={200} placeholder="Nebūtina" />
           </div>
           <div>
-            <Label>Maks. jojimų per dieną</Label>
+            <Label>Daugiausia treniruočių per dieną</Label>
             <Input
               type="number"
               min={1}
@@ -277,7 +289,7 @@ function HorsesTab() {
             checked={showInactive}
             onChange={(e) => setShowInactive(e.target.checked)}
           />
-          Rodyti neaktyvius
+          Rodyti ir neaktyvius žirgus
         </label>
       </div>
 
@@ -300,7 +312,7 @@ function HorsesTab() {
                   <Input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} maxLength={200} />
                 </div>
                 <div>
-                  <Label>Maks. jojimų per dieną</Label>
+                  <Label>Daugiausia treniruočių per dieną</Label>
                   <Input
                     type="number"
                     min={1}
@@ -325,7 +337,7 @@ function HorsesTab() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <Horse size={16} />
-                    <h3 className="font-display text-xl text-gold">{horse.name}</h3>
+                    <h3 className="font-display text-xl text-foreground">{horse.name}</h3>
                     {!horse.active && (
                       <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
                         neaktyvus
@@ -334,9 +346,9 @@ function HorsesTab() {
                   </div>
                   {horse.notes && <p className="mt-1 text-xs text-muted-foreground">{horse.notes}</p>}
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Dienos limitas: <strong className="text-foreground">{horse.max_daily_rides ?? 2}</strong>
+                    Daugiausia treniruočių per dieną: <strong className="text-foreground">{horse.max_daily_rides ?? 2}</strong>
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">Galimos dienos: {weekdays.filter((_, i) => (horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(i + 1)).join(", ") || "Nėra"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Gali dirbti: {weekdays.filter((_, i) => (horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(i + 1)).join(", ") || "Nėra"}</p>
                 </div>
 
                 <div className="flex shrink-0 gap-1">
@@ -540,7 +552,7 @@ function TodayAssignments() {
 
   return (
     <div className="space-y-5">
-      <section className="flex flex-col gap-3 rounded-xl border border-gold/15 bg-gradient-card p-4 sm:flex-row sm:items-end sm:justify-between">
+      <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/60 p-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap gap-3">
           <div>
             <Label>Pasirinkite dieną</Label>
@@ -560,7 +572,7 @@ function TodayAssignments() {
           )}
         </div>
         <div className="text-xs text-muted-foreground">
-          Skaičius skliausteliuose rodo: <strong className="text-foreground">kiek kartų žirgas jau priskirtas tą dieną / jo limitas</strong>.
+          Prie kiekvieno žirgo matysite, kiek treniruočių jam jau paskirta tą dieną ir kiek daugiausia galima paskirti.
         </div>
       </section>
 
@@ -571,8 +583,8 @@ function TodayAssignments() {
       ) : (
         <div className="space-y-4">
           {grouped.map(([time, list]) => (
-            <section key={time} className="rounded-xl border border-gold/15 bg-gradient-card p-4">
-              <h3 className="mb-3 flex items-center gap-2 font-display text-lg text-gold">
+            <section key={time} className="rounded-xl border border-border/70 bg-background/60 p-4">
+              <h3 className="mb-3 flex items-center gap-2 font-display text-lg text-foreground">
                 <CalendarDays className="h-4 w-4" /> {formatTime(time)}
               </h3>
 
@@ -589,7 +601,7 @@ function TodayAssignments() {
                   return (
                     <li
                       key={booking.id}
-                      className="grid gap-3 rounded-lg border border-gold/10 bg-background/25 p-3 md:grid-cols-[1fr_280px] md:items-center"
+                      className="grid gap-3 rounded-lg border border-border/60 bg-background/40 p-3 md:grid-cols-[1fr_280px] md:items-center"
                     >
                       <div>
                         <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
@@ -642,8 +654,8 @@ function TodayAssignments() {
         </div>
       )}
 
-      <section className="rounded-xl border border-gold/15 bg-gradient-card p-4">
-        <h3 className="font-display text-lg text-foreground">Pasirinktos dienos žirgų krūvis</h3>
+      <section className="rounded-xl border border-border/70 bg-background/60 p-4">
+        <h3 className="font-display text-lg text-foreground">Žirgų darbo krūvis pasirinktą dieną</h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {sortedHorses.map((horse) => {
             const used = usageFor(horse.id);
@@ -653,7 +665,7 @@ function TodayAssignments() {
               <div
                 key={horse.id}
                 className={`rounded-lg border px-3 py-2 ${
-                  full ? "border-destructive/35 bg-destructive/10" : "border-gold/10 bg-background/25"
+                  full ? "border-destructive/35 bg-destructive/10" : "border-border/60 bg-background/40"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 text-sm">
@@ -740,7 +752,7 @@ function CancelDayTab() {
 
   return (
     <div className="space-y-5">
-      <section className="flex flex-col gap-3 rounded-xl border border-gold/15 bg-gradient-card p-4 sm:flex-row sm:items-end sm:justify-between">
+      <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/60 p-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap gap-3">
           <div>
             <Label>Pasirinkite dieną</Label>
@@ -776,7 +788,7 @@ function CancelDayTab() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-gold/15 bg-gradient-card p-4 space-y-3">
+        <div className="rounded-xl border border-border/70 bg-background/60 p-4 space-y-3">
           <Label>Priežastis (nebūtina)</Label>
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Pvz., liga, atostogos..." />
           <Button variant="destructive" size="sm" disabled={busy || !trainer} onClick={cancelDay}>
@@ -910,7 +922,7 @@ function MyLessons() {
 
   return (
     <div className="space-y-4">
-      <section className="flex flex-wrap items-end gap-4 rounded-xl border border-gold/15 bg-gradient-card p-4">
+      <section className="flex flex-wrap items-end gap-4 rounded-xl border border-border/70 bg-background/60 p-4">
         {(isAdmin || trainers.length > 1) && (
           <div>
             <Label>Trenerė</Label>
@@ -943,8 +955,8 @@ function MyLessons() {
         byDate.map(([date, list]) => {
           const d = new Date(`${date}T00:00:00`);
           return (
-            <section key={date} className="rounded-xl border border-gold/15 bg-gradient-card p-4">
-              <h3 className="mb-3 flex items-center gap-2 font-display text-lg text-gold">
+            <section key={date} className="rounded-xl border border-border/70 bg-background/60 p-4">
+              <h3 className="mb-3 flex items-center gap-2 font-display text-lg text-foreground">
                 <CalendarDays className="h-4 w-4" />
                 {WEEKDAYS_LT[dbDayOfWeek(d) - 1]} · {date.slice(5).replace("-", ".")}
               </h3>
@@ -953,7 +965,7 @@ function MyLessons() {
                   const group = riders[`${slot.date}|${slot.time}`] ?? [];
                   const state = trainerGroupState(group.map((r) => r.level), slot.maxCapacity);
                   return (
-                    <div key={slot.time} className="rounded-lg border border-gold/10 bg-background/25 p-3">
+                    <div key={slot.time} className="rounded-lg border border-border/60 bg-background/40 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="font-display text-base text-foreground">{formatTime(slot.time)}</span>
                         <span className={state.full ? "text-xs text-avail-full" : "text-xs text-avail-free"}>
@@ -970,7 +982,7 @@ function MyLessons() {
                               <span className={`rounded-full border px-2 py-0.5 text-[10px] ${LEVEL_META[r.level].cls}`}>
                                 {LEVEL_META[r.level].label}
                               </span>
-                              {r.horse && <span className="text-xs text-gold">🐴 {r.horse}</span>}
+                              {r.horse && <span className="text-xs text-muted-foreground">Žirgas: {r.horse}</span>}
                             </li>
                           ))}
                         </ul>
@@ -1027,7 +1039,7 @@ function SubsOverview() {
           {filtered.map((subscription) => (
             <li
               key={subscription.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold/15 bg-gradient-card px-4 py-3 text-sm"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/70 bg-background/60 px-4 py-3 text-sm"
             >
               <div>
                 <div className="font-medium">{subscription.full_name}</div>
