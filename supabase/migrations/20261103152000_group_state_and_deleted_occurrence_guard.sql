@@ -31,7 +31,7 @@ BEGIN
          (t.one_off_date IS NULL AND t.day_of_week = dow))
     AND (_trainer_name IS NULL OR t.trainer_name IS NOT DISTINCT FROM _trainer_name)
   ORDER BY
-    (t.one_off_date = _slot_date) DESC,
+    (t.one_off_date IS NOT NULL) DESC,
     (t.trainer_name IS NOT DISTINCT FROM _trainer_name) DESC,
     t.max_capacity ASC,
     t.id
