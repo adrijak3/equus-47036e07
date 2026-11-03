@@ -50,6 +50,7 @@ interface HorseOption {
   notes: string | null;
   active: boolean;
   max_daily_rides: number;
+  allowed_weekdays: number[];
 }
 
 interface HorseAssignment {
@@ -104,7 +105,7 @@ export function RiderActionSheet({
     const [horsesRes, assignmentsRes] = await Promise.all([
       supabase
         .from("horses")
-        .select("id, name, notes, active, max_daily_rides")
+        .select("id, name, notes, active, max_daily_rides, allowed_weekdays")
         .eq("active", true)
         .order("name"),
       supabase
@@ -193,6 +194,8 @@ export function RiderActionSheet({
         );
       } else if (error.message.includes("NOT_ALLOWED")) {
         toast.error("Neturite teisės keisti žirgų.");
+      } else if (error.message.includes("HORSE_DAY_UNAVAILABLE")) {
+        toast.error("Šis žirgas šią dieną nepasiekiamas.");
       } else if (error.message.includes("HORSE_NOT_AVAILABLE")) {
         toast.error("Šis žirgas šiuo metu nepasiekiamas.");
       } else {
@@ -286,15 +289,16 @@ export function RiderActionSheet({
 
     setBusy(true);
 
-    const { error } = await supabase
+    const { data: changed, error } = await supabase
       .from("bookings")
       .update({ status: "cancelled" })
-      .eq("id", target.bookingId);
+      .eq("id", target.bookingId)
+      .select("id");
 
     setBusy(false);
 
-    if (error) {
-      toast.error(error.message);
+    if (error || !changed?.length) {
+      toast.error(error?.message ?? "Atšaukimas neįvykdytas. Patikrinkite leidimus.");
       return;
     }
 
@@ -489,17 +493,21 @@ export function RiderActionSheet({
                 const isCurrent = selectedHorseId === horse.id;
 
                 const allowedLimit = isAdmin ? 3 : 2;
-                const full = used >= allowedLimit && !isCurrent;
+                const weekday = target ? (new Date(`${target.slotDate}T12:00:00`).getDay() || 7) : 0;
+                const dayUnavailable = !(horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(weekday);
+                const sameSlotTaken = assignments.some(a => a.horse_id === horse.id && a.slot_time.slice(0, 5) === target?.slotTime.slice(0, 5) && a.booking_id !== target?.bookingId);
+                const full = used >= allowedLimit && currentAssignment?.horse_id !== horse.id;
+                const blocked = dayUnavailable || sameSlotTaken || full;
 
                 return (
                   <button
                     key={horse.id}
                     type="button"
-                    disabled={full}
+                    disabled={blocked}
                     onClick={() => setSelectedHorseId(horse.id)}
                     className={cn(
                       "w-full rounded-xl border p-3 text-left transition-colors",
-                      isCurrent
+                      blocked ? "cursor-not-allowed border-border/50 opacity-50" : isCurrent
                         ? "border-gold bg-gold/10"
                         : full
                           ? "cursor-not-allowed border-border/50 opacity-50"
@@ -532,11 +540,7 @@ export function RiderActionSheet({
                       </span>
                     </div>
 
-                    {full && (
-                      <div className="mt-1 text-[10px] text-destructive">
-                        Dienos limitas pasiektas
-                      </div>
-                    )}
+                    {dayUnavailable ? <div className="mt-1 text-[10px] text-destructive">(Šis žirgas šią dieną nepasiekiamas)</div> : sameSlotTaken ? <div className="mt-1 text-[10px] text-destructive">(Šis žirgas jau pasirinktas šiam laikui)</div> : full ? <div className="mt-1 text-[10px] text-destructive">Dienos limitas pasiektas</div> : null}
 
                     {isAdmin && used === 2 && !isCurrent && (
                       <div className="mt-1 text-[10px] text-gold">
