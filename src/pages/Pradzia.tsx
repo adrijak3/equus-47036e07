@@ -426,7 +426,7 @@ export default function Pradzia() {
             className="rounded-2xl border border-border/60 bg-background/70 p-5"
           >
             <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-muted-foreground" />
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
               <h2 className="font-display text-xl text-foreground">Šį mėnesį</h2>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
