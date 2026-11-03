@@ -67,58 +67,36 @@ const NAV_GUEST = [
 ];
 
 const NAV_USER = [
-  { to: "/varzybos", label: "Varžybos", icon: Trophy },
   { to: "/", label: "Pagrindinis", icon: Home },
-  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
-  { to: "/kainos", label: "Kainos", icon: Tag },
-  { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
-  { to: "/paskyra?tab=subs", label: "Abonementas", icon: Wallet },
-  { to: "/paskyra?tab=profile", label: "Paskyra", icon: UserIcon },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
+  { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
+  { to: "/varzybos", label: "Varžybos", icon: Trophy },
+  { to: "/paskyra", label: "Paskyra ir abonementas", icon: UserIcon },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
+  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
 
 const NAV_ADMIN = [
+  { to: "/admin", label: "Žirgyno valdymas", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
-  { to: "/admin", label: "Pagrindinis", icon: Home },
-  { to: "/galerija", label: "Galerija", icon: Images },
-  { to: "/kainos", label: "Kainos", icon: Tag, mobileBottomOnly: true },
-  { to: "/apie-mus", label: "Apie mus", icon: UsersIcon },
-  { to: "/grafikas", label: "Grafikas", icon: CalendarDays, mobileBottomOnly: true },
-  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox, mobileBottomOnly: true },
-  { to: "/admin?section=subs", label: "Abonementai", icon: Wallet, mobileBottomOnly: true },
   { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
-  { to: "/admin?section=cancelHistory", label: "Atšaukimų istorija", icon: History },
-  { to: "/admin?section=settings", label: "Nustatymai", icon: Settings },
+  { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
+  { to: "/admin?section=health", label: "Rezervacijų būklė", icon: ShieldCheck },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
+  { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
 
 const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };
 const STAFF_QR_REQUESTS_NAV = { to: "/admin/qr-uzklausos", label: "QR užklausos", icon: QrCode };
 
 const NAV_TRAINER = [
+  { to: "/", label: "Pradžia", icon: Home },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
-  {
-    to: "/",
-    label: "Pradžia",
-    icon: Home,
-  },
-  {
-    to: "/grafikas",
-    label: "Grafikas",
-    icon: Calendar,
-  },
-  {
-    to: "/kainos",
-    label: "Kainos",
-    icon: Tag,
-  },
-  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine },
-  { to: "/atsiliepimai", label: "Atsiliepimai", icon: MessageCircleHeart },
-  {
-    to: "/informacija",
-    label: "Informacija",
-    icon: Info,
-  },
-  STAFF_QR_REQUESTS_NAV,
+  { to: "/trener", label: "Trenerio sritis", icon: UsersIcon },
+  { to: "/registracija", label: "Registracija", icon: ClipboardPenLine, menuOnly: true },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
 ];
 
 export default function Layout({
@@ -194,7 +172,7 @@ export default function Layout({
   return (
     <div className="min-h-screen flex flex-col">
       {/* Viršutinė juosta */}
-      <header className="sticky top-0 z-40 border-b border-gold/10 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
         <div className="container flex h-16 items-center justify-between">
           <Link
             to="/"
