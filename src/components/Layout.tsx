@@ -338,7 +338,7 @@ export default function Layout({
                 )}
               </div>
               )}
-            </div>
+            </nav>
           </div>
 
           {/* Paskyros dalis apačioje */}
