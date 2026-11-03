@@ -143,6 +143,7 @@ interface HorseOption {
   notes: string | null;
   active: boolean;
   max_daily_rides: number;
+  allowed_weekdays: number[];
 }
 
 interface ProfileLite {
@@ -672,7 +673,7 @@ export default function Grafikas() {
 
     const { data: horseRows } = await supabase
       .from("horses")
-      .select("id, name, notes, active, max_daily_rides")
+      .select("id, name, notes, active, max_daily_rides, allowed_weekdays")
       .eq("active", true)
       .order("name");
 
@@ -1553,6 +1554,8 @@ export default function Grafikas() {
         toast.error(
           "Šis žirgas jau pasirinktas šiam laikui. Pasirinkite kitą žirgą.",
         );
+      } else if (error.message.includes("HORSE_DAY_UNAVAILABLE")) {
+        toast.error("Šis žirgas šią dieną nepasiekiamas.");
       } else if (
         error.message.includes(
           "HORSE_NOT_AVAILABLE",
@@ -4635,13 +4638,10 @@ export default function Grafikas() {
                       a.booking_id !== horseDialog.bookingId,
                   );
 
-                const dailyLimitReached =
-                  used >= 2 &&
-                  !currentlySelected;
-
-                const unavailable =
-                  (dailyLimitReached || alreadyChosenAtThisSlot) &&
-                  !currentlySelected;
+                const ownedHorse = assignments.some(a => a.booking_id === horseDialog?.bookingId && a.horse_id === horse.id);
+                const dayAvailable = !horseDialog || (horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(horseDialog.date.getDay() || 7);
+                const dailyLimitReached = used >= (horse.max_daily_rides ?? 2) && !ownedHorse;
+                const unavailable = !dayAvailable || alreadyChosenAtThisSlot || dailyLimitReached;
 
                 return (
                   <button
@@ -4689,11 +4689,13 @@ export default function Grafikas() {
                         )}
                       >
                         {used}
-                        /2
+                        /{horse.max_daily_rides ?? 2}
                       </span>
                     </div>
 
-                    {alreadyChosenAtThisSlot ? (
+                    {!dayAvailable ? (
+                      <div className="mt-1 text-[10px] text-destructive">(Šis žirgas šią dieną nepasiekiamas)</div>
+                    ) : alreadyChosenAtThisSlot ? (
                       <div className="mt-1 text-[10px] text-destructive">
                         (Šis žirgas jau pasirinktas šiam laikui)
                       </div>
