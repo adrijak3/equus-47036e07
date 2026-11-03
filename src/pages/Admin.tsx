@@ -853,18 +853,21 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
   }, []);
 
   const cards = [
-    { label: "Vartotojai", value: stats.users, icon: Users, go: "users", cls: "" },
+    { label: "Šios savaitės treniruotės", value: stats.weekBookings, icon: CalendarCog, go: "schedule", cls: "" },
+    { label: "Laukiantys atšaukimai", value: alerts.pending, icon: Inbox, go: "cancels", cls: alerts.pending > 0 ? "border-destructive/40 bg-destructive/5" : "" },
+    { label: "Naujos žinutės", value: alerts.unread, icon: MessageSquare, go: "messages", cls: "" },
+    { label: "Neapmokėti abonementai", value: stats.unpaidSubs, icon: AlertCircle, go: "subs", cls: stats.unpaidSubs > 0 ? "border-destructive/40 bg-destructive/5" : "" },
+    { label: "Klientai", value: stats.users, icon: Users, go: "users", cls: "" },
     { label: "Aktyvūs abonementai", value: stats.activeSubs, icon: Wallet, go: "subs", cls: "" },
-    { label: "Neapmokėti abonementai", value: stats.unpaidSubs, icon: AlertCircle, go: "subs", cls: stats.unpaidSubs > 0 ? "border-blush/40 bg-blush/5" : "" },
-    { label: "Šios sav. treniruotės", value: stats.weekBookings, icon: CalendarCog, go: "schedule", cls: "" },
-    { label: "Atostogose / greitai", value: stats.onVacation, icon: Palmtree, go: "vacations", cls: stats.onVacation > 0 ? "border-gold/40 bg-gold/5" : "" },
-    { label: "Nauj. žinutės", value: alerts.unread, icon: MessageSquare, go: "messages", cls: alerts.unread > 0 ? "border-gold/40 bg-gold/5" : "" },
-    { label: "Laukiantys atšaukimai", value: alerts.pending, icon: Inbox, go: "cancels", cls: alerts.pending > 0 ? "border-blush/40 bg-blush/5" : "" },
+    { label: "Atostogose / netrukus", value: stats.onVacation, icon: CalendarDays, go: "vacations", cls: "" },
   ];
 
   return (
     <div className="space-y-4">
-      <SubscriptionReminders onFocusUser={onFocusUser} onShowAll={() => onGo("subs")} />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div><h2 className="font-display text-2xl text-foreground">Dienos darbai</h2><p className="text-sm text-muted-foreground">Svarbiausi veiksmai prieš prasidedant treniruotėms.</p></div>
+        <button type="button" onClick={() => onGo("health")} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Patikrinti rezervacijų būklę</button>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {cards.map((c) => {
         const Icon = c.icon;
@@ -873,19 +876,20 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
             key={c.label}
             onClick={() => onGo(c.go)}
             className={cn(
-              "text-left p-4 rounded-lg border transition-all hover:border-gold/50 hover:shadow-gold group",
-              c.cls || "border-gold/15 bg-gradient-card",
+              "text-left p-4 rounded-xl border border-border/60 bg-background/70 transition-colors hover:border-foreground/30 group",
+              c.cls || "border-border/60 bg-background/70",
             )}
           >
             <div className="flex items-center justify-between mb-2">
-              <Icon className="w-4 h-4 text-gold/70 group-hover:text-gold" />
+              <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
             </div>
-            <div className="font-display text-3xl text-gradient-gold tabular-nums">{c.value}</div>
+            <div className="font-display text-3xl text-foreground tabular-nums">{c.value}</div>
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{c.label}</div>
           </button>
         );
       })}
       </div>
+      <div className="pt-4"><SubscriptionReminders onFocusUser={onFocusUser} onShowAll={() => onGo("subs")} /></div>
     </div>
   );
 }
