@@ -81,11 +81,11 @@
       );
 
     --shadow-elegant:
-      0 30px 80px -20px hsl(220 80% 2% / 0.55),
-      0 10px 35px -10px hsl(208 85% 70% / 0.12);
+      0 16px 45px -18px hsl(220 80% 2% / 0.35),
+      0 4px 18px -10px hsl(208 85% 70% / 0.06);
 
     --shadow-gold:
-      0 0 35px hsl(208 85% 70% / 0.25);
+      0 0 20px hsl(208 85% 70% / 0.10);
 
     --shadow-soft:
       0 5px 25px hsl(220 90% 5% / 0.35);
@@ -129,7 +129,7 @@
     font-family: "Cormorant Garamond", serif;
     font-weight: 700;
     letter-spacing: -0.02em;
-    text-shadow: 0 0 30px hsl(var(--gold) / 0.12);
+    text-shadow: none;
   }
 
   body::before {
@@ -151,7 +151,7 @@
         transparent 25%
       );
 
-    opacity: 0.8;
+    opacity: 0.24;
   }
 
   #root {
@@ -1350,3 +1350,16 @@
   --sidebar-ring: 35 24% 65%;
 }
 
+
+
+/* Equus interface refinement: quieter actions and accessible reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-fade-up { animation: none; }
+  .equus-next-lesson { animation: none !important; }
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
