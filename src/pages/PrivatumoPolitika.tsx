@@ -21,7 +21,7 @@ export default function PrivatumoPolitika() {
 
     <Section icon={ShieldCheck} title="Duomenų valdytojas ir kontaktai">
       <p>Duomenų valdytojas – <strong>VšĮ Jojimo mokykla „Equus“</strong>, įmonės kodas 302754824, Pakamšės g. 7, Daučionys, 14245 Vilniaus r. sav.</p>
-      <p>Dėl asmens duomenų kreipkitės telefonu <a className="text-gold underline" href="tel:+37062876090">+370 628 76 090</a> arba el. paštu <a className="text-gold underline" href="mailto:jojimomokykla@gmail.com">jojimomokykla@gmail.com</a>.</p>
+      <p>Dėl asmens duomenų kreipkitės telefonu <a className="text-gold underline" href="tel:+37065822872">+370 658 22872</a> arba el. paštu <a className="text-gold underline" href="mailto:jojimomokykla@gmail.com">jojimomokykla@gmail.com</a>.</p>
     </Section>
 
     <Section icon={Database} title="Kokius duomenis tvarkome">
