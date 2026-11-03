@@ -621,10 +621,14 @@ function TodayAssignments() {
                         {sortedHorses.map((horse) => {
                           const used = usageFor(horse.id, assignment?.id);
                           const limit = horse.max_daily_rides ?? 2;
-                          const disabled = used >= limit && assignment?.horse_id !== horse.id;
+                          const weekday = new Date(`${booking.slot_date}T12:00:00`).getDay() || 7;
+                          const dayUnavailable = !(horse.allowed_weekdays ?? [1, 2, 3, 4, 5, 6, 7]).includes(weekday);
+                          const sameSlotTaken = assigns.some(a => a.horse_id === horse.id && a.slot_time.slice(0, 5) === booking.slot_time.slice(0, 5) && a.id !== assignment?.id);
+                          const full = used >= limit && assignment?.horse_id !== horse.id;
+                          const disabled = dayUnavailable || sameSlotTaken || full;
                           return (
                             <option key={horse.id} value={horse.id} disabled={disabled}>
-                              {horse.name} ({used}/{limit}){disabled ? " – limitas" : ""}
+                              {horse.name} ({used}/{limit}){dayUnavailable ? " – nepasiekiamas šią dieną" : sameSlotTaken ? " – užimtas šiuo laiku" : full ? " – limitas" : ""}
                             </option>
                           );
                         })}
