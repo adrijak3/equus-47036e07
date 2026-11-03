@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO, canonicalBookings, dbDayOfWeek, SINGLE_LESSON_PRICE } from "@/lib/equus";
-import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode, Eye } from "lucide-react";
+import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, CalendarDays, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode, Eye } from "lucide-react";
 import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { ClientSubscriptionCards, SubscriptionCard } from "@/pages/Paskyra";
@@ -2152,7 +2152,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
   const deleteSub = async (s: Sub) => {
     if (!confirm(`Ištrinti abonementą (${s.lessons_used}/${s.lessons_total})? Šis veiksmas negrįžtamas.`)) return;
 
-    const { error } = await supabase.rpc("admin_delete_subscription", {
+    const { error } = await (supabase as any).rpc("admin_delete_subscription", {
       _subscription_id: s.id,
     });
 
@@ -2183,7 +2183,7 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     const failed: { id: string; message: string }[] = [];
 
     for (const target of targets) {
-      const { error } = await supabase.rpc("admin_delete_subscription", {
+      const { error } = await (supabase as any).rpc("admin_delete_subscription", {
         _subscription_id: target.id,
       });
       if (error) failed.push({ id: target.id, message: error.message });
