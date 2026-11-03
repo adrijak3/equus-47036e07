@@ -473,10 +473,10 @@ export default function Layout({
                     NAV_TRAINER[1],
                     NAV_TRAINER[2],
                     STAFF_QR_NAV,
-                    { to: "/trener", label: "Trenerio sritis", icon: Sparkles },
+                    { to: "/trener", label: "Trenerio sritis", icon: UsersIcon },
                   ]
                 : NAV_USER
-            ).filter(({ menuOnly }) => !menuOnly).map(({ to, label, icon: Icon }) => {
+            ).filter((item) => !("menuOnly" in item && item.menuOnly)).map(({ to, label, icon: Icon }) => {
               const active = isLinkActive(to);
               return (
                 <Link
