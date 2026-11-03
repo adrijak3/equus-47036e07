@@ -83,7 +83,7 @@ const NAV_ADMIN = [
   { to: "/admin?section=users", label: "Klientai", icon: UsersIcon },
   { to: "/admin?section=cancels", label: "Atšaukimai", icon: Inbox },
   { to: "/admin?section=health", label: "Rezervacijų būklė", icon: ShieldCheck },
-  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
+  { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true, mobileBottomOnly: false },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
 
