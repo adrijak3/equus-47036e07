@@ -30,6 +30,7 @@ import {
   ScanLine,
   QrCode,
   Trophy,
+  type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,9 @@ import { EquusHelpWidget } from "@/components/EquusHelpWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-const NAV_GUEST = [
+type NavigationItem = { to: string; label: string; icon: LucideIcon; menuOnly?: boolean; mobileBottomOnly?: boolean };
+
+const NAV_GUEST: NavigationItem[] = [
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
   {
     to: "/",
@@ -66,7 +69,7 @@ const NAV_GUEST = [
   },
 ];
 
-const NAV_USER = [
+const NAV_USER: NavigationItem[] = [
   { to: "/", label: "Pagrindinis", icon: Home },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
@@ -76,7 +79,7 @@ const NAV_USER = [
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
 
-const NAV_ADMIN = [
+const NAV_ADMIN: NavigationItem[] = [
   { to: "/admin", label: "Žirgyno valdymas", icon: Home },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
@@ -90,7 +93,7 @@ const NAV_ADMIN = [
 const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };
 const STAFF_QR_REQUESTS_NAV = { to: "/admin/qr-uzklausos", label: "QR užklausos", icon: QrCode };
 
-const NAV_TRAINER = [
+const NAV_TRAINER: NavigationItem[] = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
