@@ -1329,7 +1329,7 @@ export default function Grafikas() {
       setSubscriptionReminderKind("grace");
       setSubscriptionReminderOpen(true);
       toast.success(
-        "Pamoka užregistruota. Tai vienintelė būsima treniruotė, kurią šiuo metu galite turėti be abonemento. Iki kitos registracijos reikės įsigyti abonementą.",
+        "Pamoka užregistruota. Jūsų vienkartinė treniruotė be abonemento išnaudota. Kitai registracijai reikės įsigyti abonementą.",
         { duration: 9000 },
       );
     } else {
@@ -3238,8 +3238,8 @@ export default function Grafikas() {
             <DialogTitle>{subscriptionReminderKind === "required" ? "Kitai registracijai reikalingas abonementas" : "Pamoka užregistruota – nepamirškite abonemento"}</DialogTitle>
             <DialogDescription>
               {subscriptionReminderKind === "required"
-                ? "Jau išnaudojote vieną leidžiamą būsimą treniruotę be abonemento. Norint registruotis į kitą, reikia abonemento. Išimtys, kurioms abonementas nereikalingas, lieka galioti. Esamos rezervacijos neištrinamos."
-                : "Tai jūsų viena leidžiama būsima treniruotė be abonemento. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. Esamos rezervacijos neištrinamos."}
+                ? "Jau išnaudojote vieną leidžiamą treniruotę be abonemento. Norint registruotis į kitą, reikia abonemento. Išimtys, kurioms abonementas nereikalingas, lieka galioti. Esamos rezervacijos neištrinamos."
+                : "Tai jūsų viena leidžiama treniruotė be abonemento. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. Esamos rezervacijos neištrinamos."}
             </DialogDescription>
           </DialogHeader>
           <Button asChild variant="gold" onClick={() => setSubscriptionReminderOpen(false)}>
