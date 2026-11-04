@@ -271,6 +271,7 @@ export default function Grafikas() {
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [subscriptionReminderOpen, setSubscriptionReminderOpen] = useState(false);
+  const [subscriptionReminderKind, setSubscriptionReminderKind] = useState<"permanent" | "grace">("permanent");
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
   const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; slotId: string | null; trainerName: string | null; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
   const [po2Busy, setPo2Busy] = useState(false);
@@ -1278,6 +1279,7 @@ export default function Grafikas() {
         }
         // Exact slot has room; continue to the insert below.
        } else if (code === "PERMANENT_SUBSCRIPTION_REQUIRED") {
+        setSubscriptionReminderKind("permanent");
         setSubscriptionReminderOpen(true);
         return false;
       } else if (code === "BOOKING_WINDOW_CLOSED") {
@@ -1330,6 +1332,8 @@ export default function Grafikas() {
     setBookingSuccess({ date, time });
 
     if (eligibility.grace_booking) {
+      setSubscriptionReminderKind("grace");
+      setSubscriptionReminderOpen(true);
       toast.success(
         "Pamoka užregistruota. Tai vienintelė būsima treniruotė, kurią šiuo metu galite turėti be abonemento. Iki kitos registracijos reikės įsigyti abonementą.",
         { duration: 9000 },
@@ -3237,11 +3241,11 @@ export default function Grafikas() {
       <Dialog open={subscriptionReminderOpen} onOpenChange={setSubscriptionReminderOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Norint registruotis reikia abonemento</DialogTitle>
+            <DialogTitle>{subscriptionReminderKind === "permanent" ? "Norint registruotis reikia abonemento" : "Pamoka užregistruota – nepamirškite abonemento"}</DialogTitle>
             <DialogDescription>
-              Turite nuolatinį treniruotės laiką, todėl papildomoms registracijoms būtinas
-              galiojantis apmokėtas abonementas. Jūsų anksčiau užregistruotos pamokos
-              niekur nedings ir nebus automatiškai atšauktos.
+              {subscriptionReminderKind === "permanent"
+                ? "Turite nuolatinį treniruotės laiką, todėl papildomoms registracijoms būtinas galiojantis apmokėtas abonementas. Jūsų anksčiau užregistruotos pamokos niekur nedings ir nebus automatiškai atšauktos."
+                : "Tai jūsų viena leidžiama būsima treniruotė be abonemento. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. Esamos rezervacijos neištrinamos."}
             </DialogDescription>
           </DialogHeader>
           <Button asChild variant="gold" onClick={() => setSubscriptionReminderOpen(false)}>
