@@ -214,7 +214,7 @@ function riderReleasedMonday(): Date {
   const get = (type: string) => Number(parts.find(p => p.type === type)?.value ?? 0);
   const today = new Date(get("year"), get("month") - 1, get("day"), 12);
   const monday = startOfWeek(today);
-  return today.getDay() === 0 && get("hour") >= 1 ? addDays(monday, 7) : monday;
+  return monday;
 }
 
 export default function Grafikas() {
@@ -242,7 +242,7 @@ export default function Grafikas() {
       setReleasedMonday(monday);
       setWeekStart(current => {
         const first = monday.getTime();
-        const last = addDays(monday, 7).getTime();
+        const last = addDays(monday, 14).getTime();
         return current.getTime() < first || current.getTime() > last ? monday : current;
       });
     };
@@ -446,7 +446,14 @@ export default function Grafikas() {
 
   const weekEnd = days[6];
   const firstRiderWeek = releasedMonday.getTime();
-  const lastRiderWeek = addDays(releasedMonday, 7).getTime();
+  // On Sunday from 01:00 the new third week opens, but the current Sunday
+  // remains accessible until the day ends.
+  const vilniusParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Vilnius", weekday: "short", hour: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const isReleaseSunday = vilniusParts.find(p => p.type === "weekday")?.value === "Sun"
+    && Number(vilniusParts.find(p => p.type === "hour")?.value ?? 0) >= 1;
+  const lastRiderWeek = addDays(releasedMonday, isReleaseSunday ? 14 : 7).getTime();
   const previousWeekBlocked = !staffCalendar && weekStart.getTime() <= firstRiderWeek;
   const nextWeekBlocked = !staffCalendar && weekStart.getTime() >= lastRiderWeek;
 
@@ -3234,7 +3241,7 @@ export default function Grafikas() {
       <VacationBanner userId={user?.id ?? null} />
       {!staffCalendar && (
         <p className="mb-4 rounded-lg border border-border/60 bg-background/60 px-4 py-3 text-center text-xs leading-5 text-muted-foreground">
-          Rodomos dvi atidarytos savaitės. Sekmadienį nuo 01:00 val. atsidaro dar viena savaitė.
+          Rodomos šios ir kitos savaitės treniruotės. Sekmadienį nuo 01:00 val. papildomai atsidaro dar viena savaitė.
         </p>
       )}
 
