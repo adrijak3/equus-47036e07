@@ -2005,13 +2005,34 @@ export default function Grafikas() {
     if (!moveDialog || !moveSelectedTime) return;
 
     setMoveBusy(true);
-    const { error } = await (supabase as any).rpc("move_booking_same_day", {
+    const { data: moveResult, error } = await (supabase as any).rpc("move_booking_same_day", {
       _booking_id: moveDialog.booking.id,
       _target_slot_id: moveSelectedTime,
     });
+
+    if (!error && moveResult?.ok && !moveResult?.unchanged) {
+      const { data: persisted, error: verifyError } = await supabase
+        .from("bookings")
+        .select("id, slot_date, slot_time, status")
+        .eq("id", moveDialog.booking.id)
+        .maybeSingle();
+
+      if (
+        verifyError ||
+        !persisted ||
+        persisted.slot_date !== moveDialog.booking.slot_date ||
+        persisted.slot_time.slice(0, 5) !== String(moveResult.slot_time).slice(0, 5) ||
+        persisted.slot_time.slice(0, 5) === moveDialog.booking.slot_time.slice(0, 5)
+      ) {
+        setMoveBusy(false);
+        toast.error("Perkėlimas nepatvirtintas. Patikrinkite rezervaciją grafike.");
+        await loadData();
+        return;
+      }
+    }
     setMoveBusy(false);
 
-    if (error) {
+    if (error || !moveResult?.ok || moveResult?.unchanged) {
       const message =
         error.message?.includes("SLOT_FULL")
           ? (language === "lt" ? "Ši treniruotė jau pilna." : "This training is already full.")
