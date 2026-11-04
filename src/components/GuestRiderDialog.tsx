@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -26,7 +27,7 @@ export function GuestRiderDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (riderId: string, displayName: string, isNewcomer: boolean) => void;
+  onConfirm: (riderId: string, displayName: string, isNewcomer: boolean, individual: boolean) => void;
   busy?: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -36,10 +37,11 @@ export function GuestRiderDialog({
   const [existing, setExisting] = useState<GuestRiderLite[]>([]);
   const [selected, setSelected] = useState<GuestRiderLite | null>(null);
   const [loadingList, setLoadingList] = useState(false);
+  const [individual, setIndividual] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setQuery(""); setFirstName(""); setLastName(""); setPhone(""); setSelected(null);
+    setQuery(""); setFirstName(""); setLastName(""); setPhone(""); setSelected(null); setIndividual(false);
     setLoadingList(true);
     supabase
       .from("guest_riders")
@@ -63,7 +65,7 @@ export function GuestRiderDialog({
 
   const handleConfirm = async () => {
     if (selected) {
-      onConfirm(selected.id, `${selected.first_name} ${selected.last_name}`.trim(), selected.is_newcomer);
+      onConfirm(selected.id, `${selected.first_name} ${selected.last_name}`.trim(), selected.is_newcomer, individual);
       return;
     }
     if (!canCreate) { toast.error("Įveskite vardą ir pavardę"); return; }
@@ -80,7 +82,7 @@ export function GuestRiderDialog({
       .select("id, first_name, last_name, phone, is_newcomer")
       .single();
     if (error || !data) { toast.error(error?.message ?? "Klaida"); return; }
-    onConfirm(data.id, `${data.first_name} ${data.last_name}`.trim(), data.is_newcomer);
+    onConfirm(data.id, `${data.first_name} ${data.last_name}`.trim(), data.is_newcomer, individual);
   };
 
   return (
@@ -134,6 +136,20 @@ export function GuestRiderDialog({
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefonas (nebūtina)" maxLength={30} />
             </div>
           )}
+
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm">
+            <Checkbox
+              checked={individual}
+              onCheckedChange={(checked) => setIndividual(checked === true)}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block font-medium">Individuali pamoka · 50 €</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Vienas žmogus, abonemento nereikia. Laikas turi būti tuščias.
+              </span>
+            </span>
+          </label>
         </div>
 
         <DialogFooter>
