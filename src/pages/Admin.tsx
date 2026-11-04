@@ -2427,21 +2427,21 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
 
           return (
             <div key={p.id} className="bg-gradient-card border border-gold/15 rounded-lg overflow-hidden">
-              <div className="px-5 py-3 flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <button
                   type="button"
                   onClick={() => {
                     setOpenUserId(isOpen ? null : p.id);
                     setDetailSub(null);
                   }}
-                  className="min-w-0 flex-1 text-left"
+                  className="w-full min-w-0 text-left sm:flex-1"
                   aria-expanded={isOpen}
                 >
-                  <div className="font-display text-base text-gold">{p.full_name}</div>
-                  <div className="text-xs text-muted-foreground">{p.phone ?? "—"} · {us.length} ab.</div>
+                  <div className="font-display text-base leading-snug text-gold whitespace-normal break-normal [overflow-wrap:normal]">{p.full_name}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{p.phone ?? "—"} · {us.length} ab.</div>
                 </button>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
                   {unpaid && (
                     <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-blush/15 text-blush border border-blush/30 font-medium">
                       Neapmokėta
