@@ -465,7 +465,7 @@ export default function Layout({
                   NAV_ADMIN[2],
                   NAV_ADMIN[3],
                   NAV_ADMIN[4],
-                  NAV_ADMIN[5],
+                  NAV_ADMIN[1],
                   STAFF_QR_NAV,
                 ]
               : isTrainer
