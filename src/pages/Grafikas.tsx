@@ -203,6 +203,20 @@ function scheduleDisplayTime(
 
 
 
+/** Riders see exactly two released calendar weeks. The next week opens each
+ * Sunday at 01:00 Europe/Vilnius, matching the existing weekly sign-up rule. */
+function riderReleasedMonday(): Date {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Vilnius",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const get = (type: string) => Number(parts.find(p => p.type === type)?.value ?? 0);
+  const today = new Date(get("year"), get("month") - 1, get("day"), 12);
+  const monday = startOfWeek(today);
+  return today.getDay() === 0 && get("hour") >= 1 ? addDays(monday, 7) : monday;
+}
+
 export default function Grafikas() {
   const { user, profile, isAdmin, isTrainer } = useAuth();
   const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
@@ -218,7 +232,24 @@ export default function Grafikas() {
     localStorage.setItem("equus_calendar_view", view);
   };
 
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const staffCalendar = isAdmin || isTrainer;
+  const [releasedMonday, setReleasedMonday] = useState(riderReleasedMonday);
+  const [weekStart, setWeekStart] = useState(riderReleasedMonday);
+  useEffect(() => {
+    if (staffCalendar) return;
+    const syncRelease = () => {
+      const monday = riderReleasedMonday();
+      setReleasedMonday(monday);
+      setWeekStart(current => {
+        const first = monday.getTime();
+        const last = addDays(monday, 7).getTime();
+        return current.getTime() < first || current.getTime() > last ? monday : current;
+      });
+    };
+    syncRelease();
+    const interval = window.setInterval(syncRelease, 60000);
+    return () => window.clearInterval(interval);
+  }, [staffCalendar]);
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
   const calendarScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
@@ -239,6 +270,8 @@ export default function Grafikas() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [subscriptionReminderOpen, setSubscriptionReminderOpen] = useState(false);
+  const [subscriptionReminderKind, setSubscriptionReminderKind] = useState<"permanent" | "grace">("permanent");
   const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
   const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; slotId: string | null; trainerName: string | null; familyRiderId?: string | null; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
   const [po2Busy, setPo2Busy] = useState(false);
@@ -412,6 +445,10 @@ export default function Grafikas() {
   }, [pendingScrollToToday, days, loading]);
 
   const weekEnd = days[6];
+  const firstRiderWeek = releasedMonday.getTime();
+  const lastRiderWeek = addDays(releasedMonday, 7).getTime();
+  const previousWeekBlocked = !staffCalendar && weekStart.getTime() <= firstRiderWeek;
+  const nextWeekBlocked = !staffCalendar && weekStart.getTime() >= lastRiderWeek;
 
 
 
@@ -560,14 +597,10 @@ export default function Grafikas() {
 
     setSlots(slotsRes.data ?? []);
 
-    const visibleBookings = isAdmin
-      ? (bookingsRes.data ?? [])
-      : (bookingsRes.data ?? []).filter(
-          (b: any) => b.is_paused_for_subscription !== true,
-        );
-
+    // Never hide an existing booking from the rider. Paused legacy entries
+    // are explicitly labeled below instead of disappearing from the calendar.
     setBookings(
-      visibleBookings.map((b: any) => ({
+      (bookingsRes.data ?? []).map((b: any) => ({
         ...b,
         profile_name: b.family_rider_id
           ? familyNameMap[b.family_rider_id] ?? "Kartu lankantis raitelis"
@@ -1245,6 +1278,13 @@ export default function Grafikas() {
           return false;
         }
         // Exact slot has room; continue to the insert below.
+       } else if (code === "PERMANENT_SUBSCRIPTION_REQUIRED") {
+        setSubscriptionReminderKind("permanent");
+        setSubscriptionReminderOpen(true);
+        return false;
+      } else if (code === "BOOKING_WINDOW_CLOSED") {
+        toast.error("Ši savaitė dar neatidaryta. Registracija galima tik į dvi atidarytas savaites.");
+        return false;
       } else if (code === "GRACE_BOOKING_ALREADY_USED") {
         toast.error(
           "Jau turite vieną būsimą treniruotę be abonemento. Norėdami registruotis į dar vieną, pirmiausia įsigykite abonementą.",
@@ -1292,6 +1332,8 @@ export default function Grafikas() {
     setBookingSuccess({ date, time });
 
     if (eligibility.grace_booking) {
+      setSubscriptionReminderKind("grace");
+      setSubscriptionReminderOpen(true);
       toast.success(
         "Pamoka užregistruota. Tai vienintelė būsima treniruotė, kurią šiuo metu galite turėti be abonemento. Iki kitos registracijos reikės įsigyti abonementą.",
         { duration: 9000 },
@@ -3189,9 +3231,28 @@ export default function Grafikas() {
         <div className="gold-divider max-w-[140px] mx-auto" />
       </motion.header>
 
-      <VacationBanner
-        userId={user?.id ?? null}
-      />
+      <VacationBanner userId={user?.id ?? null} />
+      {!staffCalendar && (
+        <p className="mb-4 rounded-lg border border-border/60 bg-background/60 px-4 py-3 text-center text-xs leading-5 text-muted-foreground">
+          Rodomos dvi atidarytos savaitės. Sekmadienį nuo 01:00 val. atsidaro dar viena savaitė.
+        </p>
+      )}
+
+      <Dialog open={subscriptionReminderOpen} onOpenChange={setSubscriptionReminderOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{subscriptionReminderKind === "permanent" ? "Norint registruotis reikia abonemento" : "Pamoka užregistruota – nepamirškite abonemento"}</DialogTitle>
+            <DialogDescription>
+              {subscriptionReminderKind === "permanent"
+                ? "Turite nuolatinį treniruotės laiką, todėl papildomoms registracijoms būtinas galiojantis apmokėtas abonementas. Jūsų anksčiau užregistruotos pamokos niekur nedings ir nebus automatiškai atšauktos."
+                : "Tai jūsų viena leidžiama būsima treniruotė be abonemento. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. Esamos rezervacijos neištrinamos."}
+            </DialogDescription>
+          </DialogHeader>
+          <Button asChild variant="gold" onClick={() => setSubscriptionReminderOpen(false)}>
+            <Link to="/paskyra?tab=subs">Peržiūrėti abonementus</Link>
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Week navigation */}
       <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
@@ -3199,17 +3260,12 @@ export default function Grafikas() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() =>
-              setWeekStart(
-                addDays(
-                  weekStart,
-                  -7,
-                ),
-              )
-            }
-            aria-label={t(
-              "previousWeek",
-            )}
+            onClick={() => {
+              if (previousWeekBlocked) return;
+              setWeekStart(addDays(weekStart, -7));
+            }}
+            disabled={previousWeekBlocked}
+            aria-label={t("previousWeek")}
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -3221,17 +3277,12 @@ export default function Grafikas() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() =>
-              setWeekStart(
-                addDays(
-                  weekStart,
-                  7,
-                ),
-              )
-            }
-            aria-label={t(
-              "nextWeek",
-            )}
+            onClick={() => {
+              if (nextWeekBlocked) return;
+              setWeekStart(addDays(weekStart, 7));
+            }}
+            disabled={nextWeekBlocked}
+            aria-label={t("nextWeek")}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -3282,7 +3333,7 @@ export default function Grafikas() {
             variant="outlineGold"
             size="sm"
             onClick={() => {
-              const thisWeek = startOfWeek(new Date());
+              const thisWeek = staffCalendar ? startOfWeek(new Date()) : riderReleasedMonday();
               setSelectedDay(null);
               if (thisWeek.getTime() !== weekStart.getTime()) {
                 setWeekStart(thisWeek);
@@ -4389,6 +4440,12 @@ export default function Grafikas() {
                                                     b.profile_name ??
                                                       "—",
                                                   )}
+
+                                              {b.is_paused_for_subscription && (
+                                                <span className="ml-1 text-[10px] font-medium text-destructive">
+                                                  · Laukia abonemento, vieta nepatvirtinta
+                                                </span>
+                                              )}
 
                                               {b.is_individual && (
                                                 <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">
