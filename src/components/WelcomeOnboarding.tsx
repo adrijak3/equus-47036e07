@@ -37,7 +37,7 @@ const RULES = [
     icon: Tag,
     title: "Abonementas",
     teaser: "4, 8 ar 12 treniruočių.",
-    body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą. Jei abonemento neturite, nuo 2026-10-18 galite turėti vieną būsimą įprastą rezervaciją be abonemento.",
+    body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą. Be abonemento raiteliai, neturintys nuolatinių laikų, gali turėti vieną būsimą įprastą rezervaciją. Turintiems nuolatinį laiką papildomoms registracijoms būtinas galiojantis apmokėtas abonementas. Grafike rodomos dvi atidarytos savaitės; nauja savaitė atsidaro sekmadienį 01:00 val.",
   },
   {
     key: "booking",
