@@ -3233,7 +3233,7 @@ export default function Grafikas() {
             <DialogDescription>
               {subscriptionReminderKind === "required"
                 ? "Jau išnaudojote vieną leidžiamą treniruotę be abonemento. Norint registruotis į kitą, reikia abonemento."
-                : "Tai jūsų viena leidžiama treniruotė be abonemento. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. Esamos rezervacijos neištrinamos."}
+                : "Neturint abonemento, tai vienintelė treniruotė, į kurią galite registruotis. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. (Jei perkate atskirai pamokas po vieną, be abonemento - susisiekite)"}
             </DialogDescription>
           </DialogHeader>
           <Button asChild variant="gold" onClick={() => setSubscriptionReminderOpen(false)}>
