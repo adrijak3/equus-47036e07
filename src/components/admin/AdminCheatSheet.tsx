@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, BookOpen, CalendarCheck2, CalendarX2, CircleHelp,
-  CreditCard, HeartHandshake, Horse, MessageSquare, ShieldAlert,
+  CreditCard, HeartHandshake, PawPrint, MessageSquare, ShieldAlert,
   UserRoundPlus, Wallet, Clock3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -64,7 +64,7 @@ const TASKS: GuideItem[] = [
     note: "Jeigu sistema rodo, kad vieta pilna arba žirgas užimtas, pirma išspręskite konfliktą. Nepridėkite antros rezervacijos vietoj perkėlimo.",
   },
   {
-    id: "horse", title: "Paskirti, pakeisti arba pašalinti žirgą", icon: Horse,
+    id: "horse", title: "Paskirti, pakeisti arba pašalinti žirgą", icon: PawPrint,
     where: "Grafikas → raitelio vardas → Pakeisti žirgą", href: "/grafikas",
     action: "Atidaryti grafiką",
     steps: [
