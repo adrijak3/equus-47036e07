@@ -46,13 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
 
   const loadUserData = async (uid: string) => {
-    const [{ data: prof }, { data: roles }, { data: links }] = await Promise.all([
+    const [{ data: prof }, { data: roles }, { data: links }, { data: effectiveAdmin }] = await Promise.all([
       supabase.from("profiles").select("id, full_name, phone").eq("id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid),
       supabase.from("profile_links" as any).select("id, linked_profile_id, display_name").eq("parent_user_id", uid),
+      (supabase as any).rpc("has_role", { _user_id: uid, _role: "admin" }),
     ]);
     setProfile(prof ?? null);
-    setIsAdmin((roles ?? []).some((r) => r.role === "admin"));
+    setIsAdmin(effectiveAdmin === true || (roles ?? []).some((r) => r.role === "admin"));
     setIsTrainer((roles ?? []).some((r) => r.role === "trainer"));
     setIsHalfAdmin((roles ?? []).some((r) => (r as any).role === "half_admin"));
     const lps: LinkedProfile[] = ((links as any[]) ?? []).map((l) => ({
@@ -91,7 +92,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       else setLoading(false);
     });
 
-    return () => sub.subscription.unsubscribe();
+    // Time-limited admin access starts and expires automatically without
+    // signing out. Refresh privileges on focus and periodically.
+    const onFocus = () => {
+      void supabase.auth.getUser().then(({ data: { user: active } }) => {
+        if (active) void loadUserData(active.id);
+      });
+    };
+    window.addEventListener("focus", onFocus);
+    const roleRefresh = window.setInterval(onFocus, 60_000);
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(roleRefresh);
+    };
   }, []);
 
   const refreshProfile = async () => {

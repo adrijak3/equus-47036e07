@@ -10,8 +10,10 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact";
 
 export default function ApieMus() {
+  const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
       <header className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-7 shadow-elegant sm:p-12">
@@ -217,8 +219,9 @@ export default function ApieMus() {
           </a>
           <a href="tel:+37065822872" className="flex items-start gap-3 rounded-xl border border-gold/10 p-4 transition-colors hover:border-gold/30">
             <Phone className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
-            <span className="text-sm leading-6"><span className="block font-semibold">Telefonas</span>+370 658 22872 arba +370 628 76090</span>
+            <span className="text-sm leading-6"><span className="block font-semibold">Telefonas</span>+370 658 22872{!hideAdminPhone && " arba +370 628 76090"}</span>
           </a>
+          {holiday && <div className="rounded-xl border border-gold/20 p-4 text-sm leading-6 text-gold">{holidayContactText(holiday)}</div>}
           <a href="mailto:jojimomokykla@gmail.com" className="flex items-start gap-3 rounded-xl border border-gold/10 p-4 transition-colors hover:border-gold/30">
             <Mail className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
             <span className="break-words text-sm leading-6"><span className="block font-semibold">El. paštas</span>jojimomokykla@gmail.com</span>

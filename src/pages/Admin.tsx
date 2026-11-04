@@ -31,6 +31,7 @@ import { History } from "lucide-react";
 import { Bug } from "lucide-react";
 import { ImagePlus } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
+import { AdminHolidayDelegation } from "@/components/admin/AdminHolidayDelegation";
 import { loadHorseNamesForBookings } from "@/lib/horseNames";
 import { SubscriptionPurchaseRequestsPanel } from "@/components/SubscriptionPurchaseRequests";
 import { AdminBugReports } from "@/components/AdminBugReports";
@@ -266,11 +267,29 @@ export default function Admin() {
             <TabsContent value="health"><AdminBookingHealth /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
-            <TabsContent value="settings" className="space-y-6">
-              <SubscriptionRuleExemptionsTab />
-              <HalfAdminRolesTab />
-              <AdminNotificationsTab />
-              <MaintenanceSettings />
+            <TabsContent value="settings" className="space-y-4">
+              <div className="rounded-2xl border border-gold/20 bg-gradient-card p-5">
+                <AdminHolidayDelegation />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Kiti nustatymai suskirstyti pagal paskirtį. Atidarykite tik tą skiltį, kurios reikia.
+              </p>
+              <details className="rounded-xl border border-border/60 bg-background/40 p-4">
+                <summary className="cursor-pointer font-medium">Abonemento išimtys</summary>
+                <div className="mt-4"><SubscriptionRuleExemptionsTab /></div>
+              </details>
+              <details className="rounded-xl border border-border/60 bg-background/40 p-4">
+                <summary className="cursor-pointer font-medium">Pusiau administratorių teisės</summary>
+                <div className="mt-4"><HalfAdminRolesTab /></div>
+              </details>
+              <details className="rounded-xl border border-border/60 bg-background/40 p-4">
+                <summary className="cursor-pointer font-medium">Pranešimai</summary>
+                <div className="mt-4"><AdminNotificationsTab /></div>
+              </details>
+              <details className="rounded-xl border border-border/60 bg-background/40 p-4">
+                <summary className="cursor-pointer font-medium">Svetainės priežiūra</summary>
+                <div className="mt-4"><MaintenanceSettings /></div>
+              </details>
             </TabsContent>
           </Tabs>
         </div>
