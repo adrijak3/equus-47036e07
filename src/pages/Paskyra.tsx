@@ -15,6 +15,7 @@ import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact";
 
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
@@ -82,6 +83,7 @@ interface AccountProfile {
 }
 
 export default function Paskyra() {
+  const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   const { user, profile, refreshProfile, activeProfileId, activeProfileName, linkedProfiles } = useAuth();
   const acting = activeProfileId ?? user?.id ?? null;
   const isLinked = !!user && acting !== user.id;
@@ -375,16 +377,27 @@ export default function Paskyra() {
           <ReadOnlyRecurringCard permanents={permanents} />
           <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">
-              <a href="tel:+37062876090" className="group rounded-2xl border border-gold/15 bg-gradient-card p-4 transition-colors hover:border-gold/35">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">Adrija</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Jei turite problemų su svetaine ar turite klausimų -</p>
-                    <p className="mt-2 text-sm text-gold">+370 628 76090</p>
-                  </div>
-                  <Phone className="h-4 w-4 text-gold" />
+              {holiday ? (
+                <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+                  <p className="text-sm font-semibold">Adrija · Atostogos</p>
+                  <p className="mt-2 text-sm leading-6 text-gold">{holidayContactText(holiday)}</p>
                 </div>
-              </a>
+              ) : hideAdminPhone ? (
+                <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-sm text-muted-foreground">
+                  Kontaktinė informacija kraunama…
+                </div>
+              ) : (
+                <a href="tel:+37062876090" className="group rounded-2xl border border-gold/15 bg-gradient-card p-4 transition-colors hover:border-gold/35">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">Adrija</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Jei turite problemų su svetaine ar turite klausimų -</p>
+                      <p className="mt-2 text-sm text-gold">+370 628 76090</p>
+                    </div>
+                    <Phone className="h-4 w-4 text-gold" />
+                  </div>
+                </a>
+              )}
               <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
