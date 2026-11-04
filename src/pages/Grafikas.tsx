@@ -4186,7 +4186,7 @@ export default function Grafikas() {
                                                     .
                                                   </span>
 
-                                                  <span className="truncate">
+                                                  <span className="min-w-0 truncate whitespace-nowrap">
                                                     {w.profile_name ??
                                                       "—"}
                                                   </span>
@@ -4357,7 +4357,7 @@ export default function Grafikas() {
                                               duration: 0.25,
                                             }}
                                             className={cn(
-                                              "flex items-start gap-1.5 text-sm sm:text-base leading-tight min-w-0",
+                                              "flex flex-wrap items-start gap-x-1.5 gap-y-1 text-sm sm:text-base leading-tight min-w-0",
                                               mine
                                                 ? "text-gold"
                                                 : "text-foreground/85",
@@ -4393,7 +4393,7 @@ export default function Grafikas() {
 
                                             <span
                                               className={cn(
-                                                "min-w-0 flex-1 break-words leading-tight",
+                                                "min-w-0 basis-[7rem] flex-1 overflow-hidden text-ellipsis whitespace-nowrap break-normal leading-tight",
                                                 (isAdmin ||
                                                   isTrainer) &&
                                                   "cursor-pointer rounded px-0.5 underline-offset-4 hover:underline",
@@ -4465,7 +4465,7 @@ export default function Grafikas() {
 
                                             {/* USER HORSE SELECTION */}
                                             {mine && (
-                                              <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+                                              <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1.5 flex-shrink-0">
                                                 {canSelectHorse(
                                                   date,
                                                 ) && (
