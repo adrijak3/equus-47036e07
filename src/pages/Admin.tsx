@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { flushPushNotifications } from "@/lib/pushNotifications";
 import { WEEKDAYS_LT, formatTime, isValidTime, formatDateISO, canonicalBookings, dbDayOfWeek, SINGLE_LESSON_PRICE } from "@/lib/equus";
 import { Plus, Trash2, Check, X, Inbox, Users, CalendarCog, CalendarDays, MessageSquare, Star, Clock, Wallet, KeyRound, Link2, AlertCircle, BarChart3, Pencil, ListTree, ClipboardPenLine, MessageCircleHeart, Copy, ClipboardList, ChevronDown, ChevronUp, QrCode, Eye } from "lucide-react";
-import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings } from "lucide-react";
+import { LayoutDashboard, Palmtree, Menu, CopyCheck, Settings, BookOpen } from "lucide-react";
 import { TimeInput } from "@/components/TimeInput";
 import { ClientSubscriptionCards, SubscriptionCard } from "@/pages/Paskyra";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,7 @@ import { Bug } from "lucide-react";
 import { ImagePlus } from "lucide-react";
 import { MaintenanceSettings } from "@/components/admin/MaintenanceSettings";
 import { AdminHolidayDelegation } from "@/components/admin/AdminHolidayDelegation";
+import { AdminCheatSheet } from "@/components/admin/AdminCheatSheet";
 import { loadHorseNamesForBookings } from "@/lib/horseNames";
 import { SubscriptionPurchaseRequestsPanel } from "@/components/SubscriptionPurchaseRequests";
 import { AdminBugReports } from "@/components/AdminBugReports";
@@ -92,6 +93,7 @@ export default function Admin() {
 
   const navItems: { value: string; label: string; icon: any; badge?: number; badgeCls?: string }[] = [
     { value: "overview", label: "Apžvalga", icon: LayoutDashboard },
+    { value: "guide", label: "Atmintinė", icon: BookOpen },
     { value: "schedule", label: "Grafikas", icon: CalendarCog },
     { value: "permanent", label: "Nuolatiniai", icon: Star },
     { value: "cancels", label: "Atšaukimai", icon: Inbox, badge: cancelAlerts, badgeCls: "bg-blush text-white" },
@@ -112,7 +114,7 @@ export default function Admin() {
 
   // Sections grouped by what the admin is doing. Every section stays reachable.
   const navGroups: { id: string; label: string; short: string; items: string[] }[] = [
-    { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule"] },
+    { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule", "guide"] },
     { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations"] },
     { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "health", "vacations"] },
     { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "bugReports", "settings"] },
@@ -155,6 +157,10 @@ export default function Admin() {
         <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
         <h1 className="text-3xl sm:text-4xl font-display text-foreground">Žirgyno valdymas</h1>
         <p className="mt-2 text-sm text-muted-foreground">Grafikas, raiteliai ir svarbiausi dienos darbai vienoje vietoje.</p>
+        <button type="button" onClick={() => setSection("guide")}
+          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-gold/30 bg-gold/5 px-3 text-sm font-medium text-gold hover:bg-gold/10">
+          <BookOpen className="h-4 w-4" /> Administratoriaus atmintinė
+        </button>
         
       </header>
 
@@ -246,6 +252,7 @@ export default function Admin() {
           <Tabs value={section} onValueChange={setSection}>
             <TabsList className="sr-only"><TabsTrigger value={section}>{section}</TabsTrigger></TabsList>
             <TabsContent value="overview"><OverviewTab alerts={alerts} onGo={setSection} onFocusUser={(uid) => { setFocusUserId(uid); setSection("users"); }} /></TabsContent>
+            <TabsContent value="guide"><AdminCheatSheet /></TabsContent>
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
