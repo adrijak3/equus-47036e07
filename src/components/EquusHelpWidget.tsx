@@ -141,11 +141,11 @@ export function EquusHelpWidget() {
       title: lt ? "Bendri klausimai" : "General questions",
       subtitle: lt ? "Equus Jojimo Mokykla · Messenger" : "Equus Jojimo Mokykla · Messenger",
     },
-    {
+    ...(!hideAdminPhone ? [{
       href: ADRIJA_MESSENGER_URL,
       title: lt ? "Svetainės problemos ar kiti klausimai" : "Website problems or other questions",
       subtitle: lt ? "Adrija Kalikaitė · Messenger" : "Adrija Kalikaitė · Messenger",
-    },
+    }] : []),
   ];
 
   return (
