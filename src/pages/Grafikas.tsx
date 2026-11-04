@@ -4441,12 +4441,6 @@ export default function Grafikas() {
                                                       "—",
                                                   )}
 
-                                              {b.is_paused_for_subscription && (
-                                                <span className="ml-1 text-[10px] font-medium text-destructive">
-                                                  · Laukia abonemento, vieta nepatvirtinta
-                                                </span>
-                                              )}
-
                                               {b.is_individual && (
                                                 <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">
                                                   · individuali
