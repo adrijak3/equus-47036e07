@@ -3232,7 +3232,7 @@ export default function Grafikas() {
             <DialogTitle>{subscriptionReminderKind === "required" ? "Kitai registracijai reikalingas abonementas" : "Pamoka užregistruota – nepamirškite abonemento"}</DialogTitle>
             <DialogDescription>
               {subscriptionReminderKind === "required"
-                ? "Jau išnaudojote vieną leidžiamą treniruotę be abonemento. Norint registruotis į kitą, reikia abonemento. Išimtys, kurioms abonementas nereikalingas, lieka galioti. Esamos rezervacijos neištrinamos."
+                ? "Jau išnaudojote vieną leidžiamą treniruotę be abonemento. Norint registruotis į kitą, reikia abonemento."
                 : "Tai jūsų viena leidžiama treniruotė be abonemento. Norint užsiregistruoti į kitą, reikės įsigyti abonementą. Esamos rezervacijos neištrinamos."}
             </DialogDescription>
           </DialogHeader>
