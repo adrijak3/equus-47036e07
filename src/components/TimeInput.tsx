@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -13,10 +13,19 @@ interface Props {
 }
 
 /**
- * Time input that auto-formats HH:MM as the user types.
- * Typing "1730" -> displays "17:30". Backspace removes a digit at a time.
+ * A numeric HH:MM editor. Typing 1730 produces 17:30;
+ * the colon appears automatically after the second digit.
+ * Pasting 17:30 (or 1730) also works.
  */
-export function TimeInput({ value, onChange, placeholder = "pvz. 17:30", className, autoFocus, id, ariaLabel }: Props) {
+export function TimeInput({
+  value,
+  onChange,
+  placeholder = "pvz. 17:30",
+  className,
+  autoFocus,
+  id,
+  ariaLabel,
+}: Props) {
   const [local, setLocal] = useState(value);
 
   useEffect(() => {
@@ -24,27 +33,34 @@ export function TimeInput({ value, onChange, placeholder = "pvz. 17:30", classNa
   }, [value]);
 
   const format = (raw: string): string => {
-    // Allow only digits and a single ":". User types the colon manually.
-    let s = raw.replace(/[^\d:]/g, "");
-    // Keep only first colon
-    const firstColon = s.indexOf(":");
-    if (firstColon !== -1) {
-      s = s.slice(0, firstColon + 1) + s.slice(firstColon + 1).replace(/:/g, "");
-    }
-    // Cap lengths: HH (2) : MM (2)
-    if (firstColon === -1) {
-      s = s.slice(0, 2);
-    } else {
-      const [h, m = ""] = s.split(":");
-      s = `${h.slice(0, 2)}:${m.slice(0, 2)}`;
-    }
-    return s;
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    if (digits.length < 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = format(e.target.value);
+  const update = (raw: string) => {
+    const formatted = format(raw);
     setLocal(formatted);
     onChange(formatted);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    update(event.target.value);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    // Backspace at "17:" should remove the hour digit rather than
+    // repeatedly recreating the separator.
+    const input = event.currentTarget;
+    if (
+      event.key === "Backspace" &&
+      /^\d{2}:$/.test(local) &&
+      input.selectionStart === 3 &&
+      input.selectionEnd === 3
+    ) {
+      event.preventDefault();
+      update(local.slice(0, 1));
+    }
   };
 
   return (
@@ -57,6 +73,7 @@ export function TimeInput({ value, onChange, placeholder = "pvz. 17:30", classNa
       placeholder={placeholder}
       value={local}
       onChange={handleChange}
+      onKeyDown={handleKeyDown}
       autoFocus={autoFocus}
       className={cn("tabular-nums", className)}
       maxLength={5}
