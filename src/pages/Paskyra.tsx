@@ -39,6 +39,7 @@ interface Booking {
   lesson_kind?: "individual" | "po2" | "group";
   extra_fee_paid?: boolean;
   is_grace_booking?: boolean;
+  is_paused_for_subscription?: boolean;
 }
 interface Subscription {
   id: string;
@@ -218,10 +219,7 @@ export default function Paskyra() {
 
   const now = new Date();
   const future = bookings.filter(
-    (b: any) =>
-      b.status === "active" &&
-      b.is_paused_for_subscription !== true &&
-      new Date(`${b.slot_date}T${b.slot_time}`) >= now,
+    (b) => b.status === "active" && new Date(`${b.slot_date}T${b.slot_time}`) >= now,
   );
   const past = bookings.filter((b) => new Date(`${b.slot_date}T${b.slot_time}`) < now);
   const pausedFuture = bookings.filter(
@@ -310,7 +308,7 @@ export default function Paskyra() {
   const monthLabel = MONTHS_LT_NOM[now.getMonth()];
   const currentDay = formatDateISO(new Date());
   const nextLesson = bookings
-    .filter(b => b.status === "active" && b.slot_date >= currentDay)
+    .filter(b => b.status === "active" && b.is_paused_for_subscription !== true && b.slot_date >= currentDay)
     .sort((a,b) => (a.slot_date + a.slot_time).localeCompare(b.slot_date + b.slot_time))[0];
   const currentSubscription = subs.find(s => s.paid && (!s.expires_at || s.expires_at >= currentDay));
   const remainingLessons = currentSubscription
@@ -434,7 +432,7 @@ export default function Paskyra() {
             <section className="rounded-2xl border border-blush/25 bg-blush/5 px-5 py-4">
               <div className="font-medium text-blush">Kai kurios būsimos rezervacijos laikinai sustabdytos</div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Šios rezervacijos neberodomos grafike ir nenaudoja treniruočių iš abonemento. Įsigijus tinkamą abonementą, jos bus automatiškai atkurtos, jei dar patenka į jo galiojimo laiką ir atitinka treniruotės tipą.
+                Šios rezervacijos tebėra matomos grafike, bet jų vietos kol kas nepatvirtintos, nes nebuvo tinkamo abonemento. Jos nebuvo ištrintos. Susisiekite su administracija dėl vietos patvirtinimo ir įsigykite abonementą.
               </p>
             </section>
           )}
@@ -1261,6 +1259,9 @@ function BookingRow({ b, past, separatelyPaid }: { b: Booking; past?: boolean; s
         </div>
         <div className="text-muted-foreground tabular-nums">
           {formatTime(b.slot_time)}
+          {b.is_paused_for_subscription && !past && (
+            <span className="ml-2 text-xs font-semibold text-destructive">· Reikia abonemento – vieta nepatvirtinta</span>
+          )}
           {b.is_grace_booking && !past && (
             <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-blush">
               · Vienintelė būsima treniruotė be abonemento
