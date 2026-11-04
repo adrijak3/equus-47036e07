@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TimeInput } from "@/components/TimeInput";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -173,6 +174,30 @@ export function RiderActionSheet({
     ).length;
   };
 
+  const doRemoveHorse = async () => {
+    if (!target || !currentAssignment || horseSaving) return;
+
+    setHorseSaving(true);
+    const { data: deleted, error } = await supabase
+      .from("horse_assignments")
+      .delete()
+      .eq("id", currentAssignment.id)
+      .eq("booking_id", target.bookingId)
+      .select("id");
+    setHorseSaving(false);
+
+    if (error || deleted?.length !== 1) {
+      toast.error(error?.message ?? "Nepavyko pašalinti žirgo paskyrimo.");
+      await loadHorseData();
+      return;
+    }
+
+    toast.success("Žirgas pašalintas iš rezervacijos.");
+    setHorseOpen(false);
+    setSelectedHorseId("");
+    onChanged();
+  };
+
   const doChangeHorse = async () => {
     if (!target || !selectedHorseId) return;
 
@@ -240,48 +265,48 @@ export function RiderActionSheet({
   };
 
   const doMove = async () => {
-    if (!target) return;
+    if (!target || busy) return;
 
-    if (!isValidTime(moveTime)) {
-      toast.error("Įveskite teisingą laiką (HH:MM)");
+    if (!moveDate || !isValidTime(moveTime)) {
+      toast.error("Įveskite teisingą datą ir laiką (HH:MM).");
+      return;
+    }
+    if (moveDate === target.slotDate && moveTime === formatTime(target.slotTime)) {
+      toast.error("Pasirinkite kitą datą arba laiką.");
       return;
     }
 
     setBusy(true);
-
-    const prev = {
-      slot_date: target.slotDate,
-      slot_time: target.slotTime,
-    };
-
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        slot_date: moveDate,
-        slot_time: `${moveTime}:00`,
-      })
-      .eq("id", target.bookingId);
-
+    const { data, error } = await (supabase as any).rpc("staff_move_booking", {
+      _booking_id: target.bookingId,
+      _new_date: moveDate,
+      _new_time: moveTime,
+    });
     setBusy(false);
 
-    if (error) {
-      toast.error(error.message);
+    // A successful request without an acknowledged DB move is NOT success.
+    if (error || !data?.ok || data?.booking_id !== target.bookingId ||
+        data?.new_date !== moveDate || formatTime(data?.new_time ?? "") !== moveTime) {
+      const reason = error?.message ?? data?.message ?? "";
+      const message =
+        reason.includes("SLOT_FULL") ? "Pasirinkta treniruotė jau pilna." :
+        reason.includes("SLOT_NOT_FOUND") || reason.includes("SLOT_NOT_AVAILABLE")
+          ? "Šiuo laiku nėra aktyvios treniruotės. Pirmiausia pridėkite naują laiką grafike." :
+        reason.includes("RIDER_ALREADY_BOOKED") ? "Raitelis jau užregistruotas šiuo laiku." :
+        reason.includes("HORSE_NOT_AVAILABLE") || reason.includes("horse_assignments_one_horse_per_slot")
+          ? "Paskirtas žirgas tuo laiku užimtas. Pakeiskite arba pašalinkite žirgą prieš perkeldami." :
+        reason.includes("BOOKING_CUTOFF") ? "Per vėlu perkelti į pasirinktą laiką." :
+        reason.includes("SAME_TIME") ? "Pasirinkite kitą laiką." :
+        reason || "Perkėlimas nepatvirtintas. Rezervacija nepakeista.";
+      toast.error(message);
+      onChanged();
       return;
     }
 
     setMoveOpen(false);
     onClose();
     onChanged();
-
-    toastUndo(`Rezervacija perkelta į ${moveDate} ${moveTime}.`, async () => {
-      const { error: undoErr } = await supabase
-        .from("bookings")
-        .update(prev)
-        .eq("id", target.bookingId);
-
-      if (undoErr) throw undoErr;
-      onChanged();
-    });
+    toast.success(`Rezervacija perkelta į ${moveDate} ${moveTime}. Ankstesniame laike raitelio nebėra.`);
   };
 
   const doCancel = async () => {
@@ -560,6 +585,16 @@ export function RiderActionSheet({
           )}
 
           <DialogFooter>
+            {currentAssignment && !horseLoading && (
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                disabled={horseSaving}
+                onClick={doRemoveHorse}
+              >
+                {horseSaving ? "Šalinama…" : "Pašalinti žirgą"}
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={() => {
@@ -610,10 +645,10 @@ export function RiderActionSheet({
 
             <div>
               <Label htmlFor="move-time">Laikas (HH:MM)</Label>
-              <Input
+              <TimeInput
                 id="move-time"
                 value={moveTime}
-                onChange={(e) => setMoveTime(e.target.value)}
+                onChange={setMoveTime}
                 placeholder="17:00"
               />
             </div>
