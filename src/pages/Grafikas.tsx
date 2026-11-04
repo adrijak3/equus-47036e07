@@ -3226,12 +3226,6 @@ export default function Grafikas() {
       </motion.header>
 
       <VacationBanner userId={user?.id ?? null} />
-      {!staffCalendar && (
-        <p className="mb-4 rounded-lg border border-border/60 bg-background/60 px-4 py-3 text-center text-xs leading-5 text-muted-foreground">
-          Rodomos dvi atidarytos savaitės. Sekmadienį nuo 01:00 val. atsidaro dar viena savaitė.
-        </p>
-      )}
-
       <Dialog open={subscriptionReminderOpen} onOpenChange={setSubscriptionReminderOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
