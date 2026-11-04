@@ -498,17 +498,46 @@ export default function PublicRegistration() {
 
   return (
     <div className="container max-w-4xl py-10 sm:py-14">
-      <header className="mb-8">
+      <header className="mb-6">
         <p className="text-xs uppercase tracking-[.25em] text-gold/70">
-          Vieša registracija
+          Naujiems Equus lankytojams
         </p>
         <h1 className="font-display text-4xl text-gradient-gold sm:text-5xl">
-          Registruotis į treniruotę
+          Pirmą kartą Equus?
         </h1>
-        <p className="mt-2 text-muted-foreground">
-          Prašymą gali pateikti ir neturint paskyros.
+        <p className="mt-3 text-muted-foreground">
+          Ši registracijos forma skirta tiems, kurie <strong className="text-foreground">dar niekada nesilankė Equus</strong>
+          {" "}ir nori atvykti į pirmąją treniruotę. Paskyros tam nereikia.
         </p>
       </header>
+
+      <div className="mb-7 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-gold" />
+            Dar nebuvai Equus?
+          </div>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Puiku! Užpildyk formą apačioje ir susisieksime dėl pirmos pamokos.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-background/50 p-4">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <UserRound className="h-5 w-5 shrink-0 text-gold" />
+            Jau buvai bent vienoje pamokoje?
+          </div>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Šios formos iš naujo pildyti nereikia! Prisijunk prie savo Equus paskyros ir
+            registruokis į kitas treniruotes per „Grafikas“.
+          </p>
+          <Button asChild variant="gold" className="mt-3 w-full sm:w-auto">
+            <Link to="/auth?tab=signin">Prisijungti prie paskyros</Link>
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Dar neturi paskyros? Prisijungimo puslapyje galėsi ją susikurti.
+          </p>
+        </div>
+      </div>
 
       <div className="mb-6 grid grid-cols-4 gap-2">
         {[1, 2, 3, 4].map((number) => (
