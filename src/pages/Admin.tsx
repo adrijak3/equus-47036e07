@@ -866,7 +866,7 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
     <div className="space-y-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div><h2 className="font-display text-2xl text-foreground">Dienos darbai</h2><p className="text-sm text-muted-foreground">Svarbiausi veiksmai prieš prasidedant treniruotėms.</p></div>
-        <button type="button" onClick={() => onGo("health")} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Patikrinti rezervacijų būklę</button>
+        <a href="/grafikas" className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-gold">Atidaryti grafiką</a>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {cards.map((c) => {
