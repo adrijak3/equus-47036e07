@@ -4633,14 +4633,14 @@ export default function Grafikas() {
 
               <span className="flex items-center gap-1.5">
                 <Star className="w-3 h-3 fill-gold text-gold" />
-                Pastovi vieta
+                Nuolatinis laikas
               </span>
 
               <span className="flex items-center gap-1.5">
                 <span className="text-blush">
                   ●
                 </span>
-                Pilnas / Laukimų sąrašas
+                Laukiamųjų sąrašas
               </span>
             </div>
           </motion.div>
