@@ -337,6 +337,7 @@ export default function Grafikas() {
 
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
+  const [adminAddAsIndividual, setAdminAddAsIndividual] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminOneOffTime, setAdminOneOffTime] = useState("");
 
@@ -2589,6 +2590,37 @@ export default function Grafikas() {
         ),
     );
 
+    // Separately paid individual lessons are booked atomically and do not
+    // require a subscription. The database also reserves this time for one rider.
+    if (adminAddAsIndividual) {
+      setAdminBusy(true);
+      const { data, error } = await (supabase as any).rpc("staff_add_individual_booking", {
+        _slot_date: formatDateISO(date),
+        _slot_time: time,
+        _user_id: userId,
+        _guest_rider_id: null,
+      });
+      setAdminBusy(false);
+
+      if (error || !data?.ok || !data?.booking_id) {
+        const reason = error?.message ?? "";
+        toast.error(reason.includes("INDIVIDUAL_REQUIRES_EMPTY_SLOT")
+          ? "Individualiai pamokai šis laikas turi būti tuščias. Pasirinkite kitą."
+          : reason.includes("SLOT_NOT_FOUND")
+            ? "Tokio treniruotės laiko grafike nėra."
+            : reason || "Nepavyko pridėti individualios pamokos.");
+        await loadData();
+        return;
+      }
+
+      toast.success("Individuali pamoka pridėta · 50 € (neapmokėta)");
+      setAdminAddUserId("");
+      setAdminAddAsIndividual(false);
+      setForcePrompt(null);
+      await loadData();
+      return;
+    }
+
     const isJolitaSlot =
       !!slot?.trainer_name &&
       slot.trainer_name
@@ -2668,8 +2700,32 @@ export default function Grafikas() {
     time: string,
     guestRiderId: string,
     displayName: string,
+    individual = false,
   ) => {
     if (!user) return;
+
+    if (individual) {
+      setAdminBusy(true);
+      const { data, error } = await (supabase as any).rpc("staff_add_individual_booking", {
+        _slot_date: formatDateISO(date),
+        _slot_time: time,
+        _user_id: null,
+        _guest_rider_id: guestRiderId,
+      });
+      setAdminBusy(false);
+      if (error || !data?.ok || !data?.booking_id) {
+        const reason = error?.message ?? "";
+        toast.error(reason.includes("INDIVIDUAL_REQUIRES_EMPTY_SLOT")
+          ? "Individualiai pamokai šis laikas turi būti tuščias."
+          : reason || "Nepavyko pridėti individualios pamokos.");
+        await loadData();
+        return;
+      }
+      toast.success("Individuali pamoka pridėta · 50 € (neapmokėta)");
+      setGuestDialogOpen(false);
+      await loadData();
+      return;
+    }
 
     const slot =
       getSlotsAtTime(date, time)[0];
@@ -2704,54 +2760,6 @@ export default function Grafikas() {
     );
 
     setGuestDialogOpen(false);
-
-    await loadData();
-  };
-
-  const adminAddIndividual = async (
-    date: Date,
-    time: string,
-    userId: string,
-  ) => {
-    if (!userId) {
-      toast.error("Pasirinkite vartotoją");
-      return;
-    }
-
-    const slot =
-      getSlotsAtTime(date, time)[0];
-
-    setAdminBusy(true);
-
-    const { error } =
-      await supabase
-        .from("bookings")
-        .insert({
-          user_id: userId,
-          slot_date: formatDateISO(date),
-          slot_time: time,
-          status: "active",
-          is_individual: true,
-          trainer_name:
-            slot?.trainer_name ?? null,
-        } as any);
-
-    setAdminBusy(false);
-
-    if (error) {
-      toast.error(
-        error.code === "23505"
-          ? "Vartotojas jau užregistruotas šiuo laiku"
-          : error.message,
-      );
-      return;
-    }
-
-    toast.success(
-      "Individuali pridėta",
-    );
-
-    setAdminAddUserId("");
 
     await loadData();
   };
@@ -5580,6 +5588,24 @@ export default function Grafikas() {
                 </Button>
               </div>
 
+              <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border border-gold/20 bg-gold/5 p-3 text-sm">
+                <Checkbox
+                  checked={adminAddAsIndividual}
+                  onCheckedChange={(checked) => {
+                    setAdminAddAsIndividual(checked === true);
+                    setForcePrompt(null);
+                  }}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block font-medium">Individuali pamoka · 50 €</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Tik vienam žmogui. Abonemento nereikia, mokėjimas pažymimas kaip negautas.
+                    Šis laikas turi būti tuščias.
+                  </span>
+                </span>
+              </label>
+
               {forcePrompt &&
                 adminSlotDialog && (
                   <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-[11px] text-destructive">
@@ -5665,6 +5691,8 @@ export default function Grafikas() {
         onConfirm={(
           riderId,
           displayName,
+          _isNewcomer,
+          individual,
         ) => {
           if (
             adminSlotDialog
@@ -5674,6 +5702,7 @@ export default function Grafikas() {
               adminSlotDialog.time,
               riderId,
               displayName,
+              individual,
             );
           }
         }}
