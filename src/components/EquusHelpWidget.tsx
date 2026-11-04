@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, X, MapPin, Phone, MessageSquare, Sparkles, CalendarDays, ChevronDown, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
+import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact";
 
 // Where the two "write to us" buttons lead: direct Messenger chats (m.me links).
 // Equus Jojimo Mokykla page = general questions; Adrija = website problems / other questions.
@@ -74,6 +75,7 @@ const FAQ_DATA = {
 
 export function EquusHelpWidget() {
   const { language } = useLanguage();
+  const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -276,7 +278,11 @@ export function EquusHelpWidget() {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <p className="px-3 pb-3 text-[13px] leading-relaxed text-muted-foreground">{faq.a}</p>
+                            <p className="px-3 pb-3 text-[13px] leading-relaxed text-muted-foreground">{faq.q === (lt ? "Kontaktai" : "Contact") && holiday
+                              ? holidayContactText(holiday) + " " + (lt ? "Dėl treniruočių susisiekite su Laura." : "For riding lessons, contact Laura.")
+                              : faq.q === (lt ? "Kontaktai" : "Contact") && hideAdminPhone
+                                ? (lt ? "Dėl klausimų susisiekite su Equus arba Laura." : "For questions, contact Equus or Laura.")
+                                : faq.a}</p>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -326,9 +332,11 @@ export function EquusHelpWidget() {
                 <motion.a href="sms:+37065822872" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
                   <MessageSquare size={13} /> {lt ? "Laura · SMS" : "Text Laura"}
                 </motion.a>
-                <motion.a href="sms:+37062876090" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
-                  <MessageSquare size={13} /> {lt ? "Adrija · SMS" : "Text Adrija"}
-                </motion.a>
+                {!hideAdminPhone && (
+                  <motion.a href="sms:+37062876090" className="flex items-center justify-center gap-1 text-[11px] py-2 bg-muted hover:bg-accent text-foreground rounded-lg border border-border/50 transition-colors">
+                    <MessageSquare size={13} /> {lt ? "Adrija · SMS" : "Text Adrija"}
+                  </motion.a>
+                )}
               </div>
             </div>
           </motion.div>
