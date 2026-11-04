@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION public.check_booking_eligibility(_user_id uuid, _slot
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_actor uuid := auth.uid();
   v_is_admin boolean := false;
@@ -206,7 +206,7 @@ CREATE OR REPLACE FUNCTION public.enforce_subscription_requirement_deadlines()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   local_now timestamp := now() AT TIME ZONE 'Europe/Vilnius';
   paused_count integer := 0;
