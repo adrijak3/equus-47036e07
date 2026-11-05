@@ -46,20 +46,43 @@ function serviceLabel(type: string) {
 }
 
 function emailHtml(title: string, greeting: string, content: string) {
-  return `<!doctype html><html lang="lt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;background:#f5f2ec;color:#35342e;font-family:Arial,Helvetica,sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:26px 14px;">
-<div style="background:linear-gradient(145deg,#f0e9dd,#e7dfd1);border:1px solid #dcd2c3;border-radius:18px;padding:24px;">
-<div style="font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#6a6b5e;font-weight:700;">♞ &nbsp; Equus Jojimo Mokykla</div>
-<h1 style="margin:12px 0 7px;font-size:26px;font-weight:600;color:#35342e;">${esc(title)}</h1>
-</div>
-<div style="margin-top:12px;background:#fffdfa;border:1px solid #e2dbd0;border-radius:16px;padding:22px;">
-<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">${greeting}</p>
-${content}
-<p style="margin:22px 0 0;padding-top:16px;border-top:1px solid #e7e1d7;color:#68645a;font-size:13px;line-height:1.7;">Turite klausimų? Parašykite mums: <a href="mailto:equusjojimomokykla@gmail.com" style="color:#555b4d;">equusjojimomokykla@gmail.com</a></p>
-</div><p style="margin:18px 4px 0;color:#827c70;font-size:11px;text-align:center;">Equus Jojimo Mokykla</p>
-</div></body></html>`;
+  return `
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Equus Jojimo Mokykla</title>
+<style>
+@media only screen and (max-width:620px) {
+  .outer { padding:12px !important; }
+  .email-card { padding:24px 20px !important; }
+  .email-head { padding:26px 20px !important; }
+  .email-title { font-size:26px !important; }
+  .email-data { font-size:14px !important; }
 }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#F3F1EB;color:#30392F;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+<div class="outer" style="max-width:620px;margin:0 auto;padding:32px 16px;">
+  <div style="padding:0 4px 16px;text-align:center;font-size:11px;letter-spacing:3px;font-weight:700;color:#687467;">EQUUS <span style="font-weight:400;letter-spacing:2px;">JOJIMO MOKYKLA</span></div>
+  <div style="overflow:hidden;border:1px solid #D9DED5;border-radius:18px;background:#FFFFFF;">
+    <div class="email-head" style="background:#E8EDE5;padding:34px 34px 30px;border-bottom:1px solid #D5DFD2;">
+      <div style="display:inline-block;border:1px solid #798B79;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-family:Georgia,serif;font-size:23px;color:#46604A;margin-bottom:17px;">E</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#667765;margin-bottom:10px;">EQUUS • INFORMACIJA</div>
+      <h1 class="email-title" style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:31px;line-height:1.18;letter-spacing:-.5px;color:#27382B;margin:0 0 12px;">${esc(title)}</h1>
+      <p style="margin:0;font-size:15px;line-height:1.6;color:#536456;">Informacija apie Jūsų registraciją į Equus jojimo mokyklą</p>
+    </div>
+    <div class="email-card" style="padding:32px 34px 28px;background:#FFFFFF;font-size:15px;line-height:1.7;color:#364239;">
+      ${greeting}\n      ${content}
+      <div style="height:1px;background:#E3E7E0;margin:28px 0 18px;"></div>
+      <p style="margin:0;font-size:13px;line-height:1.7;color:#687468;">Klausimai? Mielai padėsime:<br><a href="mailto:equusjojimomokykla@gmail.com" style="font-weight:600;color:#405D47;text-decoration:underline;">equusjojimomokykla@gmail.com</a></p>
+    </div>
+  </div>
+  <div style="padding:18px 10px 4px;text-align:center;color:#778276;font-size:12px;line-height:1.7;">Equus Jojimo Mokykla <span style="color:#A8B1A5;">•</span> Laiškas iš oficialios Equus sistemos</div>
+</div>
+</body></html>`;
+}
+
 
 async function sendGmail(to: string, subject: string, html: string) {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
