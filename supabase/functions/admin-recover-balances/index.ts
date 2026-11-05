@@ -5,6 +5,45 @@ const result=(data:unknown,status=200)=>new Response(JSON.stringify(data),{statu
 function escapeHtml(v:unknown){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
 function mime64(s:string){const bytes=new TextEncoder().encode(s);let str="";for(const byte of bytes)str+=String.fromCharCode(byte);return btoa(str).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");}
 function dateLt(v:string|null){if(!v)return "Nenurodyta";const d=new Date(v);return Number.isNaN(d.getTime())?"Nenurodyta":new Intl.DateTimeFormat("lt-LT",{day:"numeric",month:"long",year:"numeric",timeZone:"Europe/Vilnius"}).format(d);}
+function emailShell(title: string, subtitle: string, inner: string) {
+  return `
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Equus Jojimo Mokykla</title>
+<style>
+@media only screen and (max-width:620px) {
+  .outer { padding:12px !important; }
+  .email-card { padding:24px 20px !important; }
+  .email-head { padding:26px 20px !important; }
+  .email-title { font-size:26px !important; }
+  .email-data { font-size:14px !important; }
+}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#F3F1EB;color:#30392F;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+<div class="outer" style="max-width:620px;margin:0 auto;padding:32px 16px;">
+  <div style="padding:0 4px 16px;text-align:center;font-size:11px;letter-spacing:3px;font-weight:700;color:#687467;">EQUUS <span style="font-weight:400;letter-spacing:2px;">JOJIMO MOKYKLA</span></div>
+  <div style="overflow:hidden;border:1px solid #D9DED5;border-radius:18px;background:#FFFFFF;">
+    <div class="email-head" style="background:#E8EDE5;padding:34px 34px 30px;border-bottom:1px solid #D5DFD2;">
+      <div style="display:inline-block;border:1px solid #798B79;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-family:Georgia,serif;font-size:23px;color:#46604A;margin-bottom:17px;">E</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#667765;margin-bottom:10px;">EQUUS • INFORMACIJA</div>
+      <h1 class="email-title" style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:31px;line-height:1.18;letter-spacing:-.5px;color:#27382B;margin:0 0 12px;">${escapeHtml(title)}</h1>
+      <p style="margin:0;font-size:15px;line-height:1.6;color:#536456;">${escapeHtml(subtitle)}</p>
+    </div>
+    <div class="email-card" style="padding:32px 34px 28px;background:#FFFFFF;font-size:15px;line-height:1.7;color:#364239;">
+      ${inner}
+      <div style="height:1px;background:#E3E7E0;margin:28px 0 18px;"></div>
+      <p style="margin:0;font-size:13px;line-height:1.7;color:#687468;">Klausimai? Mielai padėsime:<br><a href="mailto:equusjojimomokykla@gmail.com" style="font-weight:600;color:#405D47;text-decoration:underline;">equusjojimomokykla@gmail.com</a></p>
+    </div>
+  </div>
+  <div style="padding:18px 10px 4px;text-align:center;color:#778276;font-size:12px;line-height:1.7;">Equus Jojimo Mokykla <span style="color:#A8B1A5;">•</span> Laiškas iš oficialios Equus sistemos</div>
+</div>
+</body></html>`;
+}
+
+
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(req.method!=="POST")return result({error:"METHOD_NOT_ALLOWED"},405);
@@ -55,7 +94,24 @@ Deno.serve(async(req)=>{
    const greeting=escapeHtml(profile?.full_name||"Kliente");
    const remaining=Math.max(0,Number(s.lessons_total)-Number(s.lessons_used||0));
    const kind=s.package_type==="po2"?"Pamokos po du":s.package_type==="group"?"Grupinės pamokos":String(s.package_type||"Abonementas");
-   const html=`<!doctype html><html lang="lt"><meta charset="utf-8"><body style="font-family:Arial,sans-serif;background:#f5f2ec;color:#35342e;padding:24px"><div style="max-width:560px;margin:auto;background:white;padding:24px;border-radius:16px"><p style="font-size:12px;letter-spacing:2px">EQUUS JOJIMO MOKYKLA</p><h1>Jūsų abonemento informacija</h1><p>Sveiki, ${greeting}!</p><p>Siunčiame atnaujintą Jūsų abonemento informaciją. Šis laiškas nėra naujo pirkimo patvirtinimas.</p><p><b>Įsigyta:</b> ${escapeHtml(dateLt(s.purchase_date))}</p><p><b>Tipas:</b> ${escapeHtml(kind)}</p><p><b>Pirkimo suma:</b> ${Number(s.price).toFixed(2)} €</p><p><b>Iš viso treniruočių:</b> ${Number(s.lessons_total)}</p><p><b>Panaudota:</b> ${Number(s.lessons_used||0)}</p><p><b>Liko:</b> ${remaining}</p><p><b>Galioja iki:</b> ${escapeHtml(dateLt(s.expires_at))}</p><p>Aktualų grafiką ir rezervacijas rasite <a href="https://equusjm.pages.dev/grafikas">Equus sistemoje</a>.</p><p>Jei kyla klausimų, parašykite equusjojimomokykla@gmail.com.</p></div></body></html>`;
+   const body = `
+     <p style="margin:0 0 8px;font-size:16px;color:#334236;">Sveiki, ${greeting}!</p>
+     <p style="margin:0 0 22px;color:#607063;font-size:14px;line-height:1.8;">Siunčiame atnaujintą Jūsų abonemento informaciją. Tai nėra naujo pirkimo patvirtinimas.</p>
+     <div style="background:#EDF2EA;border:1px solid #DDE6DA;border-radius:14px;padding:24px;text-align:center;margin-bottom:22px;">
+       <div style="color:#607260;font-size:11px;font-weight:700;letter-spacing:2px;">LIKO TRENIRUOČIŲ</div>
+       <div style="color:#2E4B33;font-size:48px;font-family:Georgia,serif;line-height:1.15;margin:8px 0 4px;">${remaining}</div>
+       <div style="font-size:13px;color:#657566;">${Number(s.lessons_used||0)} panaudota iš ${Number(s.lessons_total)}</div>
+     </div>
+     <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;color:#364239;" cellpadding="0" cellspacing="0">
+       <tr><td style="padding:10px 0;border-bottom:1px solid #E5E9E2;color:#6F7A70;">Abonementas</td><td style="padding:10px 0;border-bottom:1px solid #E5E9E2;text-align:right;font-weight:700;">${escapeHtml(kind)}</td></tr>
+       <tr><td style="padding:10px 0;border-bottom:1px solid #E5E9E2;color:#6F7A70;">Pirkimo data</td><td style="padding:10px 0;border-bottom:1px solid #E5E9E2;text-align:right;font-weight:700;">${escapeHtml(dateLt(s.purchase_date))}</td></tr>
+       <tr><td style="padding:10px 0;border-bottom:1px solid #E5E9E2;color:#6F7A70;">Pirkimo suma</td><td style="padding:10px 0;border-bottom:1px solid #E5E9E2;text-align:right;font-weight:700;">${Number(s.price).toFixed(2)} €</td></tr>
+       <tr><td style="padding:10px 0;color:#6F7A70;">Galioja iki</td><td style="padding:10px 0;text-align:right;font-weight:700;">${escapeHtml(dateLt(s.expires_at))}</td></tr>
+     </table>
+     <div style="margin-top:26px;text-align:center;">
+       <a href="https://equusjm.pages.dev/grafikas" style="display:inline-block;background:#3C5A42;color:#FFFFFF;text-decoration:none;padding:14px 25px;border-radius:8px;font-size:14px;font-weight:700;">Peržiūrėti grafiką</a>
+     </div>`;
+   const html = emailShell("Jūsų abonemento informacija", "Aktualus treniruočių likutis ir galiojimo informacija", body);
    const subject="Equus – atnaujinta abonemento informacija";
    const encodedSubject="=?UTF-8?B?"+btoa(String.fromCharCode(...new TextEncoder().encode(subject)))+"?=";
    const mime=[`From: ${from}`,`To: ${destination}`,`Subject: ${encodedSubject}`,"MIME-Version: 1.0","Content-Type: text/html; charset=UTF-8","",html].join("\r\n");
