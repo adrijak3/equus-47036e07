@@ -31,6 +31,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminGmailTest = lazy(() => import("./pages/AdminGmailTest"));
 const Trener = lazy(() => import("./pages/Trener"));
 const Informacija = lazy(() => import("./pages/Informacija"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -153,6 +154,8 @@ const App = () => (
                       </RequireAuth>
                     }
                   />
+
+                  <Route path="/admin/email-test" element={<RequireAuth adminOnly><AdminGmailTest /></RequireAuth>} />
 
                   <Route
                     path="/trener"
