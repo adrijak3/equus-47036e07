@@ -621,6 +621,54 @@ Deno.serve(async (req) => {
           reason: "USER_EXEMPT_FROM_SUBSCRIPTION_REQUIREMENT",
         });
       }
+
+      // Warnings are snapshots of an earlier booking state. Check again immediately
+      // before sending, because a new abonementas or cancellation may have intervened.
+      let skipReason = "";
+      if (!event.booking_id) {
+        skipReason = "WARNING_BOOKING_MISSING";
+      } else {
+        const { data: warningBooking, error: bookingError } = await supabase
+          .from("bookings")
+          .select("id,user_id,status,slot_date,slot_time,subscription_id,counts_in_subscription,is_paused_for_subscription")
+          .eq("id", event.booking_id)
+          .maybeSingle();
+        if (bookingError) throw bookingError;
+
+        if (!warningBooking || warningBooking.user_id !== event.user_id ||
+            warningBooking.status !== "active") {
+          skipReason = "WARNING_BOOKING_NO_LONGER_ACTIVE";
+        } else if (warningBooking.subscription_id || warningBooking.is_paused_for_subscription) {
+          skipReason = "WARNING_BOOKING_ALREADY_HANDLED";
+        } else {
+          const { data: covered, error: coverageError } = await supabase.rpc(
+            "booking_subscription_is_usable_for_slot",
+            { _user_id: event.user_id, _slot_date: warningBooking.slot_date,
+              _slot_time: warningBooking.slot_time },
+          );
+          if (coverageError) throw coverageError;
+          if (covered === true) skipReason = "WARNING_NOW_COVERED_BY_SUBSCRIPTION";
+        }
+      }
+
+      if (skipReason) {
+        const { error: skipError } = await supabase
+          .from("email_events")
+          .update({
+            status: "skipped",
+            last_error: "Skipped after current booking/subscription recheck: " + skipReason,
+            processing_started_at: null,
+          })
+          .eq("id", eventId)
+          .eq("status", "processing");
+        if (skipError) throw skipError;
+        console.log("Equus outdated subscription warning skipped:", {
+          event_id: eventId, booking_id: event.booking_id, reason: skipReason,
+        });
+        return json({
+          ok: true, processed: true, skipped: true, event_id: eventId, reason: skipReason,
+        });
+      }
     }
 
     try {
