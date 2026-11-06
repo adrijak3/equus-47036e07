@@ -723,7 +723,7 @@ Deno.serve(async (req) => {
       }
 
       if (event.event_type === "subscription_requirement_warning") {
-        subject = "!SVARBU! Reikia abonemento prieš kitą treniruotę";
+        subject = "Reikia abonemento prieš kitą treniruotę";
         html = subscriptionRequirementWarningHtml(clientName, event.payload || {});
       }
 
