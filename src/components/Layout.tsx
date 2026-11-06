@@ -74,7 +74,8 @@ const NAV_USER: NavigationItem[] = [
   { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
-  { to: "/paskyra", label: "Paskyra ir abonementas", icon: UserIcon },
+  { to: "/paskyra", label: "Mano paskyra", icon: UserIcon },
+  { to: "/mano-abonementai", label: "Mano abonementai", icon: Wallet, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
 ];
