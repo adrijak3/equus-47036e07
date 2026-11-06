@@ -145,6 +145,8 @@ const App = () => (
                       </RequireAuth>
                     }
                   />
+                  <Route path="/mano-abonementai" element={<RequireAuth><PaskyraRoute /></RequireAuth>} />
+                  <Route path="/abonemento-uzklausa" element={<RequireAuth><PaskyraRoute /></RequireAuth>} />
 
                   <Route
                     path="/admin"
