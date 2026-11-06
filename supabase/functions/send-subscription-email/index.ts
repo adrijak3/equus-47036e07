@@ -310,7 +310,7 @@ function emailShell(title: string, subtitle: string, inner: string) {
   <div style="padding:0 4px 16px;text-align:center;font-size:11px;letter-spacing:3px;font-weight:700;color:#687467;">EQUUS <span style="font-weight:400;letter-spacing:2px;">JOJIMO MOKYKLA</span></div>
   <div style="overflow:hidden;border:1px solid #D4E1EE;border-radius:18px;background:#FFFFFF;">
     <div class="email-head" style="background:#E4EDF7;padding:34px 34px 30px;border-bottom:1px solid #D4E2F0;">
-      <div style="display:inline-block;border:1px solid #7897B7;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-family:Georgia,serif;font-size:23px;color:#315F8B;margin-bottom:17px;">E</div>
+      <img src="https://equusjm.pages.dev/equus-logo-black.png" width="116" height="116" alt="Equus Jojimo Mokykla" style="display:block;width:116px;height:116px;border:0;border-radius:12px;margin:0 0 18px;background:#000000;" />
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#5D7793;margin-bottom:10px;">EQUUS • INFORMACIJA</div>
       <h1 class="email-title" style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:31px;line-height:1.18;letter-spacing:-.5px;color:#213F60;margin:0 0 12px;">${esc(title)}</h1>
       <p style="margin:0;font-size:15px;line-height:1.6;color:#536E89;">${esc(subtitle)}</p>
