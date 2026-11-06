@@ -62,23 +62,23 @@ function emailHtml(title: string, greeting: string, content: string) {
 }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#F3F1EB;color:#30392F;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+<body style="margin:0;padding:0;background:#F3F6FB;color:#2C4259;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
 <div class="outer" style="max-width:620px;margin:0 auto;padding:32px 16px;">
   <div style="padding:0 4px 16px;text-align:center;font-size:11px;letter-spacing:3px;font-weight:700;color:#687467;">EQUUS <span style="font-weight:400;letter-spacing:2px;">JOJIMO MOKYKLA</span></div>
-  <div style="overflow:hidden;border:1px solid #D9DED5;border-radius:18px;background:#FFFFFF;">
-    <div class="email-head" style="background:#E8EDE5;padding:34px 34px 30px;border-bottom:1px solid #D5DFD2;">
-      <div style="display:inline-block;border:1px solid #798B79;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-family:Georgia,serif;font-size:23px;color:#46604A;margin-bottom:17px;">E</div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#667765;margin-bottom:10px;">EQUUS • INFORMACIJA</div>
-      <h1 class="email-title" style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:31px;line-height:1.18;letter-spacing:-.5px;color:#27382B;margin:0 0 12px;">${esc(title)}</h1>
-      <p style="margin:0;font-size:15px;line-height:1.6;color:#536456;">Informacija apie Jūsų registraciją į Equus jojimo mokyklą</p>
+  <div style="overflow:hidden;border:1px solid #D4E1EE;border-radius:18px;background:#FFFFFF;">
+    <div class="email-head" style="background:#E4EDF7;padding:34px 34px 30px;border-bottom:1px solid #D4E2F0;">
+      <div style="display:inline-block;border:1px solid #7897B7;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-family:Georgia,serif;font-size:23px;color:#315F8B;margin-bottom:17px;">E</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#5D7793;margin-bottom:10px;">EQUUS • INFORMACIJA</div>
+      <h1 class="email-title" style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:31px;line-height:1.18;letter-spacing:-.5px;color:#213F60;margin:0 0 12px;">${esc(title)}</h1>
+      <p style="margin:0;font-size:15px;line-height:1.6;color:#536E89;">Informacija apie Jūsų registraciją į Equus jojimo mokyklą</p>
     </div>
-    <div class="email-card" style="padding:32px 34px 28px;background:#FFFFFF;font-size:15px;line-height:1.7;color:#364239;">
+    <div class="email-card" style="padding:32px 34px 28px;background:#FFFFFF;font-size:15px;line-height:1.7;color:#344B63;">
       ${greeting}\n      ${content}
-      <div style="height:1px;background:#E3E7E0;margin:28px 0 18px;"></div>
-      <p style="margin:0;font-size:13px;line-height:1.7;color:#687468;">Klausimai? Mielai padėsime:<br><a href="mailto:equusjojimomokykla@gmail.com" style="font-weight:600;color:#405D47;text-decoration:underline;">equusjojimomokykla@gmail.com</a></p>
+      <div style="height:1px;background:#E2EAF3;margin:28px 0 18px;"></div>
+      <p style="margin:0;font-size:13px;line-height:1.7;color:#647C94;">Klausimai? Mielai padėsime:<br><a href="mailto:equusjojimomokykla@gmail.com" style="font-weight:600;color:#285C8A;text-decoration:underline;">equusjojimomokykla@gmail.com</a></p>
     </div>
   </div>
-  <div style="padding:18px 10px 4px;text-align:center;color:#778276;font-size:12px;line-height:1.7;">Equus Jojimo Mokykla <span style="color:#A8B1A5;">•</span> Laiškas iš oficialios Equus sistemos</div>
+  <div style="padding:18px 10px 4px;text-align:center;color:#72869B;font-size:12px;line-height:1.7;">Equus Jojimo Mokykla <span style="color:#AABDCF;">•</span> Laiškas iš oficialios Equus sistemos</div>
 </div>
 </body></html>`;
 }
