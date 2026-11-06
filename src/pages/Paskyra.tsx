@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { SINGLE_LESSON_PRICE, calculateSubPriceByType, canonicalBookings, dbDayOfWeek, formatDateISO, formatTime, MONTHS_LT_NOM, WEEKDAYS_LT } from "@/lib/equus";
-import { CalendarDays, Clock, Bell, QrCode, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight, Palette } from "lucide-react";
+import { CalendarDays, Clock, Bell, QrCode, CheckCircle2, XCircle, Plus, MessageSquare, Star, Trash2, KeyRound, User as UserIcon, Wallet, Inbox, Mail, Phone, IdCard, Pencil, Sparkles, BarChart3, ChevronRight, Palette, EyeOff, RotateCcw, ArrowLeft } from "lucide-react";
 import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -89,6 +89,7 @@ export default function Paskyra() {
   const isLinked = !!user && acting !== user.id;
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
+  const [hiddenSubscriptionIds, setHiddenSubscriptionIds] = useState<string[]>([]);
   const [messages, setMessages] = useState<{ id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; read_by_user: boolean }[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
@@ -98,14 +99,21 @@ export default function Paskyra() {
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const subscriptionPage = location.pathname === "/mano-abonementai";
+  const purchasePage = location.pathname === "/abonemento-uzklausa";
   const requestedTab = new URLSearchParams(location.search).get("tab") || "profile";
-  const activeTab = ["profile", "lessons", "subs", "messages", "permanent", "vacations"].includes(requestedTab)
+  const activeTab = subscriptionPage || purchasePage ? "subs" : ["profile", "lessons", "subs", "messages", "permanent", "vacations"].includes(requestedTab)
     ? requestedTab
     : "profile";
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
   const [vacationOpen, setVacationOpen] = useState(false);
+  useEffect(() => {
+    if (location.pathname === "/paskyra" && requestedTab === "subs") {
+      navigate("/mano-abonementai", { replace: true });
+    }
+  }, [location.pathname, requestedTab, navigate]);
   const { language } = useLanguage();
   useEffect(() => {
     void syncPushLanguage(language);
@@ -155,6 +163,11 @@ export default function Paskyra() {
       setBookings([]);
     }
     setSubs(s.data ?? []);
+    const { data: hiddenRows, error: hiddenError } = await (supabase as any)
+      .from("user_hidden_subscriptions")
+      .select("subscription_id")
+      .eq("viewer_user_id", user.id);
+    if (!hiddenError) setHiddenSubscriptionIds((hiddenRows ?? []).map((row: { subscription_id: string }) => row.subscription_id));
     setMessages(m.data ?? []);
     setPermanents(p.data ?? []);
     setAvailableSlots(ts.data ?? []);
@@ -305,10 +318,27 @@ export default function Paskyra() {
   const nextLesson = bookings
     .filter(b => b.status === "active" && b.is_paused_for_subscription !== true && b.slot_date >= currentDay)
     .sort((a,b) => (a.slot_date + a.slot_time).localeCompare(b.slot_date + b.slot_time))[0];
-  const currentSubscription = subs.find(s => s.paid && (!s.expires_at || s.expires_at >= currentDay));
+  const currentSubscription = subs.find(s => s.paid && !s.start_pending && (!s.start_from_date || s.start_from_date <= currentDay) && (!s.expires_at || s.expires_at >= currentDay) && s.lessons_used < s.lessons_total);
   const remainingLessons = currentSubscription
     ? Math.max(0, currentSubscription.lessons_total - currentSubscription.lessons_used)
     : null;
+
+  const subscriptionFinished = (s: Subscription) => !s.start_pending && (s.lessons_used >= s.lessons_total || (!!s.expires_at && s.expires_at < currentDay));
+  const visibleSubscriptions = subs.filter(s => !hiddenSubscriptionIds.includes(s.id));
+  const ongoingSubscriptions = visibleSubscriptions.filter(s => !subscriptionFinished(s));
+  const finishedSubscriptions = visibleSubscriptions.filter(subscriptionFinished);
+  const hiddenFinishedSubscriptions = subs.filter(s => subscriptionFinished(s) && hiddenSubscriptionIds.includes(s.id));
+
+  const toggleSubscriptionHidden = async (subscriptionId: string, hide: boolean) => {
+    if (!user || !subs.some(s => s.id === subscriptionId && subscriptionFinished(s))) return;
+    const query = (supabase as any).from("user_hidden_subscriptions");
+    const { error } = hide
+      ? await query.insert({ viewer_user_id: user.id, subscription_id: subscriptionId })
+      : await query.delete().eq("viewer_user_id", user.id).eq("subscription_id", subscriptionId);
+    if (error) { toast.error("Nepavyko pakeisti abonemento matomumo."); return; }
+    setHiddenSubscriptionIds(ids => hide ? [...new Set([...ids, subscriptionId])] : ids.filter(id => id !== subscriptionId));
+    toast.success(hide ? "Abonementas paslėptas tik Jūsų paskyroje." : "Abonementas vėl rodomas.");
+  };
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14 relative">
@@ -321,7 +351,7 @@ export default function Paskyra() {
         className="mb-8"
       >
         <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground mb-2">Mano Equus</p>
-        <h1 className="text-3xl sm:text-4xl font-display text-foreground">{activeProfileName || profile?.full_name || "—"}</h1>
+        <h1 className="text-3xl sm:text-4xl font-display text-foreground">{subscriptionPage ? "Mano abonementai" : purchasePage ? "Abonemento užklausa" : activeProfileName || profile?.full_name || "—"}</h1>
         {isLinked && (
           <p className="text-xs text-blush/80 mt-1 italic">
             Aktyvus profilis: {activeProfileName} · perjungti meniu
@@ -332,13 +362,13 @@ export default function Paskyra() {
 
       <VacationBanner userId={acting} />
 
+      {(subscriptionPage || purchasePage) && <Button variant="ghost" className="mb-5" onClick={() => navigate(subscriptionPage ? "/paskyra" : "/mano-abonementai")}><ArrowLeft className="mr-2 h-4 w-4" /> Grįžti</Button>}
       <Tabs value={activeTab} onValueChange={(value) => navigate(`/paskyra?tab=${value}`)}>
-        <TabsList className="hidden sm:grid grid-cols-4 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+        {!subscriptionPage && !purchasePage && <TabsList className="hidden sm:grid grid-cols-3 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
           <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
-          <TabsTrigger value="subs" className="py-2.5 text-xs sm:text-sm">Abonementas</TabsTrigger>
           <TabsTrigger value="messages" className="py-2.5 text-xs sm:text-sm">Žinutės</TabsTrigger>
-        </TabsList>
+        </TabsList>}
 
         {/* PROFILE OVERVIEW */}
         <TabsContent value="profile" className="space-y-5">
@@ -356,9 +386,14 @@ export default function Paskyra() {
             </div>
             <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Abonementas</p>
-              <p className="mt-3 font-display text-2xl text-foreground">{remainingLessons === null ? "Nėra aktyvaus" : remainingLessons + " tren."}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{currentSubscription?.expires_at ? "Galioja iki " + currentSubscription.expires_at : "Peržiūrėkite abonemento sąlygas"}</p>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/paskyra?tab=subs")}>Mano abonementas</Button>
+              <p className="mt-3 font-display text-2xl text-foreground">{remainingLessons === null ? "Nėra aktyvaus" : currentSubscription?.lessons_total + " pamokos"}</p>
+              {currentSubscription ? <>
+                <p className="mt-1 text-sm text-muted-foreground">Panaudota {currentSubscription.lessons_used} · Liko {remainingLessons}</p>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sky-400/15"><div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${Math.min(100, Math.max(0, currentSubscription.lessons_used / Math.max(1, currentSubscription.lessons_total) * 100))}%` }} /></div>
+                <p className="mt-2 text-xs text-muted-foreground">Galioja iki {currentSubscription.expires_at}</p>
+              </> : <p className="mt-1 text-sm text-muted-foreground">Savo abonementus galite peržiūrėti atskirame puslapyje.</p>}
+              <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => navigate("/mano-abonementai")}>Mano abonementai <ChevronRight className="ml-2 h-4 w-4" /></Button>
+              <Button variant="ghost" size="sm" className="mt-2 w-full text-sky-500" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti abonemento užklausą</Button>
             </div>
           </div>
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
@@ -453,12 +488,22 @@ export default function Paskyra() {
 
         {/* SUBSCRIPTIONS */}
         <TabsContent value="subs" className="space-y-4">
-          <SubscriptionPurchaseRequestForm riderId={acting} />
-          {subs.length === 0 ? (
-            <Empty text="Nėra abonementų" />
-          ) : (
-            <ClientSubscriptionCards subs={subs} bookings={bookings} />
-          )}
+          {purchasePage ? <SubscriptionPurchaseRequestForm riderId={acting} /> : <>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4">
+              <div><p className="font-medium">Jūsų abonementai</p><p className="text-xs text-muted-foreground">Pamokos, galiojimas ir ankstesni abonementai vienoje vietoje.</p></div>
+              <Button size="sm" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti užklausą</Button>
+            </div>
+            {ongoingSubscriptions.length ? <ClientSubscriptionCards subs={ongoingSubscriptions} bookings={bookings} /> : <Empty text="Šiuo metu aktyvių ar laukiančių abonementų nėra." />}
+            {(finishedSubscriptions.length > 0 || hiddenFinishedSubscriptions.length > 0) && <details className="rounded-2xl border border-border/70 bg-background/50 p-4">
+              <summary className="cursor-pointer font-medium">Ankstesni abonementai ({finishedSubscriptions.length})</summary>
+              <p className="my-3 text-xs text-muted-foreground">Paslėpus abonementą jis dingsta tik iš Jūsų sąrašo. Mokėjimai ir pamokų istorija lieka išsaugoti.</p>
+              {finishedSubscriptions.length > 0 && <ClientSubscriptionCards subs={finishedSubscriptions} bookings={bookings} onHide={(id) => void toggleSubscriptionHidden(id, true)} />}
+              {hiddenFinishedSubscriptions.length > 0 && <div className="mt-5 border-t border-border/50 pt-4">
+                <p className="mb-2 text-sm text-muted-foreground">Paslėpti abonementai ({hiddenFinishedSubscriptions.length})</p>
+                {hiddenFinishedSubscriptions.map(s => <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"><span>{s.lessons_total} pamokos · {s.purchase_date}</span><Button variant="outline" size="sm" onClick={() => void toggleSubscriptionHidden(s.id, false)}><RotateCcw className="mr-1 h-3 w-3" /> Rodyti vėl</Button></div>)}
+              </div>}
+            </details>}
+          </>}
         </TabsContent>
 
         {/* MESSAGES */}
@@ -1308,7 +1353,7 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
 
 
 /** Shared client-facing subscription cards used both by the rider account and admin preview. */
-export function ClientSubscriptionCards({ subs, bookings }: { subs: Subscription[]; bookings: Booking[] }) {
+export function ClientSubscriptionCards({ subs, bookings, onHide }: { subs: Subscription[]; bookings: Booking[]; onHide?: (id: string) => void }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       {subs.map((s) => {
@@ -1356,6 +1401,7 @@ export function ClientSubscriptionCards({ subs, bookings }: { subs: Subscription
                 }))}
             />
             <SubscriptionManualLessons subscriptionId={s.id} />
+            {onHide && <button type="button" onClick={() => onHide(s.id)} className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><EyeOff className="h-3.5 w-3.5" /> Paslėpti iš mano istorijos</button>}
           </div>
         );
       })}
