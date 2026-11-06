@@ -1036,7 +1036,7 @@ export default function Grafikas() {
       trainer: slot.trainer_name,
       capacity: state.maxAllowed,
       taken: state.total,
-      note: state.reason,
+      note: null,
       levels,
     };
   };
