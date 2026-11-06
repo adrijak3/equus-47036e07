@@ -425,12 +425,10 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
       <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#667F9A;">Iki kada įsigyti abonementą</div>
       <div style="font-size:25px;font-weight:700;color:#393a34;margin-top:6px;">${esc(deadline)} · 20:00</div>
       <div style="font-size:13px;color:#657E96;margin-top:6px;line-height:1.6;">
-        Abonementą rekomenduojame įsigyti iki nurodyto laiko. Esamos rezervacijos nebus automatiškai ištrintos ar paslėptos, tačiau naujoms registracijoms reikės galiojančio abonemento.
+        Be galiojančio abonemento galite rezervuoti vieną treniruotę. Norint registruotis į kitas treniruotes, reikės galiojančio abonemento.
       </div>
     </div>
-    <p style="margin:18px 0 0;color:#5F7890;font-size:14px;line-height:1.7;">
-      Viena artimiausia rezervacija gali likti ir be abonemento. Įsigijus naują abonementą, ją bus galima jam priskirti.
-    </p>`;
+`;
   return emailShell("Abonementas reikalingas", "Priminimas apie būsimą treniruotę", inner);
 }
 
