@@ -405,18 +405,16 @@ export default function Paskyra() {
             </div>
           </div>
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
-            <QuickAction label="Mano QR" icon={<QrCode className="h-4 w-4" />} onClick={() => navigate("/mano-qr")} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
           </div>
           <details className="rounded-xl border border-border/60 bg-background/40 p-4">
-            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Daugiau paskyros nustatymų</summary>
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Daugiau paskyros informacijos ir nustatymų</summary>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
               <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
             </div>
-          </details>
           <ReadOnlyRecurringCard permanents={permanents} />
           <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">
@@ -464,6 +462,7 @@ export default function Paskyra() {
             </div>
           </Section>
           <Section title="Spalvų ir šviesumo tema" icon={<Palette className="h-4 w-4" />}><div className="p-5"><ThemeSwitcher /></div></Section>
+          </details>
           <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Mano informacija</DialogTitle></DialogHeader><ProfileSettings onSaved={async () => { await refreshProfile(); await load(); setEditOpen(false); }} /></DialogContent></Dialog>
           <Dialog open={pwOpen} onOpenChange={setPwOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Slaptažodžio keitimas</DialogTitle></DialogHeader><PasswordChange /></DialogContent></Dialog>
           <Dialog open={pushOpen} onOpenChange={setPushOpen}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Telefono pranešimai</DialogTitle></DialogHeader><PushNotificationSettings language={language} /></DialogContent></Dialog>
