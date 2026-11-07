@@ -253,7 +253,7 @@ export default function Paskyra() {
 
   // Lifetime stats
   const totalAttended = past.filter(
-    (b) => (b.status === "active" || b.status === "completed") && b.counts_in_subscription === true,
+    (b) => b.status === "active" || b.status === "completed",
   ).length;
   const totalCancelled = bookings.filter((b) => b.status === "cancelled").length;
   // Separate-payment lessons are intentionally outside subscription usage.
@@ -262,6 +262,14 @@ export default function Paskyra() {
     !b.subscription_id && b.counts_in_subscription === false &&
     b.extra_fee_paid === true,
   );
+  const horseRideCounts = past
+    .filter(b => (b.status === "completed" || b.status === "active") && !!b.horse_name)
+    .reduce<Record<string, number>>((result, b) => {
+      const name = b.horse_name!;
+      result[name] = (result[name] ?? 0) + 1;
+      return result;
+    }, {});
+  const favoriteHorses = Object.entries(horseRideCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   const sendMessage = async () => {
     if (!user || msgBody.trim().length < 1) return;
@@ -484,6 +492,15 @@ export default function Paskyra() {
               </ul>
             )}
           </Section>
+          <Section title="Mano jojimo statistika" icon={<BarChart3 className="w-4 h-4" />}>
+            <div className="grid gap-3 p-5 sm:grid-cols-2">
+              <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4"><p className="text-xs text-muted-foreground">Iš viso lankytų treniruočių</p><p className="mt-2 font-display text-3xl">{totalAttended}</p></div>
+              <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4"><p className="text-xs text-muted-foreground">Treniruotės šį mėnesį</p><p className="mt-2 font-display text-3xl">{monthAttended.length}</p></div>
+              <div className="sm:col-span-2"><p className="mb-2 text-sm font-medium">Dažniausiai joti žirgai</p>
+                {favoriteHorses.length ? <ul className="space-y-2">{favoriteHorses.map(([name, count]) => <li key={name} className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2 text-sm"><span>{name}</span><span className="text-muted-foreground">{count} tren.</span></li>)}</ul> : <p className="text-sm text-muted-foreground">Kol kas nėra išsaugotų žirgų pasirinkimų istorijos.</p>}
+              </div>
+            </div>
+          </Section>
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
@@ -493,11 +510,11 @@ export default function Paskyra() {
               <div><p className="font-medium">Jūsų abonementai</p><p className="text-xs text-muted-foreground">Pamokos, galiojimas ir ankstesni abonementai vienoje vietoje.</p></div>
               <Button size="sm" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti užklausą</Button>
             </div>
-            {ongoingSubscriptions.length ? <ClientSubscriptionCards subs={ongoingSubscriptions} bookings={bookings} /> : <Empty text="Šiuo metu aktyvių ar laukiančių abonementų nėra." />}
+            {ongoingSubscriptions.length ? <ClientSubscriptionCards subs={ongoingSubscriptions} bookings={bookings} showTimeline /> : <Empty text="Šiuo metu aktyvių ar laukiančių abonementų nėra." />}
             {(finishedSubscriptions.length > 0 || hiddenFinishedSubscriptions.length > 0) && <details className="rounded-2xl border border-border/70 bg-background/50 p-4">
               <summary className="cursor-pointer font-medium">Ankstesni abonementai ({finishedSubscriptions.length})</summary>
               <p className="my-3 text-xs text-muted-foreground">Paslėpus abonementą jis dingsta tik iš Jūsų sąrašo. Mokėjimai ir pamokų istorija lieka išsaugoti.</p>
-              {finishedSubscriptions.length > 0 && <ClientSubscriptionCards subs={finishedSubscriptions} bookings={bookings} onHide={(id) => void toggleSubscriptionHidden(id, true)} />}
+              {finishedSubscriptions.length > 0 && <ClientSubscriptionCards subs={finishedSubscriptions} bookings={bookings} showTimeline onHide={(id) => void toggleSubscriptionHidden(id, true)} />}
               {hiddenFinishedSubscriptions.length > 0 && <div className="mt-5 border-t border-border/50 pt-4">
                 <p className="mb-2 text-sm text-muted-foreground">Paslėpti abonementai ({hiddenFinishedSubscriptions.length})</p>
                 {hiddenFinishedSubscriptions.map(s => <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"><span>{s.lessons_total} pamokos · {s.purchase_date}</span><Button variant="outline" size="sm" onClick={() => void toggleSubscriptionHidden(s.id, false)}><RotateCcw className="mr-1 h-3 w-3" /> Rodyti vėl</Button></div>)}
@@ -1358,7 +1375,24 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
 
 
 /** Shared client-facing subscription cards used both by the rider account and admin preview. */
-export function ClientSubscriptionCards({ subs, bookings, onHide }: { subs: Subscription[]; bookings: Booking[]; onHide?: (id: string) => void }) {
+function SubscriptionTimeline({ subscription, bookings }: { subscription: Subscription; bookings: Booking[] }) {
+  const rows = bookings
+    .filter(b => b.subscription_id === subscription.id && b.status !== "cancelled")
+    .sort((a, b) => (a.slot_date + a.slot_time).localeCompare(b.slot_date + b.slot_time));
+  return <details className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/5 p-3">
+    <summary className="cursor-pointer text-sm font-medium">Pamokų laiko juosta ({rows.length})</summary>
+    <p className="mt-2 text-xs text-muted-foreground">Matomos šiam abonementui priskirtos treniruotės. Panaudotų pamokų skaičius pateiktas aukščiau.</p>
+    {rows.length ? <ol className="mt-4 space-y-3 border-l border-sky-400/40 pl-4">{rows.map(b => {
+      const completed = b.status === "completed" || (b.status === "active" && b.slot_date < formatDateISO(new Date()));
+      return <li key={b.id} className="relative text-sm before:absolute before:-left-[21px] before:top-1.5 before:h-2.5 before:w-2.5 before:rounded-full before:bg-sky-500">
+        <p className="font-medium">{b.slot_date} · {formatTime(b.slot_time)}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{completed ? "Įvykusi treniruotė" : "Rezervuota treniruotė"}{b.horse_name ? ` · ${b.horse_name}` : ""}</p>
+      </li>;
+    })}</ol> : <p className="mt-3 text-sm text-muted-foreground">Dar nėra šiam abonementui priskirtų pamokų.</p>}
+  </details>;
+}
+
+export function ClientSubscriptionCards({ subs, bookings, onHide, showTimeline = false }: { subs: Subscription[]; bookings: Booking[]; onHide?: (id: string) => void; showTimeline?: boolean }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       {subs.map((s) => {
@@ -1406,6 +1440,7 @@ export function ClientSubscriptionCards({ subs, bookings, onHide }: { subs: Subs
                 }))}
             />
             <SubscriptionManualLessons subscriptionId={s.id} />
+            {showTimeline && <SubscriptionTimeline subscription={s} bookings={bookings} />}
             {onHide && <button type="button" onClick={() => onHide(s.id)} className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><EyeOff className="h-3.5 w-3.5" /> Paslėpti iš mano istorijos</button>}
           </div>
         );
