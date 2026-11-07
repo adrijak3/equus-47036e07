@@ -31,6 +31,24 @@ export async function getPushSubscription() {
   return registration.pushManager.getSubscription();
 }
 
+/** A browser endpoint is not connected if Supabase already marked it invalid. */
+export async function getPushConnectionStatus(): Promise<"connected" | "disconnected" | "blocked" | "unsupported"> {
+  if (!pushNotificationsSupported()) return "unsupported";
+  if (Notification.permission === "denied") return "blocked";
+  if (Notification.permission !== "granted") return "disconnected";
+  const subscription = await getPushSubscription();
+  if (!subscription) return "disconnected";
+  const { data: currentUser, error: authError } = await supabase.auth.getUser();
+  if (authError || !currentUser.user) return "disconnected";
+  const { data, error } = await (supabase.from("push_subscriptions" as any) as any)
+    .select("active")
+    .eq("user_id", currentUser.user.id)
+    .eq("endpoint", subscription.endpoint)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.active === true ? "connected" : "disconnected";
+}
+
 export async function enablePushNotifications(language: EquusLanguage) {
   if (!pushNotificationsSupported()) {
     throw new Error(
@@ -70,6 +88,22 @@ export async function enablePushNotifications(language: EquusLanguage) {
   }
 
   let subscription = await registration.pushManager.getSubscription();
+
+  // Browser endpoints can expire (HTTP 410), while remaining in getSubscription().
+  // Replace those endpoints instead of falsely re-enabling them in the database.
+  if (subscription) {
+    const { data: currentUser } = await supabase.auth.getUser();
+    const { data: row, error: lookupError } = await (supabase.from("push_subscriptions" as any) as any)
+      .select("active")
+      .eq("user_id", currentUser.user?.id ?? "00000000-0000-0000-0000-000000000000")
+      .eq("endpoint", subscription.endpoint)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (row?.active === false) {
+      await subscription.unsubscribe();
+      subscription = null;
+    }
+  }
 
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
@@ -165,7 +199,6 @@ export async function syncPushLanguage(language: EquusLanguage) {
   await (supabase.from("push_subscriptions" as any) as any)
     .update({
       language,
-      active: true,
       updated_at: new Date().toISOString(),
     })
     .eq("endpoint", subscription.endpoint);
