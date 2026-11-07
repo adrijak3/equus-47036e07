@@ -27,6 +27,49 @@ type Check = {
   category: "attention" | "review" | "task";
 };
 
+type SubscriptionIssue = { id: string; user_id: string; reason: string; purchase_date: string };
+
+function SubscriptionLifecycleHealth() {
+  const [issues, setIssues] = useState<SubscriptionIssue[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const check = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("subscriptions")
+      .select("id,user_id,lessons_total,lessons_used,purchase_date,start_from_date,expires_at,start_pending,paid,cancelled_at")
+      .is("cancelled_at", null)
+      .order("purchase_date", { ascending: false });
+    setLoading(false);
+    if (error) { toast.error("Nepavyko patikrinti abonementų."); return; }
+    const flagged: SubscriptionIssue[] = [];
+    for (const s of data ?? []) {
+      const reasons: string[] = [];
+      if (Number(s.lessons_used) < 0 || Number(s.lessons_used) > Number(s.lessons_total)) reasons.push("Neteisingas panaudotų pamokų skaičius");
+      if (s.start_pending && (s.start_from_date || s.expires_at)) reasons.push("Laukiantis abonementas jau turi galiojimo datas");
+      if (s.paid && !s.start_pending && !s.start_from_date) reasons.push("Trūksta pradžios datos");
+      if (s.paid && !s.start_pending && s.start_from_date && s.expires_at) {
+        const expected = new Date(s.start_from_date + "T12:00:00");
+        expected.setDate(expected.getDate() + 30);
+        if (expected.toISOString().slice(0, 10) !== s.expires_at) reasons.push("Galiojimo data neatitinka 30 dienų");
+      }
+      if (reasons.length) flagged.push({ id: s.id, user_id: s.user_id, purchase_date: s.purchase_date, reason: reasons.join(" · ") });
+    }
+    setIssues(flagged);
+    setChecked(true);
+  };
+  useEffect(() => { void check(); }, []);
+  return <section className="rounded-xl border border-border/70 bg-background/60 p-4 sm:p-5">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div><h3 className="font-semibold">Abonementų būklės patikra</h3><p className="mt-1 text-xs text-muted-foreground">Tikrinamos datos ir pamokų likučiai. Jokie duomenys nekeičiami.</p></div>
+      <Button variant="outline" size="sm" disabled={loading} onClick={() => void check()}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Patikrinti</Button>
+    </div>
+    {checked && <p className="mt-4 text-sm">{issues.length ? `Verta peržiūrėti: ${issues.length}` : "Akivaizdžių abonementų neatitikimų nerasta."}</p>}
+    {issues.length > 0 && <details className="mt-3"><summary className="cursor-pointer text-sm text-muted-foreground">Rodyti galimus neatitikimus</summary>
+      <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto">{issues.map(item => <li key={item.id} className="rounded-lg border border-border/50 px-3 py-2 text-xs"><span className="font-medium">{item.purchase_date} · {item.user_id}</span><p className="mt-1 text-muted-foreground">{item.reason}</p></li>)}</ul>
+    </details>}
+  </section>;
+}
+
 const checks: Check[] = [
   {
     key: "duplicate_active_rider_slots",
@@ -134,6 +177,7 @@ export default function AdminBookingHealth() {
 
   return (
     <section className="space-y-6">
+      <SubscriptionLifecycleHealth />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <h2 className="flex items-center gap-2 font-display text-2xl text-foreground"><SearchCheck className="h-5 w-5 text-muted-foreground" /> Ar rezervacijos tvarkingos?</h2>
