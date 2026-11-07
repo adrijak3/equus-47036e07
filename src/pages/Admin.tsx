@@ -25,6 +25,7 @@ import { RiderLevelBadge, RiderLevelSelect } from "@/components/RiderLevelBadge"
 import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
 import { AdminCancellationHistory } from "@/components/AdminCancellationHistory";
+import { AdminActivityHistory } from "@/components/admin/AdminActivityHistory";
 import { UsersSection } from "@/components/admin/UsersSection";
 import { SubscriptionReminders } from "@/components/admin/SubscriptionReminders";
 import { History } from "lucide-react";
@@ -108,6 +109,7 @@ export default function Admin() {
     { value: "health", label: "Rezervacijų būklė", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
     { value: "cancelHistory", label: "Atšaukimų istorija", icon: History },
+    { value: "activity", label: "Veiksmų istorija", icon: History },
     { value: "settings", label: "Nustatymai", icon: Settings },
   ];
   const activeItem = navItems.find((n) => n.value === section) ?? navItems[0];
@@ -115,7 +117,7 @@ export default function Admin() {
   // Sections grouped by what the admin is doing. Every section stays reachable.
   const navGroups: { id: string; label: string; short: string; items: string[] }[] = [
     { id: "today", label: "Šiandien", short: "Šiandien", items: ["overview", "schedule", "guide"] },
-    { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations"] },
+    { id: "people", label: "Žmonės", short: "Žmonės", items: ["users", "subs", "qrRequests", "registrations", "activity"] },
     { id: "lessons", label: "Treniruotės", short: "Treniruotės", items: ["permanent", "cancels", "cancelHistory", "duplicates", "health", "vacations"] },
     { id: "comms", label: "Žinutės ir nustatymai", short: "Daugiau", items: ["messages", "reviews", "bugReports", "settings"] },
   ];
@@ -163,6 +165,17 @@ export default function Admin() {
         </button>
         
       </header>
+
+      <div className="mb-5 grid grid-cols-4 gap-2 lg:hidden" aria-label="Greiti administratoriaus veiksmai">
+        {[
+          { id: "schedule", label: "Grafikas", icon: CalendarDays },
+          { id: "users", label: "Raiteliai", icon: Users },
+          { id: "subs", label: "Abon.", icon: Wallet },
+          { id: "cancels", label: "Atšaukimai", icon: Inbox },
+        ].map(item => <button key={item.id} type="button" onClick={() => setSection(item.id)}
+          className={cn("flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-[11px] font-medium transition-colors", section === item.id ? "border-sky-500/50 bg-sky-500/10 text-sky-500" : "border-border/70 bg-background/70 text-muted-foreground hover:text-foreground")}
+        ><item.icon className="h-5 w-5" /><span>{item.label}</span></button>)}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
         {/* Sidebar (desktop): all sections visible, grouped */}
@@ -274,6 +287,7 @@ export default function Admin() {
             <TabsContent value="health"><AdminBookingHealth /></TabsContent>
             <TabsContent value="vacations"><VacationsAdminTab /></TabsContent>
             <TabsContent value="cancelHistory"><AdminCancellationHistory initialQuery={searchQuery} /></TabsContent>
+            <TabsContent value="activity"><AdminActivityHistory /></TabsContent>
             <TabsContent value="settings" className="space-y-4">
               <div className="rounded-2xl border border-gold/20 bg-gradient-card p-5">
                 <AdminHolidayDelegation />
