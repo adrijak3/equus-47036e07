@@ -23,7 +23,7 @@ import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { SubscriptionPurchaseRequestForm } from "@/components/SubscriptionPurchaseRequestForm";
 import { UserDuplicateBookings } from "@/components/UserDuplicateBookings";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { disablePushNotifications, enablePushNotifications, getPushSubscription, pushNotificationsSupported, syncPushLanguage } from "@/lib/pushNotifications";
+import { disablePushNotifications, enablePushNotifications, getPushConnectionStatus, pushNotificationsSupported, syncPushLanguage } from "@/lib/pushNotifications";
 import { loadHorseNamesForBookings } from "@/lib/horseNames";
 
 interface Booking {
@@ -569,16 +569,16 @@ export function SubscriptionManualLessons({ subscriptionId }: { subscriptionId: 
 
 function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
   const [enabled, setEnabled] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "disconnected" | "blocked" | "unsupported">("checking");
   const [busy, setBusy] = useState(false);
   const [enableFailed, setEnableFailed] = useState(false);
   const [reminderHours, setReminderHours] = useState<5 | 24>(24);
 
   useEffect(() => {
-    if (!pushNotificationsSupported()) return;
-
-    getPushSubscription()
-      .then((subscription) => setEnabled(!!subscription))
-      .catch(() => setEnabled(false));
+    let cancelled = false;
+    getPushConnectionStatus()
+      .then(status => { if (!cancelled) { setConnectionStatus(status); setEnabled(status === "connected"); } })
+      .catch(() => { if (!cancelled) { setConnectionStatus("disconnected"); setEnabled(false); } });
 
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
@@ -593,6 +593,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
           }
         });
     });
+    return () => { cancelled = true; };
   }, []);
 
   const toggle = async () => {
@@ -602,6 +603,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
       if (enabled) {
         await disablePushNotifications();
         setEnabled(false);
+        setConnectionStatus("disconnected");
         toast.success(
           language === "lt"
             ? "Telefono pranešimai išjungti. Jūsų treniruočių rezervacijos ir abonementas liko nepakeisti."
@@ -610,6 +612,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
       } else {
         await enablePushNotifications(language);
         setEnabled(true);
+        setConnectionStatus("connected");
         toast.success(
           language === "lt"
             ? "Telefono pranešimai įjungti"
@@ -618,6 +621,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
       }
     } catch (error: any) {
       setEnabled(false);
+      setConnectionStatus("disconnected");
       setEnableFailed(true);
       toast.error(
         error?.message ??
@@ -678,8 +682,8 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
             </div>
             <p className="mt-1 max-w-xl text-xs text-muted-foreground">
               {language === "lt"
-                ? "Dar testuojama:)"
-                : "These are phone push notifications only. This setting does not change your training bookings or lesson subscription."}
+                ? "Pranešimai veikia tik suteikus naršyklei leidimą ir prijungus šį įrenginį."
+                : "Allow browser notifications and connect this device to receive reminders."}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -688,11 +692,12 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
                 {language === "lt" ? "Įjungta" : "Enabled"}
               </span>
             )}
+            {!enabled && <span className="text-xs text-amber-500">{connectionStatus === "checking" ? "Tikrinama…" : connectionStatus === "blocked" ? "Užblokuota naršyklėje" : connectionStatus === "unsupported" ? "Nepalaikoma" : "Neprijungta"}</span>}
             <Button
             variant={enabled ? "outlineGold" : "gold"}
             size="sm"
             onClick={() => void toggle()}
-            disabled={busy || !pushNotificationsSupported()}
+            disabled={busy || connectionStatus === "checking" || !pushNotificationsSupported()}
           >
             {busy
               ? language === "lt"
@@ -745,7 +750,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
 
         <p className="text-[11px] leading-5 text-muted-foreground">
           {language === "lt"
-            ? "Svarbūs Equus atnaujinimai dar testuojami:)."
+            ? "Treniruočių pakeitimų ir laukiančiųjų sąrašo pranešimai ateis tik į prijungtus įrenginius."
             : "Important Equus updates are not advertising and are used only to keep you informed about changes to your booking."}
         </p>
       </div>
