@@ -337,7 +337,7 @@ export default function PublicRegistration() {
     );
 
     return (
-      <div className="container max-w-2xl py-12">
+      <div className="registration-monochrome container max-w-2xl rounded-2xl py-12">
         <div className="rounded-3xl border border-gold/20 bg-gradient-card p-6 shadow-elegant">
           <h1 className="font-display text-3xl text-gradient-gold">
             Registracijos būsena
@@ -420,7 +420,7 @@ export default function PublicRegistration() {
 
   if (done) {
     return (
-      <div className="container max-w-xl py-16 text-center">
+      <div className="registration-monochrome container max-w-xl rounded-2xl py-16 text-center">
         <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
         <h1 className="mt-4 font-display text-4xl text-gradient-gold">
           Registracija gauta!
@@ -437,7 +437,7 @@ export default function PublicRegistration() {
         </Link>
 
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-md text-left">
+          <DialogContent className="registration-monochrome max-w-md text-left">
             <DialogHeader>
               <DialogTitle className="font-display text-2xl text-gradient-gold">
                 Registracija gauta!
@@ -483,7 +483,7 @@ export default function PublicRegistration() {
 
 
       <Dialog open={Boolean(registrationError)} onOpenChange={(open) => !open && setRegistrationError("")}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="registration-monochrome max-w-md">
           <DialogHeader>
             <DialogTitle className="text-destructive">Nepavyko atlikti veiksmo</DialogTitle>
             <DialogDescription className="whitespace-pre-wrap break-words">
@@ -497,7 +497,7 @@ export default function PublicRegistration() {
       </Dialog>
 
   return (
-    <div className="container max-w-4xl py-10 sm:py-14">
+    <div className="registration-monochrome container max-w-4xl rounded-2xl py-10 sm:py-14">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-[.25em] text-gold/70">
           Naujiems Equus lankytojams
@@ -972,7 +972,7 @@ export default function PublicRegistration() {
       </div>
 
       <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
-        <DialogContent className="max-h-[88dvh] max-w-lg overflow-y-auto">
+        <DialogContent className="registration-monochrome max-h-[88dvh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Treniruočių atšaukimo taisyklės</DialogTitle>
             <DialogDescription>
