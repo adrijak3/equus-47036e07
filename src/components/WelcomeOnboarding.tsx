@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  BookOpen,
   CalendarDays,
-  Check,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   FileText,
   ShieldCheck,
   Sparkles,
@@ -62,28 +59,8 @@ const RULES = [
   },
 ] as const;
 
-const GUIDE = [
-  {
-    title: "1 · Pasirinkite laiką",
-    description: "Grafike paspauskite norimą dieną ir treniruotės laiką.",
-    icon: CalendarDays,
-    mock: "schedule",
-  },
-  {
-    title: "2 · Patvirtinkite raitelį",
-    description: "Galite rezervuoti arba save, arba du asmenis.",
-    icon: UserRound,
-    mock: "rider",
-  },
-  {
-    title: "3 · Atšaukite, kai reikia",
-    description: "Atidarykite savo rezervaciją ir pasirinkite atšaukimo veiksmą.",
-    icon: Clock3,
-    mock: "cancel",
-  },
-] as const;
-
 export function WelcomeOnboarding() {
+  const navigate = useNavigate();
   const { user, isAdmin, profile, loading: authLoading, refreshProfile } = useAuth();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
@@ -262,6 +239,8 @@ export function WelcomeOnboarding() {
   const handleNext = async () => {
     if (step === 2) {
       if (!(await saveMainInfo())) return;
+      setStep(4);
+      return;
     }
 
     if (step === 5) {
@@ -276,7 +255,7 @@ export function WelcomeOnboarding() {
   };
 
   const handleBack = () => {
-    setStep((current) => Math.max(1, current - 1));
+    setStep((current) => current === 4 ? 2 : Math.max(1, current - 1));
     window.setTimeout(() => {
       scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     }, 0);
@@ -319,7 +298,7 @@ export function WelcomeOnboarding() {
   const canFinish = accepted && !saving;
 
   const progressLabel = useMemo(
-    () => `${step}/6`,
+    () => `${step >= 4 ? step - 1 : step}/5`,
     [step],
   );
 
@@ -348,6 +327,7 @@ export function WelcomeOnboarding() {
     setSaving(false);
     setOpen(false);
     toast.success("Sveiki atvykę į Equus! 🐴");
+    navigate("/grafikas", { replace: true });
   };
 
   return (
@@ -565,139 +545,6 @@ export function WelcomeOnboarding() {
             </motion.div>
           )}
 
-          {step === 3 && (
-            <motion.div
-              key="guide"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-auto max-w-3xl space-y-5"
-            >
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gold/65">
-                  03 · Rezervacijos
-                </p>
-                <h2 className="mt-2 font-display text-3xl text-gradient-gold">
-                  Kaip veikia rezervacija?
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Trumpas vizualus gidas – panašiai atrodys pagrindiniai
-                  veiksmai pačiame grafike.
-                </p>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                {GUIDE.map((item, index) => {
-                  const Icon = item.icon;
-                  return (
-                    <motion.div
-                      key={item.mock}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.08 }}
-                      className="overflow-hidden rounded-2xl border border-gold/15 bg-gradient-card"
-                    >
-                      <div className="border-b border-gold/10 bg-background/25 p-4">
-                        <div className="mb-3 flex items-center gap-2 text-gold">
-                          <Icon className="h-4 w-4" />
-                          <span className="text-xs font-semibold uppercase tracking-[0.15em]">
-                            {item.title}
-                          </span>
-                        </div>
-
-                        <div className="relative h-36 overflow-hidden rounded-xl border border-gold/10 bg-background/55 p-3">
-                          {item.mock === "schedule" && (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
-                                <span>Trečiadienis</span>
-                                <span>18:45</span>
-                              </div>
-                              <div className="rounded-lg border border-gold/30 bg-gold/10 p-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-semibold">Grupinė</span>
-                                  <span className="text-[10px] text-gold">3 vietos</span>
-                                </div>
-                                <div className="mt-3 h-2 rounded-full bg-muted">
-                                  <div className="h-2 w-2/5 rounded-full bg-gold/70" />
-                                </div>
-                              </div>
-                              <div className="rounded-lg bg-gold px-3 py-2 text-center text-[10px] font-semibold text-gold-foreground">
-                                Registruotis
-                              </div>
-                            </div>
-                          )}
-
-                          {item.mock === "rider" && (
-                            <div className="space-y-2">
-                              <div className="rounded-lg border border-gold/20 bg-background/50 p-3">
-                                <p className="text-[9px] uppercase tracking-widest text-muted-foreground">
-                                  Raitelis
-                                </p>
-                                <p className="mt-1 text-xs font-semibold">Aistė</p>
-                              </div>
-                              <div className="rounded-lg border border-gold/30 bg-gold/10 p-3">
-                                <div className="flex items-center gap-2">
-                                  <Check className="h-3.5 w-3.5 text-gold" />
-                                  <span className="text-xs font-semibold">+ Emilija</span>
-                                </div>
-                                <p className="mt-1 text-[9px] text-muted-foreground">
-                                  Kartu lankantis raitelis
-                                </p>
-                              </div>
-                              <div className="text-center text-[9px] text-gold">
-                                Viena rezervacija · du raiteliai
-                              </div>
-                            </div>
-                          )}
-
-                          {item.mock === "cancel" && (
-                            <div className="space-y-2">
-                              <div className="rounded-lg border border-gold/15 bg-background/50 p-3">
-                                <p className="text-xs font-semibold">18:45 · Grupinė</p>
-                                <div className="mt-2 text-[9px] text-muted-foreground">
-                                  Aistė · Emilija
-                                </div>
-                              </div>
-                              <div className="rounded-lg border border-blush/20 bg-blush/5 p-3">
-                                <div className="flex items-center gap-2 text-blush">
-                                  <XCircle className="h-3.5 w-3.5" />
-                                  <span className="text-[10px] font-semibold">
-                                    Atšaukti pasirinktą raitelį
-                                  </span>
-                                </div>
-                                <p className="mt-1 text-[9px] text-muted-foreground">
-                                  Kito raitelio rezervacija lieka.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="p-4">
-                        <p className="text-sm leading-6 text-muted-foreground">
-                          {item.description}
-                        </p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              <div className="rounded-2xl border border-gold/15 bg-gold/5 p-4 text-sm leading-6">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
-                  <div>
-                    <p className="font-semibold">Maža taisyklė, kurią verta žinoti</p>
-                    <p className="mt-1 text-muted-foreground">
-                      Vienas žmogus gali turėti vieną aktyvią rezervaciją konkrečiam
-                      laikui.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           {step === 4 && (
             <motion.div
               key="rules"
@@ -707,7 +554,7 @@ export function WelcomeOnboarding() {
             >
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-gold/65">
-                  04 · Taisyklės
+                  03 · Taisyklės
                 </p>
                 <h2 className="mt-2 font-display text-3xl text-gradient-gold">
                   Abonementai ir svarbiausia
@@ -785,7 +632,7 @@ export function WelcomeOnboarding() {
                     </p>
                   </div>
                   <Link
-                    to="/taisykles"
+                    to="/taisykles-ir-salygos"
                     target="_blank"
                     className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gold underline underline-offset-4"
                   >
@@ -817,7 +664,7 @@ export function WelcomeOnboarding() {
             >
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-gold/65">
-                  05 · Išvaizda
+                  04 · Išvaizda
                 </p>
                 <h2 className="mt-2 font-display text-3xl text-gradient-gold">
                   Pasirinkite savo Equus tematiką
