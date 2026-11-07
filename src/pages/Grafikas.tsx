@@ -4295,7 +4295,8 @@ export default function Grafikas() {
                                 </div>
 
                                 {/* Trainer info */}
-                                {group.trainer && (
+                                {/* Jolita rider capacity remains enforced without repeating the count label. */}
+                                {group.trainer && !slot.trainer_name?.toLowerCase().includes("jolita") && (
                                   <div className="mx-3 mt-2 rounded-md border border-gold/20 bg-background/30 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground">
                                     {group.note}
                                     {" · "}
