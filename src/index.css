@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* New-rider registration stays calm and monochrome regardless of the account theme. */
+.registration-monochrome {
+  color-scheme: light;
+  --background: 0 0% 97%;
+  --foreground: 0 0% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 15%;
+  --primary: 0 0% 19%;
+  --primary-foreground: 0 0% 100%;
+  --gold: 0 0% 22%;
+  --gold-soft: 0 0% 45%;
+  --gold-foreground: 0 0% 100%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 40%;
+  --border: 0 0% 82%;
+  --input: 0 0% 82%;
+  --ring: 0 0% 22%;
+  --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 96%));
+  --gradient-gold: linear-gradient(135deg, hsl(0 0% 34%), hsl(0 0% 13%));
+  --gradient-text-gold: linear-gradient(180deg, hsl(0 0% 28%), hsl(0 0% 9%));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
 /* ============================================
    EQUUS — Seasonal Luxury Themes
    ============================================ */
