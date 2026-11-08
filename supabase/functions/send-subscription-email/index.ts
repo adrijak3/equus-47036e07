@@ -349,8 +349,8 @@ function welcomeEmailHtml(clientName: string) {
       <p>Equus treniruotes galite lankyti įsigiję abonementą.</p>
       <p>Svarbiausia, ką reikėtų žinoti:</p>
       ${bullets([
-        "Galite rinktis 4, 8 arba 12 treniruočių abonementą.",
-        "<strong>Vienas abonementas gali būti naudojamas treniruotėms su skirtingais Equus treneriais.</strong> Kiekvienam treneriui atskiro abonemento pirkti nereikia.",
+        "Galite rinktis 4, 8 arba 12 treniruočių abonementą arba nestandartinį treniruočių skaičių (pvz., 6, 9, 14 ir kt.).",
+        "<strong>Vienas abonementas gali būti naudojamas treniruotėms su skirtingais Equus treneriais.</strong> Kiekvienam treneriui atskiro abonemento pirkti nereikia (išskyrus Jovitos treniruotes).",
         "Abonementas galioja 30 dienų nuo jo pradžios.",
         "Jei įsigyjate naują abonementą, o ankstesniajame dar liko nepanaudotų treniruočių, naujasis pradės galioti tik pasibaigus ankstesniajam.",
         "Jei ankstesnio abonemento treniruotės jau išnaudotos, naujasis pradeda galioti jo įsigijimo dieną.",
@@ -389,14 +389,10 @@ function welcomeEmailHtml(clientName: string) {
         "Perkelti treniruotę galima tik į kitą tinkamą laisvą laiką, laikantis sistemoje nustatytų sąlygų.",
       ])}
       <p>Jei nepavyksta atšaukti ar perkelti treniruotės, susisiekite su mumis.</p>`)}
-    ${section("6", "🔔 Pranešimai", `
-      <p>Kad nepraleistumėte svarbios informacijos, rekomenduojame įjungti Equus pranešimus savo paskyroje.</p>
-      <p>Jie skirti informuoti apie artėjančias treniruotes, grafiko pasikeitimus, atšaukimus ir kitus svarbius atnaujinimus.</p>
-      <p>Pranešimų gavimas priklauso nuo Jūsų įrenginio ir naršyklės nustatymų.</p>`)}
-    ${section("7", "🤍 Prieš atvykstant į treniruotę", `
+    ${section("6", "🤍 Prieš atvykstant į treniruotę", `
       <p>Keletas mažų priminimų:</p>
       ${bullets([
-        "Atvykite šiek tiek anksčiau, kad spėtumėte pasiruošti.",
+        "Atvykite apie 30 minučių prieš treniruotės pradžią, kad spėtumėte pasiruošti.",
         "Pasirūpinkite tinkama, patogia jojimo apranga ir avalyne.",
         "Treniruotės metu laikykitės trenerio nurodymų.",
         "Jeigu turite klausimų ar kyla neaiškumų, visada galite kreiptis.",
