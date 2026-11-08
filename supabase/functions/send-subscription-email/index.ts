@@ -764,7 +764,7 @@ Deno.serve(async (req) => {
       }
 
       if (event.event_type === "subscription_expiring") {
-        subject = "!SVARBU! Abonementas netrukus baigsis";
+        subject = "Abonementas netrukus baigsis";
         html = subscriptionExpiringHtml(clientName, event.payload || {});
       }
 
