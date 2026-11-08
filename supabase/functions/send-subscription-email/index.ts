@@ -303,6 +303,94 @@ function emailShell(title: string, subtitle: string, inner: string) {
   .email-title { font-size:26px !important; }
   .email-data { font-size:14px !important; }
 }
+
+function welcomeEmailHtml(clientName: string) {
+  const section = (number: string, heading: string, content: string) => `
+    <section style="margin:28px 0 0;padding-top:20px;border-top:1px solid #E2EAF3;">
+      <h2 style="margin:0 0 12px;font-size:19px;font-weight:600;color:#254D75;line-height:1.35;">${number ? `${number}. ` : ""}${heading}</h2>
+      ${content}
+    </section>`;
+  const link = (href: string, label: string) => `<a href="${href}" style="color:#285C8A;font-weight:700;text-decoration:underline;">${label}</a>`;
+  const bullets = (items: string[]) => `<ul style="padding-left:20px;margin:10px 0 0;">${items.map((item) => `<li style="margin:8px 0;">${item}</li>`).join("")}</ul>`;
+
+  const inner = `
+    <p style="margin:0 0 12px;">Sveiki, ${esc(clientName)}! 💙</p>
+    <p>Džiaugiamės, kad prisijungėte prie <strong>Equus jojimo mokyklos!</strong> 🐴</p>
+    <p>Kad Jūsų pirmieji žingsniai mūsų sistemoje būtų kuo paprastesni, paruošėme trumpą svarbiausios informacijos atmintinę.</p>
+    <p>Žemiau rasite viską, ką verta žinoti apie treniruotes, abonementus, registraciją ir pagrindines taisykles.</p>
+    ${section("1", "🐴 Jojimo paslaugų sutartis", `
+      <p><strong>Prieš pirmąją treniruotę kiekvienas raitelis privalo pasirašyti jojimo paslaugų sutartį.</strong></p>
+      <p>Ši taisyklė galioja visiems – tiek vaikams, tiek suaugusiesiems, nepriklausomai nuo jojimo patirties ar pasirinkto treniruotės tipo. („Mažylio svajonė“ ir fotosesijoms pasirašoma laisvalaikio jojimo sutartis.)</p>
+      <p>Sutartį rasite čia: ${link("https://equusjm.pages.dev/jojimo-paslaugu-sutartis-equus.pdf", "Peržiūrėti jojimo paslaugų sutartį")}</p>
+      <p>Be pasirašytos sutarties treniruotėje dalyvauti negalima.</p>`)}
+    ${section("2", "💙 Abonementai", `
+      <p>Equus treniruotes galite lankyti įsigiję abonementą.</p>
+      <p>Svarbiausia, ką reikėtų žinoti:</p>
+      ${bullets([
+        "Galite rinktis 4, 8 arba 12 treniruočių abonementą.",
+        "<strong>Vienas abonementas gali būti naudojamas treniruotėms su skirtingais Equus treneriais.</strong> Kiekvienam treneriui atskiro abonemento pirkti nereikia.",
+        "Abonementas galioja 30 dienų nuo jo pradžios.",
+        "Jei įsigyjate naują abonementą, o ankstesniajame dar liko nepanaudotų treniruočių, naujasis pradės galioti tik pasibaigus ankstesniajam.",
+        "Jei ankstesnio abonemento treniruotės jau išnaudotos, naujasis pradeda galioti jo įsigijimo dieną.",
+        "Skirtingų tipų treniruotėms gali būti taikomos priemokos.",
+        "Jeigu dėl asmeninių priežasčių abonemento įsigyti negalite ir norite už kiekvieną pamoką mokėti atskirai, <strong>susisiekite – aptarsime galimybes individualiai.</strong>",
+      ])}
+      <h3 style="font-size:16px;color:#254D75;margin:22px 0 8px;">Kaip įsigyti abonementą?</h3>
+      <p>Prisijunkite prie savo paskyros ir pasirinkite <strong>„Pateikti abonemento užklausą“</strong>.</p>
+      <p>Ten galėsite pasirinkti abonemento tipą, treniruočių skaičių ir atsiskaitymo būdą.</p>
+      <p>Savo turimus abonementus, likusias treniruotes ir galiojimo datas visada galėsite matyti skiltyje „Mano abonementai“.</p>
+      <h3 style="font-size:16px;color:#254D75;margin:22px 0 8px;">Liga ir atostogos</h3>
+      <p>Susirgus arba išvykus atostogų, abonemento galiojimas gali būti pratęstas pagal EQUUS taisykles.</p>
+      <p>Apie ligą prašome informuoti administraciją, o planuojamas atostogas pažymėti savo paskyros skiltyje „Atostogos“.</p>`)}
+    ${section("3", "📅 Registracija į treniruotes", `
+      <p>Į treniruotes registruojamasi Equus internetiniame grafike.</p>
+      <p>${link("https://equusjm.pages.dev/grafikas", "Atidaryti treniruočių grafiką")}</p>
+      <p>Keletas svarbių dalykų:</p>
+      ${bullets([
+        "Grafike matomos einamoji ir ateinanti savaitės.",
+        "Nauja savaitė registracijai atidaroma sekmadienį 01:00 val.",
+        "Įprasta registracija uždaroma likus 3 valandoms iki treniruotės pradžios.",
+        "Neturint abonemento galima užsiregistruoti į vieną treniruotę. Norint registruotis į kitas, reikės galiojančio abonemento. Nuolatiniams laikams gali būti taikomos papildomos sąlygos.",
+      ])}
+      <p>Jeigu norite lankyti treniruotes reguliariai tuo pačiu savaitės laiku, dėl nuolatinio laiko susisiekite su administracija.</p>`)}
+    ${section("4", "🐎 Žirgo pasirinkimas", `
+      <p>Savo treniruotei žirgą galėsite pasirinkti tiesiogiai grafike. Ši galimybė labiau skirta raiteliams, kurie jau yra lankę bent kelias EQUUS treniruotes ir susipažinę su mūsų žirgais.</p>
+      <p>Žirgo pasirinkimas atidaromas <strong>20:00 val. dieną prieš treniruotę</strong> ir uždaromas treniruotės dieną 21:00 val.</p>
+      <p>Svarbu žinoti, kad žirgų pasirinkimas priklauso nuo jų užimtumo, darbo dienų ir leidžiamo krūvio. Prireikus treneris gali paskirti kitą tinkamą žirgą.</p>`)}
+    ${section("5", "⏰ Treniruočių atšaukimas ir perkėlimas", `
+      <p>Suprantame, kad planai kartais pasikeičia!</p>
+      <p>Tačiau labai prašome laikytis šių taisyklių:</p>
+      ${bullets([
+        "<strong>Treniruotę galima atšaukti neprarandant pamokos likus bent 24 valandoms iki jos pradžios.</strong>",
+        "Atšaukus vėliau arba neatvykus nepranešus, treniruotė paprastai laikoma panaudota.",
+        "Ligos ar nenumatytų aplinkybių atvejai gali būti vertinami individualiai.",
+        "Perkelti treniruotę galima tik į kitą tinkamą laisvą laiką, laikantis sistemoje nustatytų sąlygų.",
+      ])}
+      <p>Jei nepavyksta atšaukti ar perkelti treniruotės, susisiekite su mumis.</p>`)}
+    ${section("6", "🔔 Pranešimai", `
+      <p>Kad nepraleistumėte svarbios informacijos, rekomenduojame įjungti Equus pranešimus savo paskyroje.</p>
+      <p>Jie skirti informuoti apie artėjančias treniruotes, grafiko pasikeitimus, atšaukimus ir kitus svarbius atnaujinimus.</p>
+      <p>Pranešimų gavimas priklauso nuo Jūsų įrenginio ir naršyklės nustatymų.</p>`)}
+    ${section("7", "🤍 Prieš atvykstant į treniruotę", `
+      <p>Keletas mažų priminimų:</p>
+      ${bullets([
+        "Atvykite šiek tiek anksčiau, kad spėtumėte pasiruošti.",
+        "Pasirūpinkite tinkama, patogia jojimo apranga ir avalyne.",
+        "Treniruotės metu laikykitės trenerio nurodymų.",
+        "Jeigu turite klausimų ar kyla neaiškumų, visada galite kreiptis.",
+      ])}`)}
+    ${section("", "💌 Turite klausimų?", `
+      <p>Jeigu kažkas neveikia, nepavyksta užsiregistruoti, kyla klausimų dėl paskyros ar abonemento – drąsiai rašykite arba skambinkite!</p>
+      <p><strong>EQUUS administracija – Adrija</strong></p>
+      <p>📞 <a style="color:#285C8A;" href="tel:+37062876090">+370 628 76090</a></p>
+      <p>✉️ ${link("mailto:jojimomokykla@gmail.com", "jojimomokykla@gmail.com")}</p>
+      <p>Visas išsamias taisykles rasite čia: ${link("https://equusjm.pages.dev/taisykles-ir-salygos", "Equus taisyklės ir sąlygos")}</p>`)}
+    <p style="margin:28px 0 8px;font-weight:700;color:#254D75;">Džiaugiamės, kad esate su mumis!</p>
+    <p>Iki susitikimo žirgyne! 🐴💙</p>
+    <p><strong>Equus jojimo mokykla 🤍</strong></p>`;
+
+  return emailShell("Sveiki prisijungę prie Equus! 🐴 Susipažinkime!", "Jūsų svarbiausios informacijos atmintinė", inner);
+}
 </style>
 </head>
 <body style="margin:0;padding:0;background:#F3F6FB;color:#2C4259;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
@@ -318,7 +406,7 @@ function emailShell(title: string, subtitle: string, inner: string) {
     <div class="email-card" style="padding:32px 34px 28px;background:#FFFFFF;font-size:15px;line-height:1.7;color:#344B63;">
       ${inner}
       <div style="height:1px;background:#E2EAF3;margin:28px 0 18px;"></div>
-      <p style="margin:0;font-size:13px;line-height:1.7;color:#647C94;">Klausimai? Mielai padėsime:<br><a href="mailto:equusjojimomokykla@gmail.com" style="font-weight:600;color:#285C8A;text-decoration:underline;">equusjojimomokykla@gmail.com</a></p>
+      <p style="margin:0;font-size:13px;line-height:1.7;color:#647C94;">Klausimai? Mielai padėsime:<br><a href="mailto:jojimomokykla@gmail.com" style="font-weight:600;color:#285C8A;text-decoration:underline;">jojimomokykla@gmail.com</a></p>
     </div>
   </div>
   <div style="padding:18px 10px 4px;text-align:center;color:#72869B;font-size:12px;line-height:1.7;">Equus Jojimo Mokykla <span style="color:#AABDCF;">•</span> Laiškas iš oficialios Equus sistemos</div>
@@ -425,10 +513,12 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
       <div style="font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#667F9A;">Iki kada įsigyti abonementą</div>
       <div style="font-size:25px;font-weight:700;color:#393a34;margin-top:6px;">${esc(deadline)} · 20:00</div>
       <div style="font-size:13px;color:#657E96;margin-top:6px;line-height:1.6;">
-        Be galiojančio abonemento galite rezervuoti vieną treniruotę. Norint registruotis į kitas treniruotes, reikės galiojančio abonemento.
+        Abonementą rekomenduojame įsigyti iki nurodyto laiko. Esamos rezervacijos nebus automatiškai ištrintos ar paslėptos, tačiau naujoms registracijoms reikės galiojančio abonemento.
       </div>
     </div>
-`;
+    <p style="margin:18px 0 0;color:#5F7890;font-size:14px;line-height:1.7;">
+      Viena artimiausia rezervacija gali likti ir be abonemento. Įsigijus naują abonementą, ją bus galima jam priskirti.
+    </p>`;
   return emailShell("Abonementas reikalingas", "Priminimas apie būsimą treniruotę", inner);
 }
 
@@ -621,54 +711,6 @@ Deno.serve(async (req) => {
           reason: "USER_EXEMPT_FROM_SUBSCRIPTION_REQUIREMENT",
         });
       }
-
-      // Warnings are snapshots of an earlier booking state. Check again immediately
-      // before sending, because a new abonementas or cancellation may have intervened.
-      let skipReason = "";
-      if (!event.booking_id) {
-        skipReason = "WARNING_BOOKING_MISSING";
-      } else {
-        const { data: warningBooking, error: bookingError } = await supabase
-          .from("bookings")
-          .select("id,user_id,status,slot_date,slot_time,subscription_id,counts_in_subscription,is_paused_for_subscription")
-          .eq("id", event.booking_id)
-          .maybeSingle();
-        if (bookingError) throw bookingError;
-
-        if (!warningBooking || warningBooking.user_id !== event.user_id ||
-            warningBooking.status !== "active") {
-          skipReason = "WARNING_BOOKING_NO_LONGER_ACTIVE";
-        } else if (warningBooking.subscription_id || warningBooking.is_paused_for_subscription) {
-          skipReason = "WARNING_BOOKING_ALREADY_HANDLED";
-        } else {
-          const { data: covered, error: coverageError } = await supabase.rpc(
-            "booking_subscription_is_usable_for_slot",
-            { _user_id: event.user_id, _slot_date: warningBooking.slot_date,
-              _slot_time: warningBooking.slot_time },
-          );
-          if (coverageError) throw coverageError;
-          if (covered === true) skipReason = "WARNING_NOW_COVERED_BY_SUBSCRIPTION";
-        }
-      }
-
-      if (skipReason) {
-        const { error: skipError } = await supabase
-          .from("email_events")
-          .update({
-            status: "skipped",
-            last_error: "Skipped after current booking/subscription recheck: " + skipReason,
-            processing_started_at: null,
-          })
-          .eq("id", eventId)
-          .eq("status", "processing");
-        if (skipError) throw skipError;
-        console.log("Equus outdated subscription warning skipped:", {
-          event_id: eventId, booking_id: event.booking_id, reason: skipReason,
-        });
-        return json({
-          ok: true, processed: true, skipped: true, event_id: eventId, reason: skipReason,
-        });
-      }
     }
 
     try {
@@ -691,7 +733,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "subscription_requirement_warning"].includes(event.event_type)) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Unsupported event type: " + event.event_type,
@@ -776,6 +818,11 @@ Deno.serve(async (req) => {
       if (event.event_type === "password_reset") {
         subject = "Equus slaptažodžio atkūrimas";
         html = passwordResetHtml(clientName, event.payload || {});
+      }
+
+      if (event.event_type === "welcome_new_rider") {
+        subject = "Sveiki prisijungę prie Equus! 🐴 Susipažinkime!";
+        html = welcomeEmailHtml(clientName);
       }
 
       if (event.event_type === "global_important_update") {
