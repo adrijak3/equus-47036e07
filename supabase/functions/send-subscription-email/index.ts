@@ -405,6 +405,7 @@ function welcomeEmailHtml(clientName: string) {
       <p>Jeigu kažkas neveikia, nepavyksta užsiregistruoti, kyla klausimų dėl paskyros ar abonemento – drąsiai rašykite arba skambinkite!</p>
       <p><strong>EQUUS administracija – Adrija</strong></p>
       <p>📞 <a style="color:#285C8A;" href="tel:+37062876090">+370 628 76090</a></p>
+      <p>💬 <a style="color:#285C8A;font-weight:700;" href="https://m.me/adriija.kalikaite">Parašyti per Messenger</a></p>
       <p>✉️ ${link("mailto:jojimomokykla@gmail.com", "jojimomokykla@gmail.com")}</p>
       <p>Visas išsamias taisykles rasite čia: ${link("https://equusjm.pages.dev/taisykles-ir-salygos", "Equus taisyklės ir sąlygos")}</p>`)}
     <p style="margin:28px 0 8px;font-weight:700;color:#254D75;">Džiaugiamės, kad esate su mumis!</p>
