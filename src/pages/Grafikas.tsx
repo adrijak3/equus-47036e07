@@ -1122,9 +1122,8 @@ export default function Grafikas() {
   // ----------------------------------------------------------
   // HORSE SELECTION WINDOW
   //
-  // Only:
-  // TODAY
-  // 00:00 - 20:59
+  // Opens at 20:00 the evening before the training day.
+  // Closes at 21:00 on the training day.
   // Europe/Vilnius
   // ----------------------------------------------------------
 
@@ -1143,10 +1142,6 @@ export default function Grafikas() {
 
     const dateISO = formatDateISO(date);
 
-    if (todayISO !== dateISO) {
-      return false;
-    }
-
     const vilniusTime =
       new Intl.DateTimeFormat(
         "en-GB",
@@ -1158,7 +1153,12 @@ export default function Grafikas() {
         },
       ).format(now);
 
-    return vilniusTime < "21:00";
+    const dayBefore = new Date(`${dateISO}T12:00:00Z`);
+    dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+    const dayBeforeISO = dayBefore.toISOString().slice(0, 10);
+
+    return (todayISO === dayBeforeISO && vilniusTime >= "20:00") ||
+      (todayISO === dateISO && vilniusTime < "21:00");
   };
 
   const isTodayVilnius = (date: Date) => {
@@ -1590,13 +1590,15 @@ export default function Grafikas() {
         toast.error(
           "Žirgo pasirinkimas baigėsi 21:00.",
         );
+      } else if (error.message.includes("HORSE_SELECTION_NOT_OPEN")) {
+        toast.error("Žirgą galėsite pasirinkti nuo 20:00 val. dieną prieš treniruotę.");
       } else if (
         error.message.includes(
           "HORSE_SELECTION_ONLY_ON_TRAINING_DAY",
         )
       ) {
         toast.error(
-          "Žirgą galima pasirinkti tik treniruotės dieną.",
+          "Žirgą galima pasirinkti nuo 20:00 val. dieną prieš treniruotę.",
         );
       } else if (
         error.message.includes(
@@ -4295,7 +4297,7 @@ export default function Grafikas() {
                                 </div>
 
                                 {/* Trainer info */}
-                                {/* Jolita rider capacity remains enforced without repeating the count label. */}
+                                {/* Jolita's rider limit still applies, but is not repeated in the public slot details. */}
                                 {group.trainer && !slot.trainer_name?.toLowerCase().includes("jolita") && (
                                   <div className="mx-3 mt-2 rounded-md border border-gold/20 bg-background/30 px-3 py-1.5 text-[11px] leading-snug text-muted-foreground">
                                     {group.note}
