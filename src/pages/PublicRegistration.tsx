@@ -524,10 +524,10 @@ export default function PublicRegistration() {
         <div className="rounded-2xl border border-border bg-background/50 p-4">
           <div className="flex items-center gap-2 font-semibold text-foreground">
             <UserRound className="h-5 w-5 shrink-0 text-gold" />
-            Jau buvai bent vienoje pamokoje?
+            Jau buvai bent vienoje pamokoje Equus?
           </div>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Šios formos iš naujo pildyti nereikia! Prisijunk prie savo Equus paskyros ir
+            Jei jau lankeisi bent vienoje <strong className="text-foreground">Equus</strong> pamokoje, šios formos iš naujo pildyti nereikia! Prisijunk prie savo Equus paskyros ir
             registruokis į kitas treniruotes per „Grafikas“.
           </p>
           <Button asChild variant="gold" className="mt-3 w-full sm:w-auto">
