@@ -1401,7 +1401,7 @@ export default function Grafikas() {
           const packageType = String(
             s.package_type ?? (s.lesson_type === "sportine_po2" ? "po2" : "group"),
           );
-          if (packageType !== "po2" && packageType !== "group") return false;
+          if (packageType !== "po2" && packageType !== "group" && packageType !== "individual") return false;
           if (s.start_pending) return true;
           return Number(s.lessons_total) > Number(s.lessons_used)
             && !!s.start_from_date
