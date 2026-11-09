@@ -137,6 +137,57 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Recover completed lessons that missed their initial allocation (for example,
+  // because an earlier database guard temporarily rejected the operation).
+  // Stay within a small recent window: never bulk-reassign historical lessons.
+  let retryAllocated = 0;
+  let retryFailed = 0;
+  const retryStart = new Date(`${todayISO}T12:00:00.000Z`);
+  retryStart.setUTCDate(retryStart.getUTCDate() - 3);
+  const retryStartISO = retryStart.toISOString().slice(0, 10);
+  const { data: missedLessons, error: missedError } = await supabase
+    .from("bookings")
+    .select("id")
+    .eq("status", "completed")
+    .eq("counts_in_subscription", true)
+    .eq("is_paused_for_subscription", false)
+    .is("subscription_id", null)
+    .gte("slot_date", retryStartISO)
+    .lte("slot_date", todayISO)
+    .order("slot_date", { ascending: true })
+    .limit(50);
+
+  if (missedError) {
+    console.error("Failed to load recently unallocated lessons:", missedError);
+    retryFailed++;
+  } else if (missedLessons?.length) {
+    const ids = missedLessons.map((lesson) => lesson.id);
+    const { data: releasedAllocations, error: releasedError } = await supabase
+      .from("subscription_allocations")
+      .select("booking_id")
+      .in("booking_id", ids)
+      .eq("status", "released");
+
+    if (releasedError) {
+      console.error("Unable to verify intentionally detached lessons:", releasedError);
+      retryFailed++;
+    } else {
+      const intentionallyDetached = new Set((releasedAllocations ?? []).map((row) => row.booking_id));
+      for (const lesson of missedLessons) {
+        if (intentionallyDetached.has(lesson.id)) continue;
+        const { data, error } = await supabase.rpc("allocate_booking_to_subscription", {
+          _booking_id: lesson.id,
+        });
+        if (error) {
+          console.error("Recent lesson allocation retry failed:", lesson.id, error);
+          retryFailed++;
+        } else if ((data as { allocated?: boolean } | null)?.allocated === true) {
+          retryAllocated++;
+        }
+      }
+    }
+  }
+
   // Reconcile same-day usage in the 20:00 Europe/Vilnius window, while
   // keeping hourly booking completion and make-up expiry maintenance. Repeated
   // calls are safe because reconciliation recomputes from booking records.
@@ -219,6 +270,8 @@ Deno.serve(async (req) => {
       alreadyAllocated,
       notAllocated,
       dailyReconciled,
+      retryAllocated,
+      retryFailed,
       makeupsExpired,
       today: todayISO,
       now: nowTime,
