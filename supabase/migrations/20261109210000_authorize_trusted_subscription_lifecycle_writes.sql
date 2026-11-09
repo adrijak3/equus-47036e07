@@ -167,7 +167,7 @@ BEGIN
 
   RETURN v_subscription.id;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.book_po2_with_subscription(_slot_date date, _slot_time time without time zone, _subscription_id uuid, _extra_fee_eur numeric DEFAULT 0)
  RETURNS jsonb
@@ -382,7 +382,7 @@ BEGIN
     'allocation_id', v_allocation_id
   );
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.recalculate_pending_subscription_after_cancellation()
  RETURNS trigger
@@ -474,7 +474,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.apply_sickness_credit()
  RETURNS trigger
@@ -526,4 +526,4 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
