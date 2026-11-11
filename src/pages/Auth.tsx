@@ -171,7 +171,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="container max-w-md py-12 sm:py-20">
+    <div className="container equus-auth max-w-lg py-8 sm:py-16">
       <div className="text-center mb-10 animate-fade-up">
         <Link to="/" className="inline-block">
           <h1 className="text-5xl font-display text-gradient-gold mb-2">Equus</h1>
