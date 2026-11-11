@@ -27,7 +27,7 @@ export default function Kainos() {
   return (
     <div className="container equus-pricing max-w-5xl py-7 sm:py-12">
       <header className="equus-page-heading mb-9 animate-fade-up">
-        <p className="equus-eyebrow mb-3">EQUUS / PASLAUGOS</p><h1 className="equus-page-title">Kainos</h1>
+        <h1 className="equus-page-title">Kainos</h1>
         <p className="equus-page-subtitle">Jojimo treniruotės ir abonementai. Raskite sau tinkamą lankymo ritmą.</p>
       </header>
 
