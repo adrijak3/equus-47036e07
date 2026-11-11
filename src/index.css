@@ -1387,3 +1387,347 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
+
+
+/* ================================================================
+   EQUUS STUDIO / EDITORIAL UI — isolated to the preview shell
+   Visual-only layer; reservation and subscription behavior unchanged.
+   ================================================================ */
+.equus-studio {
+  --background: 42 34% 97%;
+  --foreground: 28 21% 19%;
+  --card: 42 38% 99%;
+  --card-foreground: 28 21% 19%;
+  --popover: 42 38% 99%;
+  --popover-foreground: 28 21% 19%;
+  --primary: 28 31% 28%;
+  --primary-foreground: 44 42% 98%;
+  --gold: 27 32% 32%;
+  --gold-soft: 29 20% 55%;
+  --gold-glow: 33 28% 78%;
+  --gold-foreground: 44 42% 98%;
+  --muted: 38 20% 92%;
+  --muted-foreground: 31 12% 43%;
+  --secondary: 39 18% 92%;
+  --secondary-foreground: 28 21% 19%;
+  --accent: 36 23% 89%;
+  --accent-foreground: 28 21% 19%;
+  --border: 36 17% 80%;
+  --input: 36 17% 79%;
+  --ring: 26 29% 30%;
+  --radius: .55rem;
+  --gradient-card: linear-gradient(180deg,hsl(42 38% 99%),hsl(42 33% 97%));
+  --gradient-gold: linear-gradient(135deg,hsl(29 31% 34%),hsl(27 28% 23%));
+  --gradient-text-gold: linear-gradient(180deg,hsl(28 31% 31%),hsl(27 24% 24%));
+  --shadow-elegant: 0 12px 35px -25px hsl(27 25% 15% / .18);
+  --shadow-gold: none;
+  --shadow-soft: 0 8px 28px -22px hsl(27 25% 15% / .2);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Inter", "Helvetica Neue", system-ui, sans-serif;
+  line-height: 1.55;
+  isolation: isolate;
+}
+html[data-mode="dark"] .equus-studio {
+  color-scheme: dark;
+  --background: 29 15% 11%;
+  --foreground: 39 25% 93%;
+  --card: 29 13% 15%;
+  --card-foreground: 39 25% 93%;
+  --popover: 29 13% 16%;
+  --popover-foreground: 39 25% 93%;
+  --primary: 35 25% 72%;
+  --primary-foreground: 29 17% 12%;
+  --gold: 35 25% 72%;
+  --gold-soft: 34 18% 59%;
+  --gold-glow: 38 25% 78%;
+  --gold-foreground: 29 17% 12%;
+  --muted: 30 12% 21%;
+  --muted-foreground: 34 13% 72%;
+  --secondary: 30 12% 21%;
+  --secondary-foreground: 39 25% 93%;
+  --accent: 31 13% 26%;
+  --accent-foreground: 39 25% 93%;
+  --border: 32 12% 31%;
+  --input: 32 12% 31%;
+  --ring: 35 25% 72%;
+  --gradient-card: linear-gradient(180deg,hsl(29 13% 17%),hsl(29 13% 14%));
+  --gradient-gold: linear-gradient(135deg,hsl(35 24% 77%),hsl(34 22% 63%));
+  --gradient-text-gold: linear-gradient(180deg,hsl(38 25% 86%),hsl(34 22% 71%));
+  --shadow-elegant: 0 14px 36px -26px hsl(0 0% 0% / .65);
+}
+.equus-studio .font-display,
+.equus-studio h1,
+.equus-studio h2,
+.equus-studio h3,
+.equus-studio h4 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -.028em;
+  text-shadow: none;
+}
+.equus-studio .text-gradient-gold {
+  background-image: none;
+  color: hsl(var(--gold));
+  -webkit-text-fill-color: currentColor;
+}
+.equus-studio .bg-gradient-card { background-image: var(--gradient-card); }
+.equus-studio .shadow-gold { box-shadow: none; }
+.equus-studio .shadow-elegant { box-shadow: var(--shadow-elegant); }
+.equus-studio .gold-divider { background: hsl(var(--border)); height: 1px; }
+.equus-site-header {
+  background: hsl(var(--background) / .96);
+  box-shadow: 0 1px 0 hsl(var(--border) / .25);
+}
+.equus-wordmark {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -.055em;
+  line-height: 1;
+}
+.equus-desktop-nav { margin-left: auto; }
+.equus-top-link {
+  padding: .65rem .9rem;
+  font-size: .86rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  border-bottom: 1px solid transparent;
+  transition: color .18s ease, border-color .18s ease;
+}
+.equus-top-link:hover,
+.equus-top-link:focus-visible,
+.equus-top-link-active {
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--gold));
+}
+.equus-menu-button { flex-shrink: 0; border-radius: 50%; }
+.equus-studio .equus-main { min-height: 60vh; }
+.equus-studio .equus-page-heading {
+  text-align: left;
+  border-bottom: 1px solid hsl(var(--border) / .75);
+  padding-bottom: 1.6rem;
+}
+.equus-studio .equus-eyebrow {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground));
+  letter-spacing: .19em;
+  text-transform: uppercase;
+}
+.equus-studio .equus-page-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.65rem, 5vw, 4.45rem);
+  letter-spacing: -.06em;
+  line-height: 1.12;
+  font-weight: 400;
+  color: hsl(var(--foreground));
+  margin: 0;
+}
+.equus-studio .equus-page-subtitle {
+  max-width: 49rem;
+  margin-top: .85rem;
+  font-size: .96rem;
+  line-height: 1.65;
+  color: hsl(var(--muted-foreground));
+}
+.equus-studio :where(button,a,[role="button"]) { -webkit-tap-highlight-color: transparent; }
+.equus-studio :where(button,a,input,select,textarea,[role="tab"]):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+}
+.equus-studio button:disabled { cursor: not-allowed; opacity: .55; }
+.equus-studio :where(input,textarea,select) {
+  accent-color: hsl(var(--gold));
+}
+.equus-studio :where([role="dialog"],[role="tabpanel"]) { color: hsl(var(--foreground)); }
+.equus-studio :where([role="tablist"]) {
+  border: 1px solid hsl(var(--border) / .65);
+  background: hsl(var(--muted) / .55);
+  border-radius: .7rem;
+}
+.equus-studio :where([role="tab"][data-state="active"]) {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 5px hsl(var(--foreground) / .08);
+}
+.equus-studio .equus-mobile-nav {
+  background: hsl(var(--card) / .98);
+  box-shadow: 0 -8px 24px hsl(var(--foreground) / .045);
+}
+.equus-studio .equus-mobile-nav a[aria-current="page"],
+.equus-studio .equus-mobile-nav a:hover {
+  color: hsl(var(--gold));
+}
+.equus-studio .equus-site-footer {
+  background: hsl(var(--card) / .5);
+}
+.equus-studio .equus-site-footer .text-gradient-gold {
+  font-size: 1.4rem;
+}
+.equus-dashboard > .grid { align-items: start; }
+.equus-dashboard > .grid > section,
+.equus-dashboard > .grid > div > section {
+  border-color: hsl(var(--border) / .72);
+}
+.equus-dashboard > .grid > section {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / .7);
+  border-left: 3px solid hsl(var(--gold));
+  border-radius: .45rem;
+  box-shadow: var(--shadow-elegant);
+}
+.equus-dashboard > .grid > div > section { padding-bottom: 1.5rem; }
+.equus-dashboard .equus-page-heading { padding-bottom: 2rem; }
+
+/* Schedule: make dates and slots readable; remove ornamental chrome. */
+.equus-schedule .equus-page-heading { margin-bottom: 1.8rem; }
+.equus-schedule .equus-schedule-toolbar {
+  padding: 1rem 1.1rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / .7);
+  border-radius: .6rem;
+  box-shadow: var(--shadow-soft);
+}
+.equus-schedule .equus-schedule-toolbar > div:first-child {
+  border: 0;
+  background: transparent;
+}
+.equus-schedule :where(.bg-gradient-card,[class*="bg-card/"]) {
+  box-shadow: none;
+}
+.equus-schedule :where(.rounded-2xl,.rounded-xl) {
+  border-radius: .6rem;
+}
+.equus-schedule :where(button,[role="button"]) {
+  touch-action: manipulation;
+}
+.equus-schedule :where([role="grid"],[role="table"]) {
+  border-color: hsl(var(--border));
+}
+.equus-schedule .text-gradient-gold { color: hsl(var(--foreground)); }
+.equus-schedule [class*="text-gold/70"] { color: hsl(var(--muted-foreground)); }
+
+/* Account: two clear summary cards, calm subscription history. */
+.equus-account .equus-account-tablist { max-width: 680px; }
+.equus-account .equus-account-overview > .grid:first-child > div {
+  border-radius: .55rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  padding: clamp(1.2rem, 3vw, 2rem);
+  box-shadow: var(--shadow-soft);
+}
+.equus-account .equus-account-overview > .grid:first-child > div:first-child {
+  border-top: 3px solid hsl(var(--gold));
+}
+.equus-account .equus-account-overview > .grid:first-child > div:nth-child(2) {
+  border-top: 3px solid hsl(var(--muted-foreground) / .65);
+}
+.equus-account :where(.equus-lessons-history,.equus-subscription-history) > section,
+.equus-account .equus-account-overview > section {
+  border: 1px solid hsl(var(--border) / .8);
+  border-radius: .6rem;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+.equus-account :where(.equus-lessons-history,.equus-subscription-history) h2 {
+  color: hsl(var(--foreground));
+}
+.equus-account summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+.equus-account summary:hover { color: hsl(var(--foreground)); }
+
+/* Admin: functional desk, persistent navigation, clear sections. */
+.equus-admin .equus-admin-sidebar {
+  border-radius: .55rem;
+  padding: .65rem;
+  background: hsl(var(--card));
+  box-shadow: var(--shadow-soft);
+}
+.equus-admin .equus-admin-sidebar button {
+  min-height: 42px;
+  border-radius: .3rem;
+  font-size: .83rem;
+}
+.equus-admin .equus-admin-sidebar p {
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  margin-top: .5rem;
+}
+.equus-admin .equus-admin-layout > div:last-child {
+  min-width: 0;
+}
+.equus-admin .equus-admin-shortcuts button {
+  border-radius: .55rem;
+  background: hsl(var(--card));
+  border-color: hsl(var(--border) / .8);
+  font-size: .74rem;
+  min-height: 70px;
+}
+.equus-admin .equus-admin-mobile-nav button {
+  min-height: 44px;
+}
+.equus-admin :where(.bg-gradient-card,.bg-background\/40,.bg-background\/30) {
+  background-image: none;
+  background-color: hsl(var(--card));
+}
+.equus-admin :where(.rounded-2xl,.rounded-xl) {
+  border-radius: .6rem;
+}
+.equus-admin [role="tabpanel"] > section,
+.equus-admin [role="tabpanel"] > .space-y-4 > section {
+  box-shadow: var(--shadow-soft);
+}
+.equus-admin :where(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.equus-admin :where(th) {
+  font-size: .7rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Improve data density without compromising tap targets or phone screens. */
+@media (max-width: 639px) {
+  .equus-studio .equus-site-header .container { min-height: 67px; }
+  .equus-studio .equus-page-heading { padding-bottom: 1.1rem; }
+  .equus-studio .equus-page-title { font-size: clamp(2.25rem, 9vw, 3rem); }
+  .equus-studio .equus-page-subtitle { font-size: .88rem; }
+  .equus-schedule .equus-schedule-toolbar {
+    align-items: stretch;
+    padding: .75rem;
+  }
+  .equus-schedule .equus-schedule-toolbar > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .equus-schedule .equus-schedule-toolbar > div:first-child {
+    padding-inline: 0;
+  }
+  .equus-account .equus-account-tablist {
+    display: grid;
+    gap: 2px;
+  }
+  .equus-account .equus-account-tablist > button { font-size: .77rem; }
+  .equus-admin .equus-admin-layout { gap: 1rem; }
+  .equus-studio .mobile-bottom-nav a { min-height: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .equus-studio *,
+  .equus-studio *::before,
+  .equus-studio *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
