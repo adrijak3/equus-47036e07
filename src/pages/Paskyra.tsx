@@ -349,17 +349,17 @@ export default function Paskyra() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14 relative">
+    <div className="container equus-account mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-12 relative">
 
 
       <motion.header
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-8"
+        className="equus-page-heading mb-8"
       >
-        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground mb-2">Mano Equus</p>
-        <h1 className="text-3xl sm:text-4xl font-display text-foreground">{subscriptionPage ? "Mano abonementai" : purchasePage ? "Abonemento užklausa" : activeProfileName || profile?.full_name || "—"}</h1>
+        <p className="equus-eyebrow mb-2">MANO EQUUS / PASKYRA</p>
+        <h1 className="equus-page-title">{subscriptionPage ? "Mano abonementai" : purchasePage ? "Abonemento užklausa" : activeProfileName || profile?.full_name || "—"}</h1>
         {isLinked && (
           <p className="text-xs text-blush/80 mt-1 italic">
             Aktyvus profilis: {activeProfileName} · perjungti meniu
@@ -371,15 +371,15 @@ export default function Paskyra() {
       <VacationBanner userId={acting} />
 
       {(subscriptionPage || purchasePage) && <Button variant="ghost" className="mb-5" onClick={() => navigate(subscriptionPage ? "/paskyra" : "/mano-abonementai")}><ArrowLeft className="mr-2 h-4 w-4" /> Grįžti</Button>}
-      <Tabs value={activeTab} onValueChange={(value) => navigate(`/paskyra?tab=${value}`)}>
-        {!subscriptionPage && !purchasePage && <TabsList className="hidden sm:grid grid-cols-3 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+      <Tabs className="equus-account-tabs" value={activeTab} onValueChange={(value) => navigate(`/paskyra?tab=${value}`)}>
+        {!subscriptionPage && !purchasePage && <TabsList className="equus-account-tablist grid grid-cols-3 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
           <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
           <TabsTrigger value="messages" className="py-2.5 text-xs sm:text-sm">Žinutės</TabsTrigger>
         </TabsList>}
 
         {/* PROFILE OVERVIEW */}
-        <TabsContent value="profile" className="space-y-5">
+        <TabsContent value="profile" className="equus-account-overview space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Artimiausia treniruotė</p>
@@ -470,7 +470,7 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* LESSONS */}
-        <TabsContent value="lessons" className="space-y-5">
+        <TabsContent value="lessons" className="equus-lessons-history space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Praėjęs mėnuo</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{previousMonthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
@@ -503,7 +503,7 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
-        <TabsContent value="subs" className="space-y-4">
+        <TabsContent value="subs" className="equus-subscription-history space-y-4">
           {purchasePage ? <SubscriptionPurchaseRequestForm riderId={acting} /> : <>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4">
               <div><p className="font-medium">Jūsų abonementai</p><p className="text-xs text-muted-foreground">Pamokos, galiojimas ir ankstesni abonementai vienoje vietoje.</p></div>
