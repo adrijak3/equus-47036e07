@@ -269,16 +269,16 @@ export default function Pradzia() {
   }
 
   return (
-    <div className="container max-w-6xl py-8 sm:py-14 equus-editorial-home">
+    <div className="container max-w-6xl py-7 sm:py-12 equus-editorial-home equus-dashboard">
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 border-b border-border/70 pb-8 sm:mb-12 sm:pb-10"
+        className="equus-page-heading mb-10 border-b border-border/70 pb-8 sm:mb-12 sm:pb-10"
       >
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+        <p className="equus-eyebrow mb-3">
           EQUUS / {getGreeting()}
         </p>
-        <h1 className="font-display text-5xl leading-tight text-foreground sm:text-6xl">
+        <h1 className="equus-page-title">
           {firstName || "Equus"}
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
