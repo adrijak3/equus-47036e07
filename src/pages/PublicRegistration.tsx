@@ -497,11 +497,8 @@ export default function PublicRegistration() {
       </Dialog>
 
   return (
-    <div className="registration-monochrome equus-registration container max-w-5xl rounded-2xl py-7 sm:py-12">
+    <div className="registration-monochrome equus-registration container max-w-5xl rounded-lg py-7 sm:py-12">
       <header className="equus-page-heading mb-8">
-        <p className="text-xs uppercase tracking-[.25em] text-gold/70">
-          Naujiems Equus lankytojams
-        </p>
         <h1 className="equus-page-title">
           Pirmą kartą Equus?
         </h1>
