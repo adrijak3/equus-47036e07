@@ -43,12 +43,9 @@ Deno.serve(async (req) => {
 
   const { date: todayISO, time: nowTime } = vilniusNow();
 
-  // Expire past-deadline makeup grants first.
+  // Always finish today's eligible lessons before deciding whether a make-up
+  // was missed. A Sunday 19:00 lesson may still be 'active' at the 20:00 tick.
   let makeupsExpired = 0;
-  const { data: expiredCount } = await supabase.rpc("expire_makeup_cancellations");
-  if (typeof expiredCount === "number") {
-    makeupsExpired = expiredCount;
-  }
 
   const { data: pastActive, error: e1 } = await supabase
     .from("bookings")
@@ -186,6 +183,16 @@ Deno.serve(async (req) => {
         }
       }
     }
+  }
+
+  // Now that all finished lessons are marked completed and allocated, check
+  // make-up deadlines. This order prevents a false Sunday missed-deadline debit.
+  const { data: expiredCount, error: makeupsError } =
+    await supabase.rpc("expire_makeup_cancellations");
+  if (makeupsError) {
+    console.error("Make-up deadline accounting failed:", makeupsError);
+  } else if (typeof expiredCount === "number") {
+    makeupsExpired = expiredCount;
   }
 
   // Reconcile same-day usage in the 20:00 Europe/Vilnius window, while
