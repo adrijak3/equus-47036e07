@@ -1166,7 +1166,16 @@ export type Database = {
       subscriptions: {
         Row: {
           created_at: string
-          expires_at: string
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancellation_reason: string | null
+          package_type: string | null
+          horse_type: string | null
+          purchase_method: string | null
+          purchased_by: string | null
+          purchased_at: string | null
+          start_pending: boolean
+          expires_at: string | null
           guest_rider_id: string | null
           id: string
           lesson_type: string
@@ -1184,7 +1193,16 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          expires_at: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancellation_reason?: string | null
+          package_type?: string | null
+          horse_type?: string | null
+          purchase_method?: string | null
+          purchased_by?: string | null
+          purchased_at?: string | null
+          start_pending?: boolean
+          expires_at?: string | null
           guest_rider_id?: string | null
           id?: string
           lesson_type?: string
@@ -1202,7 +1220,16 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          expires_at?: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancellation_reason?: string | null
+          package_type?: string | null
+          horse_type?: string | null
+          purchase_method?: string | null
+          purchased_by?: string | null
+          purchased_at?: string | null
+          start_pending?: boolean
+          expires_at?: string | null
           guest_rider_id?: string | null
           id?: string
           lesson_type?: string
