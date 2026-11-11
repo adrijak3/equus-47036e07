@@ -3240,8 +3240,26 @@ function SubDetailDialog({
 /* ---------- CANCELLATIONS ---------- */
 function CancellationsTab() {
   const [reqs, setReqs] = useState<CancelReq[]>([]);
+  const [makeupReviews, setMakeupReviews] = useState<Array<{ id: string; name: string; date: string; deadline: string }>>([]);
 
   const load = async () => {
+    const { data: reviewRows, error: reviewError } = await (supabase as any)
+      .from("cancellation_requests")
+      .select("id, user_id, booking_id, makeup_deadline")
+      .eq("makeup_resolution", "needs_review")
+      .order("makeup_deadline", { ascending: false });
+    if (reviewError) console.error("Failed to load make-up reviews:", reviewError);
+    const reviews = (reviewRows ?? []) as Array<{ id: string; user_id: string; booking_id: string; makeup_deadline: string }>;
+    if (reviews.length) {
+      const [profiles, bookings] = await Promise.all([
+        supabase.from("profiles").select("id, full_name").in("id", reviews.map(r => r.user_id)),
+        supabase.from("bookings").select("id, slot_date").in("id", reviews.map(r => r.booking_id)),
+      ]);
+      const names = Object.fromEntries((profiles.data ?? []).map(p => [p.id, p.full_name]));
+      const dates = Object.fromEntries((bookings.data ?? []).map(b => [b.id, b.slot_date]));
+      setMakeupReviews(reviews.map(r => ({ id: r.id, name: names[r.user_id] ?? "Raitelis", date: dates[r.booking_id] ?? "—", deadline: r.makeup_deadline })));
+    } else setMakeupReviews([]);
+
     const { data, error } = await supabase
       .from("cancellation_requests")
       .select("*")
@@ -3312,7 +3330,7 @@ function CancellationsTab() {
     const dow = d.getDay(); // 0=Sun..6=Sat
     const daysUntilSun = dow === 0 ? 0 : 7 - dow;
     d.setDate(d.getDate() + daysUntilSun);
-    return d.toISOString().slice(0, 10);
+    return formatDateISO(d);
   };
 
   const sendUserMessage = async (userId: string, body: string) => {
@@ -3347,20 +3365,29 @@ function CancellationsTab() {
     if (error) { toast.error(error.message); return; }
 
     await sendUserMessage(req.user_id,
-      `Jūsų atšaukimas (${req.slot_date} ${req.slot_time?.slice(0, 5)}) patvirtintas su sąlyga: ` +
-      `pamoką turite atidirbti iki ${deadline} (sekmadienio imtinai). ` +
-      `Užsiregistruokite į kitą laiką tą pačią savaitę. ` +
-      `Jei to nepadarysite, pamoka bus įskaityta į abonementą automatiškai.`);
-    toast.success(`Atidirbti iki ${deadline}`);
+      `Galite atidirbti atšauktą ${req.slot_date} treniruotę iki sekmadienio (${deadline}) 20:00. ` +
+      `Jei iki to laiko dalyvausite kitoje treniruotėje, ji bus įskaičiuota tik vieną kartą. ` +
+      `Jei neatvyksite į jokią treniruotę, viena pamoka bus nuskaičiuota iš abonemento, ` +
+      `kuris galiojo atšauktai treniruotei. Jei tokio abonemento nėra, situaciją peržiūrės administracija.`);
+    toast.success(`Atidirbimo terminas: ${deadline}, 20:00`);
     load();
   };
 
-  if (reqs.length === 0) {
+  if (reqs.length === 0 && makeupReviews.length === 0) {
     return <p className="text-center text-muted-foreground italic py-12">Nėra laukiančių prašymų</p>;
   }
 
   return (
     <div className="space-y-3">
+      {makeupReviews.length > 0 && (
+        <section className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" aria-label="Atidirbimų peržiūra">
+          <h3 className="font-semibold">Atidirbimai, kuriuos reikia peržiūrėti ({makeupReviews.length})</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Sistema nerado abonemento, galiojusio atšauktai pamokai, arba jo likutis neleidžia nuskaičiuoti pamokos. Nuo naujo abonemento automatiškai nenuskaičiuota.</p>
+          <ul className="mt-3 divide-y divide-border/70">
+            {makeupReviews.map(r => <li key={r.id} className="py-2 text-sm"><strong>{r.name}</strong> · {r.date} · terminas {r.deadline}</li>)}
+          </ul>
+        </section>
+      )}
       {reqs.map((r) => (
         <div key={r.id} className="bg-gradient-card border border-gold/15 rounded-lg p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
@@ -3391,9 +3418,9 @@ function CancellationsTab() {
               size="sm"
               onClick={() => grantMakeup(r)}
               className="border border-gold/40 bg-gold/10"
-              title="Pamoką atidirbti iki sekmadienio (tos pačios savaitės)"
+              title="Atidirbti iki sekmadienio 20:00 (Vilniaus laiku)"
             >
-              <Clock className="w-4 h-4" /> Leisti atidirbti
+              <Clock className="w-4 h-4" /> Atidirbti iki sekmadienio
             </Button>
             <Button variant="gold" size="sm" onClick={() => decide(r, true)}>
               <X className="w-4 h-4" /> Skaičiuoti
