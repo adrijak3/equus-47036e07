@@ -90,7 +90,6 @@ export default function Trener() {
   return (
     <div className="container equus-trainer max-w-6xl space-y-7 py-7 sm:py-12">
       <header className="equus-page-heading space-y-2 border-b border-border/70 pb-6">
-        <p className="equus-eyebrow">EQUUS / TRENERIO SRITIS</p>
         <h1 className="equus-page-title">Žirgai ir treniruotės</h1>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
           Peržiūrėkite artėjančias pamokas, paskirkite žirgus ir tvarkykite raitelių informaciją.
