@@ -1731,3 +1731,93 @@ html[data-mode="dark"] .equus-studio {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Public pages and trainer console / same quiet editorial visual language. */
+.equus-studio :where(.equus-trainer,.equus-events,.equus-gallery,.equus-pricing,.equus-info,.equus-about,.equus-auth,.equus-registration) {
+  position: relative;
+}
+.equus-studio :where(.equus-trainer,.equus-events,.equus-gallery,.equus-pricing,.equus-info,.equus-about) > .equus-page-heading {
+  margin-bottom: 2.2rem;
+}
+.equus-studio :where(.equus-trainer,.equus-events,.equus-gallery,.equus-pricing,.equus-info) :where(.bg-gradient-card) {
+  background-image: none;
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border) / .8);
+}
+.equus-studio :where(.equus-trainer,.equus-events,.equus-gallery,.equus-pricing,.equus-info) :where(.rounded-2xl,.rounded-xl) {
+  border-radius: .6rem;
+}
+.equus-trainer [role="tablist"] { padding: .35rem; }
+.equus-trainer [role="tab"] {
+  min-height: 46px;
+  font-size: .84rem;
+  letter-spacing: -.01em;
+  font-weight: 500;
+}
+.equus-trainer [role="tabpanel"] {
+  min-width: 0;
+}
+.equus-trainer [role="tabpanel"] :where(section,article) {
+  border-color: hsl(var(--border) / .7);
+}
+.equus-events header p { max-width: 55rem; }
+.equus-events > section {
+  border-color: hsl(var(--border) / .75);
+}
+.equus-events > section :where(article,.bg-gradient-card) {
+  border-radius: .55rem;
+}
+.equus-about > header {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.equus-about > header > div.pointer-events-none { display: none; }
+.equus-about > header > .gold-divider { display: none; }
+.equus-about > section > article,
+.equus-about :where(.rounded-2xl,.rounded-3xl) {
+  border-radius: .55rem;
+}
+.equus-gallery :where(button,[role="button"]) { touch-action: manipulation; }
+.equus-gallery :where(.rounded-2xl,.rounded-xl) {
+  border-radius: .55rem;
+  border-color: hsl(var(--border) / .7);
+}
+.equus-pricing > .grid > section {
+  border-radius: .55rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / .8);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1.4rem, 3vw, 2.4rem);
+}
+.equus-pricing > .grid > section:first-child {
+  border-top: 3px solid hsl(var(--gold));
+}
+.equus-pricing > .grid > section h2 {
+  font-family: Georgia,"Times New Roman",serif;
+  font-weight: 400;
+  font-size: clamp(1.45rem, 2.1vw, 1.9rem);
+  color: hsl(var(--foreground));
+}
+.equus-pricing > .grid > section li {
+  padding-block: .3rem;
+}
+.equus-info > .equus-page-heading { margin-bottom: 1rem; }
+.equus-auth > div {
+  border-color: hsl(var(--border));
+}
+.equus-registration .equus-page-heading {
+  margin-bottom: 2rem;
+}
+.equus-registration :where(.bg-gradient-card,.bg-background\/50) {
+  background: hsl(var(--card));
+}
+.equus-registration :where(.rounded-2xl,.rounded-xl) {
+  border-radius: .6rem;
+}
+@media (max-width:639px) {
+  .equus-pricing > .grid > section { padding: 1.4rem; }
+  .equus-studio .equus-registration { padding-inline: 1rem; }
+  .equus-trainer [role="tab"] { font-size: .75rem; }
+}
