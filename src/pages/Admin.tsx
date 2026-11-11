@@ -154,10 +154,10 @@ export default function Admin() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-14">
-      <header className="mb-6 animate-fade-up">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
-        <h1 className="text-3xl sm:text-4xl font-display text-foreground">Žirgyno valdymas</h1>
+    <div className="container equus-admin mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-12">
+      <header className="equus-page-heading mb-8 animate-fade-up">
+        <p className="equus-eyebrow mb-3">EQUUS / ADMINISTRAVIMAS</p>
+        <h1 className="equus-page-title">Žirgyno valdymas</h1>
         <p className="mt-2 text-sm text-muted-foreground">Grafikas, raiteliai ir svarbiausi dienos darbai vienoje vietoje.</p>
         <button type="button" onClick={() => setSection("guide")}
           className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-gold/30 bg-gold/5 px-3 text-sm font-medium text-gold hover:bg-gold/10">
@@ -166,7 +166,7 @@ export default function Admin() {
         
       </header>
 
-      <div className="mb-5 grid grid-cols-4 gap-2 lg:hidden" aria-label="Greiti administratoriaus veiksmai">
+      <div className="equus-admin-shortcuts mb-5 grid grid-cols-4 gap-2 lg:hidden" aria-label="Greiti administratoriaus veiksmai">
         {[
           { id: "schedule", label: "Grafikas", icon: CalendarDays },
           { id: "users", label: "Raiteliai", icon: Users },
@@ -177,10 +177,10 @@ export default function Admin() {
         ><item.icon className="h-5 w-5" /><span>{item.label}</span></button>)}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
+      <div className="equus-admin-layout grid grid-cols-1 gap-6 lg:grid-cols-[252px_minmax(0,1fr)]">
         {/* Sidebar (desktop): all sections visible, grouped */}
         <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="bg-background/90 border border-border/60 rounded-xl p-2 shadow-sm">
+          <nav className="equus-admin-sidebar bg-background/90 border border-border/60 rounded-xl p-2 shadow-sm">
             {navGroups.map((g, i) => (
               <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-border/60 pt-2")}>
                 <p className="px-3 pb-1 pt-1 text-xs text-muted-foreground">{g.label}</p>
@@ -191,7 +191,7 @@ export default function Admin() {
         </aside>
 
         {/* Mobile nav: pick a group, then a section inside it */}
-        <div className="lg:hidden -mt-2 mb-4 space-y-2">
+        <div className="equus-admin-mobile-nav lg:hidden -mt-2 mb-4 space-y-2">
           <div className="grid grid-cols-4 gap-1 rounded-xl border border-gold/15 bg-gradient-card p-1">
             {navGroups.map((g) => {
               const active = activeGroup.id === g.id;
