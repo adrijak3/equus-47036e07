@@ -25,10 +25,10 @@ export default function Kainos() {
   const [showAllPrices, setShowAllPrices] = useState(false);
 
   return (
-    <div className="container max-w-4xl py-12 sm:py-20">
-      <header className="text-center mb-14 animate-fade-up">
-        <h1 className="text-5xl sm:text-6xl font-display text-gradient-gold mb-3">Kainos</h1>
-        <div className="gold-divider max-w-[140px] mx-auto" />
+    <div className="container equus-pricing max-w-5xl py-7 sm:py-12">
+      <header className="equus-page-heading mb-9 animate-fade-up">
+        <p className="equus-eyebrow mb-3">EQUUS / PASLAUGOS</p><h1 className="equus-page-title">Kainos</h1>
+        <p className="equus-page-subtitle">Jojimo treniruotės ir abonementai. Raskite sau tinkamą lankymo ritmą.</p>
       </header>
 
       <div className="grid sm:grid-cols-2 gap-6">
