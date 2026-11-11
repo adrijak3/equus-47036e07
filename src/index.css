@@ -1821,3 +1821,121 @@ html[data-mode="dark"] .equus-studio {
   .equus-studio .equus-registration { padding-inline: 1rem; }
   .equus-trainer [role="tab"] { font-size: .75rem; }
 }
+
+
+/* Equus refinement v2 — typography follows information hierarchy, not templates. */
+.equus-studio {
+  --radius: .5rem;
+  font-feature-settings: "cv11", "ss01";
+}
+.equus-studio :where(h1,h2,h3,h4,h5,h6),
+.equus-studio :where(.font-display) {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: -.027em;
+  line-height: 1.25;
+}
+.equus-studio .equus-wordmark {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -.06em;
+}
+.equus-studio .equus-page-title {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2rem, 4.6vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.13;
+  letter-spacing: -.055em;
+}
+.equus-studio .equus-page-heading {
+  margin-bottom: 1.7rem;
+  border-bottom: 0;
+  padding-bottom: .15rem;
+}
+.equus-studio .equus-page-subtitle {
+  font-size: .95rem;
+  line-height: 1.6;
+}
+.equus-studio .equus-site-footer .font-display {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+.equus-studio .equus-eyebrow {
+  font-size: .8rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.equus-dashboard .equus-page-heading {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.equus-dashboard > .grid {
+  gap: clamp(1.5rem, 3vw, 3rem);
+  grid-template-columns: minmax(0,1fr);
+}
+@media (min-width: 1024px) {
+  .equus-dashboard > .grid {
+    grid-template-columns: minmax(0,1.8fr) minmax(250px,.7fr);
+  }
+}
+.equus-dashboard > .grid > section {
+  border: 1px solid hsl(var(--border));
+  border-radius: .5rem;
+  background: hsl(var(--card));
+}
+.equus-dashboard > .grid > section h2 {
+  font-size: clamp(1.6rem,3vw,2.1rem);
+  font-weight: 600;
+}
+.equus-dashboard > .grid > div > section {
+  border-top: 1px solid hsl(var(--border));
+}
+.equus-dashboard > .grid > div > section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.equus-studio :where(.rounded-full) { box-shadow: none; }
+.equus-studio :where(.bg-gradient-card) { background-image: none; background-color: hsl(var(--card)); }
+.equus-studio :where(.text-gradient-gold) {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: hsl(var(--foreground));
+}
+.equus-studio .equus-main :where(.animate-pulse):not(.animate-spin) {
+  animation: none;
+}
+.equus-studio :where(.shadow-elegant,.shadow-gold) {
+  box-shadow: none;
+}
+.equus-studio .equus-account :where(.border-gold\/15,.border-gold\/20),
+.equus-studio .equus-admin :where(.border-gold\/15,.border-gold\/20),
+.equus-studio .equus-schedule :where(.border-gold\/15,.border-gold\/20) {
+  border-color: hsl(var(--border));
+}
+.equus-studio .equus-admin :where(.font-display) {
+  font-size: inherit;
+}
+.equus-studio .equus-admin-sidebar :where(button,a):focus-visible,
+.equus-studio .equus-mobile-nav a:focus-visible {
+  outline-offset: -3px;
+}
+.equus-studio .equus-admin-sidebar :where(.text-gradient-gold) {
+  color: hsl(var(--foreground));
+}
+.equus-studio :where([role="dialog"]) {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+.equus-studio .equus-schedule-toolbar button,
+.equus-studio .equus-admin-shortcuts button {
+  min-height: 44px;
+}
+@media(max-width:639px) {
+  .equus-studio .equus-page-title { font-size: 2rem; }
+  .equus-studio .equus-page-heading { margin-bottom: 1.2rem; }
+  .equus-account .equus-account-overview > .grid:first-child > div {
+    padding: 1.1rem;
+  }
+  .equus-studio .equus-site-footer { margin-top: 2.5rem; }
+}
