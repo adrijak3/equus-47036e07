@@ -275,11 +275,8 @@ export default function Pradzia() {
         animate={{ opacity: 1, y: 0 }}
         className="equus-page-heading mb-10 border-b border-border/70 pb-8 sm:mb-12 sm:pb-10"
       >
-        <p className="equus-eyebrow mb-3">
-          EQUUS / {getGreeting()}
-        </p>
         <h1 className="equus-page-title">
-          {firstName || "Equus"}
+          {firstName ? `${getGreeting()}, ${firstName}` : getGreeting()}
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
           {isAdmin
@@ -321,8 +318,8 @@ export default function Pradzia() {
               transition={{ delay: index * 0.06 }}
               className="border-l-2 border-border bg-transparent py-2 pl-4"
             >
-              <Icon className="mb-3 h-5 w-5 text-gold" />
-              <div className="font-display text-3xl text-foreground">{value}</div>
+              <Icon className="mb-3 h-4 w-4 text-muted-foreground" />
+              <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
               <div className="mt-1 text-xs leading-snug text-muted-foreground">
                 {label}
               </div>
@@ -348,10 +345,10 @@ export default function Pradzia() {
           <div className="relative">
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-gold/70">
+                <p className="text-sm font-medium text-muted-foreground">
                   Kita treniruotė
                 </p>
-                <h2 className="mt-2 font-display text-3xl text-foreground sm:text-4xl">
+                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                   {nextBooking
                     ? formatNextDate(nextBooking.slot_date)
                     : "Kol kas nesuplanuota"}
@@ -366,7 +363,7 @@ export default function Pradzia() {
               <>
                 <div className="grid gap-5 border-y border-border/70 py-5 sm:grid-cols-2">
                   <div>
-                    <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                    <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock3 className="h-3.5 w-3.5 text-gold" />
                       Laikas
                     </div>
@@ -380,14 +377,14 @@ export default function Pradzia() {
                       <Horse size={15} />
                       Žirgas
                     </div>
-                    <div className="font-display text-2xl text-foreground">
+                    <div className="text-xl font-semibold text-foreground">
                       {nextBooking.horse_name ?? "Bus paskirtas vėliau"}
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-5 border-b border-border/70 pb-5">
-                  <div className="text-xs uppercase tracking-wider text-gold/70">
+                  <div className="text-sm text-muted-foreground">
                     Iki treniruotės liko
                   </div>
                   <div className="mt-1 font-display text-2xl text-gold sm:text-3xl">
@@ -427,15 +424,15 @@ export default function Pradzia() {
           >
             <div className="flex items-center gap-3">
               <CalendarDays className="h-5 w-5 text-muted-foreground" />
-              <h2 className="font-display text-xl text-foreground">Šį mėnesį</h2>
+              <h2 className="text-lg font-semibold text-foreground">Šį mėnesį</h2>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div>
-                <div className="font-display text-5xl text-foreground tabular-nums">{monthCount}</div>
+                <div className="text-4xl font-semibold tracking-tight text-foreground tabular-nums">{monthCount}</div>
                 <p className="mt-1 text-sm text-muted-foreground">pamokos</p>
               </div>
               <div>
-                <div className="font-display text-3xl text-foreground/85 tabular-nums">{totalCount}</div>
+                <div className="text-3xl font-semibold tracking-tight text-foreground/85 tabular-nums">{totalCount}</div>
                 <p className="mt-1 text-xs text-muted-foreground">iš viso</p>
               </div>
             </div>
