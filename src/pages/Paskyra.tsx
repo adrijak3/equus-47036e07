@@ -358,7 +358,6 @@ export default function Paskyra() {
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className="equus-page-heading mb-8"
       >
-        <p className="equus-eyebrow mb-2">MANO EQUUS / PASKYRA</p>
         <h1 className="equus-page-title">{subscriptionPage ? "Mano abonementai" : purchasePage ? "Abonemento užklausa" : activeProfileName || profile?.full_name || "—"}</h1>
         {isLinked && (
           <p className="text-xs text-blush/80 mt-1 italic">
@@ -382,9 +381,9 @@ export default function Paskyra() {
         <TabsContent value="profile" className="equus-account-overview space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Artimiausia treniruotė</p>
+              <p className="text-sm font-medium text-muted-foreground">Artimiausia treniruotė</p>
               {nextLesson ? <>
-                <p className="mt-3 font-display text-2xl text-foreground">{nextLesson.slot_date}</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{nextLesson.slot_date}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{formatTime(nextLesson.slot_time)} {nextLesson.horse_name ? " · Žirgas: " + nextLesson.horse_name : ""}</p>
                 <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/paskyra?tab=lessons")}>Peržiūrėti pamokas</Button>
               </> : <>
