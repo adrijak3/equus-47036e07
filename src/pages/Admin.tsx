@@ -156,7 +156,6 @@ export default function Admin() {
   return (
     <div className="container equus-admin mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-12">
       <header className="equus-page-heading mb-8 animate-fade-up">
-        <p className="equus-eyebrow mb-3">EQUUS / ADMINISTRAVIMAS</p>
         <h1 className="equus-page-title">Žirgyno valdymas</h1>
         <p className="mt-2 text-sm text-muted-foreground">Grafikas, raiteliai ir svarbiausi dienos darbai vienoje vietoje.</p>
         <button type="button" onClick={() => setSection("guide")}
@@ -252,7 +251,7 @@ export default function Admin() {
         <div className="min-w-0">
           <div className="mb-4 flex items-center gap-2">
             <activeItem.icon className="w-5 h-5 text-gold" />
-            <h2 className="font-display text-2xl text-gradient-gold">{activeItem.label}</h2>
+            <h2 className="text-xl font-semibold text-foreground">{activeItem.label}</h2>
           </div>
 
           <AdminGlobalSearch
