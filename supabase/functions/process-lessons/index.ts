@@ -139,11 +139,11 @@ Deno.serve(async (req) => {
 
   // Recover completed lessons that missed their initial allocation (for example,
   // because an earlier database guard temporarily rejected the operation).
-  // Stay within a small recent window: never bulk-reassign historical lessons.
+  // Retry only the past week, skipping any intentionally released allocations. Never bulk-reassign older history.
   let retryAllocated = 0;
   let retryFailed = 0;
   const retryStart = new Date(`${todayISO}T12:00:00.000Z`);
-  retryStart.setUTCDate(retryStart.getUTCDate() - 3);
+  retryStart.setUTCDate(retryStart.getUTCDate() - 7);
   const retryStartISO = retryStart.toISOString().slice(0, 10);
   const { data: missedLessons, error: missedError } = await supabase
     .from("bookings")
