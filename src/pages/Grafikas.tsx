@@ -3226,9 +3226,7 @@ export default function Grafikas() {
         }}
         className="equus-page-heading mb-8 relative"
       >
-        <p className="equus-eyebrow mb-3">TRENIRUOTĖS / GRAFIKAS</p>
-
-        <h1 className="equus-page-title">Treniruočių grafikas</h1>
+        <h1 className="equus-page-title">Grafikas</h1>
         <p className="equus-page-subtitle">Pasirinkite savaitę ir peržiūrėkite laisvus treniruočių laikus.</p>
 
         
@@ -3267,7 +3265,7 @@ export default function Grafikas() {
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="font-display text-base sm:text-lg text-gradient-gold capitalize px-2 min-w-[180px] text-center">
+          <div className="text-sm sm:text-base font-semibold text-foreground capitalize px-2 min-w-[180px] text-center">
             {rangeLabel}
           </div>
 
