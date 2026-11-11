@@ -1939,3 +1939,83 @@ html[data-mode="dark"] .equus-studio {
   }
   .equus-studio .equus-site-footer { margin-top: 2.5rem; }
 }
+
+
+/* Softer typography and quieter registration; preserve the Kainos layout. */
+.equus-studio {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.equus-studio .equus-main :where(h1,h2,h3,h4,h5,h6) {
+  font-weight: 500;
+  letter-spacing: -.018em;
+  line-height: 1.28;
+}
+.equus-studio .equus-main .equus-page-title {
+  font-size: clamp(1.9rem, 3.7vw, 2.65rem);
+  font-weight: 500;
+  letter-spacing: -.035em;
+  line-height: 1.2;
+}
+/* Kainos was approved: don't alter its type proportions or prices. */
+.equus-studio .equus-pricing .equus-page-title {
+  font-size: clamp(2rem, 4.6vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -.055em;
+}
+.equus-studio .equus-pricing :where(h2,h3) {
+  font-weight: 600;
+  letter-spacing: -.027em;
+}
+.equus-studio .equus-main :where(.font-semibold):not(.equus-pricing *) {
+  font-weight: 500;
+}
+.equus-studio .equus-registration {
+  background: transparent;
+  box-shadow: none;
+}
+.equus-studio .equus-registration .equus-page-heading {
+  margin-bottom: 1.25rem;
+}
+.equus-studio .equus-registration .equus-page-title {
+  font-size: clamp(1.8rem, 4vw, 2.45rem);
+  letter-spacing: -.035em;
+}
+.equus-studio .equus-registration .equus-registration-existing {
+  line-height: 1.5;
+}
+.equus-studio .equus-registration .equus-registration-form {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  box-shadow: none;
+}
+.equus-studio .equus-registration .equus-registration-form :where(button, input, select, textarea) {
+  border-radius: .45rem;
+}
+.equus-studio .equus-registration .equus-registration-form button[aria-pressed="true"] {
+  border-color: hsl(var(--foreground) / .6);
+}
+.equus-studio .equus-registration .equus-registration-form h2,
+.equus-studio .equus-registration .equus-registration-form h3 {
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -.012em;
+}
+.equus-studio .equus-help-widget {
+  font-size: .875rem;
+}
+.equus-studio .equus-help-widget :where(h2,button,a) {
+  letter-spacing: normal;
+}
+.equus-studio .equus-help-widget > button {
+  box-shadow: 0 3px 16px hsl(0 0% 0% / .08);
+}
+.equus-studio .equus-help-widget [role="dialog"] {
+  box-shadow: 0 12px 38px hsl(0 0% 0% / .18);
+}
+@media (max-width: 639px) {
+  .equus-studio .equus-registration .equus-registration-form { padding: 1rem; }
+  .equus-studio .equus-help-widget { right: .75rem; }
+}
