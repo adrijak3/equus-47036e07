@@ -907,7 +907,7 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
         <div><h2 className="font-display text-2xl text-foreground">Dienos darbai</h2><p className="text-sm text-muted-foreground">Svarbiausi veiksmai prieš prasidedant treniruotėms.</p></div>
         <a href="/grafikas" className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-gold">Atidaryti grafiką</a>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="equus-admin-overview-grid grid grid-cols-2 gap-3 xl:grid-cols-3">
       {cards.map((c) => {
         const Icon = c.icon;
         return (
@@ -915,15 +915,18 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
             key={c.label}
             onClick={() => onGo(c.go)}
             className={cn(
-              "text-left p-4 rounded-xl border border-border/60 bg-background/70 transition-colors hover:border-foreground/30 group",
+              "text-left p-4 min-h-[112px] rounded-lg border border-border/80 bg-card transition-colors hover:border-foreground/30 group focus-visible:outline-offset-2",
               c.cls || "border-border/60 bg-background/70",
             )}
           >
-            <div className="flex items-center justify-between mb-2">
-              <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{c.label}</span>
             </div>
-            <div className="font-display text-3xl text-foreground tabular-nums">{c.value}</div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{c.label}</div>
+            <div className="mt-4 flex items-end justify-between">
+              <span className="text-3xl font-semibold tracking-tight text-foreground tabular-nums">{c.value}</span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground">Peržiūrėti</span>
+            </div>
           </button>
         );
       })}
