@@ -42,7 +42,7 @@ BEGIN
       RETURN NEW;
     END IF;
   END IF;
-  SELECT count(*), min(s.id)
+  SELECT count(*), (array_agg(s.id))[1]
   INTO v_number, v_candidate
   FROM public.subscriptions s
   WHERE s.user_id = NEW.user_id AND s.paid AND s.cancelled_at IS NULL
