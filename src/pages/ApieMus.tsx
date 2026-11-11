@@ -17,11 +17,7 @@ export default function ApieMus() {
   return (
     <div className="container equus-about mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-12">
       <header className="equus-page-heading relative overflow-hidden border-b border-border/70 py-8 sm:py-12">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full border border-gold/10" />
-        <div className="pointer-events-none absolute -right-6 -top-10 h-44 w-44 rounded-full border border-gold/10" />
-        <p className="text-xs uppercase tracking-[0.25em] text-gold/75">EQUUS · JOJIMO MOKYKLA</p>
         <h1 className="equus-page-title mt-3">Apie mus</h1>
-        <div className="gold-divider mt-5 max-w-[120px]" />
         <p className="mt-5 max-w-2xl text-base leading-7 text-foreground/85 sm:text-lg">
           Jojimas prasideda nuo pažinties su žirgu, pasitikėjimo ir kantrybės.
           „Equus“ kviečia mokytis, tobulėti ir atrasti savo ryšį su žirgu.
