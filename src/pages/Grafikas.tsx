@@ -3205,26 +3205,7 @@ export default function Grafikas() {
     : `${weekStart.getDate()} ${monthNames[weekStart.getMonth()]} – ${weekEnd.getDate()} ${monthNames[weekEnd.getMonth()]} ${weekEnd.getFullYear()}`;
 
   return (
-    <div className="container max-w-[1400px] py-8 sm:py-14 relative">
-      <FloralAccent
-        className="absolute -top-8 -left-12 hidden md:block"
-        size={180}
-        delay={0.2}
-        rotate={-15}
-      />
-
-      <FloralAccent
-        className="absolute top-32 -right-16 hidden md:block"
-        size={150}
-        delay={0.5}
-        rotate={20}
-      />
-
-      <HorseFlourish
-        className="absolute top-4 right-4 sm:right-12"
-        size={70}
-      />
-
+    <div className="container equus-schedule max-w-[1400px] py-7 sm:py-12 relative">
       <motion.header
         initial={{
           opacity: 0,
@@ -3243,17 +3224,14 @@ export default function Grafikas() {
             1,
           ],
         }}
-        className="text-center mb-10 relative"
+        className="equus-page-heading mb-8 relative"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">
-          {t("school")}
-        </p>
+        <p className="equus-eyebrow mb-3">TRENIRUOTĖS / GRAFIKAS</p>
 
-        <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
-          {t("horseFreedom")}
-        </h1>
+        <h1 className="equus-page-title">Treniruočių grafikas</h1>
+        <p className="equus-page-subtitle">Pasirinkite savaitę ir peržiūrėkite laisvus treniruočių laikus.</p>
 
-        <div className="gold-divider max-w-[140px] mx-auto" />
+        
       </motion.header>
 
       <VacationBanner userId={user?.id ?? null} />
@@ -3274,7 +3252,7 @@ export default function Grafikas() {
       </Dialog>
 
       {/* Week navigation */}
-      <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
+      <div className="equus-schedule-toolbar flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
         <div className="flex items-center gap-2 rounded-md border border-gold/20 bg-card/40 px-2 py-1.5">
           <Button
             variant="ghost"
@@ -3360,7 +3338,7 @@ export default function Grafikas() {
               setPendingScrollToToday(true);
             }}
           >
-            📅 {t("today")}
+            {t("today")}
           </Button>
         </div>
       </div>
