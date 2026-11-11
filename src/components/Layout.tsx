@@ -184,11 +184,11 @@ export default function Layout({
             onClick={close}
             className="group flex items-center gap-2.5"
           >
-            <span className="equus-wordmark text-foreground font-display text-2xl tracking-wide">
+            <span className="equus-wordmark text-foreground font-display text-2xl">
               Equus
             </span>
 
-            <span className="font-body hidden text-xs uppercase tracking-[0.25em] text-muted-foreground/70 sm:inline">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
               jojimo mokykla
             </span>
           </Link>
@@ -243,7 +243,7 @@ export default function Layout({
         >
           {/* Meniu antraštė */}
           <div className="flex h-16 items-center justify-between border-b border-gold/10 px-6">
-            <span className="text-foreground font-display text-xl">
+            <span className="text-foreground text-lg font-semibold">
               Meniu
             </span>
 
