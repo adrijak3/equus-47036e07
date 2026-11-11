@@ -497,62 +497,42 @@ export default function PublicRegistration() {
       </Dialog>
 
   return (
-    <div className="registration-monochrome equus-registration container max-w-5xl rounded-lg py-7 sm:py-12">
+    <div className="registration-monochrome equus-registration container max-w-3xl py-7 sm:py-12">
       <header className="equus-page-heading mb-8">
         <h1 className="equus-page-title">
-          Pirmą kartą Equus?
+          Registracija į pirmą treniruotę
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Ši registracijos forma skirta tiems, kurie <strong className="text-foreground">dar niekada nesilankė Equus</strong>
-          {" "}ir nori atvykti į pirmąją treniruotę. Paskyros tam nereikia.
+          Naujiems Equus lankytojams. Pasirinkite užsiėmimą ir pateikite registracijos duomenis.
         </p>
       </header>
 
-      <div className="mb-7 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-gold" />
-            Dar nebuvai Equus?
-          </div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Puiku! Užpildyk formą apačioje ir susisieksime dėl pirmos pamokos.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border bg-background/50 p-4">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <UserRound className="h-5 w-5 shrink-0 text-gold" />
-            Jau buvai bent vienoje pamokoje Equus?
-          </div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Jei jau lankeisi bent vienoje <strong className="text-foreground">Equus</strong> pamokoje, šios formos iš naujo pildyti nereikia! Prisijunk prie savo Equus paskyros ir
-            registruokis į kitas treniruotes per „Grafikas“.
-          </p>
-          <Button asChild variant="gold" className="mt-3 w-full sm:w-auto">
-            <Link to="/auth?tab=signin">Prisijungti prie paskyros</Link>
-          </Button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Dar neturi paskyros? Prisijungimo puslapyje galėsi ją susikurti.
-          </p>
-        </div>
+      <div className="equus-registration-existing mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
+        <p className="text-sm text-muted-foreground">
+          Jau buvote Equus treniruotėje? Registruotis iš naujo nereikia.
+        </p>
+        <Link to="/auth?tab=signin" className="shrink-0 text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground">
+          Prisijungti
+        </Link>
       </div>
 
-      <div className="mb-6 grid grid-cols-4 gap-2">
+      <div className="equus-registration-progress mb-6 grid grid-cols-4 gap-1">
         {[1, 2, 3, 4].map((number) => (
           <div
             key={number}
             className={cn(
-              "h-2 rounded-full",
+              "h-1 rounded-full",
               number <= step ? "bg-gold" : "bg-muted",
             )}
           />
         ))}
       </div>
 
-      <div className="rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-8">
+      <div className="equus-registration-form rounded-lg border border-border bg-card p-5 sm:p-7">
         {step === 1 && (
           <div>
-            <h2 className="font-display text-3xl">Pasirinkite užsiėmimą</h2>
-            <div className="mt-5 grid gap-3">
+            <h2 className="text-xl font-medium">Pasirinkite užsiėmimą</h2>
+            <div className="mt-4 grid gap-2">
               {SERVICES.map((item) => {
                 const Icon = item.icon;
                 const active = service === item.value;
@@ -566,7 +546,7 @@ export default function PublicRegistration() {
                       if (item.value !== "sportine") setLevel("");
                     }}
                     className={cn(
-                      "rounded-2xl border p-5 text-left transition-colors",
+                      "rounded-lg border px-4 py-3 text-left transition-colors",
                       active
                         ? "border-gold bg-gold/10"
                         : "border-border bg-background/30 hover:border-gold/40",
@@ -576,7 +556,7 @@ export default function PublicRegistration() {
                       <Icon className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
                       <div className="min-w-0">
                         <div className="font-semibold">{item.title}</div>
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        <p className="mt-1 text-sm leading-5 text-muted-foreground">
                           {item.description}
                         </p>
                         <p className="mt-2 text-sm font-medium text-gold">
@@ -591,22 +571,22 @@ export default function PublicRegistration() {
 
             {(service === "sportine" || service === "individuali") && (
               <div className="mt-8">
-                <h3 className="font-display text-2xl">Jojimo patirtis</h3>
-                <div className="mt-4 grid gap-3">
+                <h3 className="text-lg font-medium">Jojimo patirtis</h3>
+                <div className="mt-4 grid gap-2">
                   {LEVELS.map((item) => (
                     <button
                       key={item.value}
                       type="button"
                       onClick={() => setLevel(item.value)}
                       className={cn(
-                        "rounded-2xl border p-5 text-left transition-colors",
+                        "rounded-lg border px-4 py-3 text-left transition-colors",
                         level === item.value
                           ? "border-gold bg-gold/10"
                           : "border-border bg-background/30 hover:border-gold/40",
                       )}
                     >
                       <div className="font-semibold">{item.title}</div>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      <p className="mt-1 text-sm leading-5 text-muted-foreground">
                         {item.text}
                       </p>
                     </button>
@@ -619,7 +599,7 @@ export default function PublicRegistration() {
 
         {step === 2 && (
           <div>
-            <h2 className="font-display text-3xl">Asmeninė informacija</h2>
+            <h2 className="text-xl font-medium">Asmeninė informacija</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <Field label="Vardas">
                 <Input
@@ -711,10 +691,10 @@ export default function PublicRegistration() {
 
         {step === 3 && (
           <div>
-            <h2 className="font-display text-3xl">Pageidaujamas laikas</h2>
+            <h2 className="text-xl font-medium">Pageidaujamas laikas</h2>
 
             {needsAdminSelectedTime ? (
-              <div className="mt-5 rounded-2xl border border-gold/20 bg-gold/5 p-5">
+              <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
                 <p className="font-medium">
                   {service === "individuali" ? "Individualios treniruotės laikas nėra garantuojamas." : "Tikslų laiką pasiūlys ir patvirtins administracija."}
                 </p>
@@ -737,7 +717,7 @@ export default function PublicRegistration() {
                   treniruočių laikai.
                 </p>
                 <div className="mt-5">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <h3 className="text-sm font-medium text-muted-foreground">
                     1. Pasirinkite dieną
                   </h3>
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
@@ -850,7 +830,7 @@ export default function PublicRegistration() {
 
         {step === 4 && selectedService && (
           <div>
-            <h2 className="font-display text-3xl">Patvirtinimas</h2>
+            <h2 className="text-xl font-medium">Patvirtinimas</h2>
             <div className="mt-5 space-y-2 rounded-2xl border border-border bg-background/30 p-5 text-sm">
               <p>
                 <b>Vardas:</b> {form.firstName} {form.lastName}
