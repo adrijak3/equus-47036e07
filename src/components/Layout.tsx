@@ -40,7 +40,7 @@ import EffectsToggle from "@/components/EffectsToggle";
 import { EquusHelpWidget } from "@/components/EquusHelpWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import equusHeadLogo from "@/components/equus-head-transparent.png";
+
 
 type NavigationItem = { to: string; label: string; icon: LucideIcon; menuOnly?: boolean; mobileBottomOnly?: boolean };
 
@@ -185,8 +185,8 @@ export default function Layout({
             onClick={close}
             className="group flex items-center gap-2.5"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70 bg-card">
-              <img src={equusHeadLogo} alt="" className="h-full w-full object-contain p-1" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black">
+              <img src="/equus-logo-black.png" alt="Equus logotipas" className="h-full w-full rounded-full object-contain" />
             </span>
             <span className="flex items-baseline gap-2">
               <span className="equus-wordmark text-foreground">Equus</span>
