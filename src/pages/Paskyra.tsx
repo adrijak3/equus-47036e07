@@ -380,47 +380,50 @@ export default function Paskyra() {
 
         {/* PROFILE OVERVIEW */}
         <TabsContent value="profile" className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Artimiausia treniruotė</p>
-              {nextLesson ? <>
-                <p className="mt-3 font-display text-2xl text-foreground">{nextLesson.slot_date}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{formatTime(nextLesson.slot_time)} {nextLesson.horse_name ? " · Žirgas: " + nextLesson.horse_name : ""}</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/paskyra?tab=lessons")}>Peržiūrėti pamokas</Button>
-              </> : <>
-                <p className="mt-3 text-sm text-foreground">Artimiausių treniruočių nėra.</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/grafikas")}>Atidaryti grafiką</Button>
-              </>}
+          <section className="divide-y divide-border/60 border-y border-border/60">
+            <div className="flex flex-wrap items-center justify-between gap-4 py-5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Kita treniruotė</p>
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {nextLesson ? `${nextLesson.slot_date} · ${formatTime(nextLesson.slot_time)}` : "Nėra suplanuotų"}
+                </p>
+                {nextLesson?.horse_name && <p className="mt-1 text-sm text-muted-foreground">Žirgas: {nextLesson.horse_name}</p>}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate(nextLesson ? "/paskyra?tab=lessons" : "/grafikas")}>
+                {nextLesson ? "Mano pamokos" : "Grafikas"}
+              </Button>
             </div>
-            <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Abonementas</p>
-              <p className="mt-3 font-display text-2xl text-foreground">{remainingLessons === null ? "Nėra aktyvaus" : currentSubscription?.lessons_total + " pamokos"}</p>
-              {currentSubscription ? <>
-                <p className="mt-1 text-sm text-muted-foreground">Panaudota {currentSubscription.lessons_used} · Liko {remainingLessons}</p>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sky-400/15"><div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${Math.min(100, Math.max(0, currentSubscription.lessons_used / Math.max(1, currentSubscription.lessons_total) * 100))}%` }} /></div>
-                <p className="mt-2 text-xs text-muted-foreground">Galioja iki {currentSubscription.expires_at}</p>
-              </> : <p className="mt-1 text-sm text-muted-foreground">Savo abonementus galite peržiūrėti atskirame puslapyje.</p>}
-              <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => navigate("/mano-abonementai")}>Mano abonementai <ChevronRight className="ml-2 h-4 w-4" /></Button>
-              <Button variant="ghost" size="sm" className="mt-2 w-full text-sky-500" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti abonemento užklausą</Button>
+            <div className="flex flex-wrap items-center justify-between gap-4 py-5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Abonementas</p>
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {remainingLessons === null ? "Nėra aktyvaus" : `Liko ${remainingLessons} pam.`}
+                </p>
+                {currentSubscription?.expires_at && <p className="mt-1 text-sm text-muted-foreground">Iki {currentSubscription.expires_at}</p>}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate("/mano-abonementai")}>Mano abonementai</Button>
             </div>
-          </div>
+          </section>
+          <Button variant="link" className="h-auto px-0 text-gold" onClick={() => navigate("/abonemento-uzklausa")}>
+            Pateikti abonemento užklausą <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
           <div className="grid grid-cols-2 gap-2">
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
           </div>
           <details className="rounded-xl border border-border/60 bg-background/40 p-4">
-            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Daugiau paskyros informacijos ir nustatymų</summary>
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Kiti nustatymai</summary>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
               <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
-              <QuickAction label="Saugumas ir įrenginiai" icon={<KeyRound className="h-4 w-4" />} onClick={() => navigate("/saugumas")} />
+              <QuickAction label="Prisijungimai ir saugumas" icon={<KeyRound className="h-4 w-4" />} onClick={() => navigate("/saugumas")} />
             </div>
           <ReadOnlyRecurringCard permanents={permanents} />
           <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">
               {holiday ? (
-                <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+                <div className="border-b border-border/50 py-4">
                   <p className="text-sm font-semibold">Adrija · Atostogos</p>
                   <p className="mt-2 text-sm leading-6 text-gold">{holidayContactText(holiday)}</p>
                 </div>
@@ -433,14 +436,14 @@ export default function Paskyra() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold">Adrija</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Jei turite problemų su svetaine ar turite klausimų -</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Klausimai ir pagalba</p>
                       <p className="mt-2 text-sm text-gold">+370 628 76090</p>
                     </div>
                     <Phone className="h-4 w-4 text-gold" />
                   </div>
                 </a>
               )}
-              <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+              <div className="border-b border-border/50 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Laura</p>
@@ -455,7 +458,7 @@ export default function Paskyra() {
                 </div>
               </div>
               <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 sm:col-span-2">
-                <p className="text-xs text-muted-foreground">Parašyti administracijai per svetainę</p>
+                <p className="text-xs text-muted-foreground">Parašyti administracijai</p>
                 <Button variant="outlineGold" size="sm" className="mt-3" onClick={() => navigate("/paskyra?tab=messages")}>
                   <MessageSquare className="mr-2 h-4 w-4" /> Susisiekti žinute
                 </Button>
@@ -1115,7 +1118,7 @@ function FamilyRidersSection({ parentUserId }: { parentUserId: string }) {
           {riders.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2">
               {riders.map((rider) => (
-                <div key={rider.id} className="rounded-2xl border border-gold/15 bg-gradient-card p-4">
+                <div key={rider.id} className="border-b border-border/50 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-display text-xl text-gold">
