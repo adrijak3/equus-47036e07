@@ -537,6 +537,21 @@ export default function Grafikas() {
       );
     }
 
+    // Logged-in riders can see a short booking label (first name + surname initial).
+    // The API never exposes someone else's account ID, email or phone.
+    let visibleBookingNames: Record<string, string> = {};
+    if (user?.id) {
+      const { data: nameRows, error: nameError } = await (supabase as any).rpc(
+        "get_schedule_booking_names",
+        { _start_date: startISO, _end_date: endISO },
+      );
+      if (nameError) console.error("Grafiko vardų įkėlimo klaida:", nameError);
+      visibleBookingNames = Object.fromEntries(
+        (nameRows ?? []).map((entry: { booking_id: string; display_name: string }) =>
+          [entry.booking_id, entry.display_name]),
+      );
+    }
+
     // Guest riders
     const guestRiderIds = Array.from(
       new Set(
@@ -601,7 +616,7 @@ export default function Grafikas() {
           ? familyNameMap[b.family_rider_id] ?? "Kartu lankantis raitelis"
           : b.guest_rider_id
             ? guestNameMap[b.guest_rider_id]
-            : nameMap[b.user_id],
+            : visibleBookingNames[b.id] ?? nameMap[b.user_id],
         is_newcomer: b.guest_rider_id
           ? !!guestNewcomerMap[b.guest_rider_id]
           : undefined,
