@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,10 @@ export default function PublicRegistration() {
   const [step, setStep] = useState(1);
   const [experienceStage, setExperienceStage] = useState(false);
   const [parentPhone, setParentPhone] = useState(false);
+  const formStartRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (step > 1 || experienceStage) formStartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step, experienceStage]);
   const [service, setService] = useState<Service | "">("");
   const [level, setLevel] = useState<Level | "">("");
   const [form, setForm] = useState({
@@ -529,7 +533,7 @@ export default function PublicRegistration() {
         ))}
       </div>
 
-      <div className="equus-registration-form rounded-lg border border-border bg-card p-5 sm:p-7">
+      <div ref={formStartRef} className="equus-registration-form scroll-mt-24 rounded-lg border border-border bg-card p-5 sm:p-7">
         {step === 1 && (
           <div>
             <h2 className="text-xl font-medium">{experienceStage ? "Jojimo patirtis" : "Pasirinkite užsiėmimą"}</h2>
