@@ -254,12 +254,12 @@ export default function Admin() {
             <h2 className="text-xl font-semibold text-foreground">{activeItem.label}</h2>
           </div>
 
-          <AdminGlobalSearch
+          {section !== "users" && section !== "subs" && <AdminGlobalSearch
             onGo={(s, q) => {
               setSearchQuery(q);
               setSection(s === "cancels" ? "cancelHistory" : s);
             }}
-          />
+          />}
 
           <Tabs value={section} onValueChange={setSection}>
             <TabsList className="sr-only"><TabsTrigger value={section}>{section}</TabsTrigger></TabsList>
