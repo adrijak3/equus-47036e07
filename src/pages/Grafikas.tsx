@@ -234,7 +234,14 @@ export default function Grafikas() {
 
   const staffCalendar = isAdmin || isTrainer;
   const [releasedMonday, setReleasedMonday] = useState(riderReleasedMonday);
-  const [weekStart, setWeekStart] = useState(riderReleasedMonday);
+  const [weekStart, setWeekStart] = useState(() => {
+    const stored = sessionStorage.getItem("equus_preview_week");
+    if (stored && /^\\d{4}-\\d{2}-\\d{2}$/.test(stored)) {
+      const d = new Date(stored + "T12:00:00");
+      if (!Number.isNaN(d.getTime())) return startOfWeek(d);
+    }
+    return riderReleasedMonday();
+  });
   useEffect(() => {
     if (staffCalendar) return;
     const syncRelease = () => {
@@ -253,7 +260,15 @@ export default function Grafikas() {
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
   const calendarScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(() => {
+    const stored = Number(sessionStorage.getItem("equus_preview_day"));
+    return Number.isInteger(stored) && stored >= 0 && stored <= 6 ? stored : null;
+  });
+  useEffect(() => {
+    sessionStorage.setItem("equus_preview_week", formatDateISO(weekStart));
+    if (selectedDay !== null) sessionStorage.setItem("equus_preview_day", String(selectedDay));
+    else sessionStorage.removeItem("equus_preview_day");
+  }, [weekStart, selectedDay]);
 
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -401,9 +416,7 @@ export default function Grafikas() {
       return i >= 0 ? i : 0;
     })();
 
-  useEffect(() => {
-    setSelectedDay(null);
-  }, [weekStart]);
+
 
   useEffect(() => {
     if (!pendingScrollToToday || loading) return;
@@ -3665,7 +3678,7 @@ export default function Grafikas() {
                         <div className="flex items-center justify-between gap-2 mt-1.5">
                           <div
                             className={cn(
-                              "inline-flex items-center rounded-lg border px-2.5 py-1 font-display text-2xl font-bold leading-none tabular-nums",
+                              "equus-schedule-day-date inline-flex items-center rounded-md border px-2.5 py-1 leading-none tabular-nums",
                               isToday
                                 ? "border-gold bg-gold/15 text-gold shadow-sm"
                                 : "border-gold/25 bg-gold/5 text-gradient-gold",
@@ -4352,19 +4365,10 @@ export default function Grafikas() {
                                                 "font-bold",
                                             )}
                                           >
-                                            <span
-                                              className={cn(
-                                                "text-sm leading-none",
-                                                mine
-                                                  ? "text-gold"
-                                                  : "text-gold/40",
-                                              )}
-                                            >
-                                              •
-                                            </span>
-
-                                            {perm && (
-                                              <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />
+                                            {perm ? (
+                                              <Star aria-label="Nuolatinis laikas" className="w-3 h-3 text-gold fill-gold flex-shrink-0" />
+                                            ) : (
+                                              <span aria-hidden="true" className={cn("text-sm leading-none", mine ? "text-gold" : "text-muted-foreground")}>•</span>
                                             )}
 
                                             {(isAdmin ||
