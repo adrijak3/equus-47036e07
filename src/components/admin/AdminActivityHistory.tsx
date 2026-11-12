@@ -24,12 +24,15 @@ export function AdminActivityHistory() {
 
   const load = async () => {
     setBusy(true);
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
     const [audit, cancellations] = await Promise.all([
       (supabase as any).from("subscription_audit_log")
         .select("id,created_at,target_user_id,actor_user_id,action,subscription_id")
+        .gte("created_at", since)
         .order("created_at", { ascending: false }).limit(200),
       (supabase as any).from("booking_cancellations")
         .select("id,created_at,user_id,cancelled_by,cancelled_by_role,slot_date,slot_time,reason")
+        .gte("created_at", since)
         .order("created_at", { ascending: false }).limit(200),
     ]);
     if (audit.error || cancellations.error) {
@@ -70,7 +73,7 @@ export function AdminActivityHistory() {
   return <section className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="flex items-center gap-2 font-display text-2xl"><History className="h-5 w-5 text-gold" /> Veiksmų istorija</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Abonementų veiksmai ir treniruočių atšaukimai. Tik peržiūra; istorija nekeičiama.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Paskutinių 14 dienų abonementų veiksmai ir atšaukimai. Senesni įrašai lieka duomenų bazėje.</p>
       </div>
       <Button variant="outline" size="sm" onClick={() => void load()} disabled={busy}>
         <RefreshCw className={`mr-2 h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Atnaujinti
