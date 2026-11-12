@@ -3618,18 +3618,7 @@ export default function Grafikas() {
                           "sm:p-0 p-3 -mx-1 rounded-xl bg-gold/[0.06] ring-2 ring-gold/40 shadow-gold sm:bg-transparent sm:ring-0 sm:shadow-none sm:m-0",
                       )}
                     >
-                      {idx > 0 && (
-                        <div
-                          aria-hidden
-                          className="sm:hidden flex items-center justify-center -mt-1 mb-3 select-none"
-                        >
-                          <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                          <div className="px-3 font-display text-gold/70 text-sm tracking-widest">
-                            ◆
-                          </div>
-                          <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                        </div>
-                      )}
+
 
                       {/* Day header */}
                       <div
@@ -3640,88 +3629,31 @@ export default function Grafikas() {
                             : "border-gold/25",
                         )}
                       >
-                        <div className="flex items-baseline justify-between gap-1">
-                          <div
-                            className={cn(
-                              "uppercase tracking-[0.18em] text-gold font-bold",
-                              isToday
-                                ? "text-base sm:text-[11px]"
-                                : "text-sm sm:text-[11px]",
-                            )}
-                          >
-                            <span className="sm:hidden lg:inline">
-                              {
-                                weekdayNames[
-                                  idx
-                                ]
-                              }
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                          <div className="min-w-0 text-left">
+                            <span className="block truncate text-sm font-medium text-foreground">
+                              {weekdayNames[idx]}
                             </span>
-
-                            <span className="hidden sm:inline lg:hidden">
-                              {
-                                weekdayShort[
-                                  idx
-                                ]
-                              }
-                            </span>
+                            {isToday && <span className="text-xs text-muted-foreground">{t("today")}</span>}
                           </div>
 
-                          {isToday && (
-                            <span className="text-[10px] sm:text-[9px] uppercase tracking-[0.15em] font-bold text-background bg-gold px-2 py-0.5 rounded-sm">
-                              {t(
-                                "today",
-                              )}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2 mt-1.5">
-                          <div
-                            className={cn(
-                              "equus-schedule-day-date inline-flex items-center rounded-md border px-2.5 py-1 leading-none tabular-nums",
-                              isToday
-                                ? "border-gold bg-gold/15 text-gold shadow-sm"
-                                : "border-gold/25 bg-gold/5 text-gradient-gold",
-                            )}
-                          >
-                            {String(date.getMonth() + 1).padStart(2, "0")}.
-                            {String(date.getDate()).padStart(2, "0")}
+                          <div className="equus-schedule-day-date text-center text-sm font-medium text-foreground tabular-nums">
+                            {String(date.getDate()).padStart(2, "0")}.{String(date.getMonth() + 1).padStart(2, "0")}
                           </div>
 
                           <button
                             type="button"
                             onClick={() => {
-                              setNotesDialog(
-                                {
-                                  date,
-                                },
-                              );
-                              setNewNoteLink(
-                                "",
-                              );
-                              setNewNoteLabel(
-                                "",
-                              );
+                              setNotesDialog({ date });
+                              setNewNoteLink("");
+                              setNewNoteLabel("");
                             }}
-                            className="relative inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
+                            className="justify-self-end inline-flex min-h-9 items-center gap-1 rounded-md border border-border px-2 text-xs text-foreground hover:bg-muted"
                           >
-                            <FileText className="w-3 h-3" />
-
-                            <span>
-                              {t("video")}
-                            </span>
-
-                            {getDayNotes(
-                              date,
-                            ).length >
-                              0 && (
-                              <span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-gold text-background text-[9px] font-bold px-1">
-                                {
-                                  getDayNotes(
-                                    date,
-                                  ).length
-                                }
-                              </span>
+                            <FileText className="h-3.5 w-3.5" />
+                            <span>{t("video")}</span>
+                            {getDayNotes(date).length > 0 && (
+                              <span className="text-xs text-muted-foreground">{getDayNotes(date).length}</span>
                             )}
                           </button>
                         </div>
