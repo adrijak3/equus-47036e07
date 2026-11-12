@@ -100,6 +100,8 @@ type Slot = {
 export default function PublicRegistration() {
   const { token } = useParams();
   const [step, setStep] = useState(1);
+  const [experienceStage, setExperienceStage] = useState(false);
+  const [parentPhone, setParentPhone] = useState(false);
   const [service, setService] = useState<Service | "">("");
   const [level, setLevel] = useState<Level | "">("");
   const [form, setForm] = useState({
@@ -212,8 +214,7 @@ export default function PublicRegistration() {
       form.lastName.trim() &&
       form.phone.trim() &&
       form.email.trim() &&
-      validAge &&
-      form.emergency.trim(),
+      validAge,
   );
 
   const stepOneValid = Boolean(
@@ -248,14 +249,14 @@ export default function PublicRegistration() {
         _phone: form.phone.trim(),
         _email: form.email.trim(),
         _age: age,
-        _emergency_contact: form.emergency.trim(),
+        _emergency_contact: form.phone.trim(),
         _service_type: service,
         _experience_level: service === "sportine" || service === "individuali" ? level : "beginner",
-        _experience_notes: form.experienceNotes.trim() || null,
+        _experience_notes: [parentPhone ? "Nurodytas telefono numeris priklauso tėvui / globėjui." : "", form.experienceNotes.trim()].filter(Boolean).join(" ") || null,
         _preferred_times: form.preferredTimes.trim() || null,
         _requested_date: selected?.slot_date ?? null,
         _requested_time: selected?.slot_time ?? null,
-        _facebook_name: form.facebookName.trim() || null,
+        _facebook_name: null,
       },
     );
 
@@ -342,7 +343,7 @@ export default function PublicRegistration() {
           <h1 className="font-display text-3xl text-gradient-gold">
             Registracijos būsena
           </h1>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             {existing.first_name} {existing.last_name}
           </p>
 
@@ -531,8 +532,8 @@ export default function PublicRegistration() {
       <div className="equus-registration-form rounded-lg border border-border bg-card p-5 sm:p-7">
         {step === 1 && (
           <div>
-            <h2 className="text-xl font-medium">Pasirinkite užsiėmimą</h2>
-            <div className="mt-4 grid gap-2">
+            <h2 className="text-xl font-medium">{experienceStage ? "Jojimo patirtis" : "Pasirinkite užsiėmimą"}</h2>
+            {!experienceStage && <div className="mt-4 grid gap-2">
               {SERVICES.map((item) => {
                 const Icon = item.icon;
                 const active = service === item.value;
@@ -543,7 +544,12 @@ export default function PublicRegistration() {
                     type="button"
                     onClick={() => {
                       setService(item.value);
-                      if (item.value !== "sportine") setLevel("");
+                      setLevel("");
+                      if (item.value === "sportine" || item.value === "individuali") {
+                        setExperienceStage(true);
+                      } else {
+                        setStep(2);
+                      }
                     }}
                     className={cn(
                       "rounded-lg border px-4 py-3 text-left transition-colors",
@@ -567,17 +573,16 @@ export default function PublicRegistration() {
                   </button>
                 );
               })}
-            </div>
+            </div>}
 
-            {(service === "sportine" || service === "individuali") && (
-              <div className="mt-8">
-                <h3 className="text-lg font-medium">Jojimo patirtis</h3>
+            {experienceStage && (service === "sportine" || service === "individuali") && (
+              <div className="mt-2">
                 <div className="mt-4 grid gap-2">
                   {LEVELS.map((item) => (
                     <button
                       key={item.value}
                       type="button"
-                      onClick={() => setLevel(item.value)}
+                      onClick={() => { setLevel(item.value); setStep(2); setExperienceStage(false); }}
                       className={cn(
                         "rounded-lg border px-4 py-3 text-left transition-colors",
                         level === item.value
@@ -652,14 +657,12 @@ export default function PublicRegistration() {
                   </p>
                 )}
               </Field>
-              <Field label="Skubios pagalbos kontaktas">
-                <Input
-                  value={form.emergency}
-                  onChange={(event) =>
-                    setForm({ ...form, emergency: event.target.value })
-                  }
-                />
-              </Field>
+              <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
+                <input type="checkbox" checked={parentPhone} onChange={(event) => setParentPhone(event.target.checked)}
+                  className="h-4 w-4 accent-foreground" />
+                Nurodytas telefono numeris priklauso vaiko tėvui ar globėjui
+              </label>
+              <p className="text-xs text-muted-foreground sm:col-span-2">Šis numeris taip pat naudojamas skubiam susisiekimui dėl treniruotės.</p>
               <Field label="Papildomai apie jojimo patirtį" full>
                 <Textarea
                   value={form.experienceNotes}
@@ -675,15 +678,6 @@ export default function PublicRegistration() {
                   Prašome čia nerašyti sveikatos duomenų (diagnozių, ligų) –
                   apie tai praneškite treneriui tiesiogiai.
                 </p>
-              </Field>
-              <Field label="Facebook vardas ir pavardė (nebūtina)" full>
-                <Input
-                  value={form.facebookName}
-                  onChange={(event) =>
-                    setForm({ ...form, facebookName: event.target.value })
-                  }
-                  placeholder="Kad galėtume rasti ir pridėti į Messenger grupę"
-                />
               </Field>
             </div>
           </div>
@@ -917,8 +911,14 @@ export default function PublicRegistration() {
         <div className="mt-8 flex justify-between gap-3">
           <Button
             variant="ghost"
-            disabled={step === 1}
-            onClick={() => setStep((current) => current - 1)}
+            disabled={step === 1 && !experienceStage}
+            onClick={() => {
+              if (step === 1) setExperienceStage(false);
+              else if (step === 2 && (service === "sportine" || service === "individuali")) {
+                setStep(1);
+                setExperienceStage(true);
+              } else setStep((current) => current - 1);
+            }}
           >
             <ChevronLeft className="h-4 w-4" />
             Atgal
