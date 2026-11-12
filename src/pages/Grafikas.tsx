@@ -3631,7 +3631,7 @@ export default function Grafikas() {
                       >
                         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                           <div className="min-w-0 text-left">
-                            <span className="block truncate text-sm font-medium text-foreground">
+                            <span className="block text-base font-semibold leading-tight tracking-tight text-foreground sm:text-lg lg:text-xl">
                               {weekdayNames[idx]}
                             </span>
                             {isToday && <span className="text-xs text-muted-foreground">{t("today")}</span>}
