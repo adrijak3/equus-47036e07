@@ -221,6 +221,17 @@ export default function Security() {
     if (error) { toast.error(error.message); return; }
     setFactor(null); toast.success("Autentifikatorius išjungtas");
   };
+  const forgetDevice = async () => {
+    if (!confirm("Pamiršti šią naršyklę? Kitą kartą prisijungiant reikės el. pašto kodo.")) return;
+    const { error } = await supabase.functions.invoke("new-device-verification", {
+      body: { action: "revoke", deviceToken: deviceToken() },
+    });
+    if (error) { toast.error("Nepavyko pašalinti šio įrenginio."); return; }
+    localStorage.removeItem(DEVICE_STORAGE_KEY);
+    await supabase.auth.signOut({ scope: "local" });
+    window.location.assign("/auth");
+  };
+
   const signOutOthers = async () => {
     if (!confirm("Atsijungti visuose kituose įrenginiuose?")) return;
     const { error } = await supabase.auth.signOut({ scope: "others" });
@@ -242,6 +253,13 @@ export default function Security() {
         </div> : <Button variant="gold" disabled={busy} onClick={start}>Įjungti autentifikatorių</Button>}
     </section>
     <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
+      <h2 className="font-display text-xl">El. pašto kodas naujam įrenginiui</h2>
+      <p className="text-sm text-muted-foreground">
+        Prisijungus iš naujos naršyklės, prašome įvesti vienkartinį kodą, siunčiamą į paskyros el. paštą. Patvirtinta naršyklė įsimenama iki 180 dienų.
+      </p>
+      <Button variant="outline" onClick={forgetDevice}>Pamiršti šią naršyklę</Button>
+    </section>
+    <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
       <h2 className="font-display text-xl">Prisijungę įrenginiai</h2>
       <p className="text-sm text-muted-foreground">Čia rodomos Supabase sesijos: įrenginio tipas, naršyklė, IP ir paskutinis aktyvumas. IP nereiškia tikslios vietovės.</p>
       {sessionsError ? <p className="text-sm text-destructive">Nepavyko įkelti sesijų sąrašo.</p> : <ul className="divide-y divide-border/60">{sessions.map((session) => <li key={session.session_id} className="space-y-1 py-3">
@@ -251,7 +269,7 @@ export default function Security() {
       </li>)}</ul>}
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void refreshSessions()}>Atnaujinti</Button><Button variant="outline" onClick={signOutOthers}>Atsijungti kituose įrenginiuose</Button></div>
     </section>
-    <p className="text-xs text-muted-foreground">Naujo įrenginio patvirtinimas el. paštu dar neįdiegtas. Tai atskira funkcija, ne tas pats kaip 2FA.</p>
+    <p className="text-xs text-muted-foreground">El. pašto patvirtinimas naujoje naršyklėje veikia atskirai nuo neprivalomo autentifikatoriaus (TOTP).</p>
     <Link className="text-sm text-gold underline" to="/paskyra">Grįžti į paskyrą</Link>
   </main>;
 }
