@@ -620,7 +620,7 @@ function TodayAssignments() {
                           )}
                           {assignedHorse && (
                             <span className="font-medium text-gold">
-                              🐴 {assignedHorse.name}
+                               {assignedHorse.name}
                             </span>
                           )}
                         </div>
