@@ -291,7 +291,7 @@ export default function Pradzia() {
       </motion.header>
 
       {(isAdmin || isTrainer) && (
-        <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <section className="mb-8 grid grid-cols-2 gap-x-6 gap-y-4 border-b border-border/60 pb-6 sm:grid-cols-4" aria-label="Šiandienos apžvalga">
           {[
             {
               label: "Šiandienos rezervacijos",
@@ -319,11 +319,10 @@ export default function Pradzia() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.06 }}
-              className="rounded-xl border border-border/60 bg-background/70 p-4"
+              className="border-l-2 border-gold/30 pl-3"
             >
-              <Icon className="mb-3 h-5 w-5 text-gold" />
-              <div className="font-display text-3xl text-foreground">{value}</div>
-              <div className="mt-1 text-xs leading-snug text-muted-foreground">
+              <div className="text-2xl font-semibold tabular-nums text-foreground">{value}</div>
+              <div className="mt-1 text-sm leading-snug text-muted-foreground">
                 {label}
               </div>
             </motion.div>
@@ -339,7 +338,7 @@ export default function Pradzia() {
           className={cn(
             "relative overflow-hidden rounded-2xl border bg-background/70 p-6 sm:p-8",
             closeToLesson
-              ? "border-gold/55 shadow-gold equus-next-lesson"
+              ? "border-gold/45"
               : "border-border/60",
           )}
         >
@@ -365,7 +364,7 @@ export default function Pradzia() {
             {nextBooking ? (
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-gold/15 bg-background/35 p-4">
+                  <div className="border-l-2 border-gold/25 pl-3 py-1">
                     <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
                       <Clock3 className="h-3.5 w-3.5 text-gold" />
                       Laikas
@@ -386,7 +385,7 @@ export default function Pradzia() {
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-border/60 bg-gold/[0.07] p-4">
+                <div className="mt-5 border-t border-border/60 pt-4">
                   <div className="text-xs uppercase tracking-wider text-gold/70">
                     Iki treniruotės liko
                   </div>
@@ -401,10 +400,10 @@ export default function Pradzia() {
                 </div>
               </>
             ) : (
-              <div className="rounded-xl border border-dashed border-gold/25 bg-background/25 p-6 text-center">
+              <div className="py-5 text-center">
                 <CheckCircle2 className="mx-auto h-8 w-8 text-gold/70" />
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Šiuo metu neturite suplanuotų būsimų treniruočių.
+                  Artimiausių treniruočių nėra.
                 </p>
               </div>
             )}
@@ -448,7 +447,7 @@ export default function Pradzia() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="rounded-2xl border border-border/60 bg-background/70 p-5"
+            className="border-t border-border/60 pt-5"
           >
             <h2 className="font-display text-xl text-foreground">
               Greita prieiga
