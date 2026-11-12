@@ -42,9 +42,8 @@ Deno.serve(async (request: Request) => {
   if (!authorization.startsWith("Bearer ")) return json({ error: "UNAUTHORIZED" }, 401);
   const token = authorization.slice(7);
   const claims = getTokenClaims(token);
-  if (!claims || claims.aal !== "aal2" || !claims.exp ||
-      claims.exp * 1000 <= Date.now()) {
-    return json({ error: "ADMIN_MFA_REQUIRED" }, 403);
+  if (!claims || !claims.exp || claims.exp * 1000 <= Date.now()) {
+    return json({ error: "UNAUTHORIZED" }, 401);
   }
 
   const authClient = createClient(url, authKey,
@@ -65,34 +64,38 @@ Deno.serve(async (request: Request) => {
   catch { return json({ error: "INVALID_JSON" }, 400); }
 
   if (body.action === "list") {
-    const { data: all, error } = await db.from("equus_device_challenges")
+    // Admins may browse rider names without authenticator step-up.
+    // Issuing a new login code requires aal2 separately below.
+    const { data: profiles, error: profileError } = await db.from("profiles")
+      .select("id,full_name").order("full_name", { ascending: true }).limit(1000);
+    if (profileError) return json({ error: "PROFILE_LOOKUP_FAILED" }, 500);
+    const { data: challenges, error: challengesError } = await db.from("equus_device_challenges")
       .select("id,user_id,device_hash,created_at,expires_at,consumed_at")
       .gt("expires_at", new Date().toISOString())
       .is("consumed_at", null)
-      .order("created_at", { ascending: false }).limit(150);
-    if (error) return json({ error: "LIST_FAILED" }, 500);
-    const latest = new Map<string, NonNullable<typeof all>[number]>();
-    for (const challenge of all ?? []) {
-      const key = challenge.user_id + ":" + challenge.device_hash;
-      if (!latest.has(key)) latest.set(key, challenge);
+      .order("created_at", { ascending: false }).limit(500);
+    if (challengesError) return json({ error: "LIST_FAILED" }, 500);
+    const byUser = new Map<string, {challengeId:string; createdAt:string; expiresAt:string}>();
+    const checked = new Set<string>();
+    for (const item of challenges ?? []) {
+      const deviceKey = item.user_id + ":" + item.device_hash;
+      if (checked.has(deviceKey)) continue;
+      checked.add(deviceKey);
+      if (!byUser.has(item.user_id)) {
+        byUser.set(item.user_id, {challengeId:item.id,createdAt:item.created_at,expiresAt:item.expires_at});
+      }
     }
-    const candidates = [...latest.values()];
-    if (!candidates.length) return json({ pending: [] });
-    const ids = [...new Set(candidates.map((c) => c.user_id))];
-    const { data: profiles, error: profileError } = await db.from("profiles")
-      .select("id,full_name").in("id", ids);
-    if (profileError) return json({ error: "PROFILE_LOOKUP_FAILED" }, 500);
-    const names = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-    return json({ pending: candidates.map((challenge) => ({
-      challengeId: challenge.id,
-      userId: challenge.user_id,
-      name: names.get(challenge.user_id) || "Raitelis",
-      createdAt: challenge.created_at,
-      expiresAt: challenge.expires_at,
+    return json({ pending: (profiles ?? []).map((p) => ({
+      userId: p.id,
+      name: p.full_name || "Raitelis",
+      challengeId: byUser.get(p.id)?.challengeId || null,
+      createdAt: byUser.get(p.id)?.createdAt || null,
+      expiresAt: byUser.get(p.id)?.expiresAt || null,
     })) });
   }
 
   if (body.action !== "generate") return json({ error: "INVALID_ACTION" }, 400);
+  if (claims.aal !== "aal2") return json({ error: "ADMIN_MFA_REQUIRED" }, 403);
   const targetUserId = String(body.targetUserId || "");
   const challengeId = String(body.challengeId || "");
   const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
