@@ -6,6 +6,21 @@ export interface HolidayContact {
   ends_on: string;
 }
 
+// Cache the same public holiday lookup across simultaneous hook instances.
+// The one-minute TTL retains fast vacation-contact privacy updates.
+let sharedHolidayRequest: Promise<{data: unknown;error: unknown}> | null = null;
+let holidayRequestAt = 0;
+const loadSharedHoliday = () => {
+  if (!sharedHolidayRequest || Date.now() - holidayRequestAt > 55_000) {
+    holidayRequestAt = Date.now();
+    sharedHolidayRequest = (supabase as any).rpc("get_public_admin_holiday_contact").then(
+      ({data,error}: {data:unknown;error:unknown}) => ({data,error}),
+      (error:unknown) => ({data:null,error}),
+    );
+  }
+  return sharedHolidayRequest;
+};
+
 export function useHolidayContact() {
   // undefined = not checked yet; avoid flashing a hidden phone number.
   const [holiday, setHoliday] = useState<HolidayContact | null | undefined>(undefined);
@@ -14,7 +29,7 @@ export function useHolidayContact() {
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const { data, error } = await (supabase as any).rpc("get_public_admin_holiday_contact");
+      const { data, error } = await loadSharedHoliday();
       if (!alive) return;
       if (error) {
         setFailed(true);
@@ -25,12 +40,14 @@ export function useHolidayContact() {
       }
     };
     void load();
-    const refresh = () => { void load(); };
+    const refresh = () => { if (document.visibilityState === "visible") void load(); };
     window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
     const timer = window.setInterval(refresh, 60_000);
     return () => {
       alive = false;
       window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
       window.clearInterval(timer);
     };
   }, []);
