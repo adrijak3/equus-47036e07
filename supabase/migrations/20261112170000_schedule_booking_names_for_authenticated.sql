@@ -28,5 +28,5 @@ BEGIN
    AND b.status IN ('active'::public.booking_status,'completed'::public.booking_status);
 END;
 $fn$;
-REVOKE ALL ON FUNCTION public.get_schedule_booking_names(date,date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_schedule_booking_names(date,date) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_schedule_booking_names(date,date) TO authenticated;
