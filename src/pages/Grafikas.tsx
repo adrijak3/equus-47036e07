@@ -964,6 +964,7 @@ export default function Grafikas() {
     // Every active reservation is a separate occupied place, even when
     // the privacy-safe API masks its rider ID or the same family has
     // several bookings. Never merge rows by user_id in this view.
+    // Keep all distinct booking rows visible; the database owns deduplication.
     const list = matching;
 
     return list.sort((a, b) => {
