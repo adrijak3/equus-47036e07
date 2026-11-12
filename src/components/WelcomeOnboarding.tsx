@@ -34,7 +34,7 @@ const RULES = [
     icon: Tag,
     title: "Abonementas",
     teaser: "4, 8 ar 12 treniruočių.",
-    body: "Abonementas galioja 30 dienų nuo jo įsigijimo datos. Jo treniruotės naudojamos pagal pasirinktą abonemento tipą. Be abonemento raiteliai, neturintys nuolatinių laikų, gali turėti vieną būsimą įprastą rezervaciją. Turintiems nuolatinį laiką papildomoms registracijoms būtinas galiojantis apmokėtas abonementas. Grafike rodomos dvi atidarytos savaitės; nauja savaitė atsidaro sekmadienį 01:00 val.",
+    body: "Abonementas galioja 30 dienų. Be jo galima viena būsima treniruotė, jei neturite nuolatinio laiko. Jei turite nuolatinį laiką, papildomoms pamokoms reikia apmokėto abonemento. Grafike matomos 2 savaitės. Kita savaitė atidaroma sekmadienį 01:00.",
   },
   {
     key: "booking",
@@ -47,15 +47,15 @@ const RULES = [
     key: "cancel",
     icon: XCircle,
     title: "Atšaukimas",
-    teaser: "Iki 24 val. prieš treniruotę – be praradimo. Registracija į treniruotę uždaroma 3 val. prieš treniruotę.",
-    body: "Treniruotę galima atšaukti nemokamai ne vėliau kaip 24 valandas prieš pradžią. Vėliau atšaukta arba praleista treniruotė paprastai laikoma panaudota, išskyrus ligos ar force majeure atvejus. Taipogi galite persikelti į kitą treniruotę tą pačią savaitę, neprarasdami savo treniruotės.",
+    teaser: "Atšaukite likus bent 24 val. Registracija uždaroma likus 3 val.",
+    body: "Atšaukus likus bent 24 val. pamokos neprarasite. Vėliau atšaukta ar praleista pamoka paprastai skaičiuojama kaip panaudota, išskyrus ligą ar force majeure. Pamoką galite perkelti į kitą tos pačios savaitės laiką.",
   },
   {
     key: "contract",
     icon: FileText,
     title: "Sutartis ir saugumas",
-    teaser: "Prieš pirmą treniruotę – BŪTINAI pasirašyta sutartis.",
-    body: "Prieš pirmąją treniruotę būtina pasirašyti jojimo paslaugų sutartį. Laikykitės trenerio nurodymų, žirgyno taisyklių ir atvykite su tinkama apranga bei avalyne.",
+    teaser: "Prieš pirmą treniruotę pasirašykite sutartį.",
+    body: "Prieš pirmąją treniruotę pasirašykite sutartį. Laikykitės trenerio nurodymų ir dėvėkite tinkamą aprangą bei avalynę.",
   },
 ] as const;
 
