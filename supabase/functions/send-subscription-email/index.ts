@@ -371,7 +371,7 @@ function welcomeEmailHtml(clientName: string) {
       ${bullets([
         "Grafike matomos einamoji ir ateinanti savaitės.",
         "Nauja savaitė registracijai atidaroma sekmadienį 01:00 val.",
-        "Įprasta registracija uždaroma likus 3 valandoms iki treniruotės pradžios.",
+        "Registruotis galima iki treniruotės pradžios.",
         "Neturint abonemento galima užsiregistruoti į vieną treniruotę. Norint registruotis į kitas, reikės galiojančio abonemento. Nuolatiniams laikams gali būti taikomos papildomos sąlygos.",
       ])}
       <p>Jeigu norite lankyti treniruotes reguliariai tuo pačiu savaitės laiku, dėl nuolatinio laiko susisiekite su administracija.</p>`)}
