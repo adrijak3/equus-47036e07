@@ -331,8 +331,8 @@ export default function Pradzia() {
         </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.45fr_0.75fr]">
-        <motion.section
+      <div className={cn("grid gap-6", !isAdmin && "lg:grid-cols-[1.45fr_0.75fr]")}>
+        {!isAdmin && <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
@@ -416,10 +416,10 @@ export default function Pradzia() {
               </Link>
             </Button>
           </div>
-        </motion.section>
+        </motion.section>}
 
         <div className="grid gap-6">
-          <motion.section
+          {!isAdmin && <motion.section
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.14 }}
@@ -442,7 +442,7 @@ export default function Pradzia() {
             <Button asChild variant="link" className="mt-3 h-auto px-0 text-gold">
               <Link to="/paskyra?tab=lessons">Peržiūrėti treniruotes <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
-          </motion.section>
+          </motion.section>}
 
           <motion.section
             initial={{ opacity: 0, y: 14 }}
