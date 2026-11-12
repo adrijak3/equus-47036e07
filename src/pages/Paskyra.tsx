@@ -127,8 +127,8 @@ export default function Paskyra() {
   const load = async () => {
     if (!user || !acting) return;
     setLoading(true);
-    // Keep past-booking maintenance available; today's lessons_used is counted only by the 20:00 Vilnius batch.
-    try { await supabase.functions.invoke("process-lessons"); } catch { /* non-fatal */ }
+    // Privileged lesson processing runs only from the authenticated hourly server cron.
+    // Account visits read the current balance and must never trigger background accounting.
     const [b, s, m, p, ts, ap, pr, ov] = await Promise.all([
       supabase.from("bookings").select("*").eq("user_id", acting).order("slot_date").order("slot_time"),
       supabase.from("subscriptions").select("*").eq("user_id", acting).order("purchase_date", { ascending: false }),
