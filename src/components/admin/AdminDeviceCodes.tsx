@@ -20,11 +20,11 @@ type ApiResponse = {
 
 const errorMessage = (error?: string) => {
   switch (error) {
-    case "ADMIN_MFA_REQUIRED": return "Norėdami išduoti kodą, pirma įjunkite autentifikatoriaus 2FA savo paskyroje ir patvirtinkite jį.";
-    case "ADMIN_ONLY": return "Ši funkcija skirta tik nuolatiniams administratoriams.";
-    case "NO_ACTIVE_CHALLENGE": return "Raitelio patvirtinimas nebegalioja. Paprašykite iš naujo prisijungti.";
-    case "CHALLENGE_REPLACED": return "Raitelis jau gavo kitą kodą. Atnaujinkite sąrašą.";
-    case "RATE_LIMITED": return "Šiam raiteliui per pastarąją valandą jau išduoti 2 atsarginiai kodai.";
+    case "ADMIN_MFA_REQUIRED": return "Įjunkite ir patvirtinkite 2FA skiltyje „Saugumas“.";
+    case "ADMIN_ONLY": return "Kodą gali sukurti tik pagrindinis administratorius.";
+    case "NO_ACTIVE_CHALLENGE": return "Kodas nebegalioja. Raitelis turi prisijungti iš naujo.";
+    case "CHALLENGE_REPLACED": return "Raitelis jau turi naujesnį kodą.";
+    case "RATE_LIMITED": return "Pasiektas limitas: 2 kodai per valandą.";
     case "UNAUTHORIZED": return "Prisijunkite iš naujo ir bandykite dar kartą.";
     case "ROLE_CHECK_FAILED": return "Nepavyko patikrinti administratoriaus teisių.";
     default: return "Nepavyko atlikti veiksmo (" + (error || "nežinoma klaida") + ").";
@@ -103,7 +103,7 @@ export function AdminDeviceCodes() {
   return <div className="space-y-4">
     <h3 className="font-display text-lg">Naujo įrenginio atsarginis kodas</h3>
     <p className="text-sm text-muted-foreground">
-      Pasirinkite raitelį ir, jei jis laukia patvirtinimo, sugeneruokite atsarginį kodą.
+      Pasirinkite raitelį ir sukurkite naują kodą.
     </p>
     <div className="space-y-2">
       <label htmlFor="pending-device-user" className="text-sm font-medium">Raitelis</label>
@@ -117,10 +117,10 @@ export function AdminDeviceCodes() {
         </option>)}
       </select>
       {selected && !canGenerate && <p className="text-xs text-muted-foreground">
-        Šiuo metu šis raitelis neturi aktyvios naujo įrenginio patikros. Paprašykite jo prisijungti ir atsidaryti kodo įvedimo ekraną.
+        Raitelis dar nelaukia kodo. Tegul prisijungia.
       </p>}
       {selected && canGenerate && <p className="text-xs text-muted-foreground">
-        Raitelis laukia patvirtinimo. Naujas kodas pakeis el. paštu siųstą kodą.
+        Laukia kodo. Ankstesnis kodas nebegalios.
       </p>}
       <Button variant="gold" disabled={!canGenerate || generating || loading} onClick={() => void generate()}>
         {generating ? "Kuriama…" : "Sukurti atsarginį kodą"}
@@ -135,19 +135,18 @@ export function AdminDeviceCodes() {
       {errorMessageText.includes("2FA") && <Link className="underline text-gold" to="/saugumas">Atidaryti Saugumą</Link>}
     </p>}
 
-    {shown && <div className="rounded-xl border border-gold/40 bg-gold/5 p-4 space-y-3" role="status">
+    {shown && <div className="space-y-3 border-t border-gold/30 pt-4" role="status">
       <p className="text-sm font-medium">Atsarginis kodas: {shown.name}</p>
       <p className="select-all font-mono text-4xl font-bold tracking-[0.25em] text-gold" aria-label="Atsarginis kodas">{shown.code}</p>
       <p className="text-xs text-muted-foreground">
-        Galioja iki {new Date(shown.expiresAt).toLocaleTimeString("lt-LT", {hour:"2-digit",minute:"2-digit"})}. Galima panaudoti tik vieną kartą, ne daugiau kaip 5 bandymai.
-        Kodas nebus rodomas pakartotinai.
+        Iki {new Date(shown.expiresAt).toLocaleTimeString("lt-LT", {hour:"2-digit",minute:"2-digit"})}. Vienkartinis kodas, 5 bandymai.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => void navigator.clipboard.writeText(shown.code).then(() => toast.success("Kodas nukopijuotas")).catch(() => toast.error("Nepavyko nukopijuoti"))}>Kopijuoti kodą</Button>
         <Button variant="ghost" onClick={() => setShown(null)}>Paslėpti kodą</Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Kodą perduokite tik patikrinę, kad bendraujate su pačiu raiteliu. Anksčiau el. paštu išsiųstas kodas po pakeitimo nebegalioja.
+        Kodą perduokite tik patvirtinę raitelio tapatybę.
       </p>
     </div>}
   </div>;
