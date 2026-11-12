@@ -200,7 +200,8 @@ export function SubscriptionPurchaseRequestsPanel({ standalone = false }: { stan
   useEffect(() => { void load(); }, [load]);
 
   const pending = requests.filter((request) => request.status === "pending");
-  const processed = requests.filter((request) => request.status !== "pending");
+  const recentStart = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const processed = requests.filter((request) => request.status !== "pending" && new Date(request.approved_at ?? request.rejected_at ?? request.created_at).getTime() >= recentStart);
 
   return (
     <div className="space-y-5">
@@ -241,7 +242,7 @@ export function SubscriptionPurchaseRequestsPanel({ standalone = false }: { stan
 
       {processed.length > 0 && (
         <details className="rounded-2xl border border-gold/10 bg-background/20 p-4">
-          <summary className="cursor-pointer font-display text-lg text-gold">Apdorotos užklausos · {processed.length}</summary>
+          <summary className="cursor-pointer font-display text-lg text-gold">Apdorotos per 14 dienų · {processed.length}</summary>
           <div className="mt-4 space-y-3">
             {processed.map((request) => (
               <PurchaseRequestCard key={request.id} request={request} onChanged={() => void load()} />
