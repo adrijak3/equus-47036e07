@@ -714,9 +714,11 @@ export default function Grafikas() {
       _end_date: endISO,
     });
 
-    const horseIds = Array.from(
-      new Set(
-        (assignsRaw ?? []).map((a: any) => a.horse_id),
+    const horseIds: string[] = Array.from(
+      new Set<string>(
+        ((assignsRaw ?? []) as Array<{ horse_id: string | null }>)
+          .map((a) => a.horse_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0),
       ),
     );
 
