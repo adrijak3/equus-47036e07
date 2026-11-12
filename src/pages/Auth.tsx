@@ -133,6 +133,10 @@ export default function Auth() {
       toast.error(parsed.error.issues[0].message);
       return;
     }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      toast.error("Patvirtinkite, kad nesate robotas.");
+      return;
+    }
     setLoading(true);
     let email = parsed.data.identifier;
     if (!isEmail(email)) {
@@ -146,11 +150,6 @@ export default function Auth() {
         return;
       }
       email = (data as any).email;
-    }
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setLoading(false);
-      toast.error("Patvirtinkite, kad nesate robotas.");
-      return;
     }
     const { error } = await supabase.auth.signInWithPassword({
       email,
