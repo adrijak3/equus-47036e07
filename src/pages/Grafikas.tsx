@@ -3519,7 +3519,7 @@ export default function Grafikas() {
                       <span className="text-[11px] font-bold tracking-wide">
                         {weekdayShort[idx]}
                       </span>
-                      <span className="font-display text-xl leading-tight tabular-nums">
+                      <span className="text-xl font-medium leading-tight tabular-nums tracking-tight">
                         {String(date.getDate()).padStart(2, "0")}
                       </span>
                       <span
