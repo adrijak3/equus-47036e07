@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.new-device-verification]
 verify_jwt = true
+
+[functions.admin-new-device-code]
+verify_jwt = true
