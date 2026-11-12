@@ -636,7 +636,7 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
         toast.success(
           language === "lt"
             ? "Telefono pranešimai įjungti"
-            : "Phone notifications enabled 🐴",
+            : "Phone notifications enabled ",
         );
       }
     } catch (error: any) {
@@ -1366,8 +1366,8 @@ export function SubscriptionCard({ s, effectiveUsed, onMarkPaid, onDelete, onEdi
     {!extra && (
       <div className="mt-4 border-t border-gold/10 pt-3 text-xs text-muted-foreground">
         {Number(s.covered_riders ?? 1) === 2
-          ? "👥 Šis abonementas skaičiuoja 2 raitelius · bendra rezervacija sunaudoja 2 treniruotes Jūsų abonemente:)"
-          : "👤 Šis abonementas skaičiuoja 1 raitelį"}
+          ? " Šis abonementas skaičiuoja 2 raitelius · bendra rezervacija sunaudoja 2 treniruotes Jūsų abonemente:)"
+          : " Šis abonementas skaičiuoja 1 raitelį"}
       </div>
     )}
     {extra && <div className="mt-4 border-t border-gold/10 pt-3">{extra}</div>}
