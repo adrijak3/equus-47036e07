@@ -29,6 +29,8 @@ const Galerija = lazy(() => import("./pages/Galerija"));
 const Paskyra = lazy(() => import("./pages/Paskyra"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Security = lazy(() => import("./pages/Security"));
+import { MfaGate } from "./pages/Security";
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminGmailTest = lazy(() => import("./pages/AdminGmailTest"));
@@ -97,6 +99,7 @@ const App = () => (
 
           <BrowserRouter>
             <AuthProvider>
+              <MfaGate>
               <MaintenanceGate>
               <Layout>
                 <SeasonalParticles />
@@ -121,6 +124,7 @@ const App = () => (
                     }
                   />
                   <Route path="/informacija" element={<Informacija />} />
+                  <Route path="/saugumas" element={<RequireAuth><Security /></RequireAuth>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
@@ -174,6 +178,7 @@ const App = () => (
                 </Suspense>
               </Layout>
               </MaintenanceGate>
+              </MfaGate>
             </AuthProvider>
           </BrowserRouter>
           </ThemeProvider>
