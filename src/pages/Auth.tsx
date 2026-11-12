@@ -83,7 +83,14 @@ export default function Auth() {
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message.includes("already") ? "Toks vartotojas jau egzistuoja" : error.message);
+      const message = error.message ?? "";
+      toast.error(
+        /limit|limitas|per daug|too many|rate/i.test(message)
+          ? "Per daug registracijų. Bandykite vėliau arba rytoj."
+          : /already|egzistuoja/i.test(message)
+            ? "Tokia paskyra jau yra."
+            : "Paskyros sukurti nepavyko. Jei pasiektas dienos limitas (10), bandykite rytoj.",
+      );
       return;
     }
     if (data.session) {
@@ -227,7 +234,7 @@ export default function Auth() {
               </p>
               {emailConfirmationSent && !confirmed && (
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Jei laiškas dar neatėjo, palaukite kelias minutes ir patikrinkite šlamšto aplanką.
+                  Negavote laiško? Patikrinkite šlamštą.
                 </p>
               )}
             </div>
@@ -239,7 +246,7 @@ export default function Auth() {
                 <Label htmlFor="su-name">Vardas ir pavardė</Label>
                 <Input id="su-name" name="full_name" required maxLength={80} placeholder="Vardenis Pavardenis" />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Įrašykite <strong>raitelio</strong> vardą ir pavardę – to, kuris jos (vaiko, o ne tėvų).
+                  Įrašykite raitelio vardą ir pavardę, ne tėvų.
                 </p>
               </div>
               <div>
@@ -258,7 +265,7 @@ export default function Auth() {
                   placeholder="+370 6…"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Nurodykite <strong>tikrą</strong> numerį – juo susisieksime dėl pakeitimų ar nenumatytų atvejų.
+                  Kad galėtume susisiekti dėl treniruočių.
                 </p>
                 <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-muted-foreground">
                   <input
@@ -284,7 +291,7 @@ export default function Auth() {
                   placeholder={EXPERIENCE_PLACEHOLDER}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Trumpai aprašykite savo jojimo patirtį. Bent 30 simbolių ({experience.trim().length}/500).
+                  Bent 30 simbolių ({experience.trim().length}/500).
                 </p>
               </div>
               <div>
@@ -305,6 +312,9 @@ export default function Auth() {
                   Taisyklėmis ir sąlygomis
                 </a>.
               </p>
+              <p className="text-xs text-muted-foreground">
+                Saugumui ribojame registracijas: iki 10 naujų paskyrų per dieną.
+              </p>
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Kuriama…" : "Sukurti paskyrą"}
               </Button>
@@ -318,6 +328,14 @@ export default function Auth() {
             </form>
           </TabsContent>
         </Tabs>
+        <details className="mt-5 border-t border-border/70 pt-4 text-sm">
+          <summary className="cursor-pointer font-medium text-foreground">Dažniausi klausimai</summary>
+          <div className="mt-3 space-y-3 text-muted-foreground">
+            <p><strong className="text-foreground">Negavote patvirtinimo laiško?</strong> Patikrinkite šlamšto aplanką.</p>
+            <p><strong className="text-foreground">Pamiršote slaptažodį?</strong> Pasirinkite „Pamiršote slaptažodį?“.</p>
+            <p><strong className="text-foreground">Nebeturite prieigos prie el. pašto?</strong> Susisiekite su Equus administracija dėl paskyros atkūrimo.</p>
+          </div>
+        </details>
       </div>
 
       {/* Forgot password dialog */}
