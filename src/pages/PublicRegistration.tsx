@@ -498,7 +498,7 @@ export default function PublicRegistration() {
       </Dialog>
 
   return (
-    <div className="registration-monochrome equus-registration container max-w-3xl py-7 sm:py-12">
+    <div className="equus-registration container max-w-3xl py-7 sm:py-12">
       <header className="equus-page-heading mb-8">
         <h1 className="equus-page-title">
           Registracija į pirmą treniruotę
