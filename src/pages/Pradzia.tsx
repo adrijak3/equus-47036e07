@@ -283,10 +283,10 @@ export default function Pradzia() {
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
           {isAdmin
-            ? "Svarbiausia info -"
+            ? "Šiandienos žirgyno apžvalga"
             : isTrainer
-              ? "Svarbiausia info + trenerio skiltis"
-              : "Čia visada rasite artimiausią treniruotę ir svarbiausią informaciją."}
+              ? "Treniruotės ir raiteliai"
+              : "Artimiausia treniruotė ir svarbiausia informacija."}
         </p>
       </motion.header>
 
