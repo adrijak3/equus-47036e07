@@ -119,6 +119,7 @@ export function MfaSettingsPage() {
 export function MfaGate({ children }: { children: React.ReactNode }) {
   const { user, session, loading, signOut } = useAuth();
   const [checking, setChecking] = useState(true);
+  const [checkedToken, setCheckedToken] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
   const [factorId, setFactorId] = useState("");
   const [code, setCode] = useState("");
@@ -126,23 +127,28 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
   const [failed, setFailed] = useState(false);
 
   const check = useCallback(async () => {
-    if (!user) { setChecking(false); setNeedsCode(false); setFailed(false); return; }
+    if (!user || !session?.access_token) {
+      setCheckedToken("");
+      setChecking(false); setNeedsCode(false); setFailed(false); return;
+    }
+    const tokenBeingChecked = session.access_token;
     setChecking(true);
     const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (error || !data) { setChecking(false); setFailed(true); return; }
+    if (error || !data) { setCheckedToken(tokenBeingChecked); setChecking(false); setFailed(true); return; }
     if (data.currentLevel === "aal1" && data.nextLevel === "aal2") {
       const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
       if (factorsError || !factors?.totp?.length) {
-        setChecking(false); setFailed(true); return;
+        setCheckedToken(tokenBeingChecked); setChecking(false); setFailed(true); return;
       }
       const verified = factors.totp.find((factor) => factor.status === "verified");
       if (!verified) { setChecking(false); setFailed(true); return; }
       setFactorId(verified.id);
       setNeedsCode(true);
     } else setNeedsCode(false);
+    setCheckedToken(tokenBeingChecked);
     setChecking(false);
     setFailed(false);
-  }, [user?.id]);
+  }, [user?.id, session?.access_token]);
 
   useEffect(() => { if (!loading) void check(); }, [loading, user?.id, session?.access_token, check]);
 
@@ -162,6 +168,9 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
   };
   if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Tikrinama paskyra…</div>;
   if (!user) return <>{children}</>;
+  // Never render an authenticated app until this exact access token is checked.
+  if (checkedToken !== session?.access_token)
+    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Tikrinama prisijungimo apsauga…</div>;
   if (!checking && !needsCode && !failed) return <>{children}</>;
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
