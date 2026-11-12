@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.send-public-registration-email]
 verify_jwt = false
+
+[functions.new-device-verification]
+verify_jwt = true
