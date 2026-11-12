@@ -519,6 +519,19 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
   return emailShell("Abonementas reikalingas", "Priminimas apie būsimą treniruotę", inner);
 }
 
+function newDeviceLoginHtml(clientName: string, payload: any) {
+  const code = String(payload?.code || "");
+  const inner =
+    '<p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Sveiki, ' + esc(clientName) + '!</p>' +
+    '<p style="margin:0;font-size:15px;line-height:1.7;">Pastebėjome prisijungimą prie Equus iš neatpažintos naršyklės arba įrenginio.</p>' +
+    '<div style="margin:24px 0;padding:20px 12px;border-radius:16px;background:#edf3f9;border:1px solid #d0ddeb;text-align:center;">' +
+    '<div style="font-size:12px;letter-spacing:1px;color:#536b80;">Jūsų patvirtinimo kodas</div>' +
+    '<div style="font-size:32px;letter-spacing:6px;font-weight:700;color:#23466a;margin-top:10px;">' + esc(code) + '</div>' +
+    '</div>' +
+    '<p style="font-size:14px;color:#536b80;">Įveskite kodą Equus svetainėje per 20 minučių. Jei nesijungėte, niekam jo neatskleiskite ir pasikeiskite slaptažodį.</p>';
+  return emailShell("Naujo įrenginio patvirtinimas", "Equus prisijungimo kodas", inner);
+}
+
 function passwordResetHtml(clientName: string, payload: any) {
   const recoveryCode = String(payload?.recovery_code || "");
   const resetUrl = String(payload?.reset_url || "");
@@ -730,7 +743,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "new_device_login", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Unsupported event type: " + event.event_type,
@@ -815,6 +828,10 @@ Deno.serve(async (req) => {
       if (event.event_type === "password_reset") {
         subject = "Equus slaptažodžio atkūrimas";
         html = passwordResetHtml(clientName, event.payload || {});
+      }
+      if (event.event_type === "new_device_login") {
+        subject = "Equus: patvirtinkite naują įrenginį";
+        html = newDeviceLoginHtml(clientName, event.payload || {});
       }
 
       if (event.event_type === "welcome_new_rider") {
