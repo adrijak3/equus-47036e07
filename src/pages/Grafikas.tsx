@@ -3239,7 +3239,7 @@ export default function Grafikas() {
         </p>
 
         <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
-          {t("horseFreedom")}
+          Grafikas
         </h1>
 
         <div className="gold-divider max-w-[140px] mx-auto" />
