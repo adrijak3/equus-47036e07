@@ -414,6 +414,7 @@ export default function Paskyra() {
             <div className="mt-3 grid grid-cols-2 gap-2">
               <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
               <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
+              <QuickAction label="Saugumas ir įrenginiai" icon={<KeyRound className="h-4 w-4" />} onClick={() => navigate("/saugumas")} />
             </div>
           <ReadOnlyRecurringCard permanents={permanents} />
           <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
