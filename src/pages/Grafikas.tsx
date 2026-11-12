@@ -474,14 +474,11 @@ export default function Grafikas() {
         .eq("active", true)
         .order("slot_time"),
 
-      supabase
-        .from("bookings")
-        .select(
-          "id, user_id, slot_date, slot_time, status, is_guest, guest_name, is_individual, guest_rider_id, trainer_name, created_at, is_paused_for_subscription, is_grace_booking, family_rider_id, family_group_id",
-        )
-        .gte("slot_date", startISO)
-        .lte("slot_date", endISO)
-        .in("status", ["active", "completed"]),
+      // Only occupancy and the current user's details are returned to non-staff.
+      (supabase as any).rpc("get_schedule_bookings_safe", {
+        _start_date: startISO,
+        _end_date: endISO,
+      }),
 
       supabase
         .from("slot_overrides")
@@ -489,15 +486,12 @@ export default function Grafikas() {
         .gte("slot_date", startISO)
         .lte("slot_date", endISO),
 
-      supabase
-        .from("waiting_list")
-        .select("*")
-        .gte("slot_date", startISO)
-        .lte("slot_date", endISO),
+      (supabase as any).rpc("get_schedule_waiting_safe", {
+        _start_date: startISO,
+        _end_date: endISO,
+      }),
 
-      supabase.from("permanent_slots").select(
-        "user_id, day_of_week, slot_time",
-      ),
+      (supabase as any).rpc("get_schedule_permanents_safe"),
 
       supabase
         .from("day_cancellations" as any)
@@ -715,11 +709,10 @@ export default function Grafikas() {
     setHorses((horseRows ?? []) as HorseOption[]);
 
     // Horse assignments for this week
-    const { data: assignsRaw } = await supabase
-      .from("horse_assignments")
-      .select("*")
-      .gte("slot_date", startISO)
-      .lte("slot_date", endISO);
+    const { data: assignsRaw } = await (supabase as any).rpc("get_schedule_horses_safe", {
+      _start_date: startISO,
+      _end_date: endISO,
+    });
 
     const horseIds = Array.from(
       new Set(
@@ -820,6 +813,8 @@ export default function Grafikas() {
   }, [isAdmin]);
 
   const isPermanentBooking = (b: Booking) => {
+    // A masked rider ID must never be treated as matching another masked ID.
+    if (!b.user_id) return false;
     const dow = dbDayOfWeek(
       new Date(`${b.slot_date}T${b.slot_time}`),
     );
