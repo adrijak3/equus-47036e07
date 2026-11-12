@@ -21,23 +21,26 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
   const [factorId, setFactorId] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     setState("checking");
+    setCheckedUserId(null);
     const check = async () => {
-      if (!user) { if (active) setState("ready"); return; }
+      if (!user) { if (active) { setCheckedUserId(null); setState("ready"); } return; }
       const { data: levels, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (!active) return;
-      if (error || !levels) { setState("error"); return; }
+      if (error || !levels) { setCheckedUserId(user.id); setState("error"); return; }
       if (levels.currentLevel === "aal1" && levels.nextLevel === "aal2") {
         const { data, error: factorsError } = await supabase.auth.mfa.listFactors();
         if (!active) return;
         const verified = data?.totp?.find((f) => f.status === "verified");
-        if (factorsError || !verified) { setState("error"); return; }
+        if (factorsError || !verified) { setCheckedUserId(user.id); setState("error"); return; }
         setFactorId(verified.id);
+        setCheckedUserId(user.id);
         setState("challenge");
-      } else setState("ready");
+      } else { setCheckedUserId(user.id); setState("ready"); }
     };
     if (!loading) void check();
     return () => { active = false; };
@@ -55,7 +58,7 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
     setState("ready");
   };
 
-  if (loading || state === "checking") return <div className="container py-20 text-center">Tikrinamas prisijungimas…</div>;
+  if (loading || state === "checking" || (user && checkedUserId !== user.id)) return <div className="container py-20 text-center">Tikrinamas prisijungimas…</div>;
   if (state === "ready") return <>{children}</>;
   return <main className="container max-w-md space-y-5 py-16">
     <h1 className="font-display text-3xl">Prisijungimo patvirtinimas</h1>
