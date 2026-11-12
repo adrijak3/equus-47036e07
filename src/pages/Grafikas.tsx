@@ -4164,7 +4164,7 @@ export default function Grafikas() {
                                             title="Grąžinti į įprastą talpą"
                                             className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                           >
-                                            ↺
+                                            Atstatyti
                                           </button>
                                         )}
                                       </>
@@ -4188,7 +4188,7 @@ export default function Grafikas() {
                                           }}
                                           className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                         >
-                                          ⚙
+                                          Keisti
                                         </button>
                                       )}
 
@@ -4478,7 +4478,7 @@ export default function Grafikas() {
                                             className="w-full h-8 text-[11px]"
                                             disabled
                                           >
-                                            🔒 {language === "lt" ? "Registracija uždaryta" : "Registration closed"}
+                                            {language === "lt" ? "Registruotis negalima" : "Unavailable"}
                                           </Button>
                                           <button
                                             type="button"
