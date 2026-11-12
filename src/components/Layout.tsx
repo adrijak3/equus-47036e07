@@ -128,6 +128,30 @@ export default function Layout({
   const location = useLocation();
   const navigate = useNavigate();
 
+  const pageHeading = (() => {
+    const pathname = location.pathname;
+    if (pathname === "/") return "Pradžia";
+    if (pathname === "/grafikas") return "Grafikas";
+    if (pathname === "/kainos") return "Kainos";
+    if (pathname === "/registracija") return "Registracija";
+    if (pathname === "/auth" || pathname === "/auth/callback") return "Prisijungimas";
+    if (pathname === "/mano-abonementai") return "Abonementai";
+    if (pathname === "/abonemento-uzklausa") return "Abonementas";
+    if (pathname.startsWith("/paskyra")) return "Paskyra";
+    if (pathname.startsWith("/admin")) return "Valdymas";
+    if (pathname.startsWith("/trener")) return "Treneris";
+    if (pathname.startsWith("/varzybos")) return "Varžybos";
+    if (pathname.startsWith("/galerija")) return "Galerija";
+    if (pathname.startsWith("/informacija")) return "Informacija";
+    if (pathname.startsWith("/atsiliepimai")) return "Atsiliepimai";
+    if (pathname.startsWith("/apie")) return "Apie mus";
+    if (pathname.startsWith("/privatumo")) return "Privatumas";
+    if (pathname.startsWith("/taisykles")) return "Taisyklės";
+    if (pathname.startsWith("/reset-password")) return "Slaptažodis";
+    return "Equus";
+  })();
+
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -188,9 +212,9 @@ export default function Layout({
             <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black">
               <img src="/equus-logo-black.png" alt="" width="44" height="44" className="h-full w-full rounded-full object-contain" />
             </span>
-            <span className="flex items-baseline gap-2">
-              <span className="equus-wordmark hidden text-foreground sm:inline">Equus</span>
-              <span className="equus-brand-caption hidden text-[.82rem] font-normal tracking-normal text-foreground/80 sm:inline">jojimo mokykla</span>
+            <span className="flex min-w-0 flex-col justify-center leading-tight">
+              <span className="equus-wordmark text-sm text-foreground sm:text-lg">Equus</span>
+              <span className="text-[9px] text-muted-foreground sm:text-xs">jojimo mokykla</span>
             </span>
           </Link>
 
@@ -202,9 +226,9 @@ export default function Layout({
               </Link>
             ))}
           </nav>
-          <Link to="/grafikas" onClick={close} className="absolute left-1/2 -translate-x-1/2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 sm:hidden" aria-current={location.pathname === "/grafikas" ? "page" : undefined}>
-            Grafikas
-          </Link>
+          <span aria-live="polite" className="pointer-events-none absolute left-1/2 max-w-[25vw] -translate-x-1/2 truncate text-center text-xs font-medium text-foreground sm:hidden">
+            {pageHeading}
+          </span>
           <button
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
