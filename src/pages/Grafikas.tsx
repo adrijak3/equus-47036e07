@@ -4140,7 +4140,7 @@ export default function Grafikas() {
                                               cap,
                                             )
                                           }
-                                          className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                                          className="ml-0.5 inline-flex min-h-7 items-center justify-center rounded-sm border border-border px-1.5 text-muted-foreground hover:bg-muted transition-colors text-[10px] leading-none"
                                         >
                                           +1
                                         </button>
