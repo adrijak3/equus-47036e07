@@ -47,7 +47,7 @@ const RULES = [
     key: "cancel",
     icon: XCircle,
     title: "Atšaukimas",
-    teaser: "Atšaukite likus bent 24 val. Registracija uždaroma likus 3 val.",
+    teaser: "Atšaukite likus bent 24 val. Registruotis galima iki treniruotės pradžios.",
     body: "Atšaukus likus bent 24 val. pamokos neprarasite. Vėliau atšaukta ar praleista pamoka paprastai skaičiuojama kaip panaudota, išskyrus ligą ar force majeure. Pamoką galite perkelti į kitą tos pačios savaitės laiką.",
   },
   {
