@@ -20,6 +20,7 @@ import { ImportantUpdatePopup } from "@/components/ImportantUpdatePopup";
 import { BugReporter } from "@/components/BugReporter";
 import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
 import { PageLoader } from "@/components/PageLoader";
+import { MfaGate } from "./pages/Security";
 
 const Grafikas = lazy(() => import("./pages/Grafikas"));
 const Pradzia = lazy(() => import("./pages/Pradzia"));
@@ -30,7 +31,6 @@ const Paskyra = lazy(() => import("./pages/Paskyra"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Security = lazy(() => import("./pages/Security"));
-import { MfaGate } from "./pages/Security";
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminGmailTest = lazy(() => import("./pages/AdminGmailTest"));
