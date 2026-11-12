@@ -326,7 +326,7 @@ export function WelcomeOnboarding() {
     await refreshProfile();
     setSaving(false);
     setOpen(false);
-    toast.success("Sveiki atvykę į Equus! 🐴");
+    toast.success("Sveiki atvykę į Equus! ");
     navigate("/grafikas", { replace: true });
   };
 
@@ -698,7 +698,7 @@ export function WelcomeOnboarding() {
                 Viskas paruošta
               </p>
               <h2 className="mt-2 max-w-xl font-display text-4xl text-gradient-gold sm:text-5xl">
-                Lauksime Jūsų atvykstant! 🐴
+                Lauksime Jūsų atvykstant! 
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground">
                 Jūsų profilis, taisyklės ir pasirinkta tema išsaugoti. Toliau
