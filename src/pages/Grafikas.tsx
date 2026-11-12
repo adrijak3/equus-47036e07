@@ -3349,7 +3349,7 @@ export default function Grafikas() {
               setPendingScrollToToday(true);
             }}
           >
-            📅 {t("today")}
+             {t("today")}
           </Button>
         </div>
       </div>
@@ -4256,7 +4256,7 @@ export default function Grafikas() {
                                           }}
                                           className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                         >
-                                          ⚙
+                                          
                                         </button>
                                       )}
 
@@ -4737,7 +4737,7 @@ export default function Grafikas() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="font-medium">
-                          🐴{" "}
+                          {" "}
                           {
                             horse.name
                           }
