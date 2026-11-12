@@ -15,6 +15,7 @@ import {
   Palette,
   Phone,
   ShieldCheck,
+  KeyRound,
   Sparkles,
   Tag,
   User as UserIcon,
@@ -132,6 +133,7 @@ export default function Layout({
     if (pathname === "/") return "Pradžia";
     if (pathname === "/grafikas") return "Grafikas";
     if (pathname === "/kainos") return "Kainos";
+    if (pathname === "/saugumas") return "Apsauga";
     if (pathname === "/registracija") return "Registracija";
     if (pathname === "/auth" || pathname === "/auth/callback") return "Prisijungimas";
     if (pathname === "/mano-abonementai") return "Abonementai";
@@ -329,6 +331,15 @@ export default function Layout({
                 </div>
               )}
 
+              {user && (
+                <Link to="/saugumas" onClick={close} className={cn(
+                  "mx-4 mb-3 flex items-center gap-3 rounded-lg border border-border/70 px-4 py-3 text-sm font-medium transition-colors hover:bg-muted/50",
+                  location.pathname === "/saugumas" ? "bg-muted text-foreground" : "text-foreground/85",
+                )}>
+                  <KeyRound className="h-4 w-4" />
+                  Prisijungimo apsauga (neprivaloma)
+                </Link>
+              )}
               {/* Temų pasirinkimas – matomas visiems prisijungusiems */}
               {user && (
               <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-gold/20 bg-card/70">
