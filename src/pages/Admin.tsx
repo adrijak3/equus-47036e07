@@ -1551,8 +1551,8 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const copyHistory = async () => {
     const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
-    const message = ["──────────── ♡ ────────────", " PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
-    try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
+    const message = ["──────────── ────────────", " PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "Pamokų skaičius: " + lines.length, "──────────── ────────────"].join("\n");
+    try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
@@ -3044,7 +3044,7 @@ function SubDetailDialog({
           : r.status === "completed" ? "įvyko" : "rezervuota";
       const details = [date + " · " + formatTime(r.slot_time)];
       if (r.is_individual) details.push("individuali");
-      if (r.horse_name) details.push("🐎 " + r.horse_name);
+      if (r.horse_name) details.push("" + r.horse_name);
       return "* " + details.join(" · ") + " — " + status;
     });
     const manualLines = manualLessons.slice().reverse().map((lesson) => {
@@ -3054,7 +3054,7 @@ function SubDetailDialog({
       return "* " + date + " — " + lesson.note;
     });
     const message = [
-      "──────────── ♡ ────────────",
+      "──────────── ────────────",
       " EQUUS ABONEMENTO ISTORIJA",
       userName,
       "",
@@ -3066,13 +3066,13 @@ function SubDetailDialog({
       "RANKINIU BŪDU ĮSKAITYTOS PAMOKOS (išsaugoti įrašai)",
       ...(manualLines.length ? manualLines : ["* Papildomų įrašų nėra."]),
       "",
-      "♡ Rezervacijų įrašų: " + rows.length,
-      "♡ Rankiniu būdu įskaitytų pamokų įrašų: " + manualLessons.length,
-      "──────────── ♡ ────────────",
+      "Rezervacijų įrašų: " + rows.length,
+      "Rankiniu būdu įskaitytų pamokų įrašų: " + manualLessons.length,
+      "──────────── ────────────",
     ].join("\n");
     try {
       await navigator.clipboard.writeText(message);
-      toast.success("Abonemento istorija nukopijuota ✓");
+      toast.success("Abonemento istorija nukopijuota");
     } catch {
       toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus.");
     }
@@ -3092,9 +3092,9 @@ function SubDetailDialog({
       const { data } = await supabase.from("bookings").select("id, slot_date, slot_time, status, counts_in_subscription, is_individual").eq("user_id", sub.user_id).gte("slot_date", copyFrom).lte("slot_date", copyUntil).neq("status", "cancelled").order("slot_date", { ascending: true }).order("slot_time", { ascending: true });
       source = await enrichHorses(data ?? []); title = copyMode === "details" ? " PAMOKOS" : " EQUUS JOJIMO PAMOKOS";
     }
-    const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("🐎 " + r.horse_name); return "* " + bits.join(" — "); });
-    const message = ["──────────── ♡ ────────────", title, userName, "", " " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
-    try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
+    const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("" + r.horse_name); return "* " + bits.join(" — "); });
+    const message = ["──────────── ────────────", title, userName, "", " " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "" + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ────────────"].join("\n");
+    try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -3205,7 +3205,7 @@ function SubDetailDialog({
                 </ul>
               )}
             </div>
-            <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · 🐎 " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · 30 d. iki pradžios ir abonemento galiojimo metu ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : Number(r.extra_fee_eur ?? 0) > 0 ? " · po 2" : " · grupinė"}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
+            <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Įskaičiuotos pamokos ({counted.length})</h4>{counted.length === 0 ? <p className="text-xs text-muted-foreground italic">Nėra</p> : <ul className="space-y-1 max-h-72 overflow-auto">{counted.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : ""}{r.horse_name ? " · " + r.horse_name : ""}</span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul>}</div>{cancelled.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-blush/70 mb-1.5">Atšauktos / nesiskaičiuoja ({cancelled.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{cancelled.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)} <span className="text-[10px]">({r.status})</span></span><button onClick={() => detach(r.id)} className="text-[11px] text-muted-foreground hover:text-destructive">Atkabinti nuo abonemento</button></li>)}</ul></div>}{freeRows.length > 0 && <div><h4 className="text-xs uppercase tracking-wider text-gold/70 mb-1.5">Nepriskirtos treniruotės · 30 d. iki pradžios ir abonemento galiojimo metu ({freeRows.length})</h4><ul className="space-y-1 max-h-40 overflow-auto">{freeRows.map((r) => <li key={r.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gold/5"><span className="tabular-nums text-muted-foreground">{r.slot_date} · {formatTime(r.slot_time)}{r.is_individual ? " · individuali" : Number(r.extra_fee_eur ?? 0) > 0 ? " · po 2" : " · grupinė"}</span><button onClick={() => attach(r.id)} className="text-[11px] text-gold hover:underline">Priskirti abonementui</button></li>)}</ul></div>}</>}
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>Uždaryti</Button></DialogFooter>
       </DialogContent>
@@ -3568,7 +3568,7 @@ function MessagesTab() {
                     <div key={m.id} className={cn("px-4 py-3", m.from_admin && "bg-gold/5")}>
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                          {m.from_admin ? "✦ Jūs (admin)" : t.name}
+                          {m.from_admin ? "Jūs (admin)" : t.name}
                         </span>
                         <span className="text-[10px] text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
                       </div>
