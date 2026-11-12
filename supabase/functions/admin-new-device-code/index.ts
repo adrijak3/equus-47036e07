@@ -71,7 +71,7 @@ Deno.serve(async (request: Request) => {
       .is("consumed_at", null)
       .order("created_at", { ascending: false }).limit(150);
     if (error) return json({ error: "LIST_FAILED" }, 500);
-    const latest = new Map<string, typeof all[number]>();
+    const latest = new Map<string, NonNullable<typeof all>[number]>();
     for (const challenge of all ?? []) {
       const key = challenge.user_id + ":" + challenge.device_hash;
       if (!latest.has(key)) latest.set(key, challenge);
