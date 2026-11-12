@@ -23,22 +23,26 @@ export function EquusHelpWidget() {
   const { language } = useLanguage();
   const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const lt = language === "lt";
+
+  if (dismissed) return null;
 
   return (
     <div className="equus-help-widget fixed bottom-[calc(5.2rem+env(safe-area-inset-bottom))] right-3 z-50 sm:bottom-6 sm:right-6">
       {!open ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label={lt ? "Pagalba ir kontaktai" : "Help and contact"}
-          aria-expanded={false}
-          className="flex h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-offset-2"
-        >
-          <MessageCircle className="h-4 w-4" aria-hidden="true" />
-          <span>{lt ? "Pagalba" : "Help"}</span>
-        </button>
+        <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-sm">
+          <button type="button" onClick={() => setOpen(true)} aria-label={lt ? "Atidaryti pagalbą" : "Open help"}
+            aria-expanded={false} className="flex h-9 items-center gap-2 rounded-full px-2 text-sm font-medium hover:bg-muted">
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            <span>{lt ? "Pagalba" : "Help"}</span>
+          </button>
+          <button type="button" aria-label={lt ? "Paslėpti pagalbą iki puslapio atnaujinimo" : "Hide help until refresh"}
+            onClick={() => setDismissed(true)} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       ) : (
         <section role="dialog" aria-modal="false" aria-label={lt ? "Pagalba" : "Help"}
           className="flex max-h-[min(75dvh,440px)] w-[min(350px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl"
