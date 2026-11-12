@@ -160,7 +160,8 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
     setNeedsCode(false);
     void check();
   };
-  if (!user || loading) return <>{children}</>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Tikrinama paskyra…</div>;
+  if (!user) return <>{children}</>;
   if (!checking && !needsCode && !failed) return <>{children}</>;
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
