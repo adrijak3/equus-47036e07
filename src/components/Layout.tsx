@@ -78,6 +78,8 @@ const NAV_USER: NavigationItem[] = [
   { to: "/mano-abonementai", label: "Mano abonementai", icon: Wallet, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
+  { to: "/informacija", label: "Informacija", icon: Info, menuOnly: true },
+  { to: "/saugumas", label: "Saugumas", icon: ShieldCheck, menuOnly: true },
 ];
 
 const NAV_ADMIN: NavigationItem[] = [
@@ -90,6 +92,8 @@ const NAV_ADMIN: NavigationItem[] = [
   { to: "/trener", label: "Trenerio skiltis", icon: UsersIcon },
   { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true, mobileBottomOnly: false },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
+  { to: "/informacija", label: "Informacija", icon: Info, menuOnly: true },
+  { to: "/saugumas", label: "Saugumas", icon: ShieldCheck, menuOnly: true },
 ];
 
 const STAFF_QR_NAV = { to: "/admin/skenuoti", label: "Skenuoti QR", icon: ScanLine };
@@ -102,6 +106,8 @@ const NAV_TRAINER: NavigationItem[] = [
   { to: "/trener", label: "Trenerio sritis", icon: UsersIcon },
   { to: "/registracija", label: "Registracija", icon: ClipboardPenLine, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
+  { to: "/informacija", label: "Informacija", icon: Info, menuOnly: true },
+  { to: "/saugumas", label: "Saugumas", icon: ShieldCheck, menuOnly: true },
 ];
 
 export default function Layout({
@@ -142,6 +148,7 @@ export default function Layout({
     if (pathname.startsWith("/varzybos")) return "Varžybos";
     if (pathname.startsWith("/galerija")) return "Galerija";
     if (pathname.startsWith("/informacija")) return "Informacija";
+    if (pathname.startsWith("/saugumas")) return "Saugumas";
     if (pathname.startsWith("/atsiliepimai")) return "Atsiliepimai";
     if (pathname.startsWith("/apie")) return "Apie mus";
     if (pathname.startsWith("/privatumo")) return "Privatumas";
