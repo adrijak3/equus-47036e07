@@ -1976,3 +1976,12 @@
 .equus-studio .equus-schedule .equus-schedule-toolbar { background: hsl(var(--card)); }
 .equus-studio .equus-schedule .font-display.tabular-nums { font-family: "Inter", system-ui, sans-serif; font-size: 1rem; font-weight: 500; letter-spacing: normal; }
 .equus-studio .equus-schedule .equus-schedule-day-date { font-family: "Inter", system-ui, sans-serif; font-size: 1rem; font-weight: 500; letter-spacing: -.012em; }
+
+/* Soft rounded humanist type on operational screens; keep Kainos unchanged. */
+.equus-studio { font-family: "DM Sans", "Inter", system-ui, sans-serif; }
+.equus-studio .equus-main:not(:has(.equus-pricing)) :where(h1,h2,h3,h4,h5) { font-family: "DM Sans", "Inter", system-ui, sans-serif; letter-spacing: -.023em; }
+.equus-studio .equus-main:not(:has(.equus-pricing)) .equus-page-title { font-family: "DM Sans", "Inter", system-ui, sans-serif; font-weight: 500; }
+.equus-studio .equus-brand-caption { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: .92rem; letter-spacing: -.012em; }
+.equus-studio .equus-schedule .equus-page-heading { text-align: center; }
+.equus-studio .equus-schedule .equus-page-subtitle { margin-inline: auto; }
+.equus-studio .equus-schedule .equus-schedule-day-date { font-family: "DM Sans", "Inter", system-ui, sans-serif; font-weight: 500; border: 0; background: none; box-shadow: none; }
