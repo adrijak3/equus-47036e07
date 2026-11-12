@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,6 +36,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const lastLoadedUserId = useRef<string | null>(null);
+  const lastRoleRefresh = useRef(0);
+  const loadingUserId = useRef<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -67,43 +70,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Listener FIRST
+    // Fetch the profile once per user, not for every token refresh.
+    // Supabase broadcasts INITIAL_SESSION/TOKEN_REFRESHED/SIGNED_IN even
+    // when the authenticated user has not changed.
+    const ensureUserLoaded = (uid: string) => {
+      if (lastLoadedUserId.current === uid || loadingUserId.current === uid) return;
+      loadingUserId.current = uid;
+      setTimeout(() => {
+        void loadUserData(uid).then(() => {
+          lastLoadedUserId.current = uid;
+          lastRoleRefresh.current = Date.now();
+        }).finally(() => {
+          loadingUserId.current = null;
+          setLoading(false);
+        });
+      }, 0);
+    };
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
-        // defer to avoid deadlock
-        setTimeout(() => loadUserData(newSession.user.id), 0);
+        ensureUserLoaded(newSession.user.id);
       } else {
+        lastLoadedUserId.current = null;
+        loadingUserId.current = null;
+        lastRoleRefresh.current = 0;
         setProfile(null);
         setIsAdmin(false);
         setIsTrainer(false);
         setIsHalfAdmin(false);
         setLinkedProfiles([]);
         setActiveProfileIdState(null);
+        setLoading(false);
       }
     });
 
-    // Then fetch existing session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) loadUserData(s.user.id).finally(() => setLoading(false));
+    void supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      setSession(existing);
+      setUser(existing?.user ?? null);
+      if (existing?.user) ensureUserLoaded(existing.user.id);
       else setLoading(false);
     });
 
-    // Time-limited admin access starts and expires automatically without
-    // signing out. Refresh privileges on focus and periodically.
+    // Admin privileges can be time limited, so refresh on focus and in the
+    // background, but avoid fetching profile + roles on every minute/tap.
     const onFocus = () => {
-      void supabase.auth.getUser().then(({ data: { user: active } }) => {
-        if (active) void loadUserData(active.id);
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRoleRefresh.current < 5 * 60_000) return;
+      void supabase.auth.getSession().then(({ data: { session: active } }) => {
+        if (!active?.user || loadingUserId.current === active.user.id) return;
+        lastRoleRefresh.current = Date.now();
+        void loadUserData(active.user.id);
       });
     };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
     const roleRefresh = window.setInterval(onFocus, 60_000);
     return () => {
       sub.subscription.unsubscribe();
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
       window.clearInterval(roleRefresh);
     };
   }, []);
