@@ -295,7 +295,7 @@ export function RiderActionSheet({
         reason.includes("RIDER_ALREADY_BOOKED") ? "Raitelis jau užregistruotas šiuo laiku." :
         reason.includes("HORSE_NOT_AVAILABLE") || reason.includes("horse_assignments_one_horse_per_slot")
           ? "Paskirtas žirgas tuo laiku užimtas. Pakeiskite arba pašalinkite žirgą prieš perkeldami." :
-        reason.includes("BOOKING_CUTOFF") ? "Per vėlu perkelti į pasirinktą laiką." :
+        reason.includes("BOOKING_CUTOFF") || reason.includes("BOOKING_STARTED") ? "Treniruotė jau prasidėjo." :
         reason.includes("SAME_TIME") ? "Pasirinkite kitą laiką." :
         reason || "Perkėlimas nepatvirtintas. Rezervacija nepakeista.";
       toast.error(message);
