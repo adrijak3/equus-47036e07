@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RiderLevelBadge } from "@/components/RiderLevelBadge";
 import { UserProfileSheet } from "@/components/admin/UserProfileSheet";
-import { Search, UserPlus2, PhoneCall, Link2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, UserPlus2, PhoneCall, Link2, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 interface Profile { id: string; full_name: string; phone: string | null; riding_level?: string | null; }
 interface Sub { id: string; user_id: string | null; lessons_total: number; lessons_used: number; expires_at: string; paid: boolean; }
@@ -92,6 +92,33 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
     if (error) { toast.error(error.message); return; }
     toast.success("Atnaujinta");
     load();
+  };
+
+  const deleteGuest = async (g: GuestRider) => {
+    if (g.linked_user_id) {
+      toast.error("Susietas svečias negali būti ištrintas. Paskyros istoriją būtina išsaugoti.");
+      return;
+    }
+    const [bookingCheck, subscriptionCheck] = await Promise.all([
+      supabase.from("bookings").select("id", { count: "exact", head: true }).eq("guest_rider_id", g.id),
+      supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("guest_rider_id", g.id),
+    ]);
+    if (bookingCheck.error || subscriptionCheck.error) {
+      toast.error("Nepavyko patikrinti svečio istorijos. Įrašas nepakeistas.");
+      return;
+    }
+    if ((bookingCheck.count ?? 0) > 0 || (subscriptionCheck.count ?? 0) > 0) {
+      toast.error("Šis svečias turi pamokų ar abonementų istoriją. Jos ištrinti negalima.");
+      return;
+    }
+    if (!window.confirm(`Ištrinti svečią „${g.first_name} ${g.last_name}“? Šio veiksmo atšaukti negalima.`)) return;
+    const { data, error } = await supabase.from("guest_riders").delete().eq("id", g.id).select("id");
+    if (error || !data?.length) {
+      toast.error(error?.message ?? "Svečio ištrinti nepavyko.");
+      return;
+    }
+    toast.success("Svečias ištrintas.");
+    await load();
   };
 
   const linkGuestToAccount = async (guestId: string, userId: string) => {
@@ -194,6 +221,9 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <Button variant="ghost" size="sm" onClick={() => editGuest(g)}>Redaguoti</Button>
+                {!g.linked_user_id && <Button variant="ghost" size="sm" className="text-destructive" onClick={() => void deleteGuest(g)} aria-label={`Ištrinti svečią ${g.first_name} ${g.last_name}`}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>}
                 {g.is_newcomer && (
                   <Button variant="ghost" size="sm" onClick={() => toggleGuestNewcomer(g)}>Nebe naujokė</Button>
                 )}
