@@ -19,11 +19,14 @@ const FAQ = {
   ],
 } as const;
 
+// Survives client-side navigation; resets when the document is reloaded.
+let dismissedInThisDocument = false;
+
 export function EquusHelpWidget() {
   const { language } = useLanguage();
   const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   const [open, setOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => dismissedInThisDocument);
   const [expanded, setExpanded] = useState<number | null>(null);
   const lt = language === "lt";
 
@@ -39,7 +42,7 @@ export function EquusHelpWidget() {
             <span>{lt ? "Pagalba" : "Help"}</span>
           </button>
           <button type="button" aria-label={lt ? "Paslėpti pagalbą iki puslapio atnaujinimo" : "Hide help until refresh"}
-            onClick={() => setDismissed(true)} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted">
+            onClick={() => { dismissedInThisDocument = true; setDismissed(true); }} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted">
             <X className="h-4 w-4" />
           </button>
         </div>
