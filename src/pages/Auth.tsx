@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { KeyRound, Chrome } from "lucide-react";
+import { TurnstileCaptcha, TURNSTILE_SITE_KEY } from "@/components/TurnstileCaptcha";
 
 const signUpSchema = z.object({
   full_name: z.string().trim().min(2, "Vardas per trumpas").max(80),
@@ -40,6 +41,9 @@ export default function Auth() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState(params.get("tab") === "signup" ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaNonce, setCaptchaNonce] = useState(0);
+  const renewCaptcha = () => { setCaptchaToken(""); setCaptchaNonce((n) => n + 1); };
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
   const confirmed = params.get("confirmed") === "1";
 
@@ -67,11 +71,16 @@ export default function Auth() {
       toast.error(parsed.error.issues[0].message);
       return;
     }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      toast.error("Patvirtinkite, kad nesate robotas.");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
+        captchaToken: captchaToken || undefined,
         emailRedirectTo: `${window.location.origin}/auth?confirmed=1`,
         data: {
           full_name: parsed.data.full_name,
@@ -82,6 +91,7 @@ export default function Auth() {
       },
     });
     setLoading(false);
+    renewCaptcha();
     if (error) {
       const message = error.message ?? "";
       toast.error(
@@ -137,11 +147,18 @@ export default function Auth() {
       }
       email = (data as any).email;
     }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setLoading(false);
+      toast.error("Patvirtinkite, kad nesate robotas.");
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password: parsed.data.password,
+      options: { captchaToken: captchaToken || undefined },
     });
     setLoading(false);
+    renewCaptcha();
     if (error) {
       toast.error("Neteisingas el. paštas arba slaptažodis");
       return;
@@ -187,7 +204,7 @@ export default function Auth() {
       </div>
 
       <div className="bg-gradient-card border border-gold/15 rounded-lg p-6 sm:p-8 shadow-elegant animate-fade-up">
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={tab} onValueChange={(value) => { setTab(value); renewCaptcha(); }}>
           <TabsList className="grid grid-cols-2 w-full bg-background/50 mb-6">
             <TabsTrigger value="signin">Prisijungti</TabsTrigger>
             <TabsTrigger value="signup">Registruotis</TabsTrigger>
@@ -203,6 +220,7 @@ export default function Auth() {
                 <Label htmlFor="si-pw">Slaptažodis</Label>
                 <Input id="si-pw" name="password" type="password" required autoComplete="current-password" />
               </div>
+              <TurnstileCaptcha key={`signin-${captchaNonce}`} onToken={setCaptchaToken} />
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Jungiamasi…" : "Prisijungti"}
               </Button>
@@ -314,6 +332,7 @@ export default function Auth() {
               <p className="text-xs text-muted-foreground">
                 Saugumui ribojame registracijas: iki 10 naujų paskyrų per dieną.
               </p>
+              <TurnstileCaptcha key={`signup-${captchaNonce}`} onToken={setCaptchaToken} />
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
                 {loading ? "Kuriama…" : "Sukurti paskyrą"}
               </Button>
