@@ -62,9 +62,9 @@ export function NewDeviceGate({ children }: { children: React.ReactNode }) {
           setStep("code");
           try {
             await invoke("send");
-            if (active) setMessage("Į jūsų paskyros el. paštą išsiųsime 6 skaitmenų kodą. Laiškas gali užtrukti iki kelių minučių.");
+            if (active) setMessage("Patikrinkite el. paštą. Laiškas gali vėluoti.");
           } catch {
-            if (active) setMessage("Kodo automatiškai išsiųsti nepavyko. Bandykite paspausti „Siųsti kodą“.");
+            if (active) setMessage("Kodo išsiųsti nepavyko. Spauskite „Siųsti kodą“.");
           }
         }
       } catch {
@@ -78,9 +78,9 @@ export function NewDeviceGate({ children }: { children: React.ReactNode }) {
     setBusy(true);
     try {
       await invoke("send");
-      setMessage("Kodas užsakytas. Patikrinkite savo el. paštą ir šlamšto aplanką.");
+      setMessage("Kodas išsiųstas. Patikrinkite ir šlamšto aplanką.");
     } catch {
-      setMessage("Nepavyko išsiųsti kodo. Kodus galima prašyti kas 90 sekundžių, ne daugiau kaip 3 kartus per valandą.");
+      setMessage("Kodas nesiunčiamas. Bandykite po 90 sek.");
     } finally { setBusy(false); }
   };
 
@@ -93,7 +93,7 @@ export function NewDeviceGate({ children }: { children: React.ReactNode }) {
       setCode("");
       setStep("ready");
     } catch {
-      setMessage("Neteisingas arba nebegaliojantis kodas. Patikrinkite kodą, arba paprašykite naujo.");
+      setMessage("Kodas neteisingas arba nebegalioja.");
     } finally { setBusy(false); }
   };
 
@@ -102,9 +102,9 @@ export function NewDeviceGate({ children }: { children: React.ReactNode }) {
   }
   if (step==="ready") return <>{children}</>;
   return <main className="container max-w-md space-y-5 py-16">
-    <h1 className="font-display text-3xl">Naujo įrenginio patvirtinimas</h1>
+    <h1 className="font-display text-3xl">Patvirtinkite įrenginį</h1>
     <p className="text-sm text-muted-foreground">
-      Šios naršyklės dar neatpažįstame. Kad apsaugotume jūsų Equus paskyrą, patvirtinkite prisijungimą kodu iš el. pašto.
+      Įveskite el. paštu gautą 6 skaitmenų kodą.
     </p>
     {step==="error" ?
       <p className="text-sm text-destructive">Saugumo patikros įkelti nepavyko. Bandykite atsijungti ir prisijungti iš naujo.</p> :
@@ -240,9 +240,9 @@ export default function Security() {
   };
   return <main className="container max-w-2xl space-y-6 py-10">
     <header><p className="text-xs uppercase tracking-widest text-muted-foreground">Mano paskyra</p><h1 className="font-display text-4xl">Saugumas</h1></header>
-    <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
-      <h2 className="font-display text-xl">Autentifikatoriaus kodai (2FA)</h2>
-      <p className="text-sm text-muted-foreground">Neprivaloma. Įjungę turėsite įvesti 6 skaitmenų kodą iš Google, Microsoft ar kitos autentifikatoriaus programėlės, prisijungdami iš naujo.</p>
+    <section className="space-y-3 border-t border-border/60 pt-5">
+      <h2 className="font-display text-xl">Autentifikatorius (2FA)</h2>
+      <p className="text-sm text-muted-foreground">Papildoma apsauga per autentifikatoriaus programėlę. Neprivaloma.</p>
       {factor ? <><p className="text-sm text-gold">Įjungta ✓</p><Button variant="outline" disabled={busy} onClick={disable}>Išjungti 2FA</Button></> :
         pending ? <div className="space-y-3">
           <p className="text-sm">Nuskaitykite QR kodą su autentifikatoriaus programėle. Raktą laikykite paslaptyje.</p>
@@ -253,15 +253,15 @@ export default function Security() {
         </div> : <Button variant="gold" disabled={busy} onClick={start}>Įjungti autentifikatorių</Button>}
     </section>
     <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
-      <h2 className="font-display text-xl">El. pašto kodas naujam įrenginiui</h2>
+      <h2 className="font-display text-xl">Naujos naršyklės patvirtinimas</h2>
       <p className="text-sm text-muted-foreground">
-        Prisijungus iš naujos naršyklės, prašome įvesti vienkartinį kodą, siunčiamą į paskyros el. paštą. Patvirtinta naršyklė įsimenama iki 180 dienų.
+        Naujai naršyklei reikės el. pašto kodo. Patikimos naršyklės išsaugomos 180 dienų.
       </p>
       <Button variant="outline" onClick={forgetDevice}>Pamiršti šią naršyklę</Button>
     </section>
     <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
       <h2 className="font-display text-xl">Prisijungę įrenginiai</h2>
-      <p className="text-sm text-muted-foreground">Čia rodomos Supabase sesijos: įrenginio tipas, naršyklė, IP ir paskutinis aktyvumas. IP nereiškia tikslios vietovės.</p>
+      <p className="text-sm text-muted-foreground">Jūsų aktyvūs prisijungimai.</p>
       {sessionsError ? <p className="text-sm text-destructive">Nepavyko įkelti sesijų sąrašo.</p> : <ul className="divide-y divide-border/60">{sessions.map((session) => <li key={session.session_id} className="space-y-1 py-3">
         <div className="font-medium">{labelDevice(session.user_agent)}</div>
         <p className="text-xs text-muted-foreground">Aktyvumas: {new Date(session.last_active_at).toLocaleString("lt-LT")}</p>
@@ -269,7 +269,6 @@ export default function Security() {
       </li>)}</ul>}
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void refreshSessions()}>Atnaujinti</Button><Button variant="outline" onClick={signOutOthers}>Atsijungti kituose įrenginiuose</Button></div>
     </section>
-    <p className="text-xs text-muted-foreground">El. pašto patvirtinimas naujoje naršyklėje veikia atskirai nuo neprivalomo autentifikatoriaus (TOTP).</p>
     <Link className="text-sm text-gold underline" to="/paskyra">Grįžti į paskyrą</Link>
   </main>;
 }
