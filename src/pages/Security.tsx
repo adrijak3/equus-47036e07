@@ -16,6 +16,9 @@ const labelDevice = (ua: string | null) => {
 };
 
 
+// Only freshly initiated logins request new-device verification.
+// Existing sessions, including ones restored on page refresh, are not enrolled retroactively.
+export const NEW_LOGIN_DEVICE_CHECK_KEY = "equus_pending_new_login_device_check_v2";
 const DEVICE_STORAGE_KEY = "equus_trusted_device_token_v1";
 function deviceToken() {
   let saved = localStorage.getItem(DEVICE_STORAGE_KEY);
@@ -51,12 +54,20 @@ export function NewDeviceGate({ children }: { children: React.ReactNode }) {
       setStep("ready");
       return;
     }
+    // Never retroactively challenge people who are already logged in.
+    // A check is only requested when a new sign-in has explicitly started.
+    if (sessionStorage.getItem(NEW_LOGIN_DEVICE_CHECK_KEY) !== "1") {
+      setCheckedUserId(user.id);
+      setStep("ready");
+      return;
+    }
     (async () => {
       try {
         const status = await invoke("status");
         if (!active) return;
         setCheckedUserId(user.id);
         if (status.trusted) {
+          sessionStorage.removeItem(NEW_LOGIN_DEVICE_CHECK_KEY);
           setStep("ready");
         } else {
           setStep("code");
@@ -91,6 +102,7 @@ export function NewDeviceGate({ children }: { children: React.ReactNode }) {
       const response = await invoke("verify", code);
       if (!response.trusted) throw new Error("Verification did not succeed");
       setCode("");
+      sessionStorage.removeItem(NEW_LOGIN_DEVICE_CHECK_KEY);
       setStep("ready");
     } catch {
       setMessage("Kodas neteisingas arba nebegalioja.");
@@ -221,16 +233,6 @@ export default function Security() {
     if (error) { toast.error(error.message); return; }
     setFactor(null); toast.success("Autentifikatorius išjungtas");
   };
-  const forgetDevice = async () => {
-    if (!confirm("Pamiršti šią naršyklę? Kitą kartą prisijungiant reikės el. pašto kodo.")) return;
-    const { error } = await supabase.functions.invoke("new-device-verification", {
-      body: { action: "revoke", deviceToken: deviceToken() },
-    });
-    if (error) { toast.error("Nepavyko pašalinti šio įrenginio."); return; }
-    localStorage.removeItem(DEVICE_STORAGE_KEY);
-    await supabase.auth.signOut({ scope: "local" });
-    window.location.assign("/auth");
-  };
 
   const signOutOthers = async () => {
     if (!confirm("Atsijungti visuose kituose įrenginiuose?")) return;
@@ -252,13 +254,7 @@ export default function Security() {
           <div className="flex flex-wrap gap-2"><Button variant="gold" disabled={busy || code.length !== 6} onClick={verify}>Patvirtinti ir įjungti</Button><Button variant="outline" onClick={async () => { await supabase.auth.mfa.unenroll({ factorId: pending.id }); setPending(null); }}>Atšaukti</Button></div>
         </div> : <Button variant="gold" disabled={busy} onClick={start}>Įjungti autentifikatorių</Button>}
     </section>
-    <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
-      <h2 className="font-display text-xl">Naujos naršyklės patvirtinimas</h2>
-      <p className="text-sm text-muted-foreground">
-        Naujai naršyklei reikės el. pašto kodo. Patikimos naršyklės išsaugomos 180 dienų.
-      </p>
-      <Button variant="outline" onClick={forgetDevice}>Pamiršti šią naršyklę</Button>
-    </section>
+
     <section className="space-y-4 rounded-xl border border-border/70 bg-background/70 p-5">
       <h2 className="font-display text-xl">Prisijungę įrenginiai</h2>
       <p className="text-sm text-muted-foreground">Jūsų aktyvūs prisijungimai.</p>
