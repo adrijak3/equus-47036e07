@@ -179,7 +179,7 @@ export default function Layout({
     <div className="equus-studio min-h-screen flex flex-col">
       {/* Viršutinė juosta */}
       <header className="equus-site-header sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
-        <div className="container flex min-h-[76px] items-center justify-between gap-5">
+        <div className="container flex min-h-[76px] items-center justify-between gap-5 pl-5 sm:pl-7">
           <Link
             to="/"
             onClick={close}
@@ -190,7 +190,7 @@ export default function Layout({
             </span>
             <span className="flex items-baseline gap-2">
               <span className="equus-wordmark text-foreground">Equus</span>
-              <span className="hidden text-[.82rem] font-normal tracking-normal text-foreground/80 sm:inline">jojimo mokykla</span>
+              <span className="equus-brand-caption hidden text-[.82rem] font-normal tracking-normal text-foreground/80 sm:inline">jojimo mokykla</span>
             </span>
           </Link>
 
