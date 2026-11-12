@@ -7,13 +7,13 @@ import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact
 const FAQ = {
   lt: [
     ["Kaip užsiregistruoti?", "Jeigu esate naujas lankytojas, užpildykite pirmos treniruotės registraciją. Esami nariai registruojasi per grafiką."],
-    ["Kaip atšaukti pamoką?", "Atidarykite grafiką ir pasirinkite savo rezervaciją. Jei iki pamokos liko mažiau nei 3 valandos, susisiekite su Laura."],
+    ["Kaip atšaukti pamoką?", "Atidarykite grafiką ir pasirinkite savo rezervaciją. Dėl išimčių kreipkitės į Laurą."],
     ["Kur vyksta treniruotės?", "Pakamšės g. 7, Daučionys, Vilniaus rajonas."],
     ["Nuo kokio amžiaus?", "„Mažylio svajonė“ – nuo 3 metų. Sportinės treniruotės – nuo 10 metų."],
   ],
   en: [
     ["How do I book?", "New riders can use first-lesson registration. Existing members book in the schedule."],
-    ["How do I cancel?", "Open the schedule and select your booking. Contact Laura if the lesson starts in less than 3 hours."],
+    ["How do I cancel?", "Open the schedule and select your booking. Contact Laura if you need assistance."],
     ["Where are lessons held?", "Pakamšės g. 7, Daučionys, Vilnius district."],
     ["What ages can attend?", "“Little one's dream” is available from age 3; sport riding lessons from age 10."],
   ],
