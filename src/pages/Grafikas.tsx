@@ -3277,7 +3277,7 @@ export default function Grafikas() {
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="font-display text-base sm:text-lg text-gradient-gold capitalize px-2 min-w-[180px] text-center">
+          <div className="text-sm sm:text-base font-medium tracking-normal text-foreground capitalize px-2 min-w-[180px] text-center">
             {rangeLabel}
           </div>
 
@@ -3527,7 +3527,7 @@ export default function Grafikas() {
                       <span className="text-[11px] font-bold tracking-wide">
                         {weekdayShort[idx]}
                       </span>
-                      <span className="font-display text-xl leading-tight tabular-nums">
+                      <span className="text-xl font-medium leading-tight tabular-nums tracking-tight">
                         {String(date.getDate()).padStart(2, "0")}
                       </span>
                       <span
@@ -3677,7 +3677,7 @@ export default function Grafikas() {
                         <div className="flex items-center justify-between gap-2 mt-1.5">
                           <div
                             className={cn(
-                              "inline-flex items-center rounded-lg border px-2.5 py-1 font-display text-2xl font-bold leading-none tabular-nums",
+                              "inline-flex items-center rounded-lg border px-2.5 py-1 text-xl font-semibold leading-none tabular-nums tracking-tight",
                               isToday
                                 ? "border-gold bg-gold/15 text-gold shadow-sm"
                                 : "border-gold/25 bg-gold/5 text-gradient-gold",
