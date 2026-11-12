@@ -315,13 +315,12 @@ export default function Galerija() {
   };
 
   return (
-    <div className="container max-w-7xl py-10 md:py-14">
+    <div className="container equus-gallery max-w-7xl py-7 md:py-12">
       {!selectedFolder ? (
         <>
-          <header className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <header className="equus-page-heading mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-gold/70">Equus jojimo mokykla</p>
-              <h1 className="text-4xl font-display text-gradient-gold md:text-5xl">Galerija</h1>
+              <h1 className="equus-page-title">Galerija</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
                 Equus nuotraukų galerija - kviečiame pasižvalgyti!
               </p>

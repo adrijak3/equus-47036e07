@@ -41,6 +41,7 @@ import { EquusHelpWidget } from "@/components/EquusHelpWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
+
 type NavigationItem = { to: string; label: string; icon: LucideIcon; menuOnly?: boolean; mobileBottomOnly?: boolean };
 
 const NAV_GUEST: NavigationItem[] = [
@@ -175,29 +176,37 @@ export default function Layout({
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="equus-studio min-h-screen flex flex-col">
       {/* Viršutinė juosta */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
-        <div className="container flex h-16 items-center justify-between">
+      <header className="equus-site-header sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
+        <div className="container flex min-h-[76px] items-center justify-between gap-5 pl-5 sm:pl-7">
           <Link
             to="/"
             onClick={close}
             className="group flex items-center gap-2.5"
           >
-            <span className="text-foreground font-display text-2xl tracking-wide">
-              Equus
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black">
+              <img src="/equus-logo-black.png" alt="Equus logotipas" className="h-full w-full rounded-full object-contain" />
             </span>
-
-            <span className="font-body hidden text-xs uppercase tracking-[0.25em] text-muted-foreground/70 sm:inline">
-              jojimo mokykla
+            <span className="flex items-baseline gap-2">
+              <span className="equus-wordmark text-foreground">Equus</span>
+              <span className="equus-brand-caption hidden text-[.82rem] font-normal tracking-normal text-foreground/80 sm:inline">jojimo mokykla</span>
             </span>
           </Link>
 
+          <nav className="equus-desktop-nav hidden items-center gap-1 md:flex" aria-label="Greita navigacija">
+            {navigationItems.filter((item) => !item.menuOnly && !item.mobileBottomOnly).slice(0, 4).map(({ to, label }) => (
+              <Link key={to} to={to} aria-current={isLinkActive(to) ? "page" : undefined}
+                className={cn("equus-top-link", isLinkActive(to) && "equus-top-link-active")}>
+                {label}
+              </Link>
+            ))}
+          </nav>
           <button
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
             onClick={() => setOpen((current) => !current)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 transition-colors hover:bg-muted/40"
+            className="equus-menu-button relative flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 transition-colors hover:bg-muted/40"
           >
             {open ? (
               <X className="h-5 w-5 text-gold" />
@@ -235,7 +244,7 @@ export default function Layout({
         >
           {/* Meniu antraštė */}
           <div className="flex h-16 items-center justify-between border-b border-gold/10 px-6">
-            <span className="text-foreground font-display text-xl">
+            <span className="text-foreground text-lg font-semibold">
               Meniu
             </span>
 
@@ -457,7 +466,7 @@ export default function Layout({
       {user && (
         <nav
           aria-label="Pagrindinė navigacija"
-          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-gold/15 bg-background/95 backdrop-blur-xl sm:hidden"
+          className="mobile-bottom-nav equus-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-xl sm:hidden"
         >
           <div className={cn("mx-auto px-1 pb-[env(safe-area-inset-bottom)]", isAdmin ? "grid max-w-2xl grid-cols-6" : "grid max-w-md grid-cols-5")}>
             {(isAdmin
@@ -499,7 +508,7 @@ export default function Layout({
       )}
       <EquusHelpWidget />
 
-      <main className="flex-1 overflow-x-hidden pb-20 sm:pb-0">
+      <main className="equus-main flex-1 overflow-x-hidden pb-20 sm:pb-0">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
@@ -513,7 +522,7 @@ export default function Layout({
         </AnimatePresence>
       </main>
 
-      <footer className="mt-16 border-t border-gold/10">
+      <footer className="equus-site-footer mt-16 border-t border-border/70">
         <div className="container space-y-4 py-10 text-center">
           <div className="text-gradient-gold font-display text-lg">
             Equus jojimo mokykla

@@ -178,13 +178,12 @@ export default function Auth() {
   };
 
   return (
-    <div className="container max-w-md py-12 sm:py-20">
+    <div className="container equus-auth max-w-lg py-8 sm:py-16">
       <div className="text-center mb-10 animate-fade-up">
         <Link to="/" className="inline-block">
           <h1 className="text-5xl font-display text-gradient-gold mb-2">Equus</h1>
         </Link>
-        <p className="text-sm tracking-[0.2em] uppercase text-muted-foreground">jojimo mokykla</p>
-        <div className="gold-divider mt-6 max-w-[120px] mx-auto" />
+        <p className="text-sm text-muted-foreground">Jojimo mokykla</p>
       </div>
 
       <div className="bg-gradient-card border border-gold/15 rounded-lg p-6 sm:p-8 shadow-elegant animate-fade-up">

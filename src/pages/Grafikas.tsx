@@ -234,7 +234,14 @@ export default function Grafikas() {
 
   const staffCalendar = isAdmin || isTrainer;
   const [releasedMonday, setReleasedMonday] = useState(riderReleasedMonday);
-  const [weekStart, setWeekStart] = useState(riderReleasedMonday);
+  const [weekStart, setWeekStart] = useState(() => {
+    const stored = sessionStorage.getItem("equus_preview_week");
+    if (stored && /^\\d{4}-\\d{2}-\\d{2}$/.test(stored)) {
+      const d = new Date(stored + "T12:00:00");
+      if (!Number.isNaN(d.getTime())) return startOfWeek(d);
+    }
+    return riderReleasedMonday();
+  });
   useEffect(() => {
     if (staffCalendar) return;
     const syncRelease = () => {
@@ -253,7 +260,15 @@ export default function Grafikas() {
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
   const calendarScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(() => {
+    const stored = Number(sessionStorage.getItem("equus_preview_day"));
+    return Number.isInteger(stored) && stored >= 0 && stored <= 6 ? stored : null;
+  });
+  useEffect(() => {
+    sessionStorage.setItem("equus_preview_week", formatDateISO(weekStart));
+    if (selectedDay !== null) sessionStorage.setItem("equus_preview_day", String(selectedDay));
+    else sessionStorage.removeItem("equus_preview_day");
+  }, [weekStart, selectedDay]);
 
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -401,9 +416,7 @@ export default function Grafikas() {
       return i >= 0 ? i : 0;
     })();
 
-  useEffect(() => {
-    setSelectedDay(null);
-  }, [weekStart]);
+
 
   useEffect(() => {
     if (!pendingScrollToToday || loading) return;
@@ -3202,26 +3215,7 @@ export default function Grafikas() {
     : `${weekStart.getDate()} ${monthNames[weekStart.getMonth()]} – ${weekEnd.getDate()} ${monthNames[weekEnd.getMonth()]} ${weekEnd.getFullYear()}`;
 
   return (
-    <div className="container max-w-[1400px] py-8 sm:py-14 relative">
-      <FloralAccent
-        className="absolute -top-8 -left-12 hidden md:block"
-        size={180}
-        delay={0.2}
-        rotate={-15}
-      />
-
-      <FloralAccent
-        className="absolute top-32 -right-16 hidden md:block"
-        size={150}
-        delay={0.5}
-        rotate={20}
-      />
-
-      <HorseFlourish
-        className="absolute top-4 right-4 sm:right-12"
-        size={70}
-      />
-
+    <div className="container equus-schedule max-w-[1400px] py-7 sm:py-12 relative">
       <motion.header
         initial={{
           opacity: 0,
@@ -3240,17 +3234,12 @@ export default function Grafikas() {
             1,
           ],
         }}
-        className="text-center mb-10 relative"
+        className="equus-page-heading mb-8 relative"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-gold/70 mb-3">
-          {t("school")}
-        </p>
+        <h1 className="equus-page-title">Grafikas</h1>
+        <p className="equus-page-subtitle">Pasirinkite savaitę ir peržiūrėkite laisvus treniruočių laikus.</p>
 
-        <h1 className="text-4xl sm:text-6xl font-display text-gradient-gold leading-tight mb-3">
-          {t("horseFreedom")}
-        </h1>
-
-        <div className="gold-divider max-w-[140px] mx-auto" />
+        
       </motion.header>
 
       <VacationBanner userId={user?.id ?? null} />
@@ -3271,7 +3260,7 @@ export default function Grafikas() {
       </Dialog>
 
       {/* Week navigation */}
-      <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
+      <div className="equus-schedule-toolbar flex items-center justify-between gap-3 mb-6 sm:mb-8 flex-wrap">
         <div className="flex items-center gap-2 rounded-md border border-gold/20 bg-card/40 px-2 py-1.5">
           <Button
             variant="ghost"
@@ -3286,7 +3275,7 @@ export default function Grafikas() {
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="font-display text-base sm:text-lg text-gradient-gold capitalize px-2 min-w-[180px] text-center">
+          <div className="text-sm sm:text-base font-semibold text-foreground capitalize px-2 min-w-[180px] text-center">
             {rangeLabel}
           </div>
 
@@ -3357,7 +3346,7 @@ export default function Grafikas() {
               setPendingScrollToToday(true);
             }}
           >
-            📅 {t("today")}
+            {t("today")}
           </Button>
         </div>
       </div>
@@ -3626,18 +3615,7 @@ export default function Grafikas() {
                           "sm:p-0 p-3 -mx-1 rounded-xl bg-gold/[0.06] ring-2 ring-gold/40 shadow-gold sm:bg-transparent sm:ring-0 sm:shadow-none sm:m-0",
                       )}
                     >
-                      {idx > 0 && (
-                        <div
-                          aria-hidden
-                          className="sm:hidden flex items-center justify-center -mt-1 mb-3 select-none"
-                        >
-                          <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                          <div className="px-3 font-display text-gold/70 text-sm tracking-widest">
-                            ◆
-                          </div>
-                          <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                        </div>
-                      )}
+
 
                       {/* Day header */}
                       <div
@@ -3648,88 +3626,31 @@ export default function Grafikas() {
                             : "border-gold/25",
                         )}
                       >
-                        <div className="flex items-baseline justify-between gap-1">
-                          <div
-                            className={cn(
-                              "uppercase tracking-[0.18em] text-gold font-bold",
-                              isToday
-                                ? "text-base sm:text-[11px]"
-                                : "text-sm sm:text-[11px]",
-                            )}
-                          >
-                            <span className="sm:hidden lg:inline">
-                              {
-                                weekdayNames[
-                                  idx
-                                ]
-                              }
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                          <div className="min-w-0 text-left">
+                            <span className="block text-base font-semibold leading-tight tracking-tight text-foreground sm:text-lg lg:text-xl">
+                              {weekdayNames[idx]}
                             </span>
-
-                            <span className="hidden sm:inline lg:hidden">
-                              {
-                                weekdayShort[
-                                  idx
-                                ]
-                              }
-                            </span>
+                            {isToday && <span className="text-xs text-muted-foreground">{t("today")}</span>}
                           </div>
 
-                          {isToday && (
-                            <span className="text-[10px] sm:text-[9px] uppercase tracking-[0.15em] font-bold text-background bg-gold px-2 py-0.5 rounded-sm">
-                              {t(
-                                "today",
-                              )}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2 mt-1.5">
-                          <div
-                            className={cn(
-                              "inline-flex items-center rounded-lg border px-2.5 py-1 font-display text-2xl font-bold leading-none tabular-nums",
-                              isToday
-                                ? "border-gold bg-gold/15 text-gold shadow-sm"
-                                : "border-gold/25 bg-gold/5 text-gradient-gold",
-                            )}
-                          >
-                            {String(date.getMonth() + 1).padStart(2, "0")}.
-                            {String(date.getDate()).padStart(2, "0")}
+                          <div className="equus-schedule-day-date text-center text-sm font-medium text-foreground tabular-nums">
+                            {String(date.getDate()).padStart(2, "0")}.{String(date.getMonth() + 1).padStart(2, "0")}
                           </div>
 
                           <button
                             type="button"
                             onClick={() => {
-                              setNotesDialog(
-                                {
-                                  date,
-                                },
-                              );
-                              setNewNoteLink(
-                                "",
-                              );
-                              setNewNoteLabel(
-                                "",
-                              );
+                              setNotesDialog({ date });
+                              setNewNoteLink("");
+                              setNewNoteLabel("");
                             }}
-                            className="relative inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
+                            className="justify-self-end inline-flex min-h-9 items-center gap-1 rounded-md border border-border px-2 text-xs text-foreground hover:bg-muted"
                           >
-                            <FileText className="w-3 h-3" />
-
-                            <span>
-                              {t("video")}
-                            </span>
-
-                            {getDayNotes(
-                              date,
-                            ).length >
-                              0 && (
-                              <span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-gold text-background text-[9px] font-bold px-1">
-                                {
-                                  getDayNotes(
-                                    date,
-                                  ).length
-                                }
-                              </span>
+                            <FileText className="h-3.5 w-3.5" />
+                            <span>{t("video")}</span>
+                            {getDayNotes(date).length > 0 && (
+                              <span className="text-xs text-muted-foreground">{getDayNotes(date).length}</span>
                             )}
                           </button>
                         </div>
@@ -4216,7 +4137,7 @@ export default function Grafikas() {
                                               cap,
                                             )
                                           }
-                                          className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
+                                          className="ml-0.5 inline-flex min-h-7 items-center justify-center rounded-sm border border-border px-1.5 text-muted-foreground hover:bg-muted transition-colors text-[10px] leading-none"
                                         >
                                           +1
                                         </button>
@@ -4240,7 +4161,7 @@ export default function Grafikas() {
                                             title="Grąžinti į įprastą talpą"
                                             className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                           >
-                                            ↺
+                                            Atstatyti
                                           </button>
                                         )}
                                       </>
@@ -4264,7 +4185,7 @@ export default function Grafikas() {
                                           }}
                                           className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                         >
-                                          ⚙
+                                          Keisti
                                         </button>
                                       )}
 
@@ -4373,19 +4294,10 @@ export default function Grafikas() {
                                                 "font-bold",
                                             )}
                                           >
-                                            <span
-                                              className={cn(
-                                                "text-sm leading-none",
-                                                mine
-                                                  ? "text-gold"
-                                                  : "text-gold/40",
-                                              )}
-                                            >
-                                              •
-                                            </span>
-
-                                            {perm && (
-                                              <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />
+                                            {perm ? (
+                                              <Star aria-label="Nuolatinis laikas" className="w-3 h-3 text-gold fill-gold flex-shrink-0" />
+                                            ) : (
+                                              <span aria-hidden="true" className={cn("text-sm leading-none", mine ? "text-gold" : "text-muted-foreground")}>•</span>
                                             )}
 
                                             {(isAdmin ||
@@ -4563,7 +4475,7 @@ export default function Grafikas() {
                                             className="w-full h-8 text-[11px]"
                                             disabled
                                           >
-                                            🔒 {language === "lt" ? "Registracija uždaryta" : "Registration closed"}
+                                            {language === "lt" ? "Registruotis negalima" : "Unavailable"}
                                           </Button>
                                           <button
                                             type="button"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,12 @@ type Slot = {
 export default function PublicRegistration() {
   const { token } = useParams();
   const [step, setStep] = useState(1);
+  const [experienceStage, setExperienceStage] = useState(false);
+  const [parentPhone, setParentPhone] = useState(false);
+  const formStartRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (step > 1 || experienceStage) formStartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step, experienceStage]);
   const [service, setService] = useState<Service | "">("");
   const [level, setLevel] = useState<Level | "">("");
   const [form, setForm] = useState({
@@ -212,8 +218,7 @@ export default function PublicRegistration() {
       form.lastName.trim() &&
       form.phone.trim() &&
       form.email.trim() &&
-      validAge &&
-      form.emergency.trim(),
+      validAge,
   );
 
   const stepOneValid = Boolean(
@@ -248,14 +253,14 @@ export default function PublicRegistration() {
         _phone: form.phone.trim(),
         _email: form.email.trim(),
         _age: age,
-        _emergency_contact: form.emergency.trim(),
+        _emergency_contact: form.phone.trim(),
         _service_type: service,
         _experience_level: service === "sportine" || service === "individuali" ? level : "beginner",
-        _experience_notes: form.experienceNotes.trim() || null,
+        _experience_notes: [parentPhone ? "Nurodytas telefono numeris priklauso tėvui / globėjui." : "", form.experienceNotes.trim()].filter(Boolean).join(" ") || null,
         _preferred_times: form.preferredTimes.trim() || null,
         _requested_date: selected?.slot_date ?? null,
         _requested_time: selected?.slot_time ?? null,
-        _facebook_name: form.facebookName.trim() || null,
+        _facebook_name: null,
       },
     );
 
@@ -342,7 +347,7 @@ export default function PublicRegistration() {
           <h1 className="font-display text-3xl text-gradient-gold">
             Registracijos būsena
           </h1>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             {existing.first_name} {existing.last_name}
           </p>
 
@@ -497,65 +502,42 @@ export default function PublicRegistration() {
       </Dialog>
 
   return (
-    <div className="registration-monochrome container max-w-4xl rounded-2xl py-10 sm:py-14">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-[.25em] text-gold/70">
-          Naujiems Equus lankytojams
-        </p>
-        <h1 className="font-display text-4xl text-gradient-gold sm:text-5xl">
-          Pirmą kartą Equus?
+    <div className="equus-registration container max-w-3xl py-7 sm:py-12">
+      <header className="equus-page-heading mb-8">
+        <h1 className="equus-page-title">
+          Registracija į pirmą treniruotę
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Ši registracijos forma skirta tiems, kurie <strong className="text-foreground">dar niekada nesilankė Equus</strong>
-          {" "}ir nori atvykti į pirmąją treniruotę. Paskyros tam nereikia.
+          Naujiems Equus lankytojams. Pasirinkite užsiėmimą ir pateikite registracijos duomenis.
         </p>
       </header>
 
-      <div className="mb-7 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-gold" />
-            Dar nebuvai Equus?
-          </div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Puiku! Užpildyk formą apačioje ir susisieksime dėl pirmos pamokos.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border bg-background/50 p-4">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <UserRound className="h-5 w-5 shrink-0 text-gold" />
-            Jau buvai bent vienoje pamokoje Equus?
-          </div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Jei jau lankeisi bent vienoje <strong className="text-foreground">Equus</strong> pamokoje, šios formos iš naujo pildyti nereikia! Prisijunk prie savo Equus paskyros ir
-            registruokis į kitas treniruotes per „Grafikas“.
-          </p>
-          <Button asChild variant="gold" className="mt-3 w-full sm:w-auto">
-            <Link to="/auth?tab=signin">Prisijungti prie paskyros</Link>
-          </Button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Dar neturi paskyros? Prisijungimo puslapyje galėsi ją susikurti.
-          </p>
-        </div>
+      <div className="equus-registration-existing mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
+        <p className="text-sm text-muted-foreground">
+          Jau buvote Equus treniruotėje? Registruotis iš naujo nereikia.
+        </p>
+        <Link to="/auth?tab=signin" className="shrink-0 text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground">
+          Prisijungti
+        </Link>
       </div>
 
-      <div className="mb-6 grid grid-cols-4 gap-2">
+      <div className="equus-registration-progress mb-6 grid grid-cols-4 gap-1">
         {[1, 2, 3, 4].map((number) => (
           <div
             key={number}
             className={cn(
-              "h-2 rounded-full",
+              "h-1 rounded-full",
               number <= step ? "bg-gold" : "bg-muted",
             )}
           />
         ))}
       </div>
 
-      <div className="rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-8">
+      <div ref={formStartRef} className="equus-registration-form scroll-mt-24 rounded-lg border border-border bg-card p-5 sm:p-7">
         {step === 1 && (
           <div>
-            <h2 className="font-display text-3xl">Pasirinkite užsiėmimą</h2>
-            <div className="mt-5 grid gap-3">
+            <h2 className="text-xl font-medium">{experienceStage ? "Jojimo patirtis" : "Pasirinkite užsiėmimą"}</h2>
+            {!experienceStage && <div className="mt-4 grid gap-2">
               {SERVICES.map((item) => {
                 const Icon = item.icon;
                 const active = service === item.value;
@@ -566,10 +548,15 @@ export default function PublicRegistration() {
                     type="button"
                     onClick={() => {
                       setService(item.value);
-                      if (item.value !== "sportine") setLevel("");
+                      setLevel("");
+                      if (item.value === "sportine" || item.value === "individuali") {
+                        setExperienceStage(true);
+                      } else {
+                        setStep(2);
+                      }
                     }}
                     className={cn(
-                      "rounded-2xl border p-5 text-left transition-colors",
+                      "rounded-lg border px-4 py-3 text-left transition-colors",
                       active
                         ? "border-gold bg-gold/10"
                         : "border-border bg-background/30 hover:border-gold/40",
@@ -579,7 +566,7 @@ export default function PublicRegistration() {
                       <Icon className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
                       <div className="min-w-0">
                         <div className="font-semibold">{item.title}</div>
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        <p className="mt-1 text-sm leading-5 text-muted-foreground">
                           {item.description}
                         </p>
                         <p className="mt-2 text-sm font-medium text-gold">
@@ -590,26 +577,25 @@ export default function PublicRegistration() {
                   </button>
                 );
               })}
-            </div>
+            </div>}
 
-            {(service === "sportine" || service === "individuali") && (
-              <div className="mt-8">
-                <h3 className="font-display text-2xl">Jojimo patirtis</h3>
-                <div className="mt-4 grid gap-3">
+            {experienceStage && (service === "sportine" || service === "individuali") && (
+              <div className="mt-2">
+                <div className="mt-4 grid gap-2">
                   {LEVELS.map((item) => (
                     <button
                       key={item.value}
                       type="button"
-                      onClick={() => setLevel(item.value)}
+                      onClick={() => { setLevel(item.value); setStep(2); setExperienceStage(false); }}
                       className={cn(
-                        "rounded-2xl border p-5 text-left transition-colors",
+                        "rounded-lg border px-4 py-3 text-left transition-colors",
                         level === item.value
                           ? "border-gold bg-gold/10"
                           : "border-border bg-background/30 hover:border-gold/40",
                       )}
                     >
                       <div className="font-semibold">{item.title}</div>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      <p className="mt-1 text-sm leading-5 text-muted-foreground">
                         {item.text}
                       </p>
                     </button>
@@ -622,7 +608,7 @@ export default function PublicRegistration() {
 
         {step === 2 && (
           <div>
-            <h2 className="font-display text-3xl">Asmeninė informacija</h2>
+            <h2 className="text-xl font-medium">Asmeninė informacija</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <Field label="Vardas">
                 <Input
@@ -675,14 +661,12 @@ export default function PublicRegistration() {
                   </p>
                 )}
               </Field>
-              <Field label="Skubios pagalbos kontaktas">
-                <Input
-                  value={form.emergency}
-                  onChange={(event) =>
-                    setForm({ ...form, emergency: event.target.value })
-                  }
-                />
-              </Field>
+              <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
+                <input type="checkbox" checked={parentPhone} onChange={(event) => setParentPhone(event.target.checked)}
+                  className="h-4 w-4 accent-foreground" />
+                Nurodytas telefono numeris priklauso vaiko tėvui ar globėjui
+              </label>
+              <p className="text-xs text-muted-foreground sm:col-span-2">Šis numeris taip pat naudojamas skubiam susisiekimui dėl treniruotės.</p>
               <Field label="Papildomai apie jojimo patirtį" full>
                 <Textarea
                   value={form.experienceNotes}
@@ -699,25 +683,16 @@ export default function PublicRegistration() {
                   apie tai praneškite treneriui tiesiogiai.
                 </p>
               </Field>
-              <Field label="Facebook vardas ir pavardė (nebūtina)" full>
-                <Input
-                  value={form.facebookName}
-                  onChange={(event) =>
-                    setForm({ ...form, facebookName: event.target.value })
-                  }
-                  placeholder="Kad galėtume rasti ir pridėti į Messenger grupę"
-                />
-              </Field>
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div>
-            <h2 className="font-display text-3xl">Pageidaujamas laikas</h2>
+            <h2 className="text-xl font-medium">Pageidaujamas laikas</h2>
 
             {needsAdminSelectedTime ? (
-              <div className="mt-5 rounded-2xl border border-gold/20 bg-gold/5 p-5">
+              <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
                 <p className="font-medium">
                   {service === "individuali" ? "Individualios treniruotės laikas nėra garantuojamas." : "Tikslų laiką pasiūlys ir patvirtins administracija."}
                 </p>
@@ -740,7 +715,7 @@ export default function PublicRegistration() {
                   treniruočių laikai.
                 </p>
                 <div className="mt-5">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <h3 className="text-sm font-medium text-muted-foreground">
                     1. Pasirinkite dieną
                   </h3>
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
@@ -853,7 +828,7 @@ export default function PublicRegistration() {
 
         {step === 4 && selectedService && (
           <div>
-            <h2 className="font-display text-3xl">Patvirtinimas</h2>
+            <h2 className="text-xl font-medium">Patvirtinimas</h2>
             <div className="mt-5 space-y-2 rounded-2xl border border-border bg-background/30 p-5 text-sm">
               <p>
                 <b>Vardas:</b> {form.firstName} {form.lastName}
@@ -940,8 +915,14 @@ export default function PublicRegistration() {
         <div className="mt-8 flex justify-between gap-3">
           <Button
             variant="ghost"
-            disabled={step === 1}
-            onClick={() => setStep((current) => current - 1)}
+            disabled={step === 1 && !experienceStage}
+            onClick={() => {
+              if (step === 1) setExperienceStage(false);
+              else if (step === 2 && (service === "sportine" || service === "individuali")) {
+                setStep(1);
+                setExperienceStage(true);
+              } else setStep((current) => current - 1);
+            }}
           >
             <ChevronLeft className="h-4 w-4" />
             Atgal

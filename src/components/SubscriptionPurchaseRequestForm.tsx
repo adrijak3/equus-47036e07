@@ -72,19 +72,19 @@ function requestStatusLabel(status: RequestStatus) {
 
 function requestErrorMessage(message: string) {
   if (message.includes("PENDING_REQUEST_EXISTS")) {
-    return "Jau turite laukiančią abonemento užklausą. Pirmiausia palaukite jos patvirtinimo, tuomet tik galėsit prisidėti naują abonementą, jei reikia:)";
+    return "Jau turite laukiančią abonemento užklausą. Naują galėsite pateikti po jos patvirtinimo.";
   }
   if (message.includes("PENDING_SUBSCRIPTION_ALREADY_EXISTS")) {
     return "Jau turite abonementą, kuris laukia pirmos treniruotės.";
   }
   if (message.includes("PRICE_NOT_CONFIGURED")) {
-    return "Šiam abonemento variantui kaina dar nesukonfigūruota:(";
+    return "Šiam abonementui kaina dar nenustatyta.";
   }
   if (message.includes("TOO_MANY_PAST_LESSONS")) {
     return "Negalite pasirinkti daugiau praeitų pamokų nei abonemente yra treniruočių...";
   }
   if (message.includes("PAST_LESSON_NOT_ELIGIBLE")) {
-    return "Viena iš pasirinktų pamokų nebepriklauso 30 dienų laikotarpiui, tas tas pamokas atskirai sudėsim;).";
+    return "Viena iš pasirinktų pamokų nepatenka į leistiną 30 dienų laikotarpį.";
   }
   if (message.includes("INVALID_LESSON_COUNT")) {
     return "Pasirinkite treniruočių skaičių nuo 1 iki 12.";
@@ -239,7 +239,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
     setSelectedLessonIds([]);
 
     if (paymentMethod === "cash") {
-      toast.success("Užklausa sukurta. Parodykite QR kodą Laurai:).");
+      toast.success("Užklausa sukurta. Parodykite QR kodą Laurai.");
     } else {
       toast.success("Užklausa išsaugota. Užbaikite pavedimą el. paštu.");
       openBankTransferEmail({
@@ -292,7 +292,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
       <Section title="Pateikti abonemento užklausą" icon={<CreditCard className="h-4 w-4" />}>
         <div className="space-y-5 p-5">
           <p className="text-sm leading-6 text-muted-foreground">
-            Pasirinkite abonementą ir mokėjimo būdą. Abonementas paskyroje atsiras tik tada, kai Laura patvirtins, kad mokėjimas įvyko (nuskenavus QR kodą)
+            Pasirinkite abonementą ir mokėjimo būdą. Abonementas bus aktyvuotas administracijai patvirtinus mokėjimą.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -357,14 +357,14 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Pasirinktas abonementas</p>
+          <div className="rounded-lg border border-border bg-background/40 p-4">
+            <p className="text-sm font-medium text-muted-foreground">Jūsų pasirinkimas</p>
             <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="font-display text-2xl text-gold">{lessonsTotal} treniruotės · {packageType === "group" ? "Grupinė" : packageType === "po2" ? "Po 2" : "Individuali"}</p>
+                <p className="text-lg font-medium text-foreground">{lessonsTotal} treniruotės · {packageType === "group" ? "Grupinė" : packageType === "po2" ? "Po 2" : "Individuali"}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{horseType === "school" ? "Mokyklos žirgais" : "Nuosavu žirgu"}</p>
               </div>
-              <p className="font-display text-3xl text-gradient-gold tabular-nums">
+              <p className="text-2xl font-semibold text-foreground tabular-nums">
                 {currentPrice ? Number(currentPrice.price_eur).toFixed(2) + " €" : "Kaina nenustatyta"}
               </p>
             </div>
@@ -376,9 +376,9 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
           <div>
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <h3 className="font-display text-xl text-gold">Praėjusios treniruotės</h3>
+                <h3 className="text-base font-semibold text-foreground">Praėjusios treniruotės</h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Galite pasirinkti įvykusias treniruotes iš paskutinių 30 kalendorinių dienų, įskaitant šiandieną. Jos bus įskaitytos kaip panaudotos tik patvirtinus mokėjimą:)
+                  Galite pasirinkti įvykusias treniruotes iš paskutinių 30 kalendorinių dienų, įskaitant šiandieną. Jos bus įskaitytos tik patvirtinus mokėjimą.
                 </p>
               </div>
               <span className="rounded-full border border-gold/15 px-3 py-1 text-xs tabular-nums">
@@ -400,7 +400,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
                   return (
                     <label
                       key={lesson.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-gold/10 bg-background/30 p-3 transition-colors hover:border-gold/30 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
+                      className="flex cursor-pointer items-center gap-3 rounded-md border border-border/80 bg-background/40 p-3 transition-colors hover:border-foreground/30 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
                     >
                       <input
                         type="checkbox"
@@ -421,7 +421,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             )}
           </div>
 
-          <div className="rounded-xl border border-gold/10 bg-background/25 p-4">
+          <div className="rounded-lg border border-border/70 bg-background/40 p-4">
             <p className="text-sm font-medium">Mokėjimo būdas</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {paymentMethod === "bank_transfer"
@@ -452,7 +452,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
             <p className="text-sm text-muted-foreground">Užklausų dar nėra.</p>
           ) : (
             requests.map((request) => (
-              <div key={request.id} className="rounded-2xl border border-gold/15 bg-background/30 p-4">
+              <div key={request.id} className="rounded-lg border border-border/70 bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{request.lessons_total} treniruotės · {request.package_type === "group" ? "Grupinė" : request.package_type === "po2" ? "Po 2" : "Individuali"}</p>
@@ -467,7 +467,7 @@ export function SubscriptionPurchaseRequestForm({ riderId }: { riderId: string |
 
                 {request.selected_past_lessons?.length > 0 && (
                   <div className="mt-3 border-t border-gold/10 pt-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gold/80">Pasirinktos praeitos pamokos · {request.selected_past_lessons.length}</p>
+                    <p className="text-xs font-medium text-muted-foreground">Pasirinktos praeitos pamokos · {request.selected_past_lessons.length}</p>
                     <div className="mt-2 space-y-1">
                       {request.selected_past_lessons.map((lesson) => (
                         <p key={lesson.id} className="text-xs text-muted-foreground">

@@ -154,10 +154,9 @@ export default function Admin() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-14">
-      <header className="mb-6 animate-fade-up">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold/70 mb-2">Administracija</p>
-        <h1 className="text-3xl sm:text-4xl font-display text-foreground">Žirgyno valdymas</h1>
+    <div className="container equus-admin mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-12">
+      <header className="equus-page-heading mb-8 animate-fade-up">
+        <h1 className="equus-page-title">Žirgyno valdymas</h1>
         <p className="mt-2 text-sm text-muted-foreground">Grafikas, raiteliai ir svarbiausi dienos darbai vienoje vietoje.</p>
         <button type="button" onClick={() => setSection("guide")}
           className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-gold/30 bg-gold/5 px-3 text-sm font-medium text-gold hover:bg-gold/10">
@@ -166,7 +165,7 @@ export default function Admin() {
         
       </header>
 
-      <div className="mb-5 grid grid-cols-4 gap-2 lg:hidden" aria-label="Greiti administratoriaus veiksmai">
+      <div className="equus-admin-shortcuts mb-5 grid grid-cols-4 gap-2 lg:hidden" aria-label="Greiti administratoriaus veiksmai">
         {[
           { id: "schedule", label: "Grafikas", icon: CalendarDays },
           { id: "users", label: "Raiteliai", icon: Users },
@@ -177,10 +176,10 @@ export default function Admin() {
         ><item.icon className="h-5 w-5" /><span>{item.label}</span></button>)}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
+      <div className="equus-admin-layout grid grid-cols-1 gap-6 lg:grid-cols-[252px_minmax(0,1fr)]">
         {/* Sidebar (desktop): all sections visible, grouped */}
         <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="bg-background/90 border border-border/60 rounded-xl p-2 shadow-sm">
+          <nav className="equus-admin-sidebar bg-background/90 border border-border/60 rounded-xl p-2 shadow-sm">
             {navGroups.map((g, i) => (
               <div key={g.id} className={cn(i > 0 && "mt-2 border-t border-border/60 pt-2")}>
                 <p className="px-3 pb-1 pt-1 text-xs text-muted-foreground">{g.label}</p>
@@ -191,7 +190,7 @@ export default function Admin() {
         </aside>
 
         {/* Mobile nav: pick a group, then a section inside it */}
-        <div className="lg:hidden -mt-2 mb-4 space-y-2">
+        <div className="equus-admin-mobile-nav lg:hidden -mt-2 mb-4 space-y-2">
           <div className="grid grid-cols-4 gap-1 rounded-xl border border-gold/15 bg-gradient-card p-1">
             {navGroups.map((g) => {
               const active = activeGroup.id === g.id;
@@ -252,15 +251,15 @@ export default function Admin() {
         <div className="min-w-0">
           <div className="mb-4 flex items-center gap-2">
             <activeItem.icon className="w-5 h-5 text-gold" />
-            <h2 className="font-display text-2xl text-gradient-gold">{activeItem.label}</h2>
+            <h2 className="text-xl font-semibold text-foreground">{activeItem.label}</h2>
           </div>
 
-          <AdminGlobalSearch
+          {section !== "users" && section !== "subs" && <AdminGlobalSearch
             onGo={(s, q) => {
               setSearchQuery(q);
               setSection(s === "cancels" ? "cancelHistory" : s);
             }}
-          />
+          />}
 
           <Tabs value={section} onValueChange={setSection}>
             <TabsList className="sr-only"><TabsTrigger value={section}>{section}</TabsTrigger></TabsList>
@@ -269,9 +268,12 @@ export default function Admin() {
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
-            <TabsContent value="users" className="space-y-6">
-              <UnpaidLessonsOverview staff />
+            <TabsContent value="users" className="space-y-4">
               <UsersSection focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+              <details className="rounded-lg border border-border/70 bg-card p-3">
+                <summary className="cursor-pointer text-sm text-muted-foreground">Nepriskirtos ir neapmokėtos pamokos</summary>
+                <div className="mt-4"><UnpaidLessonsOverview staff /></div>
+              </details>
             </TabsContent>
             <TabsContent value="subs">
               <SubsTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
@@ -755,7 +757,7 @@ function AdminNotificationsTab() {
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
+        <h3 className="font-display text-xl">Pranešimas visiems</h3>
         <p className="text-sm text-muted-foreground">Parašykite svarbų pranešimą, pvz. dienos atšaukimą, grafiko pakeitimą ar kitą svarbią informaciją. Pasirinkite, kur jį siųsti.</p>
         <div className="space-y-2">
           <Label>Kur siųsti?</Label>
@@ -852,14 +854,14 @@ function AdminNotificationsTab() {
 
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🐴 Nuolatinio laiko pakeitimai</h3>
+        <h3 className="font-display text-xl">Nuolatinio laiko pakeitimai</h3>
         <p className="text-sm text-muted-foreground">
           Kai Administracija → Nuolatiniai pakeičia raitelio dieną arba laiką, pranešimas tam raiteliui išsiunčiamas automatiškai. Jo čia įvesti ar siųsti rankiniu būdu nereikia.
         </p>
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
+        <h3 className="font-display text-xl">Telefono pranešimo testas</h3>
         <p className="text-sm text-muted-foreground">Šis testas siunčia tikrą Web Push pranešimą į jūsų aktyvius įrenginius arba pasirinktam vartotojui pagal el. paštą. Jis nerašo fiktyvios sėkmės ir nerodo sėkmės, jei serveris nepristatė pranešimo.</p>
         <Input value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="Tikslinio vartotojo el. paštas (nebūtina)" type="email" />
         <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti bandomąjį telefono pranešimą</Button>
@@ -908,7 +910,7 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
         <div><h2 className="font-display text-2xl text-foreground">Dienos darbai</h2><p className="text-sm text-muted-foreground">Svarbiausi veiksmai prieš prasidedant treniruotėms.</p></div>
         <a href="/grafikas" className="text-sm font-medium text-foreground underline underline-offset-4 hover:text-gold">Atidaryti grafiką</a>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="equus-admin-overview-grid grid grid-cols-2 gap-3 xl:grid-cols-3">
       {cards.map((c) => {
         const Icon = c.icon;
         return (
@@ -916,15 +918,18 @@ function OverviewTab({ alerts, onGo, onFocusUser }: { alerts: { pending: number;
             key={c.label}
             onClick={() => onGo(c.go)}
             className={cn(
-              "text-left p-4 rounded-xl border border-border/60 bg-background/70 transition-colors hover:border-foreground/30 group",
+              "text-left p-4 min-h-[112px] rounded-lg border border-border/80 bg-card transition-colors hover:border-foreground/30 group focus-visible:outline-offset-2",
               c.cls || "border-border/60 bg-background/70",
             )}
           >
-            <div className="flex items-center justify-between mb-2">
-              <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{c.label}</span>
             </div>
-            <div className="font-display text-3xl text-foreground tabular-nums">{c.value}</div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{c.label}</div>
+            <div className="mt-4 flex items-end justify-between">
+              <span className="text-3xl font-semibold tracking-tight text-foreground tabular-nums">{c.value}</span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground">Peržiūrėti</span>
+            </div>
           </button>
         );
       })}
@@ -3039,7 +3044,7 @@ function SubDetailDialog({
           : r.status === "completed" ? "įvyko" : "rezervuota";
       const details = [date + " · " + formatTime(r.slot_time)];
       if (r.is_individual) details.push("individuali");
-      if (r.horse_name) details.push("🐎 " + r.horse_name);
+      if (r.horse_name) details.push(r.horse_name);
       return "* " + details.join(" · ") + " — " + status;
     });
     const manualLines = manualLessons.slice().reverse().map((lesson) => {
@@ -3053,7 +3058,7 @@ function SubDetailDialog({
       "🐴 EQUUS ABONEMENTO ISTORIJA",
       userName,
       "",
-      "📅 Pamokų rezervacijų laikotarpis: " + from + " → " + until,
+      "Pamokų rezervacijų laikotarpis: " + from + " – " + until,
       "",
       "REZERVACIJOS (pastarieji 2 mėnesiai)",
       ...(bookingLines.length ? bookingLines : ["* Rezervacijų šiame laikotarpyje nėra."]),
@@ -3088,7 +3093,7 @@ function SubDetailDialog({
       source = await enrichHorses(data ?? []); title = copyMode === "details" ? "🐴 PAMOKOS" : "🐴 EQUUS JOJIMO PAMOKOS";
     }
     const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("🐎 " + r.horse_name); return "* " + bits.join(" — "); });
-    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
+    const message = [title, userName, "", copyFrom + " – " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
     try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   return (

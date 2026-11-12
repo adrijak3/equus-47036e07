@@ -10,8 +10,8 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-gold/15 bg-gradient-card shadow-elegant">
-      <h2 className="flex items-center gap-2 border-b border-gold/10 px-5 py-3 font-display text-lg text-gold">
+    <section className="overflow-hidden rounded-lg border border-border/80 bg-card">
+      <h2 className="flex items-center gap-2 border-b border-border/70 px-5 py-4 text-base font-semibold text-foreground">
         {icon}
         {title}
       </h2>

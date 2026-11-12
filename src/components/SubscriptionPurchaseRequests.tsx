@@ -200,7 +200,22 @@ export function SubscriptionPurchaseRequestsPanel({ standalone = false }: { stan
   useEffect(() => { void load(); }, [load]);
 
   const pending = requests.filter((request) => request.status === "pending");
-  const processed = requests.filter((request) => request.status !== "pending");
+  // This calendar week and last week, based on Vilnius dates (not a
+  // rolling 14-day window). Older requests stay in the database.
+  const vilniusParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Vilnius", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const datePart = (type: string) => Number(vilniusParts.find(p => p.type === type)?.value);
+  const lastMonday = new Date(Date.UTC(datePart("year"), datePart("month") - 1, datePart("day")));
+  lastMonday.setUTCDate(lastMonday.getUTCDate() - ((lastMonday.getUTCDay() + 6) % 7) - 7);
+  const mondayISO = lastMonday.toISOString().slice(0, 10);
+  const processed = requests.filter((request) => {
+    if (request.status === "pending") return false;
+    const date = request.approved_at ?? request.rejected_at ?? request.created_at;
+    return new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Europe/Vilnius", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date(date)) >= mondayISO;
+  });
 
   return (
     <div className="space-y-5">
@@ -241,7 +256,7 @@ export function SubscriptionPurchaseRequestsPanel({ standalone = false }: { stan
 
       {processed.length > 0 && (
         <details className="rounded-2xl border border-gold/10 bg-background/20 p-4">
-          <summary className="cursor-pointer font-display text-lg text-gold">Apdorotos užklausos · {processed.length}</summary>
+          <summary className="cursor-pointer font-display text-lg text-gold">Šios ir praėjusios savaitės užklausos · {processed.length}</summary>
           <div className="mt-4 space-y-3">
             {processed.map((request) => (
               <PurchaseRequestCard key={request.id} request={request} onChanged={() => void load()} />

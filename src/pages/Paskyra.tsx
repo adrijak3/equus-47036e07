@@ -349,17 +349,16 @@ export default function Paskyra() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14 relative">
+    <div className="container equus-account mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-12 relative">
 
 
       <motion.header
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-8"
+        className="equus-page-heading mb-8"
       >
-        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground mb-2">Mano Equus</p>
-        <h1 className="text-3xl sm:text-4xl font-display text-foreground">{subscriptionPage ? "Mano abonementai" : purchasePage ? "Abonemento užklausa" : activeProfileName || profile?.full_name || "—"}</h1>
+        <h1 className="equus-page-title">{subscriptionPage ? "Mano abonementai" : purchasePage ? "Abonemento užklausa" : activeProfileName || profile?.full_name || "—"}</h1>
         {isLinked && (
           <p className="text-xs text-blush/80 mt-1 italic">
             Aktyvus profilis: {activeProfileName} · perjungti meniu
@@ -371,20 +370,20 @@ export default function Paskyra() {
       <VacationBanner userId={acting} />
 
       {(subscriptionPage || purchasePage) && <Button variant="ghost" className="mb-5" onClick={() => navigate(subscriptionPage ? "/paskyra" : "/mano-abonementai")}><ArrowLeft className="mr-2 h-4 w-4" /> Grįžti</Button>}
-      <Tabs value={activeTab} onValueChange={(value) => navigate(`/paskyra?tab=${value}`)}>
-        {!subscriptionPage && !purchasePage && <TabsList className="hidden sm:grid grid-cols-3 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
+      <Tabs className="equus-account-tabs" value={activeTab} onValueChange={(value) => navigate(`/paskyra?tab=${value}`)}>
+        {!subscriptionPage && !purchasePage && <TabsList className="equus-account-tablist grid grid-cols-3 w-full bg-background/50 mb-6 h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="py-2.5 text-xs sm:text-sm">Pagrindinis</TabsTrigger>
           <TabsTrigger value="lessons" className="py-2.5 text-xs sm:text-sm">Pamokos</TabsTrigger>
           <TabsTrigger value="messages" className="py-2.5 text-xs sm:text-sm">Žinutės</TabsTrigger>
         </TabsList>}
 
         {/* PROFILE OVERVIEW */}
-        <TabsContent value="profile" className="space-y-5">
+        <TabsContent value="profile" className="equus-account-overview space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Artimiausia treniruotė</p>
+              <p className="text-sm font-medium text-muted-foreground">Artimiausia treniruotė</p>
               {nextLesson ? <>
-                <p className="mt-3 font-display text-2xl text-foreground">{nextLesson.slot_date}</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{nextLesson.slot_date}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{formatTime(nextLesson.slot_time)} {nextLesson.horse_name ? " · Žirgas: " + nextLesson.horse_name : ""}</p>
                 <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/paskyra?tab=lessons")}>Peržiūrėti pamokas</Button>
               </> : <>
@@ -397,11 +396,11 @@ export default function Paskyra() {
               <p className="mt-3 font-display text-2xl text-foreground">{remainingLessons === null ? "Nėra aktyvaus" : currentSubscription?.lessons_total + " pamokos"}</p>
               {currentSubscription ? <>
                 <p className="mt-1 text-sm text-muted-foreground">Panaudota {currentSubscription.lessons_used} · Liko {remainingLessons}</p>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sky-400/15"><div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${Math.min(100, Math.max(0, currentSubscription.lessons_used / Math.max(1, currentSubscription.lessons_total) * 100))}%` }} /></div>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-gold transition-all" style={{ width: `${Math.min(100, Math.max(0, currentSubscription.lessons_used / Math.max(1, currentSubscription.lessons_total) * 100))}%` }} /></div>
                 <p className="mt-2 text-xs text-muted-foreground">Galioja iki {currentSubscription.expires_at}</p>
               </> : <p className="mt-1 text-sm text-muted-foreground">Savo abonementus galite peržiūrėti atskirame puslapyje.</p>}
               <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => navigate("/mano-abonementai")}>Mano abonementai <ChevronRight className="ml-2 h-4 w-4" /></Button>
-              <Button variant="ghost" size="sm" className="mt-2 w-full text-sky-500" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti abonemento užklausą</Button>
+              <Button variant="ghost" size="sm" className="mt-2 w-full text-gold" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti abonemento užklausą</Button>
             </div>
           </div>
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
@@ -470,7 +469,7 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* LESSONS */}
-        <TabsContent value="lessons" className="space-y-5">
+        <TabsContent value="lessons" className="equus-lessons-history space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Praėjęs mėnuo</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{previousMonthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
@@ -493,8 +492,8 @@ export default function Paskyra() {
           </Section>
           <Section title="Mano jojimo statistika" icon={<BarChart3 className="w-4 h-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">
-              <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4"><p className="text-xs text-muted-foreground">Iš viso lankytų treniruočių</p><p className="mt-2 font-display text-3xl">{totalAttended}</p></div>
-              <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4"><p className="text-xs text-muted-foreground">Treniruotės šį mėnesį</p><p className="mt-2 font-display text-3xl">{monthAttended.length}</p></div>
+              <div className="rounded-xl border border-border/80 bg-card p-4"><p className="text-xs text-muted-foreground">Iš viso lankytų treniruočių</p><p className="mt-2 font-display text-3xl">{totalAttended}</p></div>
+              <div className="rounded-xl border border-border/80 bg-card p-4"><p className="text-xs text-muted-foreground">Treniruotės šį mėnesį</p><p className="mt-2 font-display text-3xl">{monthAttended.length}</p></div>
               <div className="sm:col-span-2"><p className="mb-2 text-sm font-medium">Dažniausiai joti žirgai</p>
                 {favoriteHorses.length ? <ul className="space-y-2">{favoriteHorses.map(([name, count]) => <li key={name} className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2 text-sm"><span>{name}</span><span className="text-muted-foreground">{count} tren.</span></li>)}</ul> : <p className="text-sm text-muted-foreground">Kol kas nėra išsaugotų žirgų pasirinkimų istorijos.</p>}
               </div>
@@ -503,9 +502,9 @@ export default function Paskyra() {
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
-        <TabsContent value="subs" className="space-y-4">
+        <TabsContent value="subs" className="equus-subscription-history space-y-4">
           {purchasePage ? <SubscriptionPurchaseRequestForm riderId={acting} /> : <>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4">
               <div><p className="font-medium">Jūsų abonementai</p><p className="text-xs text-muted-foreground">Pamokos, galiojimas ir ankstesni abonementai vienoje vietoje.</p></div>
               <Button size="sm" onClick={() => navigate("/abonemento-uzklausa")}><Plus className="mr-1 h-4 w-4" /> Pateikti užklausą</Button>
             </div>
@@ -1378,12 +1377,12 @@ function SubscriptionTimeline({ subscription, bookings }: { subscription: Subscr
   const rows = bookings
     .filter(b => b.subscription_id === subscription.id && b.status !== "cancelled")
     .sort((a, b) => (a.slot_date + a.slot_time).localeCompare(b.slot_date + b.slot_time));
-  return <details className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/5 p-3">
+  return <details className="mt-3 rounded-xl border border-border/80 bg-card p-3">
     <summary className="cursor-pointer text-sm font-medium">Pamokų laiko juosta ({rows.length})</summary>
     <p className="mt-2 text-xs text-muted-foreground">Matomos šiam abonementui priskirtos treniruotės. Panaudotų pamokų skaičius pateiktas aukščiau.</p>
     {rows.length ? <ol className="mt-4 space-y-3 border-l border-sky-400/40 pl-4">{rows.map(b => {
       const completed = b.status === "completed" || (b.status === "active" && b.slot_date < formatDateISO(new Date()));
-      return <li key={b.id} className="relative text-sm before:absolute before:-left-[21px] before:top-1.5 before:h-2.5 before:w-2.5 before:rounded-full before:bg-sky-500">
+      return <li key={b.id} className="relative text-sm before:absolute before:-left-[21px] before:top-1.5 before:h-2.5 before:w-2.5 before:rounded-full before:bg-gold">
         <p className="font-medium">{b.slot_date} · {formatTime(b.slot_time)}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{completed ? "Įvykusi treniruotė" : "Rezervuota treniruotė"}{b.horse_name ? ` · ${b.horse_name}` : ""}</p>
       </li>;

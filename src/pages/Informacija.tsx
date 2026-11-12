@@ -18,9 +18,9 @@ const BALNOJIMO_ZINGSNIAI = [
 
 export default function Informacija() {
   return (
-    <div className="container py-10 md:py-14 max-w-4xl space-y-10">
-      <header className="text-center space-y-3">
-        <h1 className="text-3xl md:text-4xl font-display text-gradient-gold">Informacija</h1>
+    <div className="container equus-info py-7 md:py-12 max-w-5xl space-y-10">
+      <header className="equus-page-heading space-y-3">
+        <h1 className="equus-page-title">Informacija</h1>
         <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
           Svarbi informacija apie sutartį ir balnojimo tvarką.
         </p>
