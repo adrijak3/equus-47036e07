@@ -20,6 +20,7 @@ import { ImportantUpdatePopup } from "@/components/ImportantUpdatePopup";
 import { BugReporter } from "@/components/BugReporter";
 import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
 import { PageLoader } from "@/components/PageLoader";
+import { MfaGate, MfaSettingsPage } from "@/components/MfaSecurity";
 
 const Grafikas = lazy(() => import("./pages/Grafikas"));
 const Pradzia = lazy(() => import("./pages/Pradzia"));
@@ -98,6 +99,7 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
               <MaintenanceGate>
+              <MfaGate>
               <Layout>
                 <SeasonalParticles />
                 <WelcomeOnboarding />
@@ -121,6 +123,7 @@ const App = () => (
                     }
                   />
                   <Route path="/informacija" element={<Informacija />} />
+                  <Route path="/saugumas" element={<RequireAuth><MfaSettingsPage /></RequireAuth>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
@@ -173,6 +176,7 @@ const App = () => (
                 </Routes>
                 </Suspense>
               </Layout>
+              </MfaGate>
               </MaintenanceGate>
             </AuthProvider>
           </BrowserRouter>
