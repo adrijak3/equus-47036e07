@@ -5,7 +5,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-equus-cron-secret",
 };
 
 /** Returns "YYYY-MM-DD" and "HH:MM:SS" in Europe/Vilnius time. */
@@ -34,6 +34,22 @@ function vilniusNow(): { date: string; time: string } {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // Cron-only privileged worker: never allow public or browser-triggered calls.
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const expectedSecret = Deno.env.get("EQUUS_CRON_SECRET");
+  const suppliedSecret = req.headers.get("x-equus-cron-secret");
+  if (!expectedSecret || !suppliedSecret || suppliedSecret !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "UNAUTHORIZED" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const supabase = createClient(
