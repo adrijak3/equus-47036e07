@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 type PendingDevice = {
-  challengeId: string;
+  challengeId: string | null;
   userId: string;
   name: string;
-  createdAt: string;
-  expiresAt: string;
+  createdAt: string | null;
+  expiresAt: string | null;
 };
 type ApiResponse = {
   pending?: PendingDevice[];
@@ -25,7 +25,9 @@ const errorMessage = (error?: string) => {
     case "NO_ACTIVE_CHALLENGE": return "Raitelio patvirtinimas nebegalioja. Paprašykite iš naujo prisijungti.";
     case "CHALLENGE_REPLACED": return "Raitelis jau gavo kitą kodą. Atnaujinkite sąrašą.";
     case "RATE_LIMITED": return "Šiam raiteliui per pastarąją valandą jau išduoti 2 atsarginiai kodai.";
-    default: return "Nepavyko atlikti veiksmo. Atnaujinkite sąrašą ir bandykite dar kartą.";
+    case "UNAUTHORIZED": return "Prisijunkite iš naujo ir bandykite dar kartą.";
+    case "ROLE_CHECK_FAILED": return "Nepavyko patikrinti administratoriaus teisių.";
+    default: return "Nepavyko atlikti veiksmo (" + (error || "nežinoma klaida") + ").";
   }
 };
 
@@ -37,7 +39,17 @@ async function callAdmin(action: "list" | "generate", target?: PendingDevice): P
     },
   });
   if (error || !data || (data as ApiResponse).error) {
-    const details = (data as ApiResponse | null)?.error;
+    let details = (data as ApiResponse | null)?.error;
+    // FunctionHttpError stores the JSON body in the response context.
+    if (!details && error && "context" in error) {
+      try {
+        const context = (error as {context?: Response}).context;
+        if (context && typeof context.json === "function") {
+          const body = await context.json() as {error?:string};
+          details = body.error;
+        }
+      } catch { /* Preserve original error below. */ }
+    }
     throw new Error(details || error?.message || "UNKNOWN");
   }
   return data as ApiResponse;
@@ -50,7 +62,8 @@ export function AdminDeviceCodes() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [errorMessageText, setErrorMessageText] = useState("");
-  const selected = pending.find((item) => item.challengeId === selectedId);
+  const selected = pending.find((item) => item.userId === selectedId);
+  const canGenerate = Boolean(selected?.challengeId);
 
   const refresh = async () => {
     setLoading(true);
@@ -59,7 +72,7 @@ export function AdminDeviceCodes() {
     try {
       const result = await callAdmin("list");
       setPending(result.pending ?? []);
-      setSelectedId("");
+      setSelectedId((previous) => (result.pending ?? []).some((p) => p.userId === previous) ? previous : "");
     } catch (error) {
       setErrorMessageText(errorMessage(error instanceof Error ? error.message : undefined));
     } finally {
@@ -67,8 +80,10 @@ export function AdminDeviceCodes() {
     }
   };
 
+  useEffect(() => { void refresh(); }, []);
+
   const generate = async () => {
-    if (!selected || generating) return;
+    if (!selected || !selected.challengeId || generating) return;
     if (!window.confirm("Išduoti naują atsarginį kodą raiteliui „" + selected.name + "“? Anksčiau siųstas el. pašto kodas nebegalios.")) return;
     setGenerating(true);
     setShown(null);
@@ -86,34 +101,34 @@ export function AdminDeviceCodes() {
   };
 
   return <div className="space-y-4">
+    <h3 className="font-display text-lg">Naujo įrenginio atsarginis kodas</h3>
+    <p className="text-sm text-muted-foreground">
+      Pasirinkite raitelį ir, jei jis laukia patvirtinimo, sugeneruokite atsarginį kodą.
+    </p>
     <div className="space-y-2">
-      <h3 className="font-display text-lg">Naujo įrenginio atsarginis kodas</h3>
-      <p className="text-sm text-muted-foreground">
-        Kai laiškas vėluoja, galite išduoti vienkartinį kodą raiteliui, kuris jau laukia naujo įrenginio patvirtinimo.
-        Saugumo sumetimais šis veiksmas leidžiamas tik nuolatiniam administratoriui su įjungtu autentifikatoriumi (2FA).
-      </p>
-      <Button variant="outlineGold" disabled={loading || generating} onClick={() => void refresh()}>
-        {loading ? "Ieškoma…" : "Rodyti laukiančius raitelius"}
-      </Button>
-    </div>
-
-    {pending.length > 0 && <div className="space-y-2">
-      <label htmlFor="pending-device-user" className="text-sm font-medium">Pasirinkite raitelį</label>
-      <select id="pending-device-user" value={selectedId} onChange={(event) => { setSelectedId(event.target.value); setShown(null); }}
-        className="flex h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground">
-        <option value="">Pasirinkite…</option>
-        {pending.map((item) => <option value={item.challengeId} key={item.challengeId}>
-          {item.name} · {new Date(item.createdAt).toLocaleTimeString("lt-LT", {hour:"2-digit",minute:"2-digit"})} · {item.userId.slice(0,8)}
+      <label htmlFor="pending-device-user" className="text-sm font-medium">Raitelis</label>
+      <select id="pending-device-user" value={selectedId}
+        onChange={(event) => { setSelectedId(event.target.value); setShown(null); setErrorMessageText(""); }}
+        className="flex h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground"
+        disabled={loading || generating}>
+        <option value="">{loading ? "Kraunama…" : "Pasirinkite raitelį…"}</option>
+        {pending.map((item) => <option value={item.userId} key={item.userId}>
+          {item.name}{item.challengeId ? " · Laukia kodo" : ""}
         </option>)}
       </select>
-      <Button variant="gold" disabled={!selected || generating} onClick={() => void generate()}>
+      {selected && !canGenerate && <p className="text-xs text-muted-foreground">
+        Šiuo metu šis raitelis neturi aktyvios naujo įrenginio patikros. Paprašykite jo prisijungti ir atsidaryti kodo įvedimo ekraną.
+      </p>}
+      {selected && canGenerate && <p className="text-xs text-muted-foreground">
+        Raitelis laukia patvirtinimo. Naujas kodas pakeis el. paštu siųstą kodą.
+      </p>}
+      <Button variant="gold" disabled={!canGenerate || generating || loading} onClick={() => void generate()}>
         {generating ? "Kuriama…" : "Sukurti atsarginį kodą"}
       </Button>
-    </div>}
-
-    {!loading && !pending.length && !errorMessageText && <p className="text-xs text-muted-foreground">
-      Spauskite „Rodyti laukiančius raitelius“. Matysite tik aktyvius, dar nepatvirtintus prisijungimus.
-    </p>}
+    </div>
+    <div><Button variant="ghost" size="sm" disabled={loading} onClick={() => void refresh()}>
+      {loading ? "Atnaujinama…" : "Atnaujinti"}
+    </Button></div>
 
     {errorMessageText && <p className="text-sm text-destructive" role="alert">
       {errorMessageText}{" "}
