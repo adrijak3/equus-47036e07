@@ -71,8 +71,8 @@ const NAV_GUEST: NavigationItem[] = [
 
 const NAV_USER: NavigationItem[] = [
   { to: "/", label: "Pagrindinis", icon: Home },
-  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/paskyra?tab=lessons", label: "Mano pamokos", icon: Calendar },
+  { to: "/grafikas", label: "Grafikas", icon: CalendarDays },
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
   { to: "/paskyra", label: "Mano paskyra", icon: UserIcon },
   { to: "/mano-abonementai", label: "Mano abonementai", icon: Wallet, menuOnly: true },
@@ -178,13 +178,16 @@ export default function Layout({
     <div className="min-h-screen flex flex-col">
       {/* Viršutinė juosta */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container relative flex h-16 items-center justify-between">
           <Link
             to="/"
             onClick={close}
             className="group flex items-center gap-2.5"
           >
-            <span className="text-foreground font-display text-2xl tracking-wide">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70 bg-black sm:h-11 sm:w-11">
+              <img src="/equus-logo-black.png" alt="" width="44" height="44" className="h-full w-full object-contain" />
+            </span>
+            <span className="hidden text-foreground font-display text-2xl tracking-wide sm:inline">
               Equus
             </span>
 
@@ -193,6 +196,9 @@ export default function Layout({
             </span>
           </Link>
 
+          <Link to="/grafikas" onClick={close} className="absolute left-1/2 -translate-x-1/2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 sm:hidden" aria-current={location.pathname === "/grafikas" ? "page" : undefined}>
+            Grafikas
+          </Link>
           <button
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
