@@ -760,7 +760,7 @@ function AdminNotificationsTab() {
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
+        <h3 className="font-display text-xl"> Pranešimas visiems</h3>
         <p className="text-sm text-muted-foreground">Parašykite svarbų pranešimą, pvz. dienos atšaukimą, grafiko pakeitimą ar kitą svarbią informaciją. Pasirinkite, kur jį siųsti.</p>
         <div className="space-y-2">
           <Label>Kur siųsti?</Label>
@@ -857,14 +857,14 @@ function AdminNotificationsTab() {
 
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🐴 Nuolatinio laiko pakeitimai</h3>
+        <h3 className="font-display text-xl"> Nuolatinio laiko pakeitimai</h3>
         <p className="text-sm text-muted-foreground">
           Kai Administracija → Nuolatiniai pakeičia raitelio dieną arba laiką, pranešimas tam raiteliui išsiunčiamas automatiškai. Jo čia įvesti ar siųsti rankiniu būdu nereikia.
         </p>
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
+        <h3 className="font-display text-xl"> Telefono pranešimo testas</h3>
         <p className="text-sm text-muted-foreground">Šis testas siunčia tikrą Web Push pranešimą į jūsų aktyvius įrenginius arba pasirinktam vartotojui pagal el. paštą. Jis nerašo fiktyvios sėkmės ir nerodo sėkmės, jei serveris nepristatė pranešimo.</p>
         <Input value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="Tikslinio vartotojo el. paštas (nebūtina)" type="email" />
         <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti bandomąjį telefono pranešimą</Button>
@@ -1330,7 +1330,7 @@ function ScheduleTab() {
           if (error) { toast.error(error.message); return; }
           toast.success(`Ištrinta ${ids.length}`); load();
         }}>
-          🧹 Išvalyti senus
+           Išvalyti senus
         </Button>
         <Button variant="gold" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Naujas laikas</Button>
       </div>
@@ -1551,7 +1551,7 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const copyHistory = async () => {
     const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
-    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
+    const message = ["──────────── ♡ ────────────", " PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
     try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   const now = new Date();
@@ -2566,8 +2566,8 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                               <div className="space-y-3">
                                 <div className="text-xs text-muted-foreground">
                                   {Number(s.covered_riders ?? 1) === 2
-                                    ? "👥 Skirtas 2 raiteliams · bendra rezervacija sunaudoja 2 treniruotes"
-                                    : "👤 Skirtas 1 raiteliui"}
+                                    ? " Skirtas 2 raiteliams · bendra rezervacija sunaudoja 2 treniruotes"
+                                    : " Skirtas 1 raiteliui"}
                                 </div>
 
                                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2723,10 +2723,10 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
           <DialogContent className="max-w-md overflow-hidden rounded-3xl border-gold/25 bg-gradient-card p-0 shadow-2xl">
             <div className="relative px-6 pb-6 pt-7 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-3xl shadow-gold">
-                🐴
+                
               </div>
               <DialogTitle className="font-display text-3xl text-gradient-gold">
-                Viskas patvirtinta! ✨
+                Viskas patvirtinta! 
               </DialogTitle>
               <p className="mt-2 text-sm text-muted-foreground">
                 Abonementas sėkmingai sukurtas.
@@ -2757,12 +2757,12 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
                   : "border-gold/20 bg-gold/5 text-muted-foreground",
               )}>
                 {purchaseSuccess.emailOk
-                  ? "📧 Patvirtinimo laiškas išsiuntimo procesui paleistas."
-                  : "📧 Abonementas sukurtas, bet laiško siuntimo procesas dar nepatvirtintas."}
+                  ? " Patvirtinimo laiškas išsiuntimo procesui paleistas."
+                  : " Abonementas sukurtas, bet laiško siuntimo procesas dar nepatvirtintas."}
               </div>
 
               <Button variant="gold" className="mt-5 w-full" onClick={() => setPurchaseSuccess(null)}>
-                Gerai 💛
+                Gerai 
               </Button>
             </div>
           </DialogContent>
@@ -3055,10 +3055,10 @@ function SubDetailDialog({
     });
     const message = [
       "──────────── ♡ ────────────",
-      "🐴 EQUUS ABONEMENTO ISTORIJA",
+      " EQUUS ABONEMENTO ISTORIJA",
       userName,
       "",
-      "📅 Pamokų rezervacijų laikotarpis: " + from + " → " + until,
+      " Pamokų rezervacijų laikotarpis: " + from + " → " + until,
       "",
       "REZERVACIJOS (pastarieji 2 mėnesiai)",
       ...(bookingLines.length ? bookingLines : ["* Rezervacijų šiame laikotarpyje nėra."]),
@@ -3087,13 +3087,13 @@ function SubDetailDialog({
     let title: string;
     if (copyMode === "unpaid") {
       const { data } = await supabase.from("bookings").select("id, slot_date, slot_time, status, counts_in_subscription, is_individual").eq("user_id", sub.user_id).gte("slot_date", copyFrom).lte("slot_date", copyUntil).in("status", ["active", "completed"]).is("subscription_id", null).eq("counts_in_subscription", true).order("slot_date", { ascending: true }).order("slot_time", { ascending: true });
-      source = await enrichHorses(data ?? []); title = "🐴 NEAPMOKĖTOS PAMOKOS";
+      source = await enrichHorses(data ?? []); title = " NEAPMOKĖTOS PAMOKOS";
     } else {
       const { data } = await supabase.from("bookings").select("id, slot_date, slot_time, status, counts_in_subscription, is_individual").eq("user_id", sub.user_id).gte("slot_date", copyFrom).lte("slot_date", copyUntil).neq("status", "cancelled").order("slot_date", { ascending: true }).order("slot_time", { ascending: true });
-      source = await enrichHorses(data ?? []); title = copyMode === "details" ? "🐴 PAMOKOS" : "🐴 EQUUS JOJIMO PAMOKOS";
+      source = await enrichHorses(data ?? []); title = copyMode === "details" ? " PAMOKOS" : " EQUUS JOJIMO PAMOKOS";
     }
     const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("🐎 " + r.horse_name); return "* " + bits.join(" — "); });
-    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
+    const message = ["──────────── ♡ ────────────", title, userName, "", " " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
     try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   return (
