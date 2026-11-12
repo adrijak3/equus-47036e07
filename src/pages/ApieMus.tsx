@@ -16,15 +16,14 @@ export default function ApieMus() {
   const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
-      <header className="relative overflow-hidden rounded-3xl border border-gold/20 bg-gradient-card p-7 shadow-elegant sm:p-12">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full border border-gold/10" />
-        <div className="pointer-events-none absolute -right-6 -top-10 h-44 w-44 rounded-full border border-gold/10" />
+      <header className="relative overflow-hidden border-b border-border/70 pb-8 pt-3 sm:pb-10">
+
+
         <p className="text-xs uppercase tracking-[0.25em] text-gold/75">EQUUS · JOJIMO MOKYKLA</p>
         <h1 className="mt-3 font-display text-5xl text-gradient-gold sm:text-6xl">Apie mus</h1>
         <div className="gold-divider mt-5 max-w-[120px]" />
         <p className="mt-5 max-w-2xl text-base leading-7 text-foreground/85 sm:text-lg">
-          Jojimas prasideda nuo pažinties su žirgu, pasitikėjimo ir kantrybės.
-          „Equus“ kviečia mokytis, tobulėti ir atrasti savo ryšį su žirgu.
+          Mokomės joti, pažinti žirgus ir saugiai tobulėti.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
@@ -38,48 +37,46 @@ export default function ApieMus() {
 
       {/* Aiškus pasirinkimas pagal tai, ar žmogus jau yra jojęs Equus mokykloje. */}
       <section className="mt-7 grid gap-4 md:grid-cols-2">
-        <article className="flex flex-col items-start rounded-2xl border border-gold/25 bg-gradient-card p-6 shadow-elegant sm:p-8">
-          <span className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-gold">
+        <article className="flex flex-col items-start border-b border-border/60 py-5 sm:border-b-0 sm:border-r sm:pr-7">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-gold">
             Pirmą kartą „Equus“
           </span>
           <h2 className="mt-4 font-display text-2xl text-gradient-gold sm:text-3xl">
             Esate naujas raitelis?
           </h2>
           <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">
-            Dar nesate joję mūsų mokykloje? Pradėkite nuo registracijos — susipažinsime
-            su jumis ir padėsime žengti pirmuosius žingsnius.
+            Jei dar nebuvote „Equus“ treniruotėje, registruokitės čia.
           </p>
           <Link
             to="/registracija"
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gold px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
           >
-            Eiti į registraciją <ArrowRight className="h-4 w-4" />
+            Registruotis <ArrowRight className="h-4 w-4" />
           </Link>
         </article>
 
-        <article className="flex flex-col items-start rounded-2xl border border-gold/15 bg-background/35 p-6 sm:p-8">
-          <span className="rounded-full border border-gold/15 bg-background/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <article className="flex flex-col items-start py-5 sm:pl-7">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Jau mūsų bendruomenėje
           </span>
           <h2 className="mt-4 font-display text-2xl text-foreground sm:text-3xl">
             Jau jojote „Equus“?
           </h2>
           <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">
-            Jei jau lankėtės mūsų jojimo mokykloje ir norite pasirinkti kitą treniruotę,
-            atsidarykite grafiką ir išsirinkite tinkamą laiką.
+            Jei jau lankėte „Equus“, pasirinkite laiką grafike.
           </p>
           <Link
             to="/grafikas"
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/5 px-5 py-3 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
           >
-            Atidaryti treniruočių grafiką <ArrowRight className="h-4 w-4" />
+            Atidaryti grafiką <ArrowRight className="h-4 w-4" />
           </Link>
         </article>
       </section>
 
       {/* Istorijos tekstą papildykite savo asmenine, širdžiai artima istorija. */}
       <section className="mt-7 grid gap-5 md:grid-cols-[minmax(0,1.25fr)_minmax(260px,0.75fr)]">
-        <article className="rounded-2xl border border-gold/20 bg-gradient-card p-6 shadow-elegant sm:p-8">
+        <article className="border-t border-border/60 pt-7">
           <p className="text-xs uppercase tracking-[0.2em] text-gold/75">Nuo 2011 metų</p>
           <h2 className="mt-2 font-display text-3xl text-gradient-gold sm:text-4xl">Mūsų istorija</h2>
           <div className="gold-divider mt-4 max-w-[100px]" />
@@ -95,7 +92,7 @@ export default function ApieMus() {
           </div>
         </article>
 
-        <aside className="rounded-2xl border border-gold/15 bg-background/30 p-4 sm:p-5">
+        <aside className="border-t border-border/60 pt-5">
           {/*
             Lauros nuotraukos vieta:
             įkelkite nuotrauką į public/images/laura.jpg ir šį bloką pakeiskite, pvz.:
@@ -131,7 +128,7 @@ export default function ApieMus() {
             { name: "Jovita", role: "Trenerė" },
             { name: "Vytautas", role: "Treneris" },
           ].map((trainer) => (
-            <article key={trainer.name} className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center sm:p-5">
+            <article key={trainer.name} className="border-b border-border/40 py-3 text-center">
               <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-gold/20 bg-gold/10 text-gold">
                 <Users className="h-5 w-5" />
               </div>
