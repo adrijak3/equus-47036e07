@@ -268,9 +268,12 @@ export default function Admin() {
             <TabsContent value="schedule"><ScheduleTab /></TabsContent>
             <TabsContent value="permanent"><PermanentSlotsAdminTab /></TabsContent>
             <TabsContent value="cancels"><CancellationsTab /></TabsContent>
-            <TabsContent value="users" className="space-y-6">
-              <UnpaidLessonsOverview staff />
+            <TabsContent value="users" className="space-y-4">
               <UsersSection focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
+              <details className="rounded-lg border border-border/70 bg-card p-3">
+                <summary className="cursor-pointer text-sm text-muted-foreground">Nepriskirtos ir neapmokėtos pamokos</summary>
+                <div className="mt-4"><UnpaidLessonsOverview staff /></div>
+              </details>
             </TabsContent>
             <TabsContent value="subs">
               <SubsTab focusUserId={focusUserId} onClearFocus={() => setFocusUserId(null)} />
@@ -754,7 +757,7 @@ function AdminNotificationsTab() {
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">📢 Pranešimas visiems</h3>
+        <h3 className="font-display text-xl">Pranešimas visiems</h3>
         <p className="text-sm text-muted-foreground">Parašykite svarbų pranešimą, pvz. dienos atšaukimą, grafiko pakeitimą ar kitą svarbią informaciją. Pasirinkite, kur jį siųsti.</p>
         <div className="space-y-2">
           <Label>Kur siųsti?</Label>
@@ -851,14 +854,14 @@ function AdminNotificationsTab() {
 
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🐴 Nuolatinio laiko pakeitimai</h3>
+        <h3 className="font-display text-xl">Nuolatinio laiko pakeitimai</h3>
         <p className="text-sm text-muted-foreground">
           Kai Administracija → Nuolatiniai pakeičia raitelio dieną arba laiką, pranešimas tam raiteliui išsiunčiamas automatiškai. Jo čia įvesti ar siųsti rankiniu būdu nereikia.
         </p>
       </div>
 
       <div className="rounded-lg border border-gold/15 p-4 space-y-3">
-        <h3 className="font-display text-xl">🔔 Telefono pranešimo testas</h3>
+        <h3 className="font-display text-xl">Telefono pranešimo testas</h3>
         <p className="text-sm text-muted-foreground">Šis testas siunčia tikrą Web Push pranešimą į jūsų aktyvius įrenginius arba pasirinktam vartotojui pagal el. paštą. Jis nerašo fiktyvios sėkmės ir nerodo sėkmės, jei serveris nepristatė pranešimo.</p>
         <Input value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="Tikslinio vartotojo el. paštas (nebūtina)" type="email" />
         <Button variant="gold" disabled={sending} onClick={sendTestToMe}>Siųsti bandomąjį telefono pranešimą</Button>
