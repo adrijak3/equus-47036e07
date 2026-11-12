@@ -1359,20 +1359,6 @@ export default function Grafikas() {
     return true;
   };
 
-  const requestClosedSlot = async (date: Date, time: string) => {
-    if (!user) return;
-    const dateLabel = formatDateISO(date);
-    const body = language === "lt"
-      ? `Norėčiau užsiregistruoti į treniruotę ${dateLabel} ${time.slice(0, 5)}, tačiau registracija jau uždaryta. Jei įmanoma, prašau administracijos priimti mano prašymą.`
-      : `I would like to register for the training on ${dateLabel} at ${time.slice(0, 5)}, but registration is already closed. If possible, please let the administration consider my request.`;
-    const { error } = await supabase.from("messages").insert({ user_id: user.id, body });
-    if (error) {
-      toast.error(language === "lt" ? "Nepavyko išsiųsti prašymo." : "Could not send the request.");
-      return;
-    }
-    toast.success(language === "lt" ? "Prašymas išsiųstas administracijai 🐴" : "Request sent to administration 🐴");
-  };
-
   const continueBooking = async (
     date: Date,
     time: string,
@@ -1948,11 +1934,11 @@ export default function Grafikas() {
     if (!user || booking.user_id !== user.id || booking.status !== "active") return;
 
     const hours = hoursUntil(booking.slot_date, booking.slot_time);
-    if (hours < 3) {
+    if (hours <= 0) {
       toast.error(
         language === "lt"
-          ? "Perkelti galima tik likus bent 3 valandoms iki treniruotės."
-          : "A move is only available at least 3 hours before training.",
+          ? "Prasidėjus treniruotei jos perkelti nebegalima."
+          : "The lesson has already started.",
       );
       return;
     }
@@ -1999,7 +1985,7 @@ export default function Grafikas() {
         );
 
         const targetStart = new Date(`${dateISO}T${slot.slot_time}`);
-        const cutoffBlocked = targetStart.getTime() - Date.now() < 3 * 60 * 60 * 1000;
+        const cutoffBlocked = targetStart.getTime() <= Date.now();
         const cancelled = !!getTrainerDayCancellation(dayDate, slot.trainer_name);
 
         return {
@@ -2056,7 +2042,7 @@ export default function Grafikas() {
           : error.message?.includes("HORSE_NOT_AVAILABLE")
             ? (language === "lt" ? "Šis žirgas jau pasirinktas tuo pačiu metu." : "This horse is already chosen at that time.")
             : error.message?.includes("BOOKING_CUTOFF")
-              ? (language === "lt" ? "Iki treniruotės liko mažiau nei 3 valandos." : "Less than 3 hours remain before training.")
+              ? (language === "lt" ? "Treniruotė jau prasidėjo." : "The lesson has already started.")
               : error.message?.includes("DAY_CANCELLED")
                 ? (language === "lt" ? "Šios treniruotės diena atšaukta." : "This training day was cancelled.")
                 : (language === "lt" ? "Nepavyko perkelti treniruotės." : "The training could not be moved.");
@@ -4079,7 +4065,7 @@ export default function Grafikas() {
                                   <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-blush/15">
                                     <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                       <Clock className="w-4 h-4 text-blush/60" />
-                                      <span className="font-display text-xl sm:text-2xl tabular-nums text-foreground/70">
+                                      <span className="text-xl sm:text-2xl font-medium tracking-tight tabular-nums text-foreground/70">
                                         {scheduleDisplayTime(dow, slot)}
                                       </span>
                                       <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
@@ -4141,7 +4127,7 @@ export default function Grafikas() {
                                       } : undefined}
                                       title={isAdmin && !slotPast ? "Spustelėkite, jei norite valdyti šį laiką" : undefined}
                                       className={cn(
-                                        "font-display text-xl sm:text-2xl tabular-nums text-foreground",
+                                        "text-xl sm:text-2xl font-medium tracking-tight tabular-nums text-foreground",
                                         isAdmin && !slotPast && "cursor-pointer rounded px-1 -mx-1 hover:bg-gold/10 focus:outline-none focus:ring-1 focus:ring-gold/50",
                                       )}
                                     >
@@ -4533,7 +4519,7 @@ export default function Grafikas() {
                                                 {!slotPast &&
                                                   b.user_id === user?.id &&
                                                   b.status === "active" &&
-                                                  hoursUntil(b.slot_date, b.slot_time) >= 3 && (
+                                                  hoursUntil(b.slot_date, b.slot_time) > 0 && (
                                                     <button
                                                       type="button"
                                                       onClick={() => void openMoveDialog(b)}
@@ -4572,25 +4558,7 @@ export default function Grafikas() {
                                   user &&
                                   !myBooking && (
                                     <div className="px-2 pb-2 pt-1">
-                                      {hoursUntil(formatDateISO(date), slot.slot_time) < 3 ? (
-                                        <div className="space-y-1">
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="w-full h-8 text-[11px]"
-                                            disabled
-                                          >
-                                            🔒 {language === "lt" ? "Registracija uždaryta" : "Registration closed"}
-                                          </Button>
-                                          <button
-                                            type="button"
-                                            onClick={() => void requestClosedSlot(date, slot.slot_time)}
-                                            className="block w-full text-center text-[10px] text-gold hover:underline"
-                                          >
-                                            {language === "lt" ? "Last minute registracijos prašymas" : "Request Equus"}
-                                          </button>
-                                        </div>
-                                      ) : !isFull ? (
+                                      {!isFull ? (
                                         <Button
                                           variant="ghostGold"
                                           size="sm"
