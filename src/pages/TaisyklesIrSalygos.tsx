@@ -32,7 +32,7 @@ export default function TaisyklesIrSalygos() {
     <Section icon={CalendarClock} title="Grafikas, rezervacijos ir nuolatiniai laikai">
       <ul className="list-disc pl-5 space-y-2">
         <li>Treniruočių vietų skaičių ir laikus nustato administracija. Laisvos vietos priklauso nuo atitinkamai dienai nustatyto limito, trenerio ir kitų taikomų grafiko sąlygų.</li>
-        <li>Įprasta rezervacija internetu uždaroma likus mažiau nei <strong>3 valandoms iki treniruotės pradžios</strong>. Tai rezervavimo terminas, o ne nemokamo atšaukimo terminas.</li>
+        <li><strong>Registruotis galima iki treniruotės pradžios.</strong> Atšaukimo taisyklės taikomos atskirai.</li>
         <li>Nuolatinį savaitinį laiką ir papildomą nuolatinių laikų laukiančiųjų sąrašą tvarko administracija. Įrašymas į laukiančiųjų sąrašą savaime negarantuoja vietos; vieta suteikiama tik jai atsilaisvinus ir ją priskyrus.</li>
         <li>Perkėlimas į kitą užsiėmimą galimas tik pagal tuo metu siūlomus laisvus laikus, taikomus terminus ir sistemos taisykles. Jei perkėlimo nepavyksta atlikti, susisiekite su administracija.</li>
         <li>Žirgų pasirinkimas treniruotėms priklauso nuo žirgo užimtumo, leistino dienos krūvio ir administracijos nustatytų savaitės dienų. Treneris ir administracija gali priskirti žirgą pagal treniruotės poreikius.</li>
