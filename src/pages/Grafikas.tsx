@@ -984,7 +984,9 @@ export default function Grafikas() {
         ? `guest:${b.guest_rider_id ?? b.guest_name ?? b.id}`
         : b.family_rider_id
           ? `family:${b.family_rider_id}`
-          : `user:${b.user_id}`;
+          : b.user_id
+            ? `user:${b.user_id}`
+            : `booking:${b.id}`;
 
       if (seen.has(key)) return false;
 
@@ -1101,7 +1103,7 @@ export default function Grafikas() {
           (
             b.is_guest
               ? x.guest_name === b.guest_name
-              : x.user_id === b.user_id
+              : !!b.user_id && x.user_id === b.user_id
           )
         ),
     );
@@ -1116,7 +1118,7 @@ export default function Grafikas() {
         (
           x.slot_date === b.slot_date &&
           x.slot_time === b.slot_time &&
-          x.user_id === b.user_id
+          !!b.user_id && x.user_id === b.user_id
         ),
     );
 
