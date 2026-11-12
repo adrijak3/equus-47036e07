@@ -961,22 +961,10 @@ export default function Grafikas() {
         ),
     );
 
-    const seen = new Set<string>();
-
-    const list = matching.filter((b) => {
-      const key = b.is_guest
-        ? `guest:${b.guest_rider_id ?? b.guest_name ?? b.id}`
-        : b.family_rider_id
-          ? `family:${b.family_rider_id}`
-          : b.user_id
-            ? `user:${b.user_id}`
-            : `booking:${b.id}`;
-
-      if (seen.has(key)) return false;
-
-      seen.add(key);
-      return true;
-    });
+    // Every active reservation is a separate occupied place, even when
+    // the privacy-safe API masks its rider ID or the same family has
+    // several bookings. Never merge rows by user_id in this view.
+    const list = matching;
 
     return list.sort((a, b) => {
       const pa = isPermanentBooking(a) ? 0 : 1;
