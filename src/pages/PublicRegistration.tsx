@@ -497,46 +497,22 @@ export default function PublicRegistration() {
       </Dialog>
 
   return (
-    <div className="registration-monochrome container max-w-4xl rounded-2xl py-10 sm:py-14">
+    <div className="registration-monochrome container max-w-3xl py-7 sm:py-12">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-[.25em] text-gold/70">
           Naujiems Equus lankytojams
         </p>
-        <h1 className="font-display text-4xl text-gradient-gold sm:text-5xl">
+        <h1 className="font-display text-3xl text-foreground sm:text-4xl">
           Pirmą kartą Equus?
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Ši registracijos forma skirta tiems, kurie <strong className="text-foreground">dar niekada nesilankė Equus</strong>
-          {" "}ir nori atvykti į pirmąją treniruotę. Paskyros tam nereikia.
+          Naujiems lankytojams. Pasirinkite pamoką ir užpildykite formą.
         </p>
       </header>
 
-      <div className="mb-7 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-gold" />
-            Dar nebuvai Equus?
-          </div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Puiku! Užpildyk formą apačioje ir susisieksime dėl pirmos pamokos.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border bg-background/50 p-4">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <UserRound className="h-5 w-5 shrink-0 text-gold" />
-            Jau buvai bent vienoje pamokoje Equus?
-          </div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Jei jau lankeisi bent vienoje <strong className="text-foreground">Equus</strong> pamokoje, šios formos iš naujo pildyti nereikia! Prisijunk prie savo Equus paskyros ir
-            registruokis į kitas treniruotes per „Grafikas“.
-          </p>
-          <Button asChild variant="gold" className="mt-3 w-full sm:w-auto">
-            <Link to="/auth?tab=signin">Prisijungti prie paskyros</Link>
-          </Button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Dar neturi paskyros? Prisijungimo puslapyje galėsi ją susikurti.
-          </p>
-        </div>
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-5">
+        <p className="text-sm text-muted-foreground">Jau lankėtės Equus? Registruotis iš naujo nereikia.</p>
+        <Link to="/auth?tab=signin" className="text-sm font-medium text-foreground underline underline-offset-4">Prisijungti</Link>
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-2">
@@ -551,7 +527,7 @@ export default function PublicRegistration() {
         ))}
       </div>
 
-      <div className="rounded-3xl border border-gold/20 bg-gradient-card p-5 shadow-elegant sm:p-8">
+      <div className="rounded-lg border border-border bg-card p-5 sm:p-7">
         {step === 1 && (
           <div>
             <h2 className="font-display text-3xl">Pasirinkite užsiėmimą</h2>
