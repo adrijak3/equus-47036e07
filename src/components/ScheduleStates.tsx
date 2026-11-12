@@ -31,7 +31,7 @@ export function ScheduleSkeleton({ days = 3, slots = 3 }: { days?: number; slots
 export function ScheduleEmpty({ text }: { text: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-gold/20 bg-card/30 px-4 py-10 text-center">
-      <div className="text-2xl" aria-hidden></div>
+      
       <p className="mt-2 text-sm text-muted-foreground">{text}</p>
     </div>
   );
