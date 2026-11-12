@@ -15,6 +15,109 @@ const labelDevice = (ua: string | null) => {
   return os + " · " + browser;
 };
 
+
+const DEVICE_STORAGE_KEY = "equus_trusted_device_token_v1";
+function deviceToken() {
+  let saved = localStorage.getItem(DEVICE_STORAGE_KEY);
+  if (saved && /^[0-9a-f]{64}$/.test(saved)) return saved;
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  saved = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  localStorage.setItem(DEVICE_STORAGE_KEY, saved);
+  return saved;
+}
+
+export function NewDeviceGate({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
+  const [step, setStep] = useState<"checking" | "ready" | "code" | "error">("checking");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const invoke = async (action: "status" | "send" | "verify", entered?: string) => {
+    const { data, error } = await supabase.functions.invoke("new-device-verification", {
+      body: { action, deviceToken: deviceToken(), ...(entered ? {code: entered} : {}) },
+    });
+    if (error || (data as {error?:string}|null)?.error) throw new Error((data as {error?:string}|null)?.error ?? error?.message ?? "Nepavyko patikrinti");
+    return data as {trusted?:boolean;ok?:boolean;queued?:boolean};
+  };
+
+  useEffect(() => {
+    let active = true;
+    if (loading) return;
+    setStep("checking");
+    setCheckedUserId(null);
+    if (!user) {
+      setStep("ready");
+      return;
+    }
+    (async () => {
+      try {
+        const status = await invoke("status");
+        if (!active) return;
+        setCheckedUserId(user.id);
+        if (status.trusted) {
+          setStep("ready");
+        } else {
+          setStep("code");
+          try {
+            await invoke("send");
+            if (active) setMessage("Į jūsų paskyros el. paštą išsiųsime 6 skaitmenų kodą. Laiškas gali užtrukti iki kelių minučių.");
+          } catch {
+            if (active) setMessage("Kodo automatiškai išsiųsti nepavyko. Bandykite paspausti „Siųsti kodą“.");
+          }
+        }
+      } catch {
+        if (active) { setCheckedUserId(user.id); setStep("error"); }
+      }
+    })();
+    return () => { active = false; };
+  }, [user?.id, loading]);
+
+  const resend = async () => {
+    setBusy(true);
+    try {
+      await invoke("send");
+      setMessage("Kodas užsakytas. Patikrinkite savo el. paštą ir šlamšto aplanką.");
+    } catch {
+      setMessage("Nepavyko išsiųsti kodo. Kodus galima prašyti kas 90 sekundžių, ne daugiau kaip 3 kartus per valandą.");
+    } finally { setBusy(false); }
+  };
+
+  const confirm = async () => {
+    if (!/^\d{6}$/.test(code)) return;
+    setBusy(true);
+    try {
+      const response = await invoke("verify", code);
+      if (!response.trusted) throw new Error("Verification did not succeed");
+      setCode("");
+      setStep("ready");
+    } catch {
+      setMessage("Neteisingas arba nebegaliojantis kodas. Patikrinkite kodą, arba paprašykite naujo.");
+    } finally { setBusy(false); }
+  };
+
+  if (loading || step==="checking" || (user && checkedUserId!==user.id)) {
+    return <div className="container py-16 text-center">Tikrinamas įrenginys…</div>;
+  }
+  if (step==="ready") return <>{children}</>;
+  return <main className="container max-w-md space-y-5 py-16">
+    <h1 className="font-display text-3xl">Naujo įrenginio patvirtinimas</h1>
+    <p className="text-sm text-muted-foreground">
+      Šios naršyklės dar neatpažįstame. Kad apsaugotume jūsų Equus paskyrą, patvirtinkite prisijungimą kodu iš el. pašto.
+    </p>
+    {step==="error" ?
+      <p className="text-sm text-destructive">Saugumo patikros įkelti nepavyko. Bandykite atsijungti ir prisijungti iš naujo.</p> :
+      <>
+        <Input aria-label="El. paštu gautas kodas" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" />
+        <Button variant="gold" className="w-full" disabled={busy || code.length!==6} onClick={confirm}>{busy?"Tikrinama…":"Patvirtinti įrenginį"}</Button>
+        <Button variant="outline" className="w-full" disabled={busy} onClick={resend}>Siųsti kodą dar kartą</Button>
+      </>}
+    {message && <p className="text-xs text-muted-foreground" role="status">{message}</p>}
+    <Button variant="ghost" className="w-full" onClick={() => void supabase.auth.signOut({scope:"local"})}>Atsijungti</Button>
+  </main>;
+}
+
 export function MfaGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [state, setState] = useState<"checking" | "ready" | "challenge" | "error">("checking");
@@ -59,7 +162,7 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
   };
 
   if (loading || state === "checking" || (user && checkedUserId !== user.id)) return <div className="container py-20 text-center">Tikrinamas prisijungimas…</div>;
-  if (state === "ready") return <>{children}</>;
+  if (state === "ready") return <NewDeviceGate>{children}</NewDeviceGate>;
   return <main className="container max-w-md space-y-5 py-16">
     <h1 className="font-display text-3xl">Prisijungimo patvirtinimas</h1>
     {state === "error" ? <p className="text-sm text-destructive">Nepavyko patikrinti saugumo nustatymų. Bandykite prisijungti iš naujo.</p> :
