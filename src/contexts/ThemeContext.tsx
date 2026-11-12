@@ -128,6 +128,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let hydratedUser: string | null = null;
+    const pendingUsers = new Set<string>();
+    const hydrateOnce = (uid: string) => {
+      if (hydratedUser === uid || pendingUsers.has(uid)) return;
+      pendingUsers.add(uid);
+      void hydrate(uid).then(() => { hydratedUser = uid; }).finally(() => pendingUsers.delete(uid));
+    };
     const hydrate = async (uid: string) => {
       userIdRef.current = uid;
       const { data } = await supabase
@@ -153,16 +160,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const uid = session?.user?.id ?? null;
       userIdRef.current = uid;
       if (uid) {
-        // Defer: never call other Supabase APIs inside the auth callback.
-        setTimeout(() => void hydrate(uid), 0);
+        // Skip duplicates from INITIAL_SESSION / TOKEN_REFRESHED.
+        setTimeout(() => hydrateOnce(uid), 0);
       } else {
+        hydratedUser = null;
         hydratedRef.current = false;
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const uid = session?.user?.id;
-      if (uid) void hydrate(uid);
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) hydrateOnce(session.user.id);
     });
 
     return () => sub.subscription.unsubscribe();
