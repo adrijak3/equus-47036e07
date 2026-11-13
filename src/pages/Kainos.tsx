@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { BankTransferInstructions } from "@/components/BankTransferInstructions";
+import { Link } from "react-router-dom";
 
 const fullPriceLists = [
   {
@@ -124,6 +125,12 @@ export default function Kainos() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mt-8 border-t border-border/70 pt-6">
+        <h2 className="font-display text-2xl">Dovanų kuponai</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Pasirinktai pamokai, abonementui ar „Mažylio svajonei“. Galioja 12 mėnesių nuo išdavimo. Būtina išankstinė registracija.</p>
+        <Link className="mt-3 inline-flex font-medium text-gold underline underline-offset-4" to="/dovanu-kuponas">Pateikti kupono užklausą</Link>
       </section>
 
       <div className="mt-8">
