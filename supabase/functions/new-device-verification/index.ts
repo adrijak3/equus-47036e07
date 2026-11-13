@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
   }
   if(body.action==="verify") {
     const code=String(body.code||"");
-    if(!/^\\d{6}$/.test(code)) return reply({error:"INVALID_CODE"},400);
+    if(!/^\d{6}$/.test(code)) return reply({error:"INVALID_CODE"},400);
     // Multiple valid codes may still be in flight because email is queued.
     // Accept any unused, unexpired challenge for THIS user + THIS device,
     // not only the newest one. Limit attempts across the whole set.
