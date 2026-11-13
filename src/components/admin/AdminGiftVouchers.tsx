@@ -35,7 +35,7 @@ export function AdminGiftVouchers() {
   const [updating,setUpdating]=useState<string|null>(null);
   const load=async () => {
     setLoading(true);
-    const {data,error}=await supabase.from("gift_voucher_requests" as never)
+    const {data,error}=await (supabase as any).from("gift_voucher_requests")
       .select("id,buyer_name,buyer_email,buyer_phone,recipient_name,recipient_phone,service_type,quoted_price_eur,notes,status,created_at")
       .order("created_at",{ascending:false}).limit(250);
     setLoading(false);
@@ -45,8 +45,8 @@ export function AdminGiftVouchers() {
   useEffect(() => {void load();},[]);
   const change=async (row:GiftRequest,status:"contacted"|"cancelled") => {
     setUpdating(row.id);
-    const {error}=await supabase.from("gift_voucher_requests" as never)
-      .update({status,updated_at:new Date().toISOString()} as never)
+    const {error}=await (supabase as any).from("gift_voucher_requests")
+      .update({status,updated_at:new Date().toISOString()})
       .eq("id",row.id);
     setUpdating(null);
     if(error) {toast.error("Nepavyko pakeisti būsenos.");return;}
