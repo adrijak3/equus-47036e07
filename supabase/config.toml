@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.admin-new-device-code]
 verify_jwt = true
+
+[functions.submit-gift-voucher-request]
+verify_jwt = false
