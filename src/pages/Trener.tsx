@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { addDays, dbDayOfWeek, formatDateISO, formatTime, WEEKDAYS_LT } from "@/lib/equus";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
-import { levelOf, trainerGroupState, LEVEL_META, type RidingLevel } from "@/lib/levels";
+import { trainerGroupState, type RidingLevel } from "@/lib/levels";
 import { TrainerRidersTab } from "@/components/trainer/TrainerRidersTab";
 import { useTrainerScope } from "@/components/trainer/useTrainerScope";
 import { useTrainerRoster } from "@/components/trainer/useTrainerRoster";
@@ -971,7 +971,7 @@ function MyLessons() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="font-display text-base text-foreground">{formatTime(slot.time)}</span>
                         <span className={state.full ? "text-xs text-avail-full" : "text-xs text-avail-free"}>
-                          {group.length}/{state.maxAllowed} · {state.reason}
+                          {group.length}/{state.maxAllowed}
                         </span>
                       </div>
                       {group.length === 0 ? (
@@ -981,9 +981,6 @@ function MyLessons() {
                           {group.map((r) => (
                             <li key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
                               <span className="font-medium">{r.name}</span>
-                              <span className={`rounded-full border px-2 py-0.5 text-[10px] ${LEVEL_META[r.level].cls}`}>
-                                {LEVEL_META[r.level].label}
-                              </span>
                               {r.horse && <span className="text-xs text-muted-foreground">Žirgas: {r.horse}</span>}
                             </li>
                           ))}
