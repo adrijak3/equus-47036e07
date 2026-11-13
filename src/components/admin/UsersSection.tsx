@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { RiderLevelBadge } from "@/components/RiderLevelBadge";
 import { UserProfileSheet } from "@/components/admin/UserProfileSheet";
 import { Search, UserPlus2, PhoneCall, Link2, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -114,11 +113,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
     return m;
   }, [permSlots]);
   const vacationByUser = useMemo(() => new Set(vacations.map((v) => v.user_id)), [vacations]);
-  const rosterLevelByUser = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const r of trainerRiders) if (r.rider_user_id) m[r.rider_user_id] = r.level;
-    return m;
-  }, [trainerRiders]);
 
   const filtered = profiles.filter((p) => {
     const q = query.trim().toLowerCase();
@@ -232,7 +226,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
                   const unpaid = us.some((s) => !s.paid);
                   const permCount = (permByUser[p.id] ?? []).length;
                   const onVacation = vacationByUser.has(p.id);
-                  const rosterLevel = rosterLevelByUser[p.id];
                   return (
                     <tr
                       key={p.id}
@@ -242,7 +235,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-display text-gold truncate">{p.full_name}</span>
-                          <RiderLevelBadge level={rosterLevel ?? (p as any).riding_level} compact />
                         </div>
                         <div className="text-xs text-muted-foreground sm:hidden">{p.phone ?? "—"}</div>
                       </td>
