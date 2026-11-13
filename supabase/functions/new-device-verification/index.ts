@@ -70,18 +70,33 @@ Deno.serve(async (req: Request) => {
   }
   if(body.action==="verify") {
     const code=String(body.code||"");
-    if(!/^\d{6}$/.test(code)) return reply({error:"INVALID_CODE"},400);
-    const {data:challenge,error:challengeError}=await db.from("equus_device_challenges").select("id,code_hash,attempts,expires_at,consumed_at").eq("user_id",user.id).eq("device_hash",deviceHash).order("created_at",{ascending:false}).limit(1).maybeSingle();
-    if(challengeError || !challenge || challenge.consumed_at || new Date(challenge.expires_at).getTime()<=now || challenge.attempts>=5) return reply({error:"EXPIRED_OR_LOCKED"},400);
-    const {data:incremented,error:attemptError}=await db.from("equus_device_challenges").update({attempts:challenge.attempts+1}).eq("id",challenge.id).eq("attempts",challenge.attempts).is("consumed_at",null).select("id").maybeSingle();
+    if(!/^\\d{6}$/.test(code)) return reply({error:"INVALID_CODE"},400);
+    // Multiple valid codes may still be in flight because email is queued.
+    // Accept any unused, unexpired challenge for THIS user + THIS device,
+    // not only the newest one. Limit attempts across the whole set.
+    const {data:challenges,error:challengeError}=await db.from("equus_device_challenges")
+      .select("id,code_hash,attempts,expires_at,consumed_at")
+      .eq("user_id",user.id).eq("device_hash",deviceHash)
+      .gt("expires_at",new Date(now).toISOString())
+      .is("consumed_at",null).order("created_at",{ascending:false}).limit(5);
+    if(challengeError || !challenges?.length) return reply({error:"EXPIRED_OR_LOCKED"},400);
+    const newest=challenges[0];
+    if(newest.attempts>=5) return reply({error:"EXPIRED_OR_LOCKED"},400);
+    const {data:incremented,error:attemptError}=await db.from("equus_device_challenges")
+      .update({attempts:newest.attempts+1}).eq("id",newest.id)
+      .eq("attempts",newest.attempts).is("consumed_at",null).select("id").maybeSingle();
     if(attemptError || !incremented) return reply({error:"RETRY"},409);
     const actual=await hmac(serviceKey,user.id+":"+deviceHash+":"+code);
-    if(actual!==challenge.code_hash) return reply({error:"INVALID_CODE"},400);
+    if(!challenges.some(ch=>ch.code_hash===actual)) return reply({error:"INVALID_CODE"},400);
     const {error:trustError}=await db.from("equus_trusted_devices").upsert({
-      user_id:user.id,device_hash:deviceHash,created_at:new Date().toISOString(),last_seen_at:new Date().toISOString(),expires_at:new Date(now+180*86400000).toISOString(),revoked_at:null
+      user_id:user.id,device_hash:deviceHash,created_at:new Date().toISOString(),
+      last_seen_at:new Date().toISOString(),
+      expires_at:new Date(now+180*86400000).toISOString(),revoked_at:null
     },{onConflict:"user_id,device_hash"});
     if(trustError) return reply({error:"TRUST_SAVE_FAILED"},500);
-    await db.from("equus_device_challenges").update({consumed_at:new Date().toISOString()}).eq("id",challenge.id);
+    // Invalidate ALL outstanding codes after successful verification.
+    await db.from("equus_device_challenges").update({consumed_at:new Date().toISOString()})
+      .eq("user_id",user.id).eq("device_hash",deviceHash).is("consumed_at",null);
     return reply({ok:true,trusted:true});
   }
   return reply({error:"INVALID_ACTION"},400);
