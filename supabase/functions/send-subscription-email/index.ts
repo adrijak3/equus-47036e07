@@ -519,6 +519,29 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
   return emailShell("Abonementas reikalingas", "Priminimas apie būsimą treniruotę", inner);
 }
 
+function giftVoucherEmailHtml(payload: any, admin: boolean) {
+  const service=esc(payload?.service_label || "Dovanų kuponas");
+  const amount=payload?.price_eur == null ? "Kaina derinama" : formatEur(payload.price_eur);
+  const buyer=esc(payload?.buyer_name || "");
+  const recipient=esc(payload?.recipient_name || "");
+  const details=admin
+    ? '<p><strong>Pirkėjas:</strong> '+buyer+'</p>'
+      +'<p><strong>El. paštas:</strong> '+esc(payload?.buyer_email || "")+'</p>'
+      +'<p><strong>Telefonas:</strong> '+esc(payload?.buyer_phone || "")+'</p>'
+      +'<p><strong>Gavėjas:</strong> '+recipient+'</p>'
+      +'<p><strong>Gavėjo telefonas:</strong> '+esc(payload?.recipient_phone || "")+'</p>'
+      +(payload?.notes ? '<p><strong>Pastabos:</strong> '+esc(payload.notes)+'</p>' : "")
+    : '<p>Sveiki, '+buyer+'! Gavome Jūsų dovanų kupono užklausą.</p>';
+  const inner=details
+    +'<p><strong>Paslauga:</strong> '+service+'</p>'
+    +'<p><strong>Kaina:</strong> '+amount+'</p>'
+    +(admin
+      ? '<p>Užklausą rasite Equus administravimo skiltyje „Dovanų kuponai“.</p>'
+      : '<p>Susisieksime dėl apmokėjimo ir kupono paruošimo. Tai dar nėra apmokėtas ar išduotas kuponas.</p>'
+        +'<p>Išduotas kuponas galios 12 mėnesių nuo išdavimo datos. Visoms paslaugoms reikia išankstinės registracijos.</p>');
+  return emailShell(admin ? "Nauja kupono užklausa" : "Kupono užklausa gauta", "Equus dovanų kuponai", inner);
+}
+
 function newDeviceLoginHtml(clientName: string, payload: any) {
   const code = String(payload?.code || "");
   const inner =
@@ -743,7 +766,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "new_device_login", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "new_device_login", "gift_voucher_received", "gift_voucher_admin", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Unsupported event type: " + event.event_type,
@@ -832,6 +855,14 @@ Deno.serve(async (req) => {
       if (event.event_type === "new_device_login") {
         subject = "Equus: patvirtinkite naują įrenginį";
         html = newDeviceLoginHtml(clientName, event.payload || {});
+      }
+      if (event.event_type === "gift_voucher_received") {
+        subject = "Equus: gavome dovanų kupono užklausą";
+        html = giftVoucherEmailHtml(event.payload || {}, false);
+      }
+      if (event.event_type === "gift_voucher_admin") {
+        subject = "Equus: nauja dovanų kupono užklausa";
+        html = giftVoucherEmailHtml(event.payload || {}, true);
       }
 
       if (event.event_type === "welcome_new_rider") {
