@@ -148,6 +148,19 @@ Deno.serve(async (request: Request) => {
     return json({ error: "AUDIT_FAILED" }, 500);
   }
 
+  // Admin-issued replacement explicitly revokes previous email codes.
+  // A normal resend does not: delayed emails remain valid until expiry.
+  const { error: revokeError } = await db.from("equus_device_challenges")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("user_id", targetUserId)
+    .eq("device_hash", challenge.device_hash)
+    .neq("id", created.id)
+    .is("consumed_at", null);
+  if (revokeError) {
+    await db.from("equus_device_challenges").delete().eq("id", created.id);
+    await db.from("equus_admin_device_code_audit").delete().eq("replacement_challenge_id", created.id);
+    return json({ error: "REPLACEMENT_FAILED" }, 500);
+  }
   // Never log, email, or persist the plaintext code. It is returned only once.
   return json({ code, expiresAt, oneTime: true });
 });
