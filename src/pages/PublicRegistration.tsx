@@ -515,6 +515,13 @@ export default function PublicRegistration() {
         <Link to="/auth?tab=signin" className="text-sm font-medium text-foreground underline underline-offset-4">Prisijungti</Link>
       </div>
 
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-5">
+        <p className="text-sm">Ieškote dovanos?</p>
+        <Link to="/dovanu-kuponas" className="font-medium text-gold underline underline-offset-4">
+          Įsigyti dovanų kuponą
+        </Link>
+      </div>
+
       <div className="mb-6 grid grid-cols-4 gap-2">
         {[1, 2, 3, 4].map((number) => (
           <div
