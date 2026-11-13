@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { VacationsPanel } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { AdminPublicRequests } from "@/components/AdminPublicRequests";
+import { AdminGiftVouchers } from "@/components/admin/AdminGiftVouchers";
 import { AdminReviews } from "@/components/AdminReviews";
 import { AdminDuplicateBookings } from "@/components/AdminDuplicateBookings";
 import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
@@ -279,7 +280,7 @@ export default function Admin() {
               <SubscriptionPurchaseRequestsPanel />
             </TabsContent>
             <TabsContent value="messages"><MessagesTab /></TabsContent>
-            <TabsContent value="registrations"><AdminPublicRequests /></TabsContent>
+            <TabsContent value="registrations"><AdminPublicRequests /><AdminGiftVouchers /></TabsContent>
             <TabsContent value="reviews"><AdminReviews /></TabsContent>
             <TabsContent value="bugReports"><AdminBugReports /></TabsContent>
             <TabsContent value="duplicates"><AdminDuplicateBookings /></TabsContent>
