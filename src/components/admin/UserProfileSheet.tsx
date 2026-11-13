@@ -432,9 +432,6 @@ function UserDetailsBody({
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => onRename(first, last, phone)}>Išsaugoti</Button>
-
-            <p className="text-xs text-muted-foreground italic">Atnaujina ir profilį, ir trenerio raitelių sąrašą.</p>
-          </div>
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
