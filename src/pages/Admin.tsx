@@ -21,8 +21,6 @@ import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { AdminPublicRequests } from "@/components/AdminPublicRequests";
 import { AdminReviews } from "@/components/AdminReviews";
 import { AdminDuplicateBookings } from "@/components/AdminDuplicateBookings";
-import { RiderLevelBadge, RiderLevelSelect } from "@/components/RiderLevelBadge";
-import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
 import { AdminCancellationHistory } from "@/components/AdminCancellationHistory";
 import { AdminActivityHistory } from "@/components/admin/AdminActivityHistory";
