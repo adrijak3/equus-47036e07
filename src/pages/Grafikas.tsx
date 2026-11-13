@@ -66,7 +66,6 @@ import {
   RiderActionSheet,
   type RiderTarget,
 } from "@/components/RiderActionSheet";
-import { RiderLevelBadge } from "@/components/RiderLevelBadge";
 import { GuestRiderDialog } from "@/components/GuestRiderDialog";
 import {
   levelOf,
@@ -1007,55 +1006,18 @@ export default function Grafikas() {
       .filter((b) => b.is_paused_for_subscription !== true)
       .map((b) => riderLevel(b, slot));
 
-  const getGroupInfo = (
-    date: Date,
-    time: string,
-    slot: TimeSlot,
-  ) => {
-    const cap = getCapacity(
-      date,
-      time,
-      slot.max_capacity,
-      slot.trainer_name,
-    );
-
-    const isJolita =
-      !!slot.trainer_name &&
-      slot.trainer_name.toLowerCase().includes("jolita");
-
-    if (!isJolita) {
-      const taken = getSlotBookings(
-        date,
-        time,
-        slot,
-      ).filter((b) => b.is_paused_for_subscription !== true).length;
-
-      return {
-        trainer: slot.trainer_name ?? null,
-        capacity: cap,
-        taken,
-        note: null as string | null,
-        levels: [] as RidingLevel[],
-      };
-    }
-
-    const levels = slotLevels(
-      date,
-      time,
-      slot,
-    );
-
-    const state = trainerGroupState(
-      levels,
-      cap,
-    );
-
+  // All groups, including Jolita's, follow the configured seat limit.
+  // Rider skill labels never change booking capacity.
+  const getGroupInfo = (date: Date, time: string, slot: TimeSlot) => {
+    const capacity = getCapacity(date, time, slot.max_capacity, slot.trainer_name);
+    const taken = getSlotBookings(date, time, slot)
+      .filter((b) => b.is_paused_for_subscription !== true).length;
     return {
-      trainer: slot.trainer_name,
-      capacity: state.maxAllowed,
-      taken: state.total,
-      note: null,
-      levels,
+      trainer: slot.trainer_name ?? null,
+      capacity,
+      taken,
+      note: null as string | null,
+      levels: [] as RidingLevel[],
     };
   };
 
@@ -4395,17 +4357,6 @@ export default function Grafikas() {
                                             {perm && (
                                               <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />
                                             )}
-
-                                            {(isAdmin ||
-                                              isTrainer) &&
-                                              slot.trainer_name && (
-                                                <RiderLevelBadge
-                                                  level={
-                                                    b.riding_level
-                                                  }
-                                                  compact
-                                                />
-                                              )}
 
                                             <span
                                               className={cn(
