@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Trash2, X, Pencil, Save } from "lucide-react";
-import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { useTrainerRoster, riderKey } from "@/components/trainer/useTrainerRoster";
 
 interface PickerCandidate {
@@ -22,12 +21,6 @@ export function TrainerRidersTab() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
-
-  const setLevel = async (id: string, level: RidingLevel) => {
-    const { error } = await supabase.from("trainer_riders").update({ level }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    void reload();
-  };
 
   const beginNoteEdit = (id: string, current: string | null) => {
     setEditingNote(id);
@@ -52,13 +45,6 @@ export function TrainerRidersTab() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-gold/15 bg-gradient-card p-4">
-        <p className="text-sm text-muted-foreground">
-          Čia matote tik savo raitelius. Raiteliai, kurių čia nėra, visur laikomi{" "}
-          <strong className="text-foreground">pradedančiaisiais</strong>.
-        </p>
-      </section>
-
       <Button variant="gold" className="h-12 w-full text-base" onClick={() => setPickerOpen(true)}>
         <Plus className="h-5 w-5" /> Pridėti raitelį
       </Button>
@@ -89,20 +75,6 @@ export function TrainerRidersTab() {
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {(Object.keys(LEVEL_META) as RidingLevel[]).map((lvl) => (
-                  <button
-                    key={lvl}
-                    onClick={() => setLevel(r.id, lvl)}
-                    className={`h-10 rounded-full border px-4 text-sm transition ${
-                      r.level === lvl ? LEVEL_META[lvl].cls : "border-border text-muted-foreground"
-                    }`}
-                  >
-                    {LEVEL_META[lvl].emoji} {LEVEL_META[lvl].label}
-                  </button>
-                ))}
               </div>
 
               {editingNote === r.id ? (
