@@ -813,6 +813,21 @@ export default function Grafikas() {
 
   useEffect(() => {
     void loadData();
+    let lastRefresh = Date.now();
+    // Refresh occupancy when returning to the schedule, not every minute.
+    // This prevents showing an old "1 place free" after another rider books.
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRefresh < 30_000) return;
+      lastRefresh = Date.now();
+      void loadData();
+    };
+    window.addEventListener("focus", refreshOnReturn);
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => {
+      window.removeEventListener("focus", refreshOnReturn);
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
 
@@ -1275,10 +1290,8 @@ export default function Grafikas() {
       if (code === "SLOT_FULL" && clickedSlot) {
         const exactGroup = getGroupInfo(date, time, clickedSlot);
         if (exactGroup.taken >= exactGroup.capacity) {
-          toast.error(
-            eligibility?.message ??
-              "Ši treniruotė jau pilna.",
-          );
+          toast.error("Vietos jau užimtos. Grafikas atnaujinamas.");
+          await loadData();
           return false;
         }
         // Exact slot has room; continue to the insert below.
@@ -1319,11 +1332,14 @@ export default function Grafikas() {
     if (error) {
       toast.error(
         error.code === "23505"
-          ? "Jūs jau užregistruoti į šią pamoką"
-          : /registr|abonement|abonemento|savait/i.test(error.message)
-            ? error.message
-            : "Klaida: " + error.message,
+          ? "Jūs jau užregistruoti į šią pamoką."
+          : error.message.includes("SLOT_FULL")
+            ? "Vietos jau užimtos. Grafikas atnaujinamas."
+            : /registr|abonement|abonemento|savait/i.test(error.message)
+              ? error.message
+              : "Nepavyko užregistruoti. Patikrinkite grafiką.",
       );
+      await loadData();
       return false;
     }
 
