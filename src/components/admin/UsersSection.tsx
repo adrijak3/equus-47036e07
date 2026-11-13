@@ -12,7 +12,6 @@ interface Profile { id: string; full_name: string; phone: string | null; riding_
 interface Sub { id: string; user_id: string | null; lessons_total: number; lessons_used: number; expires_at: string; paid: boolean; }
 interface PermSlot { id: string; user_id: string; day_of_week: number; slot_time: string; }
 interface Vacation { id: string; user_id: string; starts_on: string; ends_on: string; }
-interface TrainerRiderRow { id: string; trainer_user_id: string; rider_user_id: string | null; level: string; }
 interface GuestRider {
   id: string; first_name: string; last_name: string; phone: string | null; email: string | null;
   is_newcomer: boolean; linked_user_id: string | null;
@@ -35,7 +34,6 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
   const [subs, setSubs] = useState<Sub[]>([]);
   const [permSlots, setPermSlots] = useState<PermSlot[]>([]);
   const [vacations, setVacations] = useState<Vacation[]>([]);
-  const [trainerRiders, setTrainerRiders] = useState<TrainerRiderRow[]>([]);
   const [guests, setGuests] = useState<GuestRider[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -47,19 +45,17 @@ export function UsersSection({ focusUserId, onClearFocus }: { focusUserId?: stri
   const load = async () => {
     setLoading(true);
     const today = new Date().toISOString().slice(0, 10);
-    const [p, s, ps, v, tr, g] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, phone, riding_level").order("full_name"),
+    const [p, s, ps, v, g] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
       supabase.from("subscriptions").select("id, user_id, lessons_total, lessons_used, expires_at, paid").order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time"),
       supabase.from("vacations").select("id, user_id, starts_on, ends_on").lte("starts_on", today).gte("ends_on", today),
-      supabase.from("trainer_riders").select("id, trainer_user_id, rider_user_id, level"),
       supabase.from("guest_riders").select("id, first_name, last_name, phone, email, is_newcomer, linked_user_id").order("created_at", { ascending: false }),
     ]);
     setProfiles((p.data ?? []) as any);
     setSubs((s.data ?? []) as any);
     setPermSlots((ps.data ?? []) as any);
     setVacations((v.data ?? []) as any);
-    setTrainerRiders((tr.data ?? []) as any);
     setGuests((g.data ?? []) as any);
     setLoading(false);
   };
