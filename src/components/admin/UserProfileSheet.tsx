@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RiderLevelBadge, RiderLevelSelect } from "@/components/RiderLevelBadge";
-import { LEVEL_META, type RidingLevel } from "@/lib/levels";
 import { WEEKDAYS_LT, formatTime, formatDateISO, isValidTime } from "@/lib/equus";
 import { SubscriptionCard } from "@/pages/Paskyra";
 import { TimeInput } from "@/components/TimeInput";
@@ -44,21 +42,17 @@ export function UserProfileSheet({
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [past, setPast] = useState<Booking[]>([]);
-  const [rosterLevel, setRosterLevel] = useState<string | undefined>(undefined);
-  const [trainerIds, setTrainerIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = async (id: string) => {
     setLoading(true);
     const today = formatDateISO(new Date());
-    const [p, s, ps, v, bookings, tr, roles] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, phone, riding_level, experience_text, phone_is_parent").eq("id", id).maybeSingle(),
+    const [p, s, ps, v, bookings] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, phone, experience_text, phone_is_parent").eq("id", id).maybeSingle(),
       supabase.from("subscriptions").select("*").eq("user_id", id).order("purchase_date", { ascending: false }),
       supabase.from("permanent_slots").select("id, user_id, day_of_week, slot_time").eq("user_id", id).order("day_of_week").order("slot_time"),
       (supabase as any).from("vacations").select("id, user_id, starts_on, ends_on, note").eq("user_id", id).order("starts_on", { ascending: false }),
       supabase.from("bookings").select("id, slot_date, slot_time, status, trainer_name, is_individual, counts_in_subscription, subscription_id").eq("user_id", id).order("slot_date", { ascending: false }).order("slot_time").limit(100),
-      supabase.from("trainer_riders").select("trainer_user_id, rider_user_id, level").eq("rider_user_id", id),
-      supabase.from("user_roles").select("user_id").eq("role", "trainer"),
     ]);
     const allBookings = (bookings.data ?? []) as any[];
     const upcomingBookings = allBookings
@@ -75,8 +69,6 @@ export function UserProfileSheet({
     setVacations((v.data ?? []) as any);
     setUpcoming(upcomingBookings as any);
     setPast(pastBookings as any);
-    setRosterLevel(((tr.data ?? []) as any[])[0]?.level);
-    setTrainerIds(((roles.data ?? []) as any[]).map((r) => r.user_id));
     setLoading(false);
   };
 
@@ -91,22 +83,6 @@ export function UserProfileSheet({
   const notifyAndReload = () => {
     onChanged?.();
     if (userId) load(userId);
-  };
-
-  const setLevel = async (level: RidingLevel) => {
-    if (!profile) return;
-    const { error } = await supabase.from("profiles").update({ riding_level: level } as any).eq("id", profile.id);
-    if (error) { toast.error(error.message); return; }
-    for (const trainerId of trainerIds) {
-      const { data: existing } = await supabase.from("trainer_riders").select("id").eq("trainer_user_id", trainerId).eq("rider_user_id", profile.id).maybeSingle();
-      if (existing) {
-        await supabase.from("trainer_riders").update({ level }).eq("id", (existing as any).id);
-      } else {
-        await supabase.from("trainer_riders").insert({ trainer_user_id: trainerId, rider_user_id: profile.id, level });
-      }
-    }
-    toast.success(`${profile.full_name}: ${LEVEL_META[level].label}`);
-    notifyAndReload();
   };
 
   const renameUser = async (first: string, last: string, phone: string) => {
@@ -309,8 +285,6 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
             vacations={vacations}
             upcoming={upcoming}
             past={past}
-            rosterLevel={rosterLevel}
-            onSetLevel={setLevel}
             onRename={renameUser}
             onChangeEmail={changeEmail}
             onResetPassword={resetPassword}
@@ -332,13 +306,12 @@ Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS.`)) return;
 }
 
 function UserDetailsBody({
-  profile, subs, permSlots, vacations, upcoming, past, rosterLevel,
-  onSetLevel, onRename, onChangeEmail, onResetPassword, onDelete, onTogglePaid, onEditLessons, onEditUsed, onDeleteSub,
+  profile, subs, permSlots, vacations, upcoming, past,
+  onRename, onChangeEmail, onResetPassword, onDelete, onTogglePaid, onEditLessons, onEditUsed, onDeleteSub,
   onAddPermSlot, onChangePermSlotTime, onRemovePermSlot, onAddVacation, onRemoveVacation,
 }: {
   profile: Profile; subs: Sub[]; permSlots: PermSlot[]; vacations: Vacation[];
-  upcoming: Booking[]; past: Booking[]; rosterLevel?: string;
-  onSetLevel: (lvl: RidingLevel) => void;
+  upcoming: Booking[]; past: Booking[];
   onRename: (first: string, last: string, phone: string) => void;
   onChangeEmail: (email: string) => Promise<boolean>;
   onResetPassword: () => void;
@@ -459,12 +432,7 @@ function UserDetailsBody({
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => onRename(first, last, phone)}>Išsaugoti</Button>
-          <div className="pt-2 border-t border-gold/10 space-y-2">
-            <Label>Vidinis raitelio lygis (trenerio grafikas)</Label>
-            <div className="flex items-center gap-2">
-              <RiderLevelSelect value={(rosterLevel ?? profile.riding_level) as RidingLevel} onChange={onSetLevel} />
-              <RiderLevelBadge level={rosterLevel ?? profile.riding_level} />
-            </div>
+
             <p className="text-xs text-muted-foreground italic">Atnaujina ir profilį, ir trenerio raitelių sąrašą.</p>
           </div>
         </TabsContent>
