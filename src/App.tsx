@@ -38,6 +38,7 @@ const Trener = lazy(() => import("./pages/Trener"));
 const Informacija = lazy(() => import("./pages/Informacija"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PublicRegistration = lazy(() => import("./pages/PublicRegistration"));
+const GiftVoucherRequest = lazy(() => import("./pages/GiftVoucherRequest"));
 const Reviews = lazy(() => import("./pages/Reviews"));
 const PrivatumoPolitika = lazy(() => import("./pages/PrivatumoPolitika"));
 const TaisyklesIrSalygos = lazy(() => import("./pages/TaisyklesIrSalygos"));
@@ -129,6 +130,7 @@ const App = () => (
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/registracija" element={<PublicRegistration />} />
+                  <Route path="/dovanu-kuponas" element={<GiftVoucherRequest />} />
                   <Route path="/registracija/:token" element={<PublicRegistration />} />
                   <Route path="/atsiliepimai" element={<Reviews />} />
                   <Route path="/privatumo-politika" element={<PrivatumoPolitika />} />
