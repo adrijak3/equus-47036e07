@@ -69,7 +69,6 @@ import {
 import { GuestRiderDialog } from "@/components/GuestRiderDialog";
 import {
   levelOf,
-  trainerGroupState,
   blockReason,
   type RidingLevel,
 } from "@/lib/levels";
