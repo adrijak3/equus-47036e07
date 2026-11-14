@@ -36,7 +36,6 @@ import { AdminCheatSheet } from "@/components/admin/AdminCheatSheet";
 import { loadHorseNamesForBookings } from "@/lib/horseNames";
 import { SubscriptionPurchaseRequestsPanel } from "@/components/SubscriptionPurchaseRequests";
 import { AdminBugReports } from "@/components/AdminBugReports";
-import { AdminDeviceCodes } from "@/components/admin/AdminDeviceCodes";
 
 interface TimeSlot { id: string; day_of_week: number; slot_time: string; max_capacity: number; one_off_date: string | null; trainer_name?: string | null; }
 interface CancelReq {
@@ -306,10 +305,6 @@ export default function Admin() {
               <details className="rounded-xl border border-border/60 bg-background/40 p-4">
                 <summary className="cursor-pointer font-medium">Pranešimai</summary>
                 <div className="mt-4"><AdminNotificationsTab /></div>
-              </details>
-              <details className="rounded-xl border border-border/60 bg-background/40 p-4">
-                <summary className="cursor-pointer font-medium">Prisijungimo kodai · nauji įrenginiai</summary>
-                <div className="mt-4"><AdminDeviceCodes /></div>
               </details>
               <details className="rounded-xl border border-border/60 bg-background/40 p-4">
                 <summary className="cursor-pointer font-medium">Svetainės priežiūra</summary>
