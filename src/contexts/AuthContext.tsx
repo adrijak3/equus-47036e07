@@ -151,7 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : profile?.full_name ?? "";
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // A normal logout signs out this browser only. Global logout is an
+    // explicit separate choice under Paskyra → Saugumas.
+    await supabase.auth.signOut({ scope: "local" });
     setProfile(null);
     setIsAdmin(false);
     setIsTrainer(false);
