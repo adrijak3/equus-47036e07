@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { NEW_LOGIN_DEVICE_CHECK_KEY } from "./Security";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,7 +114,6 @@ export default function Auth() {
 
   const handleGoogle = async () => {
     setLoading(true);
-    sessionStorage.setItem(NEW_LOGIN_DEVICE_CHECK_KEY, "1");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       // The callback route completes the PKCE exchange before navigating home.
@@ -124,7 +122,7 @@ export default function Auth() {
       // /auth/v1/callback URL (not this app callback URL).
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) { sessionStorage.removeItem(NEW_LOGIN_DEVICE_CHECK_KEY); setLoading(false); toast.error(error.message); }
+    if (error) { setLoading(false); toast.error(error.message); }
   };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -155,7 +153,6 @@ export default function Auth() {
     }
     // Explicitly mark this sign-in, so already signed-in users are never
     // suddenly asked for a new-device email code on page load.
-    sessionStorage.setItem(NEW_LOGIN_DEVICE_CHECK_KEY, "1");
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password: parsed.data.password,
@@ -164,7 +161,6 @@ export default function Auth() {
     setLoading(false);
     renewCaptcha();
     if (error) {
-      sessionStorage.removeItem(NEW_LOGIN_DEVICE_CHECK_KEY);
       toast.error("Neteisingas el. paštas arba slaptažodis");
       return;
     }
