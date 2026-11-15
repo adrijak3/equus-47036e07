@@ -964,6 +964,15 @@ Deno.serve(async (req) => {
         }, 500);
       }
 
+      if (event.event_type === "gift_voucher_issued" && event.payload?.request_id) {
+        const { error: issueError } = await supabase.from("gift_voucher_requests").update({
+          status: "completed", issued_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq("id", String(event.payload.request_id))
+          .not("payment_confirmed_at", "is", null);
+        if (issueError) console.error("Voucher was emailed but issue status sync failed:", issueError.code);
+      }
+
       console.log("Equus email sent:", {
         event_id: eventId,
         event_type: event.event_type,
