@@ -13,7 +13,7 @@ import {
   MapPin,
   Menu,
   Palette,
-  Phone,
+  MessageSquare,
   ShieldCheck,
   Sparkles,
   Tag,
