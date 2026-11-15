@@ -449,7 +449,12 @@ export default function Grafikas() {
   const weekEnd = days[6];
   const firstRiderWeek = releasedMonday.getTime();
   const lastRiderWeek = addDays(releasedMonday, 7).getTime();
-  const previousWeekBlocked = !staffCalendar && weekStart.getTime() <= firstRiderWeek;
+  // Keep at most two previous calendar weeks visible to staff.
+  // Older bookings stay in the database for subscriptions and audit history.
+  const oldestStaffWeek = startOfWeek(addDays(new Date(), -14)).getTime();
+  const previousWeekBlocked = staffCalendar
+    ? weekStart.getTime() <= oldestStaffWeek
+    : weekStart.getTime() <= firstRiderWeek;
   const nextWeekBlocked = !staffCalendar && weekStart.getTime() >= lastRiderWeek;
 
 
