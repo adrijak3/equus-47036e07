@@ -698,6 +698,33 @@ Deno.serve(async (req) => {
     if (eventError) throw eventError;
     if (!event) throw new Error("EMAIL_EVENT_NOT_FOUND");
 
+    // Subscription emails are optional; security, transactional emails and
+    // important admin announcements must not be blocked by this setting.
+    if (
+      event.user_id &&
+      ["subscription_expiring", "subscription_requirement_warning"].includes(event.event_type)
+    ) {
+      const { data: prefs, error: prefsError } = await supabase
+        .from("profiles")
+        .select("receive_subscription_emails")
+        .eq("id", event.user_id)
+        .maybeSingle();
+      if (prefsError) throw prefsError;
+      if (prefs?.receive_subscription_emails === false) {
+        const { error: skipError } = await supabase
+          .from("email_events")
+          .update({
+            status: "skipped",
+            last_error: "Optional subscription emails disabled by rider.",
+            processing_started_at: null,
+          })
+          .eq("id", eventId)
+          .eq("status", "processing");
+        if (skipError) throw skipError;
+        return json({ ok: true, processed: true, skipped: true, reason: "USER_EMAIL_OPT_OUT" });
+      }
+    }
+
     // An exemption may have been added after this warning was queued.
     // Re-check at send time so an already-pending warning cannot slip through.
     if (event.event_type === "subscription_requirement_warning" && event.user_id) {
