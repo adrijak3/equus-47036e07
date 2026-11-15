@@ -113,7 +113,7 @@ function PurchaseRequestCard({
           </p>
         </div>
         <div className="sm:text-right">
-          <p className="font-display text-3xl text-gradient-gold tabular-nums">{Number(current.price_eur).toFixed(2)} €</p>
+          <p className="equus-price text-3xl text-gold">{Number(current.price_eur).toFixed(2)} €</p>
           <span className={"mt-2 inline-flex rounded-full border px-3 py-1 text-xs " + (current.status === "approved" ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-500" : current.status === "rejected" ? "border-destructive/25 bg-destructive/10 text-destructive" : "border-gold/20 bg-gold/5 text-gold")}>
             {statusLabel(current.status)}
           </span>
