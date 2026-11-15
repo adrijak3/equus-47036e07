@@ -1106,38 +1106,22 @@ export default function Grafikas() {
   // Europe/Vilnius
   // ----------------------------------------------------------
 
-  const canSelectHorse = (date: Date) => {
+  const canSelectHorse = (date: Date, time?: string) => {
     const now = new Date();
-
-    const todayISO = new Intl.DateTimeFormat(
-      "en-CA",
-      {
-        timeZone: "Europe/Vilnius",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      },
-    ).format(now);
-
+    const todayISO = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Vilnius", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(now);
+    const vilniusTime = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vilnius", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).format(now);
     const dateISO = formatDateISO(date);
-
-    const vilniusTime =
-      new Intl.DateTimeFormat(
-        "en-GB",
-        {
-          timeZone: "Europe/Vilnius",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        },
-      ).format(now);
-
-    const dayBefore = new Date(`${dateISO}T12:00:00Z`);
-    dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
-    const dayBeforeISO = dayBefore.toISOString().slice(0, 10);
-
-    return (todayISO === dayBeforeISO && vilniusTime >= "20:00") ||
-      (todayISO === dateISO && vilniusTime < "21:00");
+    const sunday = new Date(`${dateISO}T12:00:00Z`);
+    // Monday-Sunday bookings open the preceding Sunday, 00:00 Lithuania time.
+    sunday.setUTCDate(sunday.getUTCDate() - (sunday.getUTCDay() || 7));
+    const opensOnISO = sunday.toISOString().slice(0, 10);
+    return todayISO >= opensOnISO && (
+      todayISO < dateISO || (todayISO === dateISO && vilniusTime < (time?.slice(0, 5) ?? "23:59"))
+    );
   };
 
   const isTodayVilnius = (date: Date) => {
@@ -1554,10 +1538,10 @@ export default function Grafikas() {
         )
       ) {
         toast.error(
-          "Žirgo pasirinkimas baigėsi 21:00.",
+          "Žirgo pasirinkimas šiai treniruotei baigėsi.",
         );
       } else if (error.message.includes("HORSE_SELECTION_NOT_OPEN")) {
-        toast.error("Žirgą galėsite pasirinkti nuo 20:00 val. dieną prieš treniruotę.");
+        toast.error("Žirgus kitai savaitei galėsite rinktis nuo sekmadienio.");
       } else if (
         error.message.includes(
           "HORSE_SELECTION_ONLY_ON_TRAINING_DAY",
@@ -3703,6 +3687,12 @@ export default function Grafikas() {
                           </button>
                         </div>
 
+                        {isAdmin && (
+                          <details className="mt-3 rounded-lg border border-border/60 px-2 py-2">
+                            <summary className="cursor-pointer select-none text-center text-xs font-medium text-gold">
+                              Nustatymai
+                            </summary>
+                            <div className="mt-2 space-y-2">
                         {isAdmin &&
                           !isPast && (
                             <button
@@ -3762,11 +3752,10 @@ export default function Grafikas() {
                             <button
                               type="button"
                               onClick={async () => {
-                                const note =
-                                  window.prompt(
-                                    "Priežastis (nebūtina):",
-                                    "",
-                                  ) ?? "";
+                                if (!window.confirm("Atšaukti visas šios dienos rezervacijas? Šį veiksmą reikės atšaukti atskirai.")) return;
+                                const entered = window.prompt("Priežastis (nebūtina):", "");
+                                if (entered === null) return;
+                                const note = entered;
 
                                 const {
                                   error,
@@ -3806,6 +3795,10 @@ export default function Grafikas() {
                               )}
                             </button>
                           )}
+
+                            </div>
+                          </details>
+                        )}
                       </div>
 
                       {getWeeklyNotes(
@@ -4342,19 +4335,10 @@ export default function Grafikas() {
                                                 "font-bold",
                                             )}
                                           >
-                                            <span
-                                              className={cn(
-                                                "text-sm leading-none",
-                                                mine
-                                                  ? "text-gold"
-                                                  : "text-gold/40",
-                                              )}
-                                            >
-                                              •
-                                            </span>
-
-                                            {perm && (
-                                              <Star className="w-2.5 h-2.5 text-gold fill-gold flex-shrink-0" />
+                                            {perm ? (
+                                              <Star aria-label="Nuolatinė registracija" className="mt-0.5 h-3 w-3 shrink-0 fill-gold text-gold" />
+                                            ) : (
+                                              <span aria-label="Vienkartinė registracija" className={cn("text-sm leading-none", mine ? "text-gold" : "text-gold/50")}>•</span>
                                             )}
 
                                             <span
@@ -4408,13 +4392,9 @@ export default function Grafikas() {
                                                   : undefined
                                               }
                                             >
-                                              {b.is_guest
-                                                ? b.guest_name ??
-                                                  "Svečias"
-                                                : formatBookedName(
-                                                    b.profile_name ??
-                                                      "—",
-                                                  )}
+                                              {formatBookedName(
+                                                b.is_guest ? (b.guest_name ?? "Svečias") : (b.profile_name ?? "—"),
+                                              )}
 
                                               {b.is_individual && (
                                                 <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">
@@ -4434,6 +4414,7 @@ export default function Grafikas() {
                                               <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1.5 flex-shrink-0">
                                                 {canSelectHorse(
                                                   date,
+                                                  slot.slot_time,
                                                 ) && (
                                                   <button
                                                     type="button"
@@ -4454,6 +4435,7 @@ export default function Grafikas() {
 
                                                 {!canSelectHorse(
                                                   date,
+                                                  slot.slot_time,
                                                 ) &&
                                                   isTodayVilnius(
                                                     date,
