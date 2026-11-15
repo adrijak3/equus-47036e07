@@ -204,6 +204,7 @@ async function sendGmailEmail(
   html: string,
   imageUrl?: string | null,
   attachmentBaseName?: string | null,
+  replyTo?: string | null,
 ) {
   let message: string;
 
@@ -232,6 +233,7 @@ async function sendGmailEmail(
     message = [
       `From: ${from}`,
       `To: ${to}`,
+      ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
       `Subject: ${encodeMimeHeader(subject)}`,
       "MIME-Version: 1.0",
       `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
@@ -265,6 +267,7 @@ async function sendGmailEmail(
     message = [
       `From: ${from}`,
       `To: ${to}`,
+      ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
       `Subject: ${encodeMimeHeader(subject)}`,
       "MIME-Version: 1.0",
       "Content-Type: text/html; charset=UTF-8",
@@ -528,7 +531,7 @@ function giftVoucherPaymentHtml(payload: any) {
     '<p>Sveiki, '+buyer+'!</p><p>Ačiū už dovanų kupono užklausą.</p>'
     +'<p><strong>Suma:</strong> '+price+'</p>'
     +'<p><strong>Apmokėjimo informacija:</strong></p><p>'+instructions+'</p>'
-    +'<p><strong>Atsakykite į šį laišką</strong> ir pridėkite pavedimo patvirtinimą. '
+    +'<p><strong>Atsakykite į šį laišką</strong> (equusjojimomokykla@gmail.com) ir pridėkite pavedimo patvirtinimą. '
     +'Apmokėjimą tikrinsime rankiniu būdu, o kuponą atsiųsime tik po patvirtinimo.</p>');
 }
 
@@ -934,6 +937,7 @@ Deno.serve(async (req) => {
         ["global_important_update", "gift_voucher_issued"].includes(event.event_type)
           ? String(event.payload?.image_url || "") || null : null,
         event.event_type === "gift_voucher_issued" ? String(event.payload?.image_filename || "") : null,
+        event.event_type === "gift_voucher_payment" ? "equusjojimomokykla@gmail.com" : null,
       );
 
       if (!gmailResponse.ok) {
