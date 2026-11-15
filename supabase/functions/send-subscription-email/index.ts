@@ -724,14 +724,19 @@ Deno.serve(async (req) => {
 
     // Subscription emails are optional; security, transactional emails and
     // important admin announcements must not be blocked by this setting.
-    if (
-      event.user_id &&
-      ["subscription_expiring", "subscription_requirement_warning"].includes(event.event_type)
-    ) {
+    if (["subscription_expiring", "subscription_requirement_warning"].includes(event.event_type)) {
+      let preferenceUserId: string | null = event.user_id;
+      if (!preferenceUserId && event.subscription_id) {
+        const { data: subscription, error: subscriptionError } = await supabase
+          .from("subscriptions").select("user_id").eq("id", event.subscription_id).maybeSingle();
+        if (subscriptionError) throw subscriptionError;
+        preferenceUserId = subscription?.user_id ?? null;
+      }
+      if (preferenceUserId) {
       const { data: prefs, error: prefsError } = await supabase
         .from("profiles")
         .select("receive_subscription_emails")
-        .eq("id", event.user_id)
+        .eq("id", preferenceUserId)
         .maybeSingle();
       if (prefsError) throw prefsError;
       if (prefs?.receive_subscription_emails === false) {
@@ -746,6 +751,7 @@ Deno.serve(async (req) => {
           .eq("status", "processing");
         if (skipError) throw skipError;
         return json({ ok: true, processed: true, skipped: true, reason: "USER_EMAIL_OPT_OUT" });
+      }
       }
     }
 
