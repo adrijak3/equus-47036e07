@@ -203,6 +203,7 @@ async function sendGmailEmail(
   subject: string,
   html: string,
   imageUrl?: string | null,
+  attachmentBaseName?: string | null,
 ) {
   let message: string;
 
@@ -218,7 +219,7 @@ async function sendGmailEmail(
     }
 
     const extension = contentType.split("/")[1] || "jpeg";
-    const filename = `equus-pranesimas.${extension === "jpeg" ? "jpg" : extension}`;
+    const filename = `${attachmentBaseName && /^dovanu_kuponas_equus_[a-zA-Z0-9_]{1,80}$/.test(attachmentBaseName) ? attachmentBaseName : "equus-pranesimas"}.${extension === "jpeg" ? "jpg" : extension}`;
     const imageBase64 = arrayBufferToBase64(await imageResponse.arrayBuffer());
     const mixedBoundary = `equus-mixed-${crypto.randomUUID()}`;
     const relatedBoundary = `equus-related-${crypto.randomUUID()}`;
@@ -519,6 +520,29 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
   return emailShell("Abonementas reikalingas", "Priminimas apie būsimą treniruotę", inner);
 }
 
+function giftVoucherPaymentHtml(payload: any) {
+  const buyer=esc(payload?.buyer_name || "");
+  const price=payload?.price_eur===null||payload?.price_eur===undefined?"kaina derinama":formatEur(payload.price_eur);
+  const instructions=esc(payload?.payment_instructions || "").replace(/\n/g,"<br>");
+  return emailShell("Dovanų kupono apmokėjimas","Equus jojimo mokykla",
+    '<p>Sveiki, '+buyer+'!</p><p>Ačiū už dovanų kupono užklausą.</p>'
+    +'<p><strong>Suma:</strong> '+price+'</p>'
+    +'<p><strong>Apmokėjimo informacija:</strong></p><p>'+instructions+'</p>'
+    +'<p><strong>Atsakykite į šį laišką</strong> ir pridėkite pavedimo patvirtinimą. '
+    +'Apmokėjimą tikrinsime rankiniu būdu, o kuponą atsiųsime tik po patvirtinimo.</p>');
+}
+
+function giftVoucherIssuedHtml(payload: any) {
+  const buyer=esc(payload?.buyer_name || "");
+  const recipient=esc(payload?.recipient_name || "");
+  return emailShell("Jūsų Equus dovanų kuponas","Dovanų kuponas paruoštas",
+    '<p>Sveiki, '+buyer+'!</p><p>Apmokėjimas patvirtintas. '
+    +'Prisegame viso dydžio dovanų kupono paveikslėlį, kurį galėsite atsisiųsti.</p>'
+    +'<p><strong>Gavėjas:</strong> '+recipient+'</p>'
+    +'<p>Kuponas galioja 12 mėnesių nuo išdavimo. Paslaugai būtina išankstinė registracija.</p>'
+    +'<p>Iki pasimatymo Equus jojimo mokykloje!</p>');
+}
+
 function giftVoucherEmailHtml(payload: any, admin: boolean) {
   const service=esc(payload?.service_label || "Dovanų kuponas");
   const amount=payload?.price_eur == null ? "Kaina derinama" : formatEur(payload.price_eur);
@@ -780,7 +804,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, processed: true, event_id: eventId, error: "EMAIL_MISSING" }, 422);
       }
 
-      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "gift_voucher_received", "gift_voucher_admin", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
+      if (!["subscription_purchase", "subscription_expiring", "global_important_update", "password_reset", "gift_voucher_received", "gift_voucher_admin", "gift_voucher_payment", "gift_voucher_issued", "subscription_requirement_warning", "welcome_new_rider"].includes(event.event_type)) {
         await supabase.rpc("mark_email_event_failed", {
           _event_id: eventId,
           _error: "Unsupported event type: " + event.event_type,
@@ -870,6 +894,14 @@ Deno.serve(async (req) => {
         subject = "Equus: gavome dovanų kupono užklausą";
         html = giftVoucherEmailHtml(event.payload || {}, false);
       }
+      if (event.event_type === "gift_voucher_payment") {
+        subject = "Equus: dovanų kupono apmokėjimo informacija";
+        html = giftVoucherPaymentHtml(event.payload || {});
+      }
+      if (event.event_type === "gift_voucher_issued") {
+        subject = "Equus: Jūsų dovanų kuponas";
+        html = giftVoucherIssuedHtml(event.payload || {});
+      }
       if (event.event_type === "gift_voucher_admin") {
         subject = "Equus: nauja dovanų kupono užklausa";
         html = giftVoucherEmailHtml(event.payload || {}, true);
@@ -893,7 +925,9 @@ Deno.serve(async (req) => {
         recipientEmail,
         subject,
         html,
-        event.event_type === "global_important_update" ? String(event.payload?.image_url || "") || null : null,
+        ["global_important_update", "gift_voucher_issued"].includes(event.event_type)
+          ? String(event.payload?.image_url || "") || null : null,
+        event.event_type === "gift_voucher_issued" ? String(event.payload?.image_filename || "") : null,
       );
 
       if (!gmailResponse.ok) {
