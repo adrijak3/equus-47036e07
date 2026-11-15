@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TurnstileCaptcha, TURNSTILE_SITE_KEY } from "@/components/TurnstileCaptcha";
@@ -29,6 +29,15 @@ export default function GiftVoucherRequest() {
     recipientName: "", recipientPhone: "", service: "",
     notes: "", website: "",
   });
+  const [designs, setDesigns] = useState<Array<{id:string;label:string;image_path:string}>>([]);
+  const [designId, setDesignId] = useState("");
+  useEffect(() => {
+    void (async () => {
+      const { data, error } = await (supabase as any).from("gift_voucher_designs")
+        .select("id,label,image_path").eq("active",true).order("created_at",{ascending:true});
+      if (!error) setDesigns(data || []);
+    })();
+  }, []);
   const [agreed, setAgreed] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaNonce, setCaptchaNonce] = useState(0);
@@ -52,7 +61,7 @@ export default function GiftVoucherRequest() {
     }
     setSending(true);
     const {data,error}=await supabase.functions.invoke("submit-gift-voucher-request", {
-      body: { ...form, captchaToken },
+      body: { ...form, designId, captchaToken },
     });
     setSending(false);
     setCaptchaToken("");
@@ -103,6 +112,25 @@ export default function GiftVoucherRequest() {
                 </p>
               )}
             </section>
+            <section className="space-y-3 border-t border-border/70 pt-5">
+              <h2 className="text-lg font-semibold">Kupono dizainas</h2>
+              {designs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Dizainų pavyzdžiai ruošiami. Dėl dizaino susisieksime pateikus užklausą.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {designs.map(design => {
+                    const url = supabase.storage.from("gift-voucher-designs").getPublicUrl(design.image_path).data.publicUrl;
+                    return <button type="button" key={design.id}
+                      aria-pressed={designId === design.id}
+                      onClick={() => setDesignId(design.id)}
+                      className={`overflow-hidden rounded-lg border-2 text-left ${designId===design.id?"border-gold":"border-border"}`}>
+                      <img alt={design.label} src={url} className="aspect-[3/4] w-full object-contain bg-muted/20" />
+                      <span className="block p-2 text-sm font-medium">{design.label}</span>
+                    </button>;
+                  })}
+                </div>
+              )}
+            </section>
             <section className="space-y-4 border-t border-border/70 pt-5">
               <h2 className="text-lg font-semibold">Pirkėjo duomenys</h2>
               <div className="space-y-2"><Label htmlFor="gift-buyer-name">Vardas ir pavardė</Label>
@@ -131,7 +159,7 @@ export default function GiftVoucherRequest() {
               <div className="sr-only" aria-hidden="true"><Label htmlFor="gift-website">Svetainė</Label>
                 <Input id="gift-website" tabIndex={-1} autoComplete="off"
                   value={form.website} onChange={(e) => set("website")(e.target.value)}/></div>
-              <p className="text-sm text-muted-foreground">Dizainą galėsite pasirinkti vėliau – kai turėsime visus variantus.</p>
+              <p className="text-sm text-muted-foreground">Kuponas siunčiamas tik administracijai patikrinus apmokėjimą. Jis galioja 12 mėnesių nuo išdavimo.</p>
             </section>
             <section className="border-t border-border/70 pt-5 space-y-4">
               <div className="flex items-start gap-3">
@@ -142,7 +170,7 @@ export default function GiftVoucherRequest() {
                 </Label>
               </div>
               <TurnstileCaptcha key={captchaNonce} onToken={setCaptchaToken}/>
-              <Button type="submit" variant="gold" className="w-full sm:w-auto" disabled={sending || !agreed || !selected}>
+              <Button type="submit" variant="gold" className="w-full sm:w-auto" disabled={sending || !agreed || !selected || (designs.length > 0 && !designId)}>
                 {sending ? "Siunčiama…" : "Pateikti kupono užklausą"}
               </Button>
               <p className="text-xs text-muted-foreground">Apmokėjimą ir kupono išdavimą suderins administracija.</p>
