@@ -47,7 +47,7 @@ export function AdminPublicRequests() {
   const [selected, setSelected] = useState<any | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [cleaning, setCleaning] = useState(false);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
@@ -164,23 +164,23 @@ export function AdminPublicRequests() {
     await load();
   };
 
-  const cancelRequest = async (row: any) => {
-    if (cancellingId) return;
-    if (row.status === "cancelled") return;
-    setCancellingId(row.id);
+  const completeRequest = async (row: any) => {
+    if (completingId) return;
+    if (row.status === "completed") return;
+    setCompletingId(row.id);
     const { error } = await (supabase as any).rpc("admin_set_public_registration_status", {
-      _request_id: row.id, _status: "cancelled", _note: null,
+      _request_id: row.id, _status: "completed", _note: null,
     });
-    setCancellingId(null);
+    setCompletingId(null);
     if (error) {
-      toast.error(error.message || "Nepavyko atšaukti užklausos.");
+      toast.error(error.message || "Nepavyko pažymėti užklausos kaip įvykdytos.");
       return;
     }
-    setRows(current => current.map(r => r.id === row.id ? {...r, status: "cancelled"} : r));
+    setRows(current => current.map(r => r.id === row.id ? {...r, status: "completed"} : r));
     if (selected?.id === row.id) setSelected(null);
-    toast.success("Užklausa atšaukta.");
+    toast.success("Užklausa pažymėta kaip įvykdyta.");
     try { await sendPublicRegistrationEmail(row.id, "status"); }
-    catch { toast.error("Atšaukta, bet pranešimo išsiųsti nepavyko."); }
+    catch { toast.error("Būsena pakeista, bet pranešimo išsiųsti nepavyko."); }
   };
 
   const clientUrl = selected?.public_token
@@ -305,12 +305,12 @@ export function AdminPublicRequests() {
                   </span>
                 </div>
               </button>
-              {row.status !== "cancelled" && row.status !== "completed" && (
+              {row.status !== "completed" && row.status !== "cancelled" && (
                 <Button type="button" variant="ghost" size="sm"
-                  disabled={cancellingId === row.id}
+                  disabled={completingId === row.id}
                   className="my-auto mr-2 shrink-0 text-destructive"
-                  onClick={() => void cancelRequest(row)}>
-                  {cancellingId === row.id ? "Atšaukiama…" : "Atšaukti"}
+                  onClick={() => void completeRequest(row)}>
+                  {completingId === row.id ? "Žymima…" : "Įvykdyta"}
                 </Button>
               )}
             </div>
@@ -397,9 +397,9 @@ export function AdminPublicRequests() {
                 <Button variant="outline" onClick={() => decide("approved")}>
                   Patvirtinti
                 </Button>
-                <Button variant="destructive" disabled={Boolean(cancellingId)}
-                  onClick={() => void cancelRequest(selected)}>
-                  Atšaukti
+                <Button variant="destructive" disabled={Boolean(completingId)}
+                  onClick={() => void completeRequest(selected)}>
+                  Įvykdyta
                 </Button>
               </div>
 
