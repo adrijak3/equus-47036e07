@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, MessageCircle, X, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact";
 
 const FAQ = {
   lt: [
@@ -24,7 +23,6 @@ let dismissedInThisDocument = false;
 
 export function EquusHelpWidget() {
   const { language } = useLanguage();
-  const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(() => dismissedInThisDocument);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -73,7 +71,6 @@ export function EquusHelpWidget() {
                 </div>
               ))}
             </div>
-            {holiday && <p className="mt-3 rounded-md bg-muted p-3 text-xs leading-relaxed">{holidayContactText(holiday)}</p>}
             <div className="mt-4 flex flex-wrap gap-2">
               <Link to="/kainos" onClick={() => setOpen(false)} className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted">{lt ? "Kainos" : "Prices"}</Link>
               <Link to="/grafikas" onClick={() => setOpen(false)} className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted">{lt ? "Grafikas" : "Schedule"}</Link>
