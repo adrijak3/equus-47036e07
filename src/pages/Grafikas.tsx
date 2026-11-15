@@ -2692,46 +2692,22 @@ export default function Grafikas() {
     await loadData();
   };
 
-  const adminRemoveBooking = async (
-    bookingId: string,
-  ) => {
+  const adminRemoveBooking = async (bookingId: string) => {
+    if (adminBusy) return;
     setAdminBusy(true);
-
-    const { data, error } =
-      await supabase
-        .from("bookings")
-        .update({
-          status: "cancelled",
-        })
-        .eq("id", bookingId)
-        .select("id");
-
+    const { data, error } = await (supabase as any).rpc("admin_cancel_booking", {
+      _booking_id: bookingId,
+    });
     setAdminBusy(false);
-
-    if (error) {
-      toast.error(
-        `Nepavyko pašalinti: ${error.message}`,
-      );
+    if (error || !data?.ok) {
+      toast.error(error?.message?.includes("COMPLETED_LESSON")
+        ? "Įvykusios treniruotės koreguojamos atskirai, kad nebūtų pakeista abonemento apskaita."
+        : error?.message || "Nepavyko atšaukti registracijos.");
       await loadData();
       return;
     }
-
-    if (!data || data.length === 0) {
-      toast.error(
-        "Nepavyko pašalinti — neturite teisių arba pamoka jau pakeista.",
-      );
-      await loadData();
-      return;
-    }
-
-    setBookings((current) =>
-      current.filter(
-        (b) => b.id !== bookingId,
-      ),
-    );
-
-    toast.success("Pašalinta");
-
+    toast.success(data.already_cancelled ? "Registracija jau atšaukta." : "Registracija atšaukta.");
+    setBookings((current) => current.filter((b) => b.id !== bookingId));
     await loadData();
   };
 
