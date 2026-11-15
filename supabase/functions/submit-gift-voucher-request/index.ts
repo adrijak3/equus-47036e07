@@ -44,6 +44,7 @@ Deno.serve(async (request:Request) => {
   const recipientPhone=read("recipientPhone",30);
   const service=read("service",60);
   const notes=read("notes",1500);
+  const designId=read("designId",60);
   const trap=read("website",100);
   if(trap) return respond({ok:true});
   if(!(service in PRICES) ||
@@ -76,10 +77,15 @@ Deno.serve(async (request:Request) => {
   ]);
   if(ipLimit.error || emailLimit.error) return respond({error:"RATE_LIMIT_UNAVAILABLE"},503);
   if(ipLimit.data!==true || emailLimit.data!==true) return respond({error:"TOO_MANY_REQUESTS"},429);
+  if(designId) {
+    const {data:design,error:designError}=await db.from("gift_voucher_designs")
+      .select("id").eq("id",designId).eq("active",true).maybeSingle();
+    if(designError || !design) return respond({error:"INVALID_DESIGN"},400);
+  }
   const {data:created,error:insertError}=await db.from("gift_voucher_requests").insert({
     buyer_name:buyerName,buyer_email:buyerEmail,buyer_phone:buyerPhone,
     recipient_name:recipientName,recipient_phone:recipientPhone,service_type:service,
-    quoted_price_eur:PRICES[service],notes:notes||null,status:"new",
+    quoted_price_eur:PRICES[service],notes:notes||null,design_choice:designId||null,status:"new",
   }).select("id").single();
   if(insertError || !created) {
     console.error("Gift request insertion failed:",insertError?.code);
