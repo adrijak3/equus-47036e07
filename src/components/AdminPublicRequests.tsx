@@ -47,6 +47,7 @@ export function AdminPublicRequests() {
   const [selected, setSelected] = useState<any | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [cleaning, setCleaning] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
@@ -163,6 +164,25 @@ export function AdminPublicRequests() {
     await load();
   };
 
+  const cancelRequest = async (row: any) => {
+    if (cancellingId) return;
+    if (row.status === "cancelled") return;
+    setCancellingId(row.id);
+    const { error } = await (supabase as any).rpc("admin_set_public_registration_status", {
+      _request_id: row.id, _status: "cancelled", _note: null,
+    });
+    setCancellingId(null);
+    if (error) {
+      toast.error(error.message || "Nepavyko atšaukti užklausos.");
+      return;
+    }
+    setRows(current => current.map(r => r.id === row.id ? {...r, status: "cancelled"} : r));
+    if (selected?.id === row.id) setSelected(null);
+    toast.success("Užklausa atšaukta.");
+    try { await sendPublicRegistrationEmail(row.id, "status"); }
+    catch { toast.error("Atšaukta, bet pranešimo išsiųsti nepavyko."); }
+  };
+
   const clientUrl = selected?.public_token
     ? `${location.origin}/registracija/${selected.public_token}`
     : "";
@@ -226,7 +246,7 @@ export function AdminPublicRequests() {
           {cleaning ? "Trinama…" : `Ištrinti pasirinktus (${selectedCleanableRows.length})`}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Galima išvalyti tik atmestas, atšauktas ar įvykdytas registracijas. Aktyvios ir patvirtintos lieka.
+          Aktyvias užklausas pirmiausia atšaukite. Jau įrašytas treniruotes tvarkykite grafike.
         </p>
       </div>
 
@@ -238,7 +258,7 @@ export function AdminPublicRequests() {
           return (
             <div
               key={row.id}
-              className="flex items-stretch gap-2 rounded-xl border border-gold/15 bg-gradient-card"
+              className="flex items-stretch gap-2 border-b border-border/60 py-1"
             >
               <label
                 className={`flex items-start p-4 ${canClean ? "cursor-pointer" : "cursor-not-allowed opacity-35"}`}
@@ -285,6 +305,14 @@ export function AdminPublicRequests() {
                   </span>
                 </div>
               </button>
+              {row.status !== "cancelled" && row.status !== "completed" && (
+                <Button type="button" variant="ghost" size="sm"
+                  disabled={cancellingId === row.id}
+                  className="my-auto mr-2 shrink-0 text-destructive"
+                  onClick={() => void cancelRequest(row)}>
+                  {cancellingId === row.id ? "Atšaukiama…" : "Atšaukti"}
+                </Button>
+              )}
             </div>
           );
         })
@@ -301,7 +329,7 @@ export function AdminPublicRequests() {
 
           {selected && (
             <div className="space-y-4">
-              <div className="space-y-1 rounded-xl bg-muted/30 p-4 text-sm">
+              <div className="space-y-1 border-b border-border/60 pb-4 text-sm">
                 <p>
                   <b>
                     {selected.first_name} {selected.last_name}
@@ -369,11 +397,9 @@ export function AdminPublicRequests() {
                 <Button variant="outline" onClick={() => decide("approved")}>
                   Patvirtinti
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => decide("rejected")}
-                >
-                  Atmesti
+                <Button variant="destructive" disabled={Boolean(cancellingId)}
+                  onClick={() => void cancelRequest(selected)}>
+                  Atšaukti
                 </Button>
               </div>
 
