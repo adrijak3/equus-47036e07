@@ -420,49 +420,12 @@ export default function Paskyra() {
               <QuickAction label="Prisijungimai ir saugumas" icon={<KeyRound className="h-4 w-4" />} onClick={() => navigate("/saugumas")} />
             </div>
           <ReadOnlyRecurringCard permanents={permanents} />
-          <Section title="Kontaktai" icon={<Phone className="h-4 w-4" />}>
-            <div className="grid gap-3 p-5 sm:grid-cols-2">
-              {holiday ? (
-                <div className="border-b border-border/50 py-4">
-                  <p className="text-sm font-semibold">Adrija · Atostogos</p>
-                  <p className="mt-2 text-sm leading-6 text-gold">{holidayContactText(holiday)}</p>
-                </div>
-              ) : hideAdminPhone ? (
-                <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-sm text-muted-foreground">
-                  Kontaktinė informacija kraunama…
-                </div>
-              ) : (
-                <a href="tel:+37062876090" className="group rounded-2xl border border-gold/15 bg-gradient-card p-4 transition-colors hover:border-gold/35">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold">Adrija</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Klausimai ir pagalba</p>
-                      <p className="mt-2 text-sm text-gold">+370 628 76090</p>
-                    </div>
-                    <Phone className="h-4 w-4 text-gold" />
-                  </div>
-                </a>
-              )}
-              <div className="border-b border-border/50 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">Laura</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Trenerė</p>
-                    <p className="mt-2 text-sm text-gold">+370 658 22872</p>
-                  </div>
-                  <Phone className="h-4 w-4 text-gold" />
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <a href="tel:+37065822872" className="inline-flex min-h-9 items-center rounded-lg border border-gold/20 px-3 text-xs hover:bg-gold/5">Skambinti</a>
-                  <a href="https://wa.me/37065822872" target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center rounded-lg border border-gold/20 px-3 text-xs hover:bg-gold/5">WhatsApp</a>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 sm:col-span-2">
-                <p className="text-xs text-muted-foreground">Parašyti administracijai</p>
-                <Button variant="outlineGold" size="sm" className="mt-3" onClick={() => navigate("/paskyra?tab=messages")}>
-                  <MessageSquare className="mr-2 h-4 w-4" /> Susisiekti žinute
-                </Button>
-              </div>
+          <Section title="Pagalba" icon={<MessageSquare className="h-4 w-4" />}>
+            <div className="p-4">
+              <a href="https://m.me/adriija.kalikaite" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-gold hover:underline">
+                <MessageSquare className="h-4 w-4" /> Rašyti Adrijai per Messenger
+              </a>
             </div>
           </Section>
           <Section title="Spalvų ir šviesumo tema" icon={<Palette className="h-4 w-4" />}><div className="p-5"><ThemeSwitcher /></div></Section>
