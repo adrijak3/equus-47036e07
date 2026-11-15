@@ -592,6 +592,7 @@ function AdminNotificationsTab() {
   const [globalLt, setGlobalLt] = useState("");
   const [globalEn, setGlobalEn] = useState("");
   const [globalAudience, setGlobalAudience] = useState<"app" | "email" | "both">("both");
+  const [excludeLaura, setExcludeLaura] = useState(true);
   const [globalImage, setGlobalImage] = useState<File | null>(null);
   const [globalImagePreview, setGlobalImagePreview] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -605,7 +606,7 @@ function AdminNotificationsTab() {
       toast.error("Nuotrauka galima tik el. pašto pranešimui.");
       return;
     }
-    if (!confirm("Išsiųsti šį svarbų pranešimą VISIEMS pasirinktu kanalu?")) return;
+    if (!confirm(`Išsiųsti pranešimą ${excludeLaura ? "visiems, išskyrus Laurą" : "visiems"} pasirinktu kanalu?`)) return;
 
     setSending(true);
     let imageUrl: string | null = null;
@@ -648,6 +649,7 @@ function AdminNotificationsTab() {
         _url: "/grafikas",
         _dedupe_key: dedupeKey,
         _send_push: true,
+        _exclude_laura: excludeLaura,
       });
 
       if (error) {
@@ -670,6 +672,7 @@ function AdminNotificationsTab() {
         _url: "/grafikas",
         _dedupe_key: dedupeKey,
         _image_url: imageUrl,
+        _exclude_laura: excludeLaura,
       });
       if (emailError) {
         setSending(false);
@@ -781,6 +784,14 @@ function AdminNotificationsTab() {
             ))}
           </div>
         </div>
+        <label className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-3 text-sm">
+          <input type="checkbox" checked={excludeLaura}
+            onChange={(event) => setExcludeLaura(event.target.checked)}
+            className="h-4 w-4 accent-[hsl(var(--gold))]" />
+          <span><strong>Visiems, išskyrus Laurą</strong>
+            <span className="block text-xs text-muted-foreground">Laurai nebus siunčiamas programėlės ar el. pašto pranešimas.</span>
+          </span>
+        </label>
         <div>
           <Label>Lietuviškai</Label>
           <textarea value={globalLt} onChange={(e) => setGlobalLt(e.target.value)} rows={4}
