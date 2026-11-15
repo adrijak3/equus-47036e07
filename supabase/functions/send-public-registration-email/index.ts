@@ -177,6 +177,20 @@ Deno.serve(async (req) => {
         subject = "Equus registracija patvirtinta";
         title = "Registracija patvirtinta";
         content = `Jūsų registracija patvirtinta administracijos.<p><strong>Paslauga:</strong> ${esc(service)}</p>${dateLine}${timeLine}${priceLine}${note}`;
+      } else if (status === "completed") {
+        subject = "Equus: Jūsų užsakymas įvykdytas";
+        title = "Užsakymas įvykdytas";
+        content = `<p>Ačiū, kad pasirinkote Equus jojimo mokyklą!</p>
+          <p>Jūsų užsakymas pažymėtas kaip įvykdytas.</p>
+          <p><strong>Paslauga:</strong> ${esc(service)}</p>
+          <p>Jeigu turite minutėlę, kviečiame pasidalyti savo patirtimi ir palikti atsiliepimą Google žemėlapiuose. Mums labai svarbi Jūsų nuomonė.</p>
+          <p style="margin:24px 0;">
+            <a href="${esc(Deno.env.get("GOOGLE_REVIEW_URL") || "https://maps.app.goo.gl/Tjd1rUUVSabq52ip6")}"
+              style="display:inline-block;padding:13px 22px;border-radius:9px;background:#285C8A;color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:700;">
+              Palikti atsiliepimą Google
+            </a>
+          </p>
+          <p style="font-size:13px;color:#647C94;">Atsiliepimas neprivalomas — dėkojame, kad apsilankėte.</p>`;
       } else if (status === "rejected") {
         subject = "Equus registracijos atnaujinimas";
         title = "Registracija atmesta";
@@ -188,7 +202,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    content += `<p style="margin-top:22px;"><a href="${esc(link)}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#5b6153;color:#fff;text-decoration:none;font-weight:700;">Peržiūrėti registracijos būseną</a></p><p style="margin-top:18px;">Su pagarba,<br>Equus Jojimo Mokykla</p>`;
+    if (action !== "status" || registration.status !== "completed") {
+      content += `<p style="margin-top:22px;"><a href="${esc(link)}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#5b6153;color:#fff;text-decoration:none;font-weight:700;">Peržiūrėti registracijos būseną</a></p>`;
+    }
+    content += `<p style="margin-top:18px;">Su pagarba,<br>Equus Jojimo Mokykla</p>`;
     await sendGmail(registration.email, subject, emailHtml(title, `Sveiki, ${esc(name)}!`, content));
     return json({ ok: true });
   } catch (error) {
