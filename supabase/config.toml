@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.submit-gift-voucher-request]
 verify_jwt = false
+
+[functions.admin-gift-voucher]
+verify_jwt = true
