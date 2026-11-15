@@ -3796,6 +3796,44 @@ export default function Grafikas() {
                             </button>
                           )}
 
+                            {getDayCancellation(date) && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!window.confirm("Grąžinti dieną ir prieš atšaukimą buvusias rezervacijas?")) return;
+                                  const {
+                                    error,
+                                  } =
+                                    await supabase
+                                      .from(
+                                        "day_cancellations" as any,
+                                      )
+                                      .delete()
+                                      .eq(
+                                        "note_date",
+                                        formatDateISO(date),
+                                      )
+                                      .is("trainer_name", null);
+
+                                  if (error) {
+                                    toast.error(
+                                      error.message,
+                                    );
+                                    return;
+                                  }
+
+                                  toast.success(
+                                    "Diena ir prieš atšaukimą buvusios rezervacijos atkurtos.",
+                                  );
+
+                                  await loadData();
+                                }}
+                                className="mt-1 w-full text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1"
+                              >
+                                Grąžinti dieną
+                              </button>
+                            )}
+
                             </div>
                           </details>
                         )}
@@ -3856,43 +3894,7 @@ export default function Grafikas() {
                               )}
                             </div>
 
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const {
-                                    error,
-                                  } =
-                                    await supabase
-                                      .from(
-                                        "day_cancellations" as any,
-                                      )
-                                      .delete()
-                                      .eq(
-                                        "note_date",
-                                        formatDateISO(
-                                          date,
-                                        ),
-                                      );
 
-                                  if (error) {
-                                    toast.error(
-                                      error.message,
-                                    );
-                                    return;
-                                  }
-
-                                  toast.success(
-                                    "Diena grąžinta į tvarkaraštį",
-                                  );
-
-                                  await loadData();
-                                }}
-                                className="mt-1 w-full text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1"
-                              >
-                                Grąžinti dieną
-                              </button>
-                            )}
                           </>
                         );
                       })()}
