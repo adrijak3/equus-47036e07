@@ -106,6 +106,28 @@ export default function Paskyra() {
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
+  const [subscriptionEmailEnabled, setSubscriptionEmailEnabled] = useState(true);
+  const [savingEmailPreference, setSavingEmailPreference] = useState(false);
+  useEffect(() => {
+    if (!user?.id) return;
+    void (async () => {
+      const { data, error } = await (supabase as any)
+        .from("profiles").select("receive_subscription_emails").eq("id", user.id).maybeSingle();
+      if (!error && data) setSubscriptionEmailEnabled(data.receive_subscription_emails !== false);
+    })();
+  }, [user?.id]);
+  const changeSubscriptionEmails = async (enabled: boolean) => {
+    if (!user?.id || savingEmailPreference) return;
+    setSavingEmailPreference(true);
+    const { data, error } = await (supabase as any).from("profiles")
+      .update({ receive_subscription_emails: enabled })
+      .eq("id", user.id).select("receive_subscription_emails").maybeSingle();
+    setSavingEmailPreference(false);
+    if (error || !data) { toast.error("Nepavyko išsaugoti pasirinkimo."); return; }
+    setSubscriptionEmailEnabled(data.receive_subscription_emails === true);
+    toast.success("El. laiškų nustatymai išsaugoti.");
+  };
+
   const [vacationOpen, setVacationOpen] = useState(false);
   useEffect(() => {
     if (location.pathname === "/paskyra" && requestedTab === "subs") {
@@ -410,6 +432,22 @@ export default function Paskyra() {
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
           </div>
+          <section className="rounded-xl border border-border/60 p-4 space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold">Abonementų el. laiškai</p>
+                <p className="mt-1 text-xs text-muted-foreground">Pasirenkami abonemento priminimai ir perspėjimai. Svarbūs administracijos pranešimai, prisijungimo ir užsakymų laiškai lieka įjungti.</p>
+              </div>
+              <label className="flex shrink-0 items-center gap-2 text-sm">
+                <input type="checkbox" aria-label="Gauti abonemento el. laiškus"
+                  checked={subscriptionEmailEnabled}
+                  disabled={savingEmailPreference}
+                  onChange={(e) => void changeSubscriptionEmails(e.target.checked)}
+                  className="h-4 w-4 accent-[hsl(var(--gold))]" />
+                {subscriptionEmailEnabled ? "Įjungta" : "Išjungta"}
+              </label>
+            </div>
+          </section>
           <details className="rounded-xl border border-border/60 bg-background/40 p-4">
             <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Kiti nustatymai</summary>
             <div className="mt-3 grid grid-cols-2 gap-2">
