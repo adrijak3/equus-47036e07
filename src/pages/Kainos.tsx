@@ -117,7 +117,7 @@ export default function Kainos() {
                   {list.prices.map((price, index) => (
                     <div key={index} className="flex items-center justify-between border-b border-gold/5 pb-1.5 text-sm last:border-0">
                       <span className="text-muted-foreground">{index + 1} {index === 0 ? "treniruotė" : "treniruotės"}</span>
-                      <span className="font-medium tabular-nums">{price} €</span>
+                      <span className="equus-price text-base">{price} €</span>
                     </div>
                   ))}
                 </div>
@@ -144,7 +144,7 @@ function Row({ label, price }: { label: string; price: string }) {
   return (
     <li className="flex items-baseline justify-between gap-4 pb-2 border-b border-gold/5">
       <span className="text-foreground/90">{label}</span>
-      <span className="text-xl font-display text-gradient-gold tabular-nums whitespace-nowrap">{price}</span>
+      <span className="equus-price text-2xl text-gold">{price}</span>
     </li>
   );
 }
