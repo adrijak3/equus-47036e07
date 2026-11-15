@@ -996,11 +996,36 @@ export default function Grafikas() {
         ),
     );
 
-    // Every active reservation is a separate occupied place, even when
-    // the privacy-safe API masks its rider ID or the same family has
-    // several bookings. Never merge rows by user_id in this view.
-    // Keep all distinct booking rows visible; the database owns deduplication.
-    const list = matching;
+    // Historical imports contain multiple completed rows for one rider at the
+    // same time (sometimes 7–8). Collapse those in the calendar only.
+    // Keep today's and future reservations untouched: capacity and distinct
+    // family members must always reflect actual booking rows.
+    const todayISO = formatDateISO(new Date());
+    const list = dateISO < todayISO
+      ? matching.filter((b, index, rows) => {
+          const key = b.family_rider_id
+            ? "family:" + b.family_rider_id
+            : b.guest_rider_id
+              ? "guest:" + b.guest_rider_id
+              : b.user_id
+                ? "user:" + b.user_id
+                : b.is_guest
+                  ? "guest-name:" + (b.guest_name || b.profile_name || b.id).toLowerCase()
+                  : b.id;
+          return rows.findIndex((other) => {
+            const otherKey = other.family_rider_id
+              ? "family:" + other.family_rider_id
+              : other.guest_rider_id
+                ? "guest:" + other.guest_rider_id
+                : other.user_id
+                  ? "user:" + other.user_id
+                  : other.is_guest
+                    ? "guest-name:" + (other.guest_name || other.profile_name || other.id).toLowerCase()
+                    : other.id;
+            return key === otherKey && b.status === other.status;
+          }) === index;
+        })
+      : matching;
 
     return list.sort((a, b) => {
       const pa = isPermanentBooking(a) ? 0 : 1;
