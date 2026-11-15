@@ -1333,9 +1333,9 @@ function ScheduleTab() {
         Talpą ir laiką gali keisti tiesiogiai — paspausk pieštuko ikoną prie reikšmės.
       </p>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
         {[1,2,3,4,5,6,7].map((dow) => (
-          <div key={dow} className="bg-gradient-card border border-gold/15 rounded-lg p-4">
+          <div key={dow} className="border-t border-border/60 pt-4">
             <h3 className="font-display text-lg text-gold mb-3">{WEEKDAYS_LT[dow - 1]}</h3>
             <ul className="space-y-1.5">
               {slots.filter((s) => s.day_of_week === dow).map((s) => (
