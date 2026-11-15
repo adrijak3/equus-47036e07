@@ -19,6 +19,7 @@ import {
   ArrowRightLeft,
   Check,
   UserRound,
+  Settings2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -336,6 +337,7 @@ export default function Grafikas() {
 
   const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [adminAddUserId, setAdminAddUserId] = useState("");
+  const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminAddAsIndividual, setAdminAddAsIndividual] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminOneOffTime, setAdminOneOffTime] = useState("");
@@ -2582,53 +2584,11 @@ export default function Grafikas() {
 
       toast.success("Individuali pamoka pridėta · 50 € (neapmokėta)");
       setAdminAddUserId("");
+    setAdminUserSearch("");
       setAdminAddAsIndividual(false);
       setForcePrompt(null);
       await loadData();
       return;
-    }
-
-    const isJolitaSlot =
-      !!slot?.trainer_name &&
-      slot.trainer_name
-        .toLowerCase()
-        .includes("jolita");
-
-    if (
-      isJolitaSlot &&
-      slot &&
-      !force
-    ) {
-      const reason = blockReason(
-        slotLevels(
-          date,
-          time,
-          slot,
-        ),
-        levelOf(
-          allProfiles.find(
-            (p) => p.id === userId,
-          )?.riding_level,
-        ),
-        getCapacity(
-          date,
-          time,
-          slot.max_capacity,
-          slot.trainer_name,
-        ),
-      );
-
-      if (reason) {
-        setForcePrompt({
-          date,
-          time,
-          userId,
-          reason,
-        });
-
-        toast.error(reason);
-        return;
-      }
     }
 
     setAdminBusy(true);
@@ -2657,6 +2617,7 @@ export default function Grafikas() {
 
     toast.success("Pridėta");
     setAdminAddUserId("");
+    setAdminUserSearch("");
     setForcePrompt(null);
 
     await loadData();
@@ -4091,6 +4052,7 @@ export default function Grafikas() {
                                       onClick={isAdmin && !slotPast ? () => {
                                         setAdminSlotDialog({ date, time: slot.slot_time, slot });
                                         setAdminAddUserId("");
+    setAdminUserSearch("");
                                         setAdminOneOffTime(slot.slot_time.slice(0, 5));
                                       } : undefined}
                                       onKeyDown={isAdmin && !slotPast ? (e) => {
@@ -4098,6 +4060,7 @@ export default function Grafikas() {
                                           e.preventDefault();
                                           setAdminSlotDialog({ date, time: slot.slot_time, slot });
                                           setAdminAddUserId("");
+    setAdminUserSearch("");
                                           setAdminOneOffTime(slot.slot_time.slice(0, 5));
                                         }
                                       } : undefined}
@@ -4239,11 +4202,12 @@ export default function Grafikas() {
                                             );
 
                                             setAdminAddUserId("");
+    setAdminUserSearch("");
                                             setAdminOneOffTime(slot.slot_time.slice(0, 5));
                                           }}
                                           className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-sm border border-gold/30 text-gold hover:bg-gold/10 transition-colors text-[11px] leading-none"
                                         >
-                                          
+                                          <Settings2 aria-hidden="true" className="h-3.5 w-3.5" />
                                         </button>
                                       )}
 
@@ -5452,60 +5416,47 @@ export default function Grafikas() {
               </Label>
 
               <div className="flex gap-2 mt-2">
-                <select
-                  value={
-                    adminAddUserId
-                  }
-                  onChange={(e) =>
-                    setAdminAddUserId(
-                      e.target.value,
-                    )
-                  }
-                  className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">
-                    — pasirinkite —
-                  </option>
-
-                  {allProfiles
-                    .filter(
-                      (p) => {
-                        if (
-                          !adminSlotDialog
-                        )
-                          return true;
-
-                        const booked =
-                          getSlotBookings(
-                            adminSlotDialog.date,
-                            adminSlotDialog.time,
-                            adminSlotDialog.slot,
-                          );
-
-                        return !booked.some(
-                          (b) =>
-                            b.user_id ===
-                            p.id,
-                        );
-                      },
-                    )
-                    .map(
-                      (p) => (
-                        <option
-                          key={
-                            p.id
-                          }
-                          value={
-                            p.id
-                          }
-                        >
-                          {
-                            p.full_name
-                          }
-                        </option>
-                      ),
-                    )}
-                </select>
+                <div className="relative min-w-0 flex-1">
+                  <Input
+                    value={adminUserSearch}
+                    onChange={(e) => {
+                      setAdminUserSearch(e.target.value);
+                      setAdminAddUserId("");
+                    }}
+                    placeholder="Ieškoti pagal vardą arba pavardę…"
+                    aria-label="Ieškoti vartotojo"
+                    autoComplete="off"
+                    className="w-full"
+                  />
+                  {adminUserSearch.trim() && !adminAddUserId && (
+                    <div role="listbox" aria-label="Rasti vartotojai"
+                      className="absolute z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+                      {allProfiles
+                        .filter((p) => {
+                          const q=adminUserSearch.trim().toLocaleLowerCase("lt");
+                          if (!p.full_name.toLocaleLowerCase("lt").includes(q)) return false;
+                          if (!adminSlotDialog) return true;
+                          return !getSlotBookings(
+                            adminSlotDialog.date, adminSlotDialog.time, adminSlotDialog.slot
+                          ).some((b) => b.user_id === p.id);
+                        })
+                        .slice(0, 30)
+                        .map((p) => (
+                          <button type="button" role="option" aria-selected={false} key={p.id}
+                            onClick={() => {
+                              setAdminAddUserId(p.id);
+                              setAdminUserSearch(p.full_name);
+                            }}
+                            className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted">
+                            {p.full_name}
+                          </button>
+                        ))}
+                      {allProfiles.filter(p => p.full_name.toLocaleLowerCase("lt").includes(adminUserSearch.trim().toLocaleLowerCase("lt"))).length === 0 && (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">Nerasta</p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <Button
                   variant="gold"
