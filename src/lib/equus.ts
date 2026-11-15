@@ -92,7 +92,7 @@ export function formatBookedName(fullName: string, displayName?: string | null):
   if (parts.length === 1) return parts[0];
   const first = parts[0];
   const surname = parts[parts.length - 1];
-  return `${first} ${surname.slice(0, 2)}`;
+  return `${first} ${surname.slice(0, 2)}.`;
 }
 
 export const TIME_SLOT_OPTIONS: string[] = (() => {
