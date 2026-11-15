@@ -7,13 +7,13 @@ import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact
 const FAQ = {
   lt: [
     ["Kaip užsiregistruoti?", "Jeigu esate naujas lankytojas, užpildykite pirmos treniruotės registraciją. Esami nariai registruojasi per grafiką."],
-    ["Kaip atšaukti pamoką?", "Atidarykite grafiką ir pasirinkite savo rezervaciją. Dėl išimčių kreipkitės į Laurą."],
+    ["Kaip atšaukti pamoką?", "Atidarykite grafiką ir pasirinkite savo rezervaciją. Jei reikia pagalbos, rašykite Adrijai per Messenger."],
     ["Kur vyksta treniruotės?", "Pakamšės g. 7, Daučionys, Vilniaus rajonas."],
     ["Nuo kokio amžiaus?", "„Mažylio svajonė“ – nuo 3 metų. Sportinės treniruotės – nuo 10 metų."],
   ],
   en: [
     ["How do I book?", "New riders can use first-lesson registration. Existing members book in the schedule."],
-    ["How do I cancel?", "Open the schedule and select your booking. Contact Laura if you need assistance."],
+    ["How do I cancel?", "Open the schedule and select your booking. Message Adrija on Messenger if you need help."],
     ["Where are lessons held?", "Pakamšės g. 7, Daučionys, Vilnius district."],
     ["What ages can attend?", "“Little one's dream” is available from age 3; sport riding lessons from age 10."],
   ],
@@ -81,13 +81,9 @@ export function EquusHelpWidget() {
             </div>
           </div>
           <footer className="space-y-2 border-t border-border bg-background/40 px-4 py-3">
-            <a href="https://m.me/100063701673482" target="_blank" rel="noreferrer" className="flex min-h-10 items-center justify-between rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
-              {lt ? "Rašyti Equus per Messenger" : "Message Equus on Messenger"} <ExternalLink className="h-4 w-4" />
+            <a href="https://m.me/adriija.kalikaite" target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-between rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
+              {lt ? "Rašyti Adrijai per Messenger" : "Message Adrija on Messenger"} <ExternalLink className="h-4 w-4" />
             </a>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <a href="tel:+37065822872" className="hover:underline">Laura · +370 658 22872</a>
-              {!hideAdminPhone && <a href="https://m.me/adriija.kalikaite" target="_blank" rel="noreferrer" className="hover:underline">{lt ? "Svetainės klausimai" : "Website support"}</a>}
-            </div>
           </footer>
         </section>
       )}
