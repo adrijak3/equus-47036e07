@@ -2582,7 +2582,7 @@ export default function Grafikas() {
         return;
       }
 
-      toast.success("Individuali pamoka pridėta · 50 € (neapmokėta)");
+      toast.success("Individuali pamoka pridėta. Jei yra tinkamas abonementas, pamoka priskirta jam.");
       setAdminAddUserId("");
     setAdminUserSearch("");
       setAdminAddAsIndividual(false);
@@ -4167,6 +4167,8 @@ export default function Grafikas() {
                                     {isAdmin &&
                                       !slotPast && (
                                         <button
+                                          aria-label="Laiko nustatymai"
+                                          title="Laiko nustatymai"
                                           type="button"
                                           onClick={() => {
                                             setAdminSlotDialog(
@@ -5466,8 +5468,7 @@ export default function Grafikas() {
                 <span>
                   <span className="block font-medium">Individuali pamoka · 50 €</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Tik vienam žmogui. Abonemento nereikia, mokėjimas pažymimas kaip negautas.
-                    Šis laikas turi būti tuščias.
+                    Tik vienam žmogui ir tuščiam laikui. Tinkamas individualus abonementas bus pritaikytas automatiškai.
                   </span>
                 </span>
               </label>
