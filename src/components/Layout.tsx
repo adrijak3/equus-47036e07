@@ -38,6 +38,7 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EffectsToggle from "@/components/EffectsToggle";
 import { EquusHelpWidget } from "@/components/EquusHelpWidget";
+import { CookieNotice } from "@/components/CookieNotice";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -532,6 +533,7 @@ export default function Layout({
         </nav>
       )}
       <EquusHelpWidget />
+      <CookieNotice />
 
       <main className="flex-1 overflow-x-hidden pb-20 sm:pb-0">
         <AnimatePresence mode="wait" initial={false}>
