@@ -258,6 +258,7 @@ export default function Grafikas() {
   const [overrides, setOverrides] = useState<SlotOverride[]>([]);
   const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
   const [permanents, setPermanents] = useState<PermanentSlot[]>([]);
+  const [recurringBookingIds, setRecurringBookingIds] = useState<Set<string>>(new Set());
   const [dayCancellations, setDayCancellations] = useState<
     { note_date: string; note: string | null; trainer_name: string | null }[]
   >([]);
@@ -465,6 +466,7 @@ export default function Grafikas() {
       waitingRes,
       permRes,
       cancelsRes,
+      recurringRes,
     ] = await Promise.all([
       supabase
         .from("time_slots")
@@ -496,6 +498,12 @@ export default function Grafikas() {
         .select("note_date, note, trainer_name")
         .gte("note_date", startISO)
         .lte("note_date", endISO),
+
+      // One public-safe marker per recurring booking. No rider IDs are exposed.
+      (supabase as any).rpc("get_schedule_recurring_booking_ids_safe", {
+        _start_date: startISO,
+        _end_date: endISO,
+      }),
     ]);
 
     if (slotsRes.error || bookingsRes.error) {
@@ -633,6 +641,12 @@ export default function Grafikas() {
     );
 
     setPermanents(permRes.data ?? []);
+    if (recurringRes.error) {
+      console.warn("Nepavyko įkelti nuolatinių registracijų žymėjimų:", recurringRes.error);
+    }
+    setRecurringBookingIds(new Set(
+      (recurringRes.data ?? []).map((item: { booking_id: string }) => item.booking_id),
+    ));
     setDayCancellations((cancelsRes.data as any[] | null) ?? []);
 
     // Trainer rosters
@@ -843,7 +857,8 @@ export default function Grafikas() {
   }, [isAdmin]);
 
   const isPermanentBooking = (b: Booking) => {
-    // A masked rider ID must never be treated as matching another masked ID.
+    // Server-generated marker works even when other riders' identities are masked.
+    if (recurringBookingIds.has(b.id)) return true;
     if (!b.user_id) return false;
     const dow = dbDayOfWeek(
       new Date(`${b.slot_date}T${b.slot_time}`),
