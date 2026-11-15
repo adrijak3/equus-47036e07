@@ -555,11 +555,13 @@ export default function Layout({
 
           <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-center sm:gap-6">
             <a
-              href="tel:+37065822872"
+              href="https://m.me/adriija.kalikaite"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 text-foreground/85 transition-colors hover:text-gold"
             >
-              <Phone className="h-3.5 w-3.5 text-gold" />
-              Laura · +370 658 22872
+              <MessageSquare className="h-3.5 w-3.5 text-gold" />
+              Rašyti Adrijai per Messenger
             </a>
 
             <a
