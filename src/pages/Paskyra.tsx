@@ -15,7 +15,6 @@ import { Horse } from "@/components/icons/Horse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { useHolidayContact, holidayContactText } from "@/hooks/useHolidayContact";
 
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
@@ -83,7 +82,6 @@ interface AccountProfile {
 }
 
 export default function Paskyra() {
-  const { holiday, hidden: hideAdminPhone } = useHolidayContact();
   const { user, profile, refreshProfile, activeProfileId, activeProfileName, linkedProfiles } = useAuth();
   const acting = activeProfileId ?? user?.id ?? null;
   const isLinked = !!user && acting !== user.id;
