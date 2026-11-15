@@ -1387,3 +1387,12 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
+
+/* Price figures use clear numerals rather than thin decorative headings. */
+.equus-price {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
