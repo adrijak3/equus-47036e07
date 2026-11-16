@@ -472,7 +472,7 @@ export default function Paskyra() {
             <div className="p-4">
               <a href="https://m.me/adriija.kalikaite" target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-gold hover:underline">
-                <MessageSquare className="h-4 w-4" /> Rašyti Adrijai per Messenger
+                <MessageSquare className="h-4 w-4" /> Reikia pagalbos?
               </a>
             </div>
           </Section>
