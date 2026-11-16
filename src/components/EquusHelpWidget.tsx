@@ -79,7 +79,7 @@ export function EquusHelpWidget() {
           </div>
           <footer className="space-y-2 border-t border-border bg-background/40 px-4 py-3">
             <a href="https://m.me/adriija.kalikaite" target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-between rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
-              {lt ? "Rašyti Adrijai per Messenger" : "Message Adrija on Messenger"} <ExternalLink className="h-4 w-4" />
+              {lt ? "Reikia pagalbos?" : "Need help?"} <ExternalLink className="h-4 w-4" />
             </a>
           </footer>
         </section>
