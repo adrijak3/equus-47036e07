@@ -3253,6 +3253,7 @@ function CancellationsTab() {
   const [historyReqs, setHistoryReqs] = useState<CancelReq[]>([]);
 
   const load = async () => {
+    const cutoff = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from("cancellation_requests")
       .select("*")
@@ -3305,7 +3306,7 @@ function CancellationsTab() {
       slot_time: bookingMap[r.booking_id]?.slot_time,
     }));
     setReqs(enriched.filter((r) => r.status === "pending"));
-    setHistoryReqs(enriched.filter((r) => r.status !== "pending"));
+    setHistoryReqs(enriched.filter((r) => r.status !== "pending" && r.created_at >= cutoff));
   };
 
   const docUrl = async (path: string): Promise<string | null> => {
@@ -3377,7 +3378,7 @@ function CancellationsTab() {
       {reqs.length === 0 && <p className="py-3 text-sm text-muted-foreground">Laukiančių atšaukimų šiuo metu nėra.</p>}
       {historyReqs.length > 0 && (
         <details className="border-y border-border/60 py-4" open={reqs.length === 0}>
-          <summary className="cursor-pointer font-semibold">Išnagrinėti atšaukimai ({historyReqs.length})</summary>
+          <summary className="cursor-pointer font-semibold">Išnagrinėti atšaukimai per 21 d. ({historyReqs.length})</summary>
           <div className="mt-3 max-h-96 divide-y divide-border/60 overflow-auto">
             {historyReqs.map((r) => (
               <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
