@@ -3250,31 +3250,14 @@ function SubDetailDialog({
 /* ---------- CANCELLATIONS ---------- */
 function CancellationsTab() {
   const [reqs, setReqs] = useState<CancelReq[]>([]);
-  const [makeupReviews, setMakeupReviews] = useState<Array<{ id: string; name: string; date: string; deadline: string }>>([]);
+  const [historyReqs, setHistoryReqs] = useState<CancelReq[]>([]);
 
   const load = async () => {
-    const { data: reviewRows, error: reviewError } = await (supabase as any)
-      .from("cancellation_requests")
-      .select("id, user_id, booking_id, makeup_deadline")
-      .eq("makeup_resolution", "needs_review")
-      .order("makeup_deadline", { ascending: false });
-    if (reviewError) console.error("Failed to load make-up reviews:", reviewError);
-    const reviews = (reviewRows ?? []) as Array<{ id: string; user_id: string; booking_id: string; makeup_deadline: string }>;
-    if (reviews.length) {
-      const [profiles, bookings] = await Promise.all([
-        supabase.from("profiles").select("id, full_name").in("id", reviews.map(r => r.user_id)),
-        supabase.from("bookings").select("id, slot_date").in("id", reviews.map(r => r.booking_id)),
-      ]);
-      const names = Object.fromEntries((profiles.data ?? []).map(p => [p.id, p.full_name]));
-      const dates = Object.fromEntries((bookings.data ?? []).map(b => [b.id, b.slot_date]));
-      setMakeupReviews(reviews.map(r => ({ id: r.id, name: names[r.user_id] ?? "Raitelis", date: dates[r.booking_id] ?? "—", deadline: r.makeup_deadline })));
-    } else setMakeupReviews([]);
-
     const { data, error } = await supabase
       .from("cancellation_requests")
       .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(500);
 
     if (error) {
       console.error("Failed to load cancellation requests:", error);
@@ -3315,12 +3298,14 @@ function CancellationsTab() {
       }
     }
 
-    setReqs(requests.map((r) => ({
+    const enriched = requests.map((r) => ({
       ...r,
       profile_name: nameMap[r.user_id],
       slot_date: bookingMap[r.booking_id]?.slot_date,
       slot_time: bookingMap[r.booking_id]?.slot_time,
-    })));
+    }));
+    setReqs(enriched.filter((r) => r.status === "pending"));
+    setHistoryReqs(enriched.filter((r) => r.status !== "pending"));
   };
 
   const docUrl = async (path: string): Promise<string | null> => {
@@ -3383,20 +3368,28 @@ function CancellationsTab() {
     load();
   };
 
-  if (reqs.length === 0 && makeupReviews.length === 0) {
+  if (reqs.length === 0 && historyReqs.length === 0) {
     return <p className="text-center text-muted-foreground italic py-12">Nėra laukiančių prašymų</p>;
   }
 
   return (
     <div className="space-y-3">
-      {makeupReviews.length > 0 && (
-        <section className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" aria-label="Atidirbimų peržiūra">
-          <h3 className="font-semibold">Atidirbimai, kuriuos reikia peržiūrėti ({makeupReviews.length})</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Sistema nerado abonemento, galiojusio atšauktai pamokai, arba jo likutis neleidžia nuskaičiuoti pamokos. Nuo naujo abonemento automatiškai nenuskaičiuota.</p>
-          <ul className="mt-3 divide-y divide-border/70">
-            {makeupReviews.map(r => <li key={r.id} className="py-2 text-sm"><strong>{r.name}</strong> · {r.date} · terminas {r.deadline}</li>)}
-          </ul>
-        </section>
+      {reqs.length === 0 && <p className="py-3 text-sm text-muted-foreground">Laukiančių atšaukimų šiuo metu nėra.</p>}
+      {historyReqs.length > 0 && (
+        <details className="border-y border-border/60 py-4" open={reqs.length === 0}>
+          <summary className="cursor-pointer font-semibold">Išnagrinėti atšaukimai ({historyReqs.length})</summary>
+          <div className="mt-3 max-h-96 divide-y divide-border/60 overflow-auto">
+            {historyReqs.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <div>
+                  <p className="font-medium">{r.profile_name ?? "Raitelis"} · {r.slot_date ?? "—"} {r.slot_time ? formatTime(r.slot_time) : ""}</p>
+                  <p className="text-xs text-muted-foreground">{r.reason || "Priežastis nenurodyta"}</p>
+                </div>
+                <span className="text-xs text-muted-foreground">Patvirtinta · {r.admin_decision_counts === true ? "Įskaityta į abonementą" : r.admin_decision_counts === false ? "Neįskaityta" : "Sprendimas išsaugotas"}</span>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
       {reqs.map((r) => (
         <div key={r.id} className="bg-gradient-card border border-gold/15 rounded-lg p-5">
