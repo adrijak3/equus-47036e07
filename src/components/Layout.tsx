@@ -563,7 +563,7 @@ export default function Layout({
               className="inline-flex items-center justify-center gap-1.5 text-foreground/85 transition-colors hover:text-gold"
             >
               <MessageSquare className="h-3.5 w-3.5 text-gold" />
-              Rašyti Adrijai per Messenger
+              Reikia pagalbos?
             </a>
 
             <a
