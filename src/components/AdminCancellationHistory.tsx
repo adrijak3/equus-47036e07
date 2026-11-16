@@ -20,6 +20,7 @@ interface Row {
   accidental?: boolean | null;
   name?: string;
   cancelled_by_name?: string | null;
+  fromRequest?: boolean;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -53,7 +54,44 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
         .select("*")
         .order("created_at", { ascending: false })
         .limit(400);
-      const list = ((data ?? []) as Row[]);
+      const auditRows = ((data ?? []) as Row[]);
+      // The old weekly cleanup deleted historical audit rows. Reconstruct the
+      // request history from durable cancellation_requests without pretending
+      // these reconstructed records are original audit log entries.
+      const { data: requests, error: requestError } = await (supabase as any)
+        .from("cancellation_requests")
+        .select("id,booking_id,user_id,reason,created_at,status")
+        .order("created_at", { ascending: false })
+        .limit(600);
+      if (requestError) console.error("Cancellation request history error:", requestError);
+      const historicalRequests = (requests ?? []) as Array<{
+        id:string;booking_id:string;user_id:string;reason:string|null;
+        created_at:string;status:string;
+      }>;
+      const bookingIds = [...new Set(historicalRequests.map((r) => r.booking_id).filter(Boolean))];
+      const { data: bookingInfo } = bookingIds.length
+        ? await supabase.from("bookings").select("id,slot_date,slot_time").in("id", bookingIds)
+        : { data: [] as Array<{id:string;slot_date:string;slot_time:string}> };
+      const bookingMap = new Map((bookingInfo ?? []).map((b) => [b.id,b]));
+      const loggedBookings = new Set(auditRows.map(r => r.booking_id).filter(Boolean));
+      const reconstructed: Row[] = historicalRequests
+        .filter(r => !loggedBookings.has(r.booking_id))
+        .map(r => ({
+          id: "request:" + r.id,
+          booking_id: r.booking_id,
+          user_id: r.user_id,
+          slot_date: bookingMap.get(r.booking_id)?.slot_date ?? "",
+          slot_time: bookingMap.get(r.booking_id)?.slot_time ?? "00:00",
+          guest_name: null,
+          cancelled_by_role: "client",
+          reason: r.reason,
+          restored_at: null,
+          created_at: r.created_at,
+          fromRequest: true,
+        }));
+      const list = [...auditRows,...reconstructed].sort(
+        (a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime()
+      );
       const ids = [...new Set(list.map((r) => r.user_id).filter(Boolean))] as string[];
       const actorIds = [...new Set(list.map((r: any) => r.cancelled_by).filter(Boolean))] as string[];
       const guestIds = [
@@ -155,7 +193,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
       </div>
 
       <p className="text-[11px] italic text-muted-foreground">
-        Atšaukimų istorija automatiškai išvaloma kiekvieną pirmadienį — paliekami tik šios savaitės įrašai.
+        Istorija saugoma. Anksčiau ištrinti audito įrašai, kai įmanoma, rodomi pagal išlikusius atšaukimo prašymus.
       </p>
 
       {loading ? (
@@ -205,8 +243,9 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
                 <span className="font-medium text-foreground">{r.name}</span>
                 <span className="tabular-nums text-gold">{formatTime(r.slot_time)}</span>
                 <span className="tabular-nums text-muted-foreground">{r.slot_date}</span>
-                <span className="text-xs text-muted-foreground">Atšaukta: {new Date(r.created_at).toLocaleString("lt-LT")}</span>
+                <span className="text-xs text-muted-foreground">{r.fromRequest ? "Prašymas: " : "Atšaukta: "}{new Date(r.created_at).toLocaleString("lt-LT")}</span>
                 <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", ROLE_CLS[r.cancelled_by_role] ?? ROLE_CLS.system)}>Atšaukė: {ROLE_LABEL[r.cancelled_by_role] ?? r.cancelled_by_role}</span>
+                {r.fromRequest && <span className="text-xs text-muted-foreground">atkurta iš prašymo</span>}
                 {r.accidental && <span className="rounded-full border border-blush/40 bg-blush/10 px-2 py-0.5 text-[11px] text-blush">per klaidą</span>}
                 {r.restored_at && <span className="inline-flex items-center gap-1 rounded-full border border-avail-free/40 bg-avail-free/10 text-avail-free"><RotateCcw className="h-3 w-3" /> grąžinta</span>}
                 {r.reason && <span className="w-full text-xs italic text-muted-foreground">„{r.reason}“</span>}
