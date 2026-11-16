@@ -93,6 +93,7 @@ export default function Paskyra() {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [permanentRequests, setPermanentRequests] = useState<PermanentRequest[]>([]);
   const [sickReqs, setSickReqs] = useState<PendingSickReq[]>([]);
+  const cancellationCutoffDate = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
   const [myCancellations, setMyCancellations] = useState<Array<{
     id: string; booking_id: string; reason: string | null;
     status: string; created_at: string; admin_decision_counts: boolean | null;
@@ -206,10 +207,12 @@ export default function Paskyra() {
       .eq("sickness", true)
       .order("created_at", { ascending: false })
       .limit(20);
+    const cancellationCutoff = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
     const {data: cancelHistory, error: cancelHistoryError} = await (supabase as any)
       .from("cancellation_requests")
       .select("id,booking_id,reason,status,created_at,admin_decision_counts")
       .eq("user_id", acting)
+      .gte("created_at", cancellationCutoff)
       .order("created_at",{ascending:false})
       .limit(100);
     if (cancelHistoryError) console.error("Atšaukimų istorija:", cancelHistoryError);
@@ -506,9 +509,9 @@ export default function Paskyra() {
               </ul>
             )}
           </Section>
-          <Section title="Mano atšaukimų istorija" icon={<XCircle className="w-4 h-4" />}>
+          <Section title="Mano atšaukimų istorija (21 d.)" icon={<XCircle className="w-4 h-4" />}>
             <div className="px-4 py-3">
-              {myCancellations.length === 0 && !bookings.some(b => b.status === "cancelled")
+              {myCancellations.length === 0 && !bookings.some(b => b.status === "cancelled" && b.slot_date >= cancellationCutoffDate)
                 ? <p className="text-sm text-muted-foreground">Atšaukimų nėra.</p>
                 : <div className="max-h-80 divide-y divide-border/60 overflow-y-auto">
                     {myCancellations.map(r => {
@@ -520,7 +523,7 @@ export default function Paskyra() {
                         <p className="text-xs text-muted-foreground">{r.reason || "Priežastis nenurodyta"} · {r.status === "pending" ? "Laukiama sprendimo" : r.status === "approved" ? "Patvirtinta" : r.status}</p>
                       </div>;
                     })}
-                    {bookings.filter(b => b.status === "cancelled" && !myCancellations.some(r => r.booking_id === b.id))
+                    {bookings.filter(b => b.status === "cancelled" && b.slot_date >= cancellationCutoffDate && !myCancellations.some(r => r.booking_id === b.id))
                       .slice().reverse().slice(0,100).map(b =>
                       <div key={b.id} className="py-3 text-sm">
                         <p className="font-medium">{b.slot_date} · {formatTime(b.slot_time)}</p>
