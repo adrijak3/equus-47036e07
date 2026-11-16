@@ -49,9 +49,11 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const cutoff = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
       const { data } = await (supabase as any)
         .from("booking_cancellations")
         .select("*")
+        .gte("created_at", cutoff)
         .order("created_at", { ascending: false })
         .limit(400);
       const auditRows = ((data ?? []) as Row[]);
@@ -61,6 +63,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
       const { data: requests, error: requestError } = await (supabase as any)
         .from("cancellation_requests")
         .select("id,booking_id,user_id,reason,created_at,status")
+        .gte("created_at", cutoff)
         .order("created_at", { ascending: false })
         .limit(600);
       if (requestError) console.error("Cancellation request history error:", requestError);
@@ -193,7 +196,7 @@ export function AdminCancellationHistory({ initialQuery = "" }: { initialQuery?:
       </div>
 
       <p className="text-[11px] italic text-muted-foreground">
-        Istorija saugoma. Anksčiau ištrinti audito įrašai, kai įmanoma, rodomi pagal išlikusius atšaukimo prašymus.
+        Rodomi tik paskutinių 21 dienos atšaukimai. Senesni duomenys lieka duomenų bazėje.
       </p>
 
       {loading ? (
