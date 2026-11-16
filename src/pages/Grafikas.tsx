@@ -1752,8 +1752,29 @@ export default function Grafikas() {
       );
 
     if (error) {
-      console.error("cancel_booking_occurrence failed", error);
-      toast.error("Nepavyko atšaukti pamokos. Pabandykite dar kartą.");
+      console.error("cancel_booking_occurrence failed", {
+        bookingId: booking.id,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      });
+      // If another session/admin already cancelled this occurrence, do not show a false failure.
+      const { data: currentBooking } = await supabase
+        .from("bookings")
+        .select("status")
+        .eq("id", booking.id)
+        .maybeSingle();
+      if (currentBooking?.status === "cancelled") {
+        toast.success("Pamoka jau atšaukta.");
+      } else {
+        const reason = error.message?.trim();
+        toast.error(
+          reason
+            ? `Nepavyko atšaukti pamokos: ${reason}`
+            : "Nepavyko atšaukti pamokos. Patikrinkite interneto ryšį ir bandykite dar kartą.",
+          { duration: 10000 },
+        );
+      }
       await loadData();
       return;
     }
