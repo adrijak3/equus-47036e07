@@ -330,7 +330,7 @@ function emailShell(title: string, subtitle: string, inner: string) {
 
 function welcomeEmailHtml(clientName: string) {
   const section = (number: string, heading: string, content: string) => `
-    <section style="margin:28px 0 0;padding-top:20px;border-top:1px solid #E2EAF3;">
+    <section style="margin:28px 0 0;padding-top:20px;border-top:1px solid #EEE7F1;">
       <h2 style="margin:0 0 12px;font-size:19px;font-weight:600;color:#563769;line-height:1.35;">${number ? `${number}. ` : ""}${heading}</h2>
       ${content}
     </section>`;
@@ -497,7 +497,7 @@ function subscriptionRequirementWarningHtml(clientName: string, payload: any) {
       ? `<p>Primename, kad artimiausia Jūsų treniruotė – <strong>${esc(bookingDate)}${bookingTime ? ` ${esc(bookingTime)} val.` : ""}</strong>.</p>`
       : "<p>Trumpas priminimas dėl Jūsų treniruočių.</p>"}
     ${remainingLine}
-    <p style="margin:18px 0 0;">Jeigu planuojate registruotis į daugiau treniruočių, pasirūpinkite galiojančiu abonementu savo paskyroje.</p>
+    <p style="margin:18px 0 0;">Treniruočių informaciją ir abonemento likutį bet kada galite peržiūrėti savo Equus paskyroje.</p>
     <p style="margin:16px 0 0;color:#735F7E;">Iki pasimatymo!<br>Equus jojimo mokykla</p>`;
   return emailShell("Primename apie Jūsų treniruotę", "Trumpa informacija iš Equus", inner);
 }
