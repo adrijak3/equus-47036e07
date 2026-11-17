@@ -24,14 +24,15 @@ export default function NotificationInbox() {
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
+    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
     if (!user?.id) return;
     const [rows, unread] = await Promise.all([
       (supabase as any).from("important_notifications")
         .select("id,title_lt,title_en,body_lt,body_en,read_at,created_at,url")
-        .eq("user_id", user.id).order("created_at", { ascending: false }).limit(60),
+        .eq("user_id", user.id).gte("created_at", cutoff).order("created_at", { ascending: false }).limit(100),
       (supabase as any).from("important_notifications")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id).is("read_at", null),
+        .eq("user_id", user.id).gte("created_at", cutoff).is("read_at", null),
     ]);
     if (!rows.error) setItems((rows.data || []) as Notice[]);
     if (!unread.error) setUnreadCount(unread.count || 0);
