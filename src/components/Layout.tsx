@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { InstallMenuAction } from "@/components/InstallPrompt";
+import NotificationInbox from "@/components/NotificationInbox";
 import {
   Calendar,
   CalendarDays,
@@ -231,6 +232,8 @@ export default function Layout({
           <span aria-live="polite" className="pointer-events-none absolute left-1/2 max-w-[25vw] -translate-x-1/2 truncate text-center text-xs font-medium text-foreground sm:hidden">
             {pageHeading}
           </span>
+          <div className="flex items-center gap-2">
+            <NotificationInbox />
           <button
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
@@ -243,6 +246,7 @@ export default function Layout({
               <Menu className="h-5 w-5 text-gold" />
             )}
           </button>
+          </div>
         </div>
       </header>
 
