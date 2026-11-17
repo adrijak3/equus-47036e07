@@ -99,7 +99,7 @@ export default function Auth() {
           ? "Per daug registracijų. Bandykite vėliau arba rytoj."
           : /already|egzistuoja/i.test(message)
             ? "Tokia paskyra jau yra."
-            : "Paskyros sukurti nepavyko. Jei pasiektas dienos limitas (10), bandykite rytoj.",
+            : "Paskyros sukurti nepavyko. Patikrinkite duomenis arba bandykite vėliau.",
       );
       return;
     }
@@ -330,9 +330,6 @@ export default function Auth() {
                 <a href="/taisykles-ir-salygos" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4">
                   Taisyklėmis ir sąlygomis
                 </a>.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Saugumui ribojame registracijas: iki 10 naujų paskyrų per dieną.
               </p>
               <TurnstileCaptcha key={`signup-${captchaNonce}`} onToken={setCaptchaToken} />
               <Button variant="gold" type="submit" className="w-full mt-6" disabled={loading}>
