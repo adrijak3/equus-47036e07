@@ -7,8 +7,8 @@ self.addEventListener("push", (event) => {
 
     const options = {
       body: data.body || "",
-      icon: "/equus-logo-black.png",
-      badge: "/equus-logo-black.png",
+      icon: "/equus-icon-192.png",
+      badge: "/equus-icon-192.png",
       vibrate: [100, 50, 100],
       tag: data.kind || "equus-notification",
       renotify: true,
