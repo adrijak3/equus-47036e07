@@ -1396,3 +1396,35 @@
   letter-spacing: -0.025em;
   white-space: nowrap;
 }
+
+
+/* WCAG-oriented keyboard and reading improvements, without changing theme palettes. */
+.equus-skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 0.5rem;
+  z-index: 200;
+  transform: translateY(-180%);
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 2px solid hsl(var(--ring));
+  padding: 0.75rem 1rem;
+  font: 600 1rem/1.4 "Inter", system-ui, sans-serif;
+}
+.equus-skip-link:focus {
+  transform: translateY(0);
+}
+#equus-main-content:focus { outline: none; }
+:where(button, a, input, select, textarea, summary, [role="tab"], [role="button"]):focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
