@@ -28,6 +28,7 @@ const Kainos = lazy(() => import("./pages/Kainos"));
 const ApieMus = lazy(() => import("./pages/ApieMus"));
 const Galerija = lazy(() => import("./pages/Galerija"));
 const Paskyra = lazy(() => import("./pages/Paskyra"));
+const AppInstallGuide = lazy(() => import("./pages/AppInstallGuide"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Security = lazy(() => import("./pages/Security"));
@@ -113,6 +114,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<HomeRoute />} />
                   <Route path="/grafikas" element={<Grafikas />} />
+                  <Route path="/idiegti" element={<AppInstallGuide />} />
                   <Route path="/varzybos" element={<Varzybos />} />
                   <Route path="/kainos" element={<Kainos />} />
                   <Route path="/apie-mus" element={<RequireAuth adminOnly><ApieMus /></RequireAuth>} />
