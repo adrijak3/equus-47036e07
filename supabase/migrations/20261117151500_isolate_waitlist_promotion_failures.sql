@@ -56,6 +56,43 @@ BEGIN
 
           IF inserted_id IS NOT NULL THEN
             DELETE FROM public.waiting_list WHERE id = next_id;
+
+            -- Notifications are best-effort and must not affect a saved booking.
+            BEGIN
+              INSERT INTO public.email_events (
+                event_key, event_type, user_id, booking_id, payload
+              )
+              VALUES (
+                'waitlist-promoted:' || inserted_id::text,
+                'waitlist_promoted',
+                next_user,
+                inserted_id,
+                jsonb_build_object(
+                  'slot_date', slot_date_value::text,
+                  'slot_time', to_char(slot_time_value, 'HH24:MI')
+                )
+              )
+              ON CONFLICT (event_key) DO NOTHING;
+            EXCEPTION WHEN OTHERS THEN
+              RAISE WARNING 'Equus waitlist email queue error for booking %, SQLSTATE %, error %',
+                inserted_id, SQLSTATE, SQLERRM;
+            END;
+
+            BEGIN
+              PERFORM public.queue_push_notification(
+                next_user,
+                'waitlist_promoted',
+                'Vieta treniruotėje patvirtinta',
+                'Your lesson place is confirmed',
+                format('Atsilaisvino vieta %s, %s. Jūsų registracija patvirtinta!', slot_date_value, to_char(slot_time_value, 'HH24:MI')),
+                format('A place opened up on %s at %s. Your booking is confirmed!', slot_date_value, to_char(slot_time_value, 'HH24:MI')),
+                '/grafikas',
+                'waitlist-promoted:' || inserted_id::text
+              );
+            EXCEPTION WHEN OTHERS THEN
+              RAISE WARNING 'Equus waitlist push queue error for booking %, SQLSTATE %, error %',
+                inserted_id, SQLSTATE, SQLERRM;
+            END;
           ELSE
             RAISE WARNING 'Equus waitlist promotion skipped (conflict): waitlist %, date %, time %',
               next_id, slot_date_value, slot_time_value;
