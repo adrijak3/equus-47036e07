@@ -451,11 +451,24 @@ export default function Paskyra() {
             <QuickAction label="Mano pamokos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => openLessonView("lessons")} />
             <QuickAction label="Mokėjimai atskirai" icon={<Wallet className="h-4 w-4" />} onClick={() => openLessonView("payments")} />
             <QuickAction label="Statistika" icon={<BarChart3 className="h-4 w-4" />} onClick={() => openLessonView("stats")} />
-            <QuickAction label="Nustatymai" icon={<Palette className="h-4 w-4" />} onClick={() => document.getElementById("account-settings")?.scrollIntoView({ behavior: "smooth" })} />
+            <QuickAction label="Nustatymai" icon={<Palette className="h-4 w-4" />} onClick={() => { const section = document.getElementById("account-settings") as HTMLDetailsElement | null; if (section) { section.open = true; section.scrollIntoView({ behavior: "smooth" }); } }} />
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
           </div>
-          <section className="rounded-xl border border-border/60 p-4 space-y-2">
+
+          <section className="rounded-xl border border-border/60 bg-background/30 px-4 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="font-semibold">Equus telefone</p><p className="mt-1 text-xs text-muted-foreground">Įsidiekite programėlę ir įjunkite pranešimus.</p></div>
+              <Button size="sm" variant="outline" onClick={() => navigate("/idiegti")}><Download className="mr-1.5 h-4 w-4"/> Įsidiegti</Button>
+            </div>
+          </section>
+          <details id="account-settings" className="rounded-xl border border-border/60 bg-background/40 p-4">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">Nustatymai ir daugiau</summary>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+              <span className="text-sm">Skraidančios animacijos</span>
+              <EffectsToggle />
+            </div>
+          <section className="mt-3 space-y-2 py-3">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold">Abonementų el. laiškai</p>
@@ -471,18 +484,6 @@ export default function Paskyra() {
               </label>
             </div>
           </section>
-          <section className="rounded-xl border border-border/60 bg-background/30 px-4 py-4">
-            <div className="flex items-center justify-between gap-3">
-              <div><p className="font-semibold">Equus telefone</p><p className="mt-1 text-xs text-muted-foreground">Įsidiekite programėlę ir įjunkite pranešimus.</p></div>
-              <Button size="sm" variant="outline" onClick={() => navigate("/idiegti")}><Download className="mr-1.5 h-4 w-4"/> Įsidiegti</Button>
-            </div>
-          </section>
-          <details id="account-settings" className="rounded-xl border border-border/60 bg-background/40 p-4">
-            <summary className="cursor-pointer text-sm font-medium text-foreground">Nustatymai ir daugiau</summary>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-              <span className="text-sm">Skraidančios animacijos</span>
-              <EffectsToggle />
-            </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
               <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
@@ -831,6 +832,10 @@ function PushNotificationSettings({ language }: { language: "lt" | "en" }) {
             </Button>
           </div>
         </div>
+
+        <a href="/idiegti" className="inline-flex items-center gap-2 text-sm font-medium text-gold underline underline-offset-4">
+          <Download className="h-4 w-4" /> Kaip įsidiegti Equus ir išbandyti pranešimą?
+        </a>
 
         <p className="text-[11px] leading-5 text-muted-foreground">
           {language === "lt"
