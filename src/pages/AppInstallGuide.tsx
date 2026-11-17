@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, CheckCircle2, Download, Smartphone, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { enablePushNotifications, getPushConnectionStatus, pushNotificationsSupported } from "@/lib/pushNotifications";
 import { isIOS, isStandalone, promptInstall, useInstallState } from "@/lib/install";
@@ -30,6 +32,7 @@ const steps = {
 
 export default function AppInstallGuide() {
   const { language } = useLanguage();
+  const { isAdmin } = useAuth();
   const { canInstall, installed } = useInstallState();
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -67,6 +70,21 @@ export default function AppInstallGuide() {
       await refresh();
     } finally { setBusy(false); }
   };
+  const testServerDelivery = async () => {
+    setTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("push-notifications", {
+        body: { action: "test" },
+      });
+      if (error || !data?.ok || !(Number(data?.delivered) > 0)) {
+        throw new Error(data?.error || data?.code || error?.message || "Serverio testas nepavyko.");
+      }
+      toast.success("Serverio bandomasis pranešimas išsiųstas į Jūsų prijungtus įrenginius.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nepavyko išsiųsti serverio pranešimo.");
+    } finally { setTesting(false); }
+  };
+
   const test = async () => {
     setTesting(true);
     try {
@@ -130,7 +148,10 @@ export default function AppInstallGuide() {
     <section className="mt-4 space-y-3 rounded-xl border border-border/70 p-5">
       <div className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-gold"/><h2 className="font-semibold">3. Išbandykite pranešimą</h2></div>
       <p className="text-sm text-muted-foreground">Pirmiausia išbandykite, ar jūsų telefonas gali parodyti Equus pranešimą. Tai vietinis testas, ne serverio siuntimo patikra.</p>
-      <Button variant="outline" disabled={testing || status!=="connected"} onClick={()=>void test()}>{testing?"Tikrinama…":"Siųsti bandomąjį pranešimą"}</Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" disabled={testing || status!=="connected"} onClick={()=>void test()}>{testing?"Tikrinama…":"Išbandyti šiame įrenginyje"}</Button>
+        {isAdmin && <Button disabled={testing || status!=="connected"} onClick={()=>void testServerDelivery()}>{testing?"Siunčiama…":"Išbandyti tikrą serverio pranešimą (admin)"}</Button>}
+      </div>
       <p className="text-xs text-muted-foreground">Jeigu pranešimas nepasirodo, patikrinkite telefono „Notifications“, „Do Not Disturb“ bei konkrečios naršyklės / Equus leidimus.</p>
     </section>
     <section className="mt-4 space-y-3 rounded-xl border border-border/70 p-5">
