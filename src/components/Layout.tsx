@@ -24,6 +24,7 @@ import {
   MessageCircleHeart,
   History,
   Settings,
+  Download,
   Inbox,
   X,
   Images,
@@ -77,6 +78,7 @@ const NAV_USER: NavigationItem[] = [
   { to: "/varzybos", label: "Varžybos", icon: Trophy },
   { to: "/paskyra", label: "Mano paskyra", icon: UserIcon },
   { to: "/mano-abonementai", label: "Mano abonementai", icon: Wallet, menuOnly: true },
+  { to: "/idiegti", label: "Įsidiegti Equus", icon: Download, menuOnly: true },
   { to: "/kainos", label: "Kainos", icon: Tag, menuOnly: true },
   { to: "/galerija", label: "Galerija", icon: Images, menuOnly: true },
   { to: "/informacija", label: "Informacija", icon: Info, menuOnly: true },
@@ -139,6 +141,7 @@ export default function Layout({
     if (pathname === "/") return "Pradžia";
     if (pathname === "/grafikas") return "Grafikas";
     if (pathname === "/kainos") return "Kainos";
+    if (pathname === "/idiegti") return "Įsidiegti Equus";
     if (pathname === "/registracija") return "Registracija";
     if (pathname === "/auth" || pathname === "/auth/callback") return "Prisijungimas";
     if (pathname === "/mano-abonementai") return "Abonementai";
@@ -312,6 +315,11 @@ export default function Layout({
                 );
               })}
 
+              {!navigationItems.some((item) => item.to === "/idiegti") && (
+                <Link to="/idiegti" onClick={close} className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground/85 hover:bg-gold/5">
+                  <Download className="h-4 w-4" /> Įsidiegti Equus
+                </Link>
+              )}
               {halfAdminItems.length > 0 && (
                 <div className="mb-2 space-y-1 rounded-xl border border-gold/20 bg-gold/5 p-2">
                   <div className="px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-gold/70">Pusiau admino sritis</div>
