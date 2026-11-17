@@ -95,8 +95,8 @@ export default function AppInstallGuide() {
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification("Equus – bandomasis pranešimas", {
         body: "Puiku! Šiame įrenginyje galite matyti Equus pranešimus.",
-        icon: "/equus-icon-192.png",
-        badge: "/equus-icon-192.png",
+        icon: "/equus-logo-black.png",
+        badge: "/equus-logo-black.png",
         tag: "equus-local-test",
         data: { url: "/grafikas" },
       });
@@ -108,7 +108,7 @@ export default function AppInstallGuide() {
 
   return <main className="container max-w-3xl py-8 sm:py-12">
     <div className="flex items-center gap-3">
-      <img src="/equus-icon-192.png" width={64} height={64} className="h-14 w-14 rounded-2xl border border-border/50" alt="Equus programėlės piktograma" />
+      <img src="/equus-logo-black.png" width={64} height={64} className="h-14 w-14 rounded-2xl border border-border/50" alt="Equus programėlės piktograma" />
       <div><p className="text-xs uppercase tracking-wider text-muted-foreground">EQUUS JOJIMO MOKYKLA</p>
         <h1 className="font-display text-3xl">Įsidiegti Equus</h1></div>
     </div>
