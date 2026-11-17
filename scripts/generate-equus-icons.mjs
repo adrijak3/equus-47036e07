@@ -80,6 +80,32 @@ function exportIcon(size,file){
   fs.writeFileSync(path.join(root,"public",file),encoded);
   process.stdout.write(`Equus icon: ${file} (${size}x${size})\n`);
 }
+
+// Android notification badges require a transparent, monochrome symbol.
+// The original navigation artwork is a white horse on black; remove the black
+// background so Android never renders a solid white notification square.
+function exportNotificationBadge(size,file) {
+  const row=size*4+1, out=Buffer.alloc(row*size);
+  for(let y=0;y<size;y++) {
+    out[y*row]=0;
+    for(let x=0;x<size;x++) {
+      const sx=Math.min(width-1,Math.floor((x+0.5)*width/size));
+      const sy=Math.min(height-1,Math.floor((y+0.5)*height/size));
+      const ix=(sy*width+sx)*bpp;
+      const luminance=(pixels[ix]*299+pixels[ix+1]*587+pixels[ix+2]*114)/1000;
+      const originalAlpha=bpp===4?pixels[ix+3]:255;
+      const dst=y*row+1+x*4;
+      out[dst]=255;out[dst+1]=255;out[dst+2]=255;
+      out[dst+3]=Math.round(Math.max(0,Math.min(1,(luminance-80)/120))*originalAlpha);
+    }
+  }
+  const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(size,0);ihdr.writeUInt32BE(size,4);ihdr[8]=8;ihdr[9]=6;
+  const encoded=Buffer.concat([bytes.subarray(0,8),chunk("IHDR",ihdr),chunk("IDAT",zlib.deflateSync(out,{level:9})),chunk("IEND",Buffer.alloc(0))]);
+  fs.writeFileSync(path.join(root,"public",file),encoded);
+  process.stdout.write(`Equus notification badge: ${file} (${size}x${size})\n`);
+}
+
 exportIcon(192,"equus-icon-192.png");
 exportIcon(512,"equus-icon-512.png");
 exportIcon(180,"apple-touch-icon.png");
+exportNotificationBadge(96,"equus-badge-96.png");
