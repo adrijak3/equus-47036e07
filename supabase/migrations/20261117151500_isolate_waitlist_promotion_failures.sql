@@ -10,6 +10,7 @@ DECLARE
   next_user uuid;
   next_id uuid;
   inserted_id uuid;
+  previous_waitlist_setting text;
   slot_date_value date;
   slot_time_value time;
 BEGIN
@@ -49,10 +50,13 @@ BEGIN
         DELETE FROM public.waiting_list WHERE id = next_id;
       ELSE
         BEGIN
+          previous_waitlist_setting := current_setting('equus.waitlist_promotion', true);
+          PERFORM set_config('equus.waitlist_promotion', 'true', true);
           INSERT INTO public.bookings (user_id, slot_date, slot_time, status)
           VALUES (next_user, slot_date_value, slot_time_value, 'active')
           ON CONFLICT DO NOTHING
           RETURNING id INTO inserted_id;
+          PERFORM set_config('equus.waitlist_promotion', COALESCE(previous_waitlist_setting, ''), true);
 
           IF inserted_id IS NOT NULL THEN
             DELETE FROM public.waiting_list WHERE id = next_id;
@@ -98,6 +102,7 @@ BEGIN
               next_id, slot_date_value, slot_time_value;
           END IF;
         EXCEPTION WHEN OTHERS THEN
+          PERFORM set_config('equus.waitlist_promotion', COALESCE(previous_waitlist_setting, ''), true);
           RAISE WARNING 'Equus waitlist promotion failed: waitlist %, date %, time %, SQLSTATE %, error %',
             next_id, slot_date_value, slot_time_value, SQLSTATE, SQLERRM;
         END;
