@@ -106,6 +106,11 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
     throw new Error(queueError.message);
   }
 
+  // Expiring subscriptions are checked by the scheduled worker; per-subscription
+  // dedupe keys ensure each rider is only notified once for this expiry.
+  const { error: expiryError } = await admin.rpc("equus_queue_subscription_expiry_notices");
+  if (expiryError) console.error("Equus subscription expiry notice generation failed", expiryError.message);
+
   let sent = 0;
   let failed = 0;
   let invalidSubscriptions = 0;
