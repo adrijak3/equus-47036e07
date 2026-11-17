@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import EffectsToggle from "@/components/EffectsToggle";
+import { Download } from "lucide-react";
 import { VacationsPanel, VacationBanner } from "@/components/VacationsPanel";
 import { UnpaidLessonsOverview } from "@/components/UnpaidLessonsOverview";
 import { SubscriptionPurchaseRequestForm } from "@/components/SubscriptionPurchaseRequestForm";
@@ -105,6 +107,8 @@ export default function Paskyra() {
   const subscriptionPage = location.pathname === "/mano-abonementai";
   const purchasePage = location.pathname === "/abonemento-uzklausa";
   const requestedTab = new URLSearchParams(location.search).get("tab") || "profile";
+  const lessonView = new URLSearchParams(location.search).get("view") || "";
+  const openLessonView = (view: string) => navigate(`/paskyra?tab=lessons&view=${view}`);
   const activeTab = subscriptionPage || purchasePage ? "subs" : ["profile", "lessons", "subs", "messages", "permanent", "vacations"].includes(requestedTab)
     ? requestedTab
     : "profile";
@@ -444,6 +448,10 @@ export default function Paskyra() {
           </Button>
           <ProfileOverview profile={accountProfile} email={user?.email ?? null} isLinked={isLinked} activeProfileName={activeProfileName} />
           <div className="grid grid-cols-2 gap-2">
+            <QuickAction label="Mano pamokos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => openLessonView("lessons")} />
+            <QuickAction label="Mokėjimai atskirai" icon={<Wallet className="h-4 w-4" />} onClick={() => openLessonView("payments")} />
+            <QuickAction label="Statistika" icon={<BarChart3 className="h-4 w-4" />} onClick={() => openLessonView("stats")} />
+            <QuickAction label="Nustatymai" icon={<Palette className="h-4 w-4" />} onClick={() => document.getElementById("account-settings")?.scrollIntoView({ behavior: "smooth" })} />
             <QuickAction label="Mano informacija" icon={<UserIcon className="h-4 w-4" />} onClick={() => setEditOpen(true)} />
             <QuickAction label="Pranešimai" icon={<Bell className="h-4 w-4" />} onClick={() => setPushOpen(true)} />
           </div>
@@ -463,8 +471,18 @@ export default function Paskyra() {
               </label>
             </div>
           </section>
-          <details className="rounded-xl border border-border/60 bg-background/40 p-4">
-            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Kiti nustatymai</summary>
+          <section className="rounded-xl border border-border/60 bg-background/30 px-4 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="font-semibold">Equus telefone</p><p className="mt-1 text-xs text-muted-foreground">Įsidiekite programėlę ir įjunkite pranešimus.</p></div>
+              <Button size="sm" variant="outline" onClick={() => navigate("/idiegti")}><Download className="mr-1.5 h-4 w-4"/> Įsidiegti</Button>
+            </div>
+          </section>
+          <details id="account-settings" className="rounded-xl border border-border/60 bg-background/40 p-4">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">Nustatymai ir daugiau</summary>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+              <span className="text-sm">Skraidančios animacijos</span>
+              <EffectsToggle />
+            </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <QuickAction label="Atostogos" icon={<CalendarDays className="h-4 w-4" />} onClick={() => setVacationOpen(true)} />
               <QuickAction label="Slaptažodis" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)} />
@@ -489,15 +507,24 @@ export default function Paskyra() {
 
         {/* LESSONS */}
         <TabsContent value="lessons" className="space-y-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <QuickAction label="Mano pamokos" icon={<CalendarDays className="h-4 w-4"/>} onClick={() => openLessonView("lessons")}/>
+            <QuickAction label="Apmokėta atskirai" icon={<Wallet className="h-4 w-4"/>} onClick={() => openLessonView("payments")}/>
+            <QuickAction label="Statistika" icon={<BarChart3 className="h-4 w-4"/>} onClick={() => openLessonView("stats")}/>
+            <QuickAction label="Atšaukimų istorija" icon={<XCircle className="h-4 w-4"/>} onClick={() => openLessonView("cancellations")}/>
+          </div>
+          {lessonView && <Button variant="ghost" size="sm" onClick={() => openLessonView("")}><ArrowLeft className="mr-2 h-4 w-4"/> Visi skyriai</Button>}
+          {lessonView === "stats" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{monthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
   <div className="rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Praėjęs mėnuo</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{previousMonthAttended.length}</div><div className="text-xs text-muted-foreground">pamokos</div></div>
   <div className="col-span-2 sm:col-span-1 rounded-2xl border border-gold/15 bg-gradient-card p-4 text-center"><div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Iš viso</div><div className="mt-1 font-display text-4xl text-gradient-gold tabular-nums">{totalAttended}</div><div className="text-xs text-muted-foreground">pamokų</div></div>
-</div>
+</div>}
+          {(!lessonView || lessonView === "lessons") && <>
           <Section title="Artimiausios pamokos" icon={<CalendarDays className="w-4 h-4" />}>{future.length === 0 ? <Empty text="Artimiausių pamokų nėra." /> : <ul className="divide-y divide-gold/5">{future.slice(0, 7).map((b) => <BookingRow key={b.id} b={b} />)}</ul>}</Section>
           <Section title={`Šio mėnesio pamokos · ${monthAttended.length}`} icon={<CheckCircle2 className="w-4 h-4" />}>{monthBookings.length === 0 ? <Empty text="Šį mėnesį pamokų dar nėra." /> : <ul className="divide-y divide-gold/5">{monthBookings.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
           <Section title="Ankstesnės pamokos" icon={<BarChart3 className="w-4 h-4" />}>{past.filter((b) => b.status === "active" || b.status === "completed").length === 0 ? <Empty text="Ankstesnių pamokų nėra." /> : <ul className="divide-y divide-gold/5 max-h-80 overflow-auto">{past.filter((b) => b.status === "active" || b.status === "completed").slice().reverse().map((b) => <BookingRow key={b.id} b={b} past />)}</ul>}</Section>
-          <Section title="Apmokėta atskirai nuo abonemento" icon={<Wallet className="w-4 h-4" />}>
+          </>}
+          {lessonView === "payments" && <Section title="Apmokėta atskirai nuo abonemento" icon={<Wallet className="w-4 h-4" />}>
             <div className="px-5 py-3 border-b border-gold/10 text-xs text-muted-foreground">
               Šios pamokos yra apmokamos atskirai ir <span className="text-foreground font-medium">nemažina abonemento</span>.
             </div>
@@ -508,8 +535,8 @@ export default function Paskyra() {
                 {separatelyPaid.slice().reverse().map((b) => <BookingRow key={b.id} b={b} past separatelyPaid />)}
               </ul>
             )}
-          </Section>
-          <Section title="Mano atšaukimų istorija (21 d.)" icon={<XCircle className="w-4 h-4" />}>
+          </Section>}
+          {lessonView === "cancellations" && <Section title="Mano atšaukimų istorija (21 d.)" icon={<XCircle className="w-4 h-4" />}>
             <div className="px-4 py-3">
               {myCancellations.length === 0 && !bookings.some(b => b.status === "cancelled" && b.slot_date >= cancellationCutoffDate)
                 ? <p className="text-sm text-muted-foreground">Atšaukimų nėra.</p>
@@ -531,8 +558,8 @@ export default function Paskyra() {
                       </div>)}
                   </div>}
             </div>
-          </Section>
-          <Section title="Mano jojimo statistika" icon={<BarChart3 className="w-4 h-4" />}>
+          </Section>}
+          {lessonView === "stats" && <Section title="Mano jojimo statistika" icon={<BarChart3 className="w-4 h-4" />}>
             <div className="grid gap-3 p-5 sm:grid-cols-2">
               <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4"><p className="text-xs text-muted-foreground">Iš viso lankytų treniruočių</p><p className="mt-2 font-display text-3xl">{totalAttended}</p></div>
               <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4"><p className="text-xs text-muted-foreground">Treniruotės šį mėnesį</p><p className="mt-2 font-display text-3xl">{monthAttended.length}</p></div>
@@ -540,7 +567,7 @@ export default function Paskyra() {
                 {favoriteHorses.length ? <ul className="space-y-2">{favoriteHorses.map(([name, count]) => <li key={name} className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2 text-sm"><span>{name}</span><span className="text-muted-foreground">{count} tren.</span></li>)}</ul> : <p className="text-sm text-muted-foreground">Kol kas nėra išsaugotų žirgų pasirinkimų istorijos.</p>}
               </div>
             </div>
-          </Section>
+          </Section>}
         </TabsContent>
 
         {/* SUBSCRIPTIONS */}
