@@ -147,7 +147,7 @@ export default function AppInstallGuide() {
 
     <section className="mt-4 space-y-3 rounded-xl border border-border/70 p-5">
       <div className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-gold"/><h2 className="font-semibold">3. Išbandykite pranešimą</h2></div>
-      <p className="text-sm text-muted-foreground">Pirmiausia išbandykite, ar jūsų telefonas gali parodyti Equus pranešimą. Tai vietinis testas, ne serverio siuntimo patikra.</p>
+      <p className="text-sm text-muted-foreground">Paspauskite mygtuką ir patikrinkite, ar jūsų telefone pasirodo bandomasis Equus pranešimas.</p>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" disabled={testing || status!=="connected"} onClick={()=>void test()}>{testing?"Tikrinama…":"Išbandyti šiame įrenginyje"}</Button>
         {isAdmin && <Button disabled={testing || status!=="connected"} onClick={()=>void testServerDelivery()}>{testing?"Siunčiama…":"Išbandyti tikrą serverio pranešimą (admin)"}</Button>}
