@@ -280,7 +280,7 @@
   --primary: 337 50% 52%;
   --primary-foreground: 0 0% 100%;
 
-  --gold: 337 50% 52%;
+  --gold: 337 50% 43%;
   --gold-soft: 338 42% 66%;
   --gold-glow: 340 76% 82%;
   --gold-foreground: 0 0% 100%;
@@ -375,7 +375,7 @@
   --popover: 35 100% 97%;
   --popover-foreground: 42 29% 25%;
   --primary: 71 25% 58%;
-  --primary-foreground: 35 100% 97%;
+  --primary-foreground: 42 29% 18%;
   --gold: 42 29% 40%;
   --gold-soft: 71 25% 58%;
   --gold-glow: 20 70% 70%;
@@ -383,7 +383,7 @@
   --secondary: 71 25% 83%;
   --secondary-foreground: 42 29% 28%;
   --muted: 35 55% 88%;
-  --muted-foreground: 42 18% 43%;
+  --muted-foreground: 42 18% 35%;
   --accent: 20 70% 70%;
   --accent-foreground: 42 29% 24%;
   --border: 42 22% 72%;
@@ -674,9 +674,9 @@
   --card-foreground: 205 40% 18%;
   --popover: 195 55% 97%;
   --popover-foreground: 205 40% 18%;
-  --primary: 192 72% 36%;
+  --primary: 192 72% 30%;
   --primary-foreground: 0 0% 100%;
-  --gold: 192 72% 36%;
+  --gold: 192 72% 30%;
   --gold-soft: 190 48% 60%;
   --gold-glow: 186 78% 72%;
   --gold-foreground: 0 0% 100%;
