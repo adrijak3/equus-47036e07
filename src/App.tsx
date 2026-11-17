@@ -16,7 +16,6 @@ import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { SeasonalParticles } from "@/components/SeasonalParticles";
 import { AutoTranslate } from "@/components/AutoTranslate";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import { ImportantUpdatePopup } from "@/components/ImportantUpdatePopup";
 import { BugReporter } from "@/components/BugReporter";
 import { EquusLoadingScreen } from "@/components/EquusLoadingScreen";
 import { PageLoader } from "@/components/PageLoader";
@@ -107,7 +106,6 @@ const App = () => (
                 <SeasonalParticles />
                 <WelcomeOnboarding />
                 <InstallPrompt />
-                <ImportantUpdatePopup />
                 <BugReporter />
 
                 <Suspense fallback={<PageLoader />}>
