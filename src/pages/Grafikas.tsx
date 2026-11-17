@@ -3631,7 +3631,7 @@ export default function Grafikas() {
                           </div>
 
                           {isToday && (
-                            <span className="text-[10px] sm:text-[9px] uppercase tracking-[0.15em] font-bold text-background bg-gold px-2 py-0.5 rounded-sm">
+                            <span className="text-xs uppercase tracking-[0.15em] font-bold text-background bg-gold px-2 py-0.5 rounded-sm">
                               {t(
                                 "today",
                               )}
@@ -3667,7 +3667,7 @@ export default function Grafikas() {
                                 "",
                               );
                             }}
-                            className="relative inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
+                            className="relative inline-flex items-center gap-1 text-xs uppercase tracking-wider text-gold/80 hover:text-gold border border-gold/20 hover:border-gold/50 rounded px-1.5 py-0.5 transition-colors"
                           >
                             <FileText className="w-3 h-3" />
 
@@ -3713,7 +3713,7 @@ export default function Grafikas() {
                                   6,
                                 );
                               }}
-                              className="mt-2 w-full sm:w-auto inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
+                              className="mt-2 w-full sm:w-auto inline-flex items-center justify-center gap-1 text-xs uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
                             >
                               <Plus className="w-3 h-3" />
                               {t(
@@ -3731,7 +3731,7 @@ export default function Grafikas() {
                                 null,
                               )
                             }
-                            className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
+                            className="mt-2 w-full inline-flex items-center justify-center gap-1 text-xs uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1 transition-colors"
                           >
                             <MessageSquare className="w-3 h-3" />
                             {getSlotNote(
@@ -3790,7 +3790,7 @@ export default function Grafikas() {
 
                                 await loadData();
                               }}
-                              className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-blush/80 hover:text-blush border border-dashed border-blush/30 hover:border-blush/60 rounded px-1.5 py-1 transition-colors"
+                              className="mt-2 w-full inline-flex items-center justify-center gap-1 text-xs uppercase tracking-wider text-blush/80 hover:text-blush border border-dashed border-blush/30 hover:border-blush/60 rounded px-1.5 py-1 transition-colors"
                             >
                               <MessageSquare className="w-3 h-3" />
                               {t(
@@ -3831,7 +3831,7 @@ export default function Grafikas() {
 
                                   await loadData();
                                 }}
-                                className="mt-1 w-full text-[10px] uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1"
+                                className="mt-1 w-full text-xs uppercase tracking-wider text-gold/80 hover:text-gold border border-dashed border-gold/30 hover:border-gold/60 rounded px-1.5 py-1"
                               >
                                 Grąžinti dieną
                               </button>
@@ -4032,11 +4032,11 @@ export default function Grafikas() {
                                       <span className="text-xl sm:text-2xl font-medium tracking-tight tabular-nums text-foreground/70">
                                         {scheduleDisplayTime(dow, slot)}
                                       </span>
-                                      <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
+                                      <span className="text-xs sm:text-sm text-muted-foreground/80 leading-none">
                                         ({slotTypeLabel})
                                       </span>
                                       {slot.trainer_name && (
-                                        <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold">
+                                        <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-xs uppercase tracking-wide text-gold">
                                           Trenerė: {slot.trainer_name}
                                         </span>
                                       )}
@@ -4099,12 +4099,12 @@ export default function Grafikas() {
                                     >
                                       {scheduleDisplayTime(dow, slot)}
                                     </span>
-                                    <span className="text-[10px] sm:text-xs text-muted-foreground/80 leading-none">
+                                    <span className="text-xs sm:text-sm text-muted-foreground/80 leading-none">
                                       ({slotTypeLabel})
                                     </span>
 
                                     {slot.trainer_name && (
-                                      <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold">
+                                      <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-xs uppercase tracking-wide text-gold">
                                         Trenerė:{" "}
                                         {
                                           slot.trainer_name
@@ -4407,13 +4407,13 @@ export default function Grafikas() {
                                               )}
 
                                               {b.is_individual && (
-                                                <span className="ml-1 text-[10px] uppercase tracking-wider text-blush/80">
+                                                <span className="ml-1 text-xs uppercase tracking-wider text-blush/80">
                                                   · individuali
                                                 </span>
                                               )}
 
                                               {horse && (
-                                                <span className="ml-1.5 text-[10px] sm:text-[11px] uppercase tracking-wide text-gold/80 font-mono">
+                                                <span className="ml-1.5 text-xs uppercase tracking-wide text-gold/80 font-mono">
                                                   ({horse})
                                                 </span>
                                               )}
@@ -4435,7 +4435,7 @@ export default function Grafikas() {
                                                         slot.slot_time,
                                                       )
                                                     }
-                                                    className="rounded-md border border-gold/30 px-2 py-1 text-[10px] uppercase tracking-wide text-gold hover:bg-gold/10"
+                                                    className="rounded-md border border-gold/30 px-2 py-1 text-xs uppercase tracking-wide text-gold hover:bg-gold/10"
                                                   >
                                                     {horse
                                                       ? "Pakeisti žirgą"
@@ -4450,7 +4450,7 @@ export default function Grafikas() {
                                                   isTodayVilnius(
                                                     date,
                                                   ) && (
-                                                    <span className="text-[10px] text-muted-foreground">
+                                                    <span className="text-xs text-muted-foreground">
                                                       Žirgų pasirinkimas uždarytas
                                                     </span>
                                                   )}

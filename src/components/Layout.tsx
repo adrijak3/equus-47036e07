@@ -212,6 +212,7 @@ export default function Layout({
 
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#equus-main-content" className="equus-skip-link">Pereiti prie pagrindinio turinio</a>
       {/* Viršutinė juosta */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
         <div className="container relative flex h-16 items-center justify-between">
@@ -238,7 +239,7 @@ export default function Layout({
             type="button"
             aria-label={open ? "Uždaryti meniu" : "Atidaryti meniu"}
             onClick={() => setOpen((current) => !current)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 transition-colors hover:bg-muted/40"
+            className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 transition-colors hover:bg-muted/40"
           >
             {open ? (
               <X className="h-5 w-5 text-gold" />
@@ -285,7 +286,7 @@ export default function Layout({
               type="button"
               onClick={close}
               aria-label="Uždaryti"
-              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-gold/10"
+              className="flex h-11 w-11 items-center justify-center rounded-md transition-colors hover:bg-gold/10"
             >
               <X className="h-5 w-5 text-gold" />
             </button>
@@ -537,7 +538,7 @@ export default function Layout({
                   )}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
-                  <span className="max-w-full truncate text-[10px] font-medium leading-tight">{label}</span>
+                  <span className="max-w-full text-[11px] font-medium leading-tight">{label}</span>
                 </Link>
               );
             })}
@@ -547,7 +548,7 @@ export default function Layout({
       <EquusHelpWidget />
       <CookieNotice />
 
-      <main className="flex-1 overflow-x-hidden pb-20 sm:pb-0">
+      <main id="equus-main-content" tabIndex={-1} className="flex-1 overflow-x-hidden pb-20 sm:pb-0">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
