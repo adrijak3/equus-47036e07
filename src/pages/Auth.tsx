@@ -34,6 +34,77 @@ const signInSchema = z.object({
 
 const isEmail = (s: string) => /\S+@\S+\.\S+/.test(s);
 
+type AuthMessage = { heading: string; detail: string; code: string };
+
+function explainAuthError(
+  error: { code?: string; status?: number; message?: string },
+  context: "signin" | "signup",
+): AuthMessage {
+  const code = error.code || (error.status === 429 ? "rate_limit" : "unknown_error");
+  const message = (error.message || "").toLowerCase();
+  if (code === "email_not_confirmed" || /email not confirmed/i.test(message)) {
+    return {
+      heading: "El. paštas dar nepatvirtintas",
+      detail: "Patikrinkite savo el. pašto dėžutę (taip pat „Šlamštas“) ir paspauskite patvirtinimo nuorodą. Jei laiško nėra, susisiekite su Equus administracija.",
+      code: "email_not_confirmed",
+    };
+  }
+  if (code === "invalid_credentials") {
+    return {
+      heading: "Nepavyko prisijungti",
+      detail: "Patikrinkite el. paštą arba telefono numerį ir slaptažodį. Jei jo nepamenate, pasirinkite „Pamiršote slaptažodį?“.",
+      code,
+    };
+  }
+  if (code === "over_request_rate_limit" || code === "over_email_send_rate_limit" || code === "rate_limit" || error.status === 429) {
+    return {
+      heading: "Per daug bandymų",
+      detail: "Pasiektas laikinas prisijungimo arba laiškų siuntimo limitas. Palaukite keletą minučių ir bandykite dar kartą. Nekurkite naujos paskyros.",
+      code,
+    };
+  }
+  if (code === "captcha_failed" || code === "captcha_disabled" || code === "captcha_timeout" || /captcha|turnstile/i.test(message)) {
+    return {
+      heading: "Nepavyko patvirtinti saugumo patikros",
+      detail: "Atlikite „Nesu robotas“ patikrą iš naujo ir bandykite dar kartą.",
+      code: code === "unknown_error" ? "captcha_failed" : code,
+    };
+  }
+  if (code === "email_exists" || code === "user_already_exists") {
+    return {
+      heading: "Paskyra jau egzistuoja",
+      detail: "Bandykite prisijungti arba atkurti slaptažodį, užuot kūrę naują paskyrą.",
+      code,
+    };
+  }
+  if (code === "weak_password") {
+    return {
+      heading: "Slaptažodis per silpnas",
+      detail: "Pasirinkite ilgesnį ir saugesnį slaptažodį.",
+      code,
+    };
+  }
+  if (code === "email_address_invalid" || code === "validation_failed") {
+    return { heading: "Patikrinkite įvestus duomenis", detail: "Pataisykite el. pašto adresą arba kitus laukus ir bandykite iš naujo.", code };
+  }
+  if (code === "email_address_not_authorized") {
+    return {
+      heading: "Nepavyksta išsiųsti el. laiško",
+      detail: "Laiškų siuntimas šiam adresui neleidžiamas. Susisiekite su Equus administracija.",
+      code,
+    };
+  }
+  if (code === "user_banned") {
+    return { heading: "Paskyros prieiga apribota", detail: "Susisiekite su Equus administracija.", code };
+  }
+  return {
+    heading: context === "signin" ? "Prisijungti nepavyko" : "Paskyros sukurti nepavyko",
+    detail: "Bandykite dar kartą. Jei problema kartojasi, praneškite Equus administracijai žemiau nurodytą klaidos kodą.",
+    // Avoid exposing raw server messages, tokens or other private data in the UI.
+    code: /^[a-z0-9_]{1,60}$/i.test(code) ? code : "unknown_error",
+  };
+}
+
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,6 +112,7 @@ export default function Auth() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState(params.get("tab") === "signup" ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
+  const [authMessage, setAuthMessage] = useState<AuthMessage | null>(null);
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaNonce, setCaptchaNonce] = useState(0);
   const renewCaptcha = () => { setCaptchaToken(""); setCaptchaNonce((n) => n + 1); };
@@ -59,6 +131,7 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setAuthMessage(null);
     const fd = new FormData(e.currentTarget);
     const parsed = signUpSchema.safeParse({
       full_name: fd.get("full_name"),
@@ -93,14 +166,9 @@ export default function Auth() {
     setLoading(false);
     renewCaptcha();
     if (error) {
-      const message = error.message ?? "";
-      toast.error(
-        /limit|limitas|per daug|too many|rate/i.test(message)
-          ? "Per daug registracijų. Bandykite vėliau arba rytoj."
-          : /already|egzistuoja/i.test(message)
-            ? "Tokia paskyra jau yra."
-            : "Paskyros sukurti nepavyko. Patikrinkite duomenis arba bandykite vėliau.",
-      );
+      const details = explainAuthError(error, "signup");
+      setAuthMessage(details);
+      toast.error(details.heading);
       return;
     }
     if (data.session) {
@@ -146,7 +214,8 @@ export default function Auth() {
       });
       if (lookupErr || (data as any)?.error || !(data as any)?.email) {
         setLoading(false);
-        toast.error("Neteisingas telefonas arba slaptažodis");
+        setAuthMessage({ heading: "Nepavyko prisijungti", detail: "Patikrinkite telefono numerį ir slaptažodį arba bandykite jungtis el. paštu.", code: "phone_lookup_failed" });
+        toast.error("Nepavyko prisijungti");
         return;
       }
       email = (data as any).email;
@@ -161,7 +230,9 @@ export default function Auth() {
     setLoading(false);
     renewCaptcha();
     if (error) {
-      toast.error("Neteisingas el. paštas arba slaptažodis");
+      const details = explainAuthError(error, "signin");
+      setAuthMessage(details);
+      toast.error(details.heading);
       return;
     }
     toast.success("Sveiki sugrįžę!");
@@ -206,11 +277,19 @@ export default function Auth() {
       </div>
 
       <div className="bg-gradient-card border border-gold/15 rounded-lg p-6 sm:p-8 shadow-elegant animate-fade-up">
-        <Tabs value={tab} onValueChange={(value) => { setTab(value); renewCaptcha(); }}>
+        <Tabs value={tab} onValueChange={(value) => { setTab(value); setAuthMessage(null); renewCaptcha(); }}>
           <TabsList className="grid grid-cols-2 w-full bg-background/50 mb-6">
             <TabsTrigger value="signin">Prisijungti</TabsTrigger>
             <TabsTrigger value="signup">Registruotis</TabsTrigger>
           </TabsList>
+
+          {authMessage && (
+            <div role="alert" aria-live="assertive" className="mb-5 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm">
+              <p className="font-semibold text-foreground">{authMessage.heading}</p>
+              <p className="mt-1 leading-6 text-foreground">{authMessage.detail}</p>
+              <p className="mt-2 font-mono text-xs text-muted-foreground">Klaidos kodas: {authMessage.code}</p>
+            </div>
+          )}
 
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="space-y-4">
