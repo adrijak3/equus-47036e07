@@ -17,6 +17,10 @@ async function unregisterAppWorkers() {
 export function registerEquusServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   if (isRefusedContext()) { void unregisterAppWorkers(); return; }
+  let refreshedForUpdate = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshedForUpdate) { refreshedForUpdate = true; window.location.reload(); }
+  });
   window.addEventListener("load", () => {
     void navigator.serviceWorker.register(SW_URL, { scope: "/", updateViaCache: "none" }).then(registration => {
       // A new deployment becomes available on the next open/focus, not once a week.
