@@ -56,7 +56,7 @@ interface Sub {
 interface Msg { id: string; user_id: string; body: string; created_at: string; read_by_admin: boolean; from_admin: boolean; parent_id: string | null; profile_name?: string; }
 
 export default function Admin() {
-  const [alerts, setAlerts] = useState({ pending: 0, sickness: 0, missingDoc: 0, unread: 0, registrations: 0 });
+  const [alerts, setAlerts] = useState({ pending: 0, sickness: 0, missingDoc: 0, unread: 0, registrations: 0, bugReports: 0 });
   const [section, setSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [focusUserId, setFocusUserId] = useState<string | null>(null);
@@ -72,10 +72,11 @@ export default function Admin() {
   useEffect(() => {
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [c, u, reg] = await Promise.all([
+      const [c, u, reg, bugs] = await Promise.all([
         supabase.from("cancellation_requests").select("id, sickness, document_url, document_deadline, status").eq("status", "pending"),
         supabase.from("messages").select("id").eq("from_admin", false).eq("read_by_admin", false),
         (supabase as any).from("public_registration_requests").select("id, status").in("status", ["pending", "reschedule", "accepted", "confirmed"]),
+        (supabase as any).from("bug_reports").select("id", { count: "exact", head: true }).neq("status", "resolved"),
       ]);
       const reqs = (c.data ?? []) as any[];
       setAlerts({
@@ -84,6 +85,7 @@ export default function Admin() {
         missingDoc: reqs.filter((r) => r.sickness && !r.document_url && r.document_deadline && r.document_deadline < today).length,
         unread: (u.data ?? []).length,
         registrations: ((reg as any)?.data ?? []).length,
+        bugReports: (bugs as any)?.count ?? 0,
       });
     })();
   }, []);
@@ -103,7 +105,7 @@ export default function Admin() {
     { value: "messages", label: "Žinutės", icon: MessageSquare, badge: alerts.unread, badgeCls: "bg-gold text-background" },
     { value: "registrations", label: "Registracijos", icon: ClipboardPenLine, badge: alerts.registrations, badgeCls: "bg-gold text-background" },
     { value: "reviews", label: "Atsiliepimai", icon: MessageCircleHeart },
-    { value: "bugReports", label: "Pranešimai apie klaidas", icon: Bug },
+    { value: "bugReports", label: "Pranešimai apie klaidas", icon: Bug, badge: alerts.bugReports, badgeCls: "bg-blush text-white" },
     { value: "duplicates", label: "Dublikatai", icon: CopyCheck },
     { value: "health", label: "Rezervacijų būklė", icon: CopyCheck },
     { value: "vacations", label: "Atostogos", icon: Palmtree },
