@@ -201,7 +201,7 @@ export function BugReporter() {
             </div>
             <button type="button" onClick={dismiss} aria-label="Uždaryti klaidos pranešimą" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-muted"><X className="h-4 w-4" /></button>
           </div>
-          <Button type="button" variant="gold" className="mt-3 min-h-11 w-full" onClick={() => setDialogOpen(true)}>
+          <Button type="button" variant="gold" className="mt-3 min-h-11 w-full" onClick={() => { if (user?.email && !contactEmail) setContactEmail(user.email); setDialogOpen(true); }}>
             <Send aria-hidden="true" className="mr-2 h-4 w-4" /> Siųsti klaidą administratorei
           </Button>
         </div>
