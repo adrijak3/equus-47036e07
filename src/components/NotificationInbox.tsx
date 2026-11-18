@@ -23,20 +23,20 @@ export default function NotificationInbox() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const refresh = useCallback(async () => {
+  // A closed bell only needs the unread count (one small HEAD request).
+  // Download full message bodies only when a rider opens the inbox.
+  const refresh = useCallback(async (includeMessages = false) => {
     if (!user?.id) return;
-    const [rows, unread] = await Promise.all([
-      (supabase as any).from("important_notifications")
-        .select("id,title_lt,title_en,body_lt,body_en,read_at,created_at,url")
-        .eq("user_id", user.id).order("created_at", { ascending: false }).limit(60),
-      (supabase as any).from("important_notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id).is("read_at", null),
-    ]);
-    if (!rows.error) setItems((rows.data || []) as Notice[]);
+    const unread = await (supabase as any).from("important_notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id).is("read_at", null);
     if (!unread.error) setUnreadCount(unread.count || 0);
+    if (!includeMessages) return;
+    const rows = await (supabase as any).from("important_notifications")
+      .select("id,title_lt,title_en,body_lt,body_en,read_at,created_at,url")
+      .eq("user_id", user.id).order("created_at", { ascending: false }).limit(60);
+    if (!rows.error) setItems((rows.data || []) as Notice[]);
   }, [user?.id]);
-
   useEffect(() => {
     if (!user?.id) { setItems([]); setUnreadCount(0); return; }
     void refresh();
@@ -52,7 +52,7 @@ export default function NotificationInbox() {
     const { error } = await (supabase as any).from("important_notifications")
       .update({ read_at: new Date().toISOString() })
       .eq("user_id", user.id).in("id", ids);
-    if (!error) await refresh();
+    if (!error) await refresh(open);
     setLoading(false);
   };
   if (!user) return null;
@@ -63,7 +63,7 @@ export default function NotificationInbox() {
       type="button"
       aria-label={lt ? `Pranešimai, neperskaityta: ${unreadCount}` : `Notifications, unread: ${unreadCount}`}
       aria-haspopup="dialog"
-      onClick={() => { void refresh(); setOpen(true); }}
+      onClick={() => { void refresh(true); setOpen(true); }}
       className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 text-foreground transition-colors hover:bg-muted/50"
     >
       <Bell className="h-5 w-5"/>
