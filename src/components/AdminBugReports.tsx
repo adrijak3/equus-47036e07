@@ -17,6 +17,10 @@ type BugReport = {
   user_agent: string | null;
   status: string;
   created_at: string;
+  occurred_at?: string;
+  action_context?: string | null;
+  user_notes?: string | null;
+  contact_email?: string | null;
 };
 
 export function AdminBugReports() {
@@ -52,7 +56,11 @@ export function AdminBugReports() {
     const report = [
       "EQUUS KLAIDOS PRANEŠIMAS",
       "ID: " + row.id,
-      "Data: " + new Date(row.created_at).toLocaleString("lt-LT"),
+      "Klaidos laikas: " + new Date(row.occurred_at || row.created_at).toLocaleString("lt-LT"),
+      "Pranešimo pateikimo laikas: " + new Date(row.created_at).toLocaleString("lt-LT"),
+      "Ką bandė padaryti: " + (row.action_context || "nenurodyta"),
+      "Naudotojo komentaras: " + (row.user_notes || "nėra"),
+      "Kontaktinis el. paštas: " + (row.contact_email || "nenurodytas"),
       "Būsena: " + row.status,
       "Klaida: " + row.error_name,
       "Klaidos kodas: " + (row.error_code || "nenurodytas"),
@@ -77,7 +85,7 @@ export function AdminBugReports() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Automatiškai pateikti techninių klaidų pranešimai.</p>
+          <p className="text-sm text-muted-foreground">Naudotojų savanoriškai atsiųsti klaidų pranešimai. Kopijuokite visą informaciją ir perduokite ją techninei pagalbai.</p>
           <p className="mt-1 text-sm">Neišspręsta: <b>{openCount}</b> · Iš viso: <b>{rows.length}</b></p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void load()}><RefreshCw className="mr-2 h-4 w-4" /> Atnaujinti</Button>
@@ -91,11 +99,14 @@ export function AdminBugReports() {
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className="font-medium">{row.error_name}{row.error_code ? " · " + row.error_code : ""}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{new Date(row.created_at).toLocaleString("lt-LT")} · {row.page_path}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{new Date(row.occurred_at || row.created_at).toLocaleString("lt-LT")} · {row.page_path}</p>
             </div>
             <span className="rounded-full border border-gold/20 px-2 py-1 text-xs">{row.status === "resolved" ? "Išspręsta" : row.status === "investigating" ? "Tiriama" : "Nauja"}</span>
           </div>
           <p className="whitespace-pre-wrap break-words text-sm">{row.error_message}</p>
+          {row.action_context && <p className="text-sm"><strong>Bandė:</strong> {row.action_context}</p>}
+          {row.user_notes && <p className="whitespace-pre-wrap break-words text-sm"><strong>Paaiškinimas:</strong> {row.user_notes}</p>}
+          {row.contact_email && <p className="break-all text-sm"><strong>Kontaktas:</strong> {row.contact_email}</p>}
           <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
             <p>Pasikartojimai: {row.occurrence_count}</p>
             <p>Naudotojo ID: {row.user_id || "Neprisijungęs"}</p>
