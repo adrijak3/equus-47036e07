@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,8 +20,16 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
   const { isAdmin } = useAuth();
   const { pathname } = useLocation();
   const [maintenance, setMaintenance] = useState<boolean | null>(null);
+  const lastModeCheck = useRef(0);
+  const modeCheckInFlight = useRef(false);
 
   const fetchMode = useCallback(async () => {
+    const now = Date.now();
+    // Realtime already pushes changes. Avoid double-fetching when focus and
+    // visibilitychange fire together, and skip repeated short foreground visits.
+    if (modeCheckInFlight.current || now - lastModeCheck.current < 60_000) return;
+    modeCheckInFlight.current = true;
+    lastModeCheck.current = now;
     const { data, error } = await supabase
       .from("site_settings" as any)
       .select("maintenance_mode")
@@ -31,7 +39,9 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
     if (!error && data) setMaintenance(Boolean((data as any).maintenance_mode));
     else if (error?.code === "PGRST116" || !data) setMaintenance(false);
     // On transient network errors keep the previous state (or loading) rather
-    // than showing maintenance incorrectly.
+    // than showing maintenance incorrectly. Permit immediate retry on focus.
+    if (error && error.code !== "PGRST116") lastModeCheck.current = 0;
+    modeCheckInFlight.current = false;
   }, []);
 
   useEffect(() => {
@@ -46,7 +56,7 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
       )
       .subscribe();
 
-    const onFocus = () => fetchMode();
+    const onFocus = () => { if (document.visibilityState === "visible") void fetchMode(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
 
