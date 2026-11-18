@@ -40,8 +40,8 @@ export default function NotificationInbox() {
   useEffect(() => {
     if (!user?.id) { setItems([]); setUnreadCount(0); return; }
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 45000);
-    const onFocus = () => void refresh();
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 3 * 60_000);
+    const onFocus = () => { if (document.visibilityState === "visible") void refresh(); };
     window.addEventListener("focus", onFocus);
     return () => { window.clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [user?.id, refresh]);

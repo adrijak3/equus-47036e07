@@ -26,6 +26,8 @@ type PendingBug = {
 };
 
 const COUNT_STORAGE_KEY = "equus_bug_occurrences_v1";
+const LAST_SENT_STORAGE_KEY = "equus_bug_report_last_sent_v1";
+const REPORT_COOLDOWN_MS = 5 * 60 * 1000; // Local limit, no extra DB queries.
 const MAX_MESSAGE = 1500;
 
 function scrub(value: unknown, maxLength = MAX_MESSAGE): string {
@@ -165,6 +167,13 @@ export function BugReporter() {
       toast.error("Patikrinkite kontaktinį el. paštą arba palikite lauką tuščią.");
       return;
     }
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAST_SENT_STORAGE_KEY) || "{}") as Record<string, number>;
+      if (Date.now() - (Number(saved[pending.fingerprint]) || 0) < REPORT_COOLDOWN_MS) {
+        toast.info("Apie šią pačią klaidą jau neseniai pranešėte. Bandykite po kelių minučių.");
+        return;
+      }
+    } catch { /* Browsers may block localStorage. */ }
     setSending(true);
     const { error } = await (supabase as any).from("bug_reports").insert({
       fingerprint: pending.fingerprint,
@@ -175,7 +184,7 @@ export function BugReporter() {
       stack_trace: null, // Raw stack traces can contain private values.
       occurrence_count: pending.occurrenceCount,
       user_id: user?.id ?? null,
-      user_agent: navigator.userAgent.slice(0, 500),
+      user_agent: navigator.userAgent.slice(0, 220),
       action_context: scrub(action || pending.actionContext, 240),
       user_notes: scrub(notes, 500) || null,
       contact_email: contactEmail.trim() || null,
@@ -186,6 +195,11 @@ export function BugReporter() {
       toast.error("Nepavyko išsiųsti pranešimo. Bandykite dar kartą.");
       return;
     }
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAST_SENT_STORAGE_KEY) || "{}") as Record<string, number>;
+      const recent = Object.fromEntries(Object.entries(saved).filter(([, at]) => Date.now() - Number(at) < REPORT_COOLDOWN_MS).slice(-19));
+      localStorage.setItem(LAST_SENT_STORAGE_KEY, JSON.stringify({ ...recent, [pending.fingerprint]: Date.now() }));
+    } catch { /* optional throttling */ }
     dismiss();
     toast.success("Klaidos pranešimas perduotas Equus administracijai. Ačiū!");
   };
@@ -198,20 +212,20 @@ export function BugReporter() {
             <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
             <div className="min-w-0 flex-1">
               <p className="font-semibold">Įvyko klaida?</p>
-              <p className="mt-1 text-sm leading-5 text-muted-foreground">Galite vienu mygtuku perduoti klaidos informaciją administratorei.</p>
+              <p className="mt-1 text-sm leading-5 text-muted-foreground">Galite pranešti apie klaidą, kad ją būtų lengviau išspręsti.</p>
               <p className="mt-1 truncate text-xs text-muted-foreground">Klaida: {pending.errorCode || pending.message}</p>
             </div>
             <button type="button" onClick={dismiss} aria-label="Uždaryti klaidos pranešimą" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-muted"><X className="h-4 w-4" /></button>
           </div>
           <Button type="button" variant="gold" className="mt-3 min-h-11 w-full" onClick={() => { if (user?.email && !contactEmail) setContactEmail(user.email); setDialogOpen(true); }}>
-            <Send aria-hidden="true" className="mr-2 h-4 w-4" /> Siųsti klaidą administratorei
+            <Send aria-hidden="true" className="mr-2 h-4 w-4" /> Siųsti klaidą
           </Button>
         </div>
       )}
       <Dialog open={Boolean(pending && dialogOpen)} onOpenChange={setDialogOpen}>
         <DialogContent data-error-reporter className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Pranešti administratorei apie klaidą</DialogTitle>
+            <DialogTitle>Pranešti apie klaidą</DialogTitle>
             <DialogDescription>
               Išsiųsime puslapį, klaidos laiką, kodą, aprašymą ir naršyklės informaciją. Slaptažodžių, įvestų formų, patvirtinimo kodų ir prisijungimo raktų nesiunčiame.
             </DialogDescription>
@@ -239,7 +253,7 @@ export function BugReporter() {
           <DialogFooter>
             <Button type="button" variant="outline" disabled={sending} onClick={() => setDialogOpen(false)}>Atgal</Button>
             <Button type="button" variant="gold" disabled={sending} onClick={() => void submit()}>
-              {sending ? "Siunčiama…" : "Siųsti administratorei"}
+              {sending ? "Siunčiama…" : "Siųsti klaidą"}
             </Button>
           </DialogFooter>
         </DialogContent>

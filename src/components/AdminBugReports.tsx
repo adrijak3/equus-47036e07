@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Bug, Check, Clipboard, RefreshCw } from "lucide-react";
+import { Bug, Check, Clipboard, RefreshCw, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 type BugReport = {
   id: string;
@@ -26,13 +27,16 @@ type BugReport = {
 export function AdminBugReports() {
   const [rows, setRows] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [sendingReplyFor, setSendingReplyFor] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("bug_reports")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("id,fingerprint,error_name,error_message,error_code,page_path,stack_trace,occurrence_count,user_id,user_agent,status,created_at,occurred_at,action_context,user_notes,contact_email")
+      .order("created_at", { ascending: false })
+      .limit(100);
     setLoading(false);
     if (error) {
       toast.error("Nepavyko įkelti klaidų pranešimų: " + error.message);
@@ -49,6 +53,26 @@ export function AdminBugReports() {
     else {
       toast.success("Klaidos būsena atnaujinta");
       await load();
+    }
+  };
+
+  // "Išspręsta" intentionally does not send notifications.
+  // Only this separate action sends one in-app bell notice to the signed-in reporter.
+  const sendReply = async (row: BugReport) => {
+    if (!row.user_id || sendingReplyFor) return;
+    setSendingReplyFor(row.id);
+    const { data, error } = await (supabase as any).rpc("admin_send_bug_report_notice", {
+      _report_id: row.id,
+      _message: replyDrafts[row.id]?.trim() || null,
+    });
+    setSendingReplyFor(null);
+    if (error) {
+      toast.error("Nepavyko išsiųsti pranešimo: " + error.message);
+    } else if (data === false) {
+      toast.info("Dėl šios klaidos pranešimas jau buvo išsiųstas.");
+    } else {
+      toast.success("Žinutė išsiųsta naudotojo varpeliui.");
+      setReplyDrafts(current => ({ ...current, [row.id]: "" }));
     }
   };
 
@@ -118,10 +142,30 @@ export function AdminBugReports() {
               <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-muted-foreground">{row.stack_trace}</pre>
             </details>
           )}
+          {row.user_id && (
+            <div className="space-y-2 rounded-lg border border-border/60 bg-background/40 p-3">
+              <label htmlFor={`bug-reply-${row.id}`} className="block text-sm font-medium">
+                Atsakymas naudotojui į varpelį (nebūtina)
+              </label>
+              <Textarea
+                id={`bug-reply-${row.id}`}
+                value={replyDrafts[row.id] || ""}
+                maxLength={500}
+                rows={2}
+                onChange={event => setReplyDrafts(current => ({ ...current, [row.id]: event.target.value }))}
+                placeholder="Pvz., klaidą ištaisėme. Galite bandyti registruotis iš naujo."
+              />
+              <p className="text-xs text-muted-foreground">Be teksto bus išsiųstas trumpas standartinis atsakymas. Pranešimas siunčiamas tik paspaudus žemiau esantį mygtuką, daugiausia kartą šiam pranešimui.</p>
+              <Button type="button" size="sm" variant="outline" disabled={sendingReplyFor !== null} onClick={() => void sendReply(row)}>
+                <Send className="mr-1 h-4 w-4" /> {sendingReplyFor === row.id ? "Siunčiama…" : "Siųsti į varpelį"}
+              </Button>
+            </div>
+          )}
+          {!row.user_id && <p className="text-xs text-muted-foreground">Pranešimas pateiktas neprisijungus – atsakymo į varpelį išsiųsti negalima.</p>}
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => void copyReport(row)}><Clipboard className="mr-1 h-4 w-4" /> Kopijuoti pranešimą</Button>
             <Button size="sm" variant="outline" onClick={() => void setStatus(row.id, "investigating")}>Tiriama</Button>
-            <Button size="sm" variant="gold" onClick={() => void setStatus(row.id, "resolved")}><Check className="mr-1 h-4 w-4" /> Išspręsta</Button>
+            <Button size="sm" variant="gold" onClick={() => void setStatus(row.id, "resolved")}><Check className="mr-1 h-4 w-4" /> Išspręsta (be pranešimo)</Button>
           </div>
         </article>
       ))}
