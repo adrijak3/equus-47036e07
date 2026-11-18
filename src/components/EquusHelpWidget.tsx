@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, MessageCircle, X, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { reportHandledError } from "@/components/BugReporter";
 
 const FAQ = {
   lt: [
@@ -78,6 +79,9 @@ export function EquusHelpWidget() {
             </div>
           </div>
           <footer className="space-y-2 border-t border-border bg-background/40 px-4 py-3">
+            <button type="button" onClick={() => { reportHandledError(new Error("Naudotojas praneša apie problemą"), "Pagalbos užklausa (naudotojo inicijuota)"); setOpen(false); }} className="flex min-h-11 w-full items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-muted">
+              {lt ? "Pranešti apie klaidą" : "Report a problem"}
+            </button>
             <a href="https://m.me/adriija.kalikaite" target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-between rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
               {lt ? "Reikia pagalbos?" : "Need help?"} <ExternalLink className="h-4 w-4" />
             </a>
