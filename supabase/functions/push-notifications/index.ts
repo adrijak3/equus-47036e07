@@ -88,7 +88,6 @@ async function sendToSubscription(subscription: PushSubscriptionRow, payload: st
 }
 
 async function processQueue(admin: ReturnType<typeof createClient>) {
-  console.log("Equus push worker: worker started");
 
   const { data: reminderCount, error: reminderError } =
     await admin.rpc("queue_training_reminders");
@@ -118,9 +117,6 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
   let permanentlyFailed = 0;
 
   for (const item of ((queue ?? []) as QueueRow[])) {
-    console.log(
-      `Equus push worker: processing queue id=${item.id} kind=${item.kind} attempt=${item.attempts}`,
-    );
 
     const { data: subscriptions, error: subError } = await admin
       .from("push_subscriptions")
@@ -157,7 +153,6 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
         })
         .eq("id", item.id)
         .eq("processing_token", item.processing_token);
-      console.log(`Equus push worker: no subscriptions queue=${item.id}`);
       continue;
     }
 
@@ -185,7 +180,6 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
           invalid_at: null,
           last_failure_at: null,
         }).eq("id", subscription.id);
-        console.log(`Equus push worker: push sent subscription=${subscription.id} queue=${item.id}`);
       } catch (error) {
         const statusCode = (error as { statusCode?: number }).statusCode;
 
@@ -254,9 +248,6 @@ async function processQueue(admin: ReturnType<typeof createClient>) {
     permanently_failed: permanentlyFailed,
   };
 
-  console.log(
-    `Equus push worker: finished reminders=${result.reminders_queued} processed=${result.processed} sent=${sent} failed=${failed} invalid=${invalidSubscriptions}`,
-  );
   return result;
 }
 
@@ -269,7 +260,6 @@ async function sendTestPush(admin: ReturnType<typeof createClient>, userId: stri
 
   if (error) throw new Error(error.message);
   if (!subscriptions?.length) {
-    console.log("Equus push worker: no subscriptions found for test");
     return { ok: false, code: "NO_ACTIVE_SUBSCRIPTION", delivered: 0, failed: 0 };
   }
 
