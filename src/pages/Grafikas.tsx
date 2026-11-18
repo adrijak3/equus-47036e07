@@ -833,11 +833,12 @@ export default function Grafikas() {
   useEffect(() => {
     void loadData();
     let lastRefresh = Date.now();
-    // Refresh occupancy when returning to the schedule, not every minute.
-    // This prevents showing an old "1 place free" after another rider books.
+    // Refresh occupancy when returning after 90 seconds, rather than
+    // refetching a dozen schedule endpoints on each quick app switch.
+    // Booking and capacity are still validated server-side at submission.
     const refreshOnReturn = () => {
       if (document.visibilityState !== "visible") return;
-      if (Date.now() - lastRefresh < 30_000) return;
+      if (Date.now() - lastRefresh < 90_000) return;
       lastRefresh = Date.now();
       void loadData();
     };
