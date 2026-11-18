@@ -201,13 +201,13 @@ export default function Varzybos() {
           <div className="flex items-center gap-3">
             <FileImage className="h-6 w-6 text-gold" aria-hidden="true" />
             <div>
-              <h2 className="font-display text-lg text-foreground">Varžybų atmintinė – RHR varžybos</h2>
+              <h2 className="font-display text-lg text-foreground">Informacija raiteliams</h2>
               <p className="text-xs text-muted-foreground">Kainos, žirgo priežiūra, šėrimas ir pasiruošimas varžyboms.</p>
             </div>
           </div>
           {reminderAvailable ? (
             <Button variant="gold" onClick={() => setReminderOpen(true)}>
-              <FileImage className="h-4 w-4" /> Atidaryti atmintinę
+              <FileImage className="h-4 w-4" /> Varžybų atmintinė – RHR varžybos
             </Button>
           ) : isAdmin ? (
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold/40 px-4 py-2 text-sm font-medium text-gold hover:bg-gold/10">
