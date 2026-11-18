@@ -168,9 +168,9 @@ export function BugReporter() {
       return;
     }
     try {
-      const last = Number(localStorage.getItem(LAST_SENT_STORAGE_KEY) || 0);
-      if (Date.now() - last < REPORT_COOLDOWN_MS) {
-        toast.info("Pranešimas jau neseniai išsiųstas. Pakartotinai bandykite po kelių minučių.");
+      const saved = JSON.parse(localStorage.getItem(LAST_SENT_STORAGE_KEY) || "{}") as Record<string, number>;
+      if (Date.now() - (Number(saved[pending.fingerprint]) || 0) < REPORT_COOLDOWN_MS) {
+        toast.info("Apie šią pačią klaidą jau neseniai pranešėte. Bandykite po kelių minučių.");
         return;
       }
     } catch { /* Browsers may block localStorage. */ }
@@ -195,7 +195,11 @@ export function BugReporter() {
       toast.error("Nepavyko išsiųsti pranešimo. Bandykite dar kartą.");
       return;
     }
-    try { localStorage.setItem(LAST_SENT_STORAGE_KEY, String(Date.now())); } catch { /* optional throttling */ }
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAST_SENT_STORAGE_KEY) || "{}") as Record<string, number>;
+      const recent = Object.fromEntries(Object.entries(saved).filter(([, at]) => Date.now() - Number(at) < REPORT_COOLDOWN_MS).slice(-19));
+      localStorage.setItem(LAST_SENT_STORAGE_KEY, JSON.stringify({ ...recent, [pending.fingerprint]: Date.now() }));
+    } catch { /* optional throttling */ }
     dismiss();
     toast.success("Klaidos pranešimas perduotas Equus administracijai. Ačiū!");
   };
