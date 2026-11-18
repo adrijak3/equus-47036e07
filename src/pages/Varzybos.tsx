@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CalendarDays, ExternalLink, MapPin, Plus, Save, Trophy, UserRound, X, CheckCircle2 } from "lucide-react";
+import { CalendarDays, ExternalLink, FileImage, MapPin, Plus, Save, Trophy, Upload, UserRound, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type EventRow = {
   id: string; title: string; event_date: string; location: string;
@@ -21,6 +22,8 @@ type EntryRow = {
 type HorseRow = { id: string; name: string; active: boolean };
 type Form = { title: string; event_date: string; location: string; program_url: string; details: string; registration_open: boolean };
 const emptyForm = (): Form => ({ title: "", event_date: "", location: "", program_url: "", details: "", registration_open: true });
+const RHR_REMINDER_PATH = "competition/rhr-varzybu-atmintine.png";
+const RHR_REMINDER_URL = supabase.storage.from("gallery").getPublicUrl(RHR_REMINDER_PATH).data.publicUrl;
 
 function prettyDate(value: string) {
   return new Intl.DateTimeFormat("lt-LT", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(value + "T12:00:00Z"));
@@ -62,6 +65,36 @@ export default function Varzybos() {
   const [heights, setHeights] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<EntryRow | null>(null);
+  const [reminderAvailable, setReminderAvailable] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderUploading, setReminderUploading] = useState(false);
+
+  useEffect(() => {
+    // A single inexpensive metadata check. Do not download the full poster
+    // until a visitor chooses to view it.
+    const controller = new AbortController();
+    void fetch(RHR_REMINDER_URL, { method: "HEAD", signal: controller.signal })
+      .then(response => { if (response.ok) setReminderAvailable(true); })
+      .catch(() => { /* Poster may not yet be uploaded. */ });
+    return () => controller.abort();
+  }, []);
+
+  const uploadReminder = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!isAdmin || !file) return;
+    if (file.type !== "image/png" || file.size > 10 * 1024 * 1024) {
+      toast.error("Pasirinkite PNG paveikslėlį iki 10 MB.");
+      return;
+    }
+    setReminderUploading(true);
+    const { error } = await supabase.storage.from("gallery")
+      .upload(RHR_REMINDER_PATH, file, { upsert: true, contentType: "image/png", cacheControl: "3600" });
+    setReminderUploading(false);
+    if (error) { toast.error("Nepavyko įkelti RHR atmintinės: " + error.message); return; }
+    setReminderAvailable(true);
+    toast.success("RHR varžybų atmintinė įkelta ir prieinama raiteliams.");
+  };
 
   const load = useCallback(async () => {
     const [e, r, h] = await Promise.all([
@@ -162,6 +195,46 @@ export default function Varzybos() {
         </p>
         <div className="gold-divider max-w-[150px]" />
       </header>
+
+      <section className="rounded-2xl border border-gold/25 bg-gradient-card p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <FileImage className="h-6 w-6 text-gold" aria-hidden="true" />
+            <div>
+              <h2 className="font-display text-lg text-foreground">Informacija raiteliams</h2>
+              <p className="text-xs text-muted-foreground">Kainos, žirgo priežiūra, šėrimas ir pasiruošimas varžyboms.</p>
+            </div>
+          </div>
+          {reminderAvailable ? (
+            <Button variant="gold" onClick={() => setReminderOpen(true)}>
+              <FileImage className="h-4 w-4" /> Varžybų atmintinė – RHR varžybos
+            </Button>
+          ) : isAdmin ? (
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold/40 px-4 py-2 text-sm font-medium text-gold hover:bg-gold/10">
+              <Upload className="h-4 w-4" />
+              {reminderUploading ? "Įkeliama…" : "Įkelti RHR atmintinę (PNG)"}
+              <input type="file" accept="image/png" className="sr-only" disabled={reminderUploading} onChange={e => void uploadReminder(e)} />
+            </label>
+          ) : (
+            <p className="text-xs text-muted-foreground">Atmintinė ruošiama.</p>
+          )}
+        </div>
+      </section>
+      <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
+        <DialogContent className="max-h-[95vh] max-w-[min(96vw,900px)] overflow-y-auto p-3 sm:p-5">
+          <DialogHeader>
+            <DialogTitle>Varžybų atmintinė – RHR varžybos</DialogTitle>
+          </DialogHeader>
+          <img
+            src={RHR_REMINDER_URL}
+            alt="RHR varžybų atmintinė raiteliams: kainos, mokėjimai, logistika, žirgų priežiūra ir šėrimo grafikas"
+            className="mx-auto max-h-[78vh] w-full object-contain"
+          />
+          <a href={RHR_REMINDER_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-1 text-sm font-semibold text-gold underline">
+            Atidaryti paveikslėlį visu dydžiu <ExternalLink className="h-4 w-4" />
+          </a>
+        </DialogContent>
+      </Dialog>
 
       {isAdmin && (
         <section className="space-y-4">
