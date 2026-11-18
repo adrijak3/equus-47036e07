@@ -35,6 +35,8 @@ function scrub(value: unknown, maxLength = MAX_MESSAGE): string {
     .replace(/https?:\/\/[^\s)]+/gi, "[nuoroda]")
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[el. paštas]")
     .replace(/\b(?:bearer|access_token|refresh_token|password|passwd|secret|apikey|api_key|token|authorization)\s*[:=]\s*[^\s,;]+/gi, "[slapti duomenys]")
+    .replace(/\b(?:otp|pin|verification code|patvirtinimo kodas|kodas)\s*[:=]?\s*\d{4,8}\b/gi, "[patvirtinimo kodas]")
+    .replace(/\b(?:password|slaptažodis)\s*(?:yra|is|=|:)\s*\S+/gi, "[slaptažodis]")
     .replace(/\b(?:\+?370|8)\d{8}\b/g, "[telefonas]")
     .replace(/\b[0-9a-f]{8}-[0-9a-f-]{27,}\b/gi, "[ID]")
     .replace(/\beyJ[A-Za-z0-9_-]{20,}(?:\.[A-Za-z0-9_-]+){1,2}\b/g, "[prisijungimo duomenys]")
