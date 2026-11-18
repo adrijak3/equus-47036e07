@@ -894,7 +894,7 @@ Deno.serve(async (req) => {
       }
 
       if (event.event_type === "welcome_new_rider") {
-        subject = "Sveiki prisijungę prie Equus! 🐴 Susipažinkime!";
+        subject = "Sveiki atvykę į Equus! 🐴";
         html = welcomeEmailHtml(clientName);
       }
 
