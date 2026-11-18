@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { KeyRound, Chrome } from "lucide-react";
 import { TurnstileCaptcha, TURNSTILE_SITE_KEY } from "@/components/TurnstileCaptcha";
+import { reportHandledError } from "@/components/BugReporter";
 
 const signUpSchema = z.object({
   full_name: z.string().trim().min(2, "Vardas per trumpas").max(80),
@@ -166,6 +167,7 @@ export default function Auth() {
     setLoading(false);
     renewCaptcha();
     if (error) {
+      reportHandledError(error, "Paskyros registracija");
       const details = explainAuthError(error, "signup");
       setAuthMessage(details);
       toast.error(details.heading);
@@ -230,6 +232,7 @@ export default function Auth() {
     setLoading(false);
     renewCaptcha();
     if (error) {
+      reportHandledError(error, "Prisijungimas su slaptažodžiu");
       const details = explainAuthError(error, "signin");
       setAuthMessage(details);
       toast.error(details.heading);
