@@ -751,11 +751,7 @@ Deno.serve(async (req) => {
           .eq("status", "processing");
         if (skipError) throw skipError;
 
-        console.log("Equus subscription warning skipped for exempt user:", {
-          event_id: eventId,
-          user_id: event.user_id,
-        });
-        return json({
+return json({
           ok: true,
           processed: true,
           skipped: true,
@@ -960,13 +956,7 @@ Deno.serve(async (req) => {
         if (issueError) console.error("Voucher was emailed but issue status sync failed:", issueError.code);
       }
 
-      console.log("Equus email sent:", {
-        event_id: eventId,
-        event_type: event.event_type,
-        message_id: messageId,
-      });
-
-      return json({
+return json({
         ok: true,
         processed: true,
         event_id: eventId,
