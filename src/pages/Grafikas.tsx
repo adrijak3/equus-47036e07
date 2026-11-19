@@ -2362,6 +2362,26 @@ export default function Grafikas() {
       );
       const targetSlot = targetSlots.find((s) => s.trainer_name === slot.trainer_name) ?? targetSlots[0] ?? null;
 
+      // A one-day move hides its original recurring time with capacity 0.
+      // Restoring that original time needs to remove the hidden override,
+      // move the booking and disable the one-off slot in one transaction.
+      if (
+        slot.one_off_date === dateISO &&
+        targetSlot?.one_off_date == null &&
+        getCapacity(date, newTime, targetSlot.max_capacity) === 0
+      ) {
+        const { error } = await (supabase as any).rpc("admin_restore_one_off_slot_time", {
+          _source_slot_id: slot.id,
+          _slot_date: dateISO,
+          _target_time: `${newTime}:00`,
+        });
+        if (error) throw error;
+        toast.success(`Laikas grąžintas tik ${dateISO}: ${oldTime} → ${newTime}`);
+        setAdminSlotDialog(null);
+        await loadData();
+        return;
+      }
+
       const { data: targetBookings, error: targetErr } = await supabase
         .from("bookings")
         .select("id")
