@@ -386,10 +386,10 @@ export function RiderActionSheet({
   const actions = [
     {
       key: "horse",
-      label: "Pakeisti žirgą",
+      label: "Paskirti / pakeisti žirgą",
       icon: Horse,
       onClick: openHorse,
-      disabled: !canManageHorses || target?.isGuest,
+      disabled: !canManageHorses || (!!target?.isGuest && !isAdmin),
     },
     {
       key: "move",

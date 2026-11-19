@@ -627,8 +627,8 @@ export default function Grafikas() {
         ...b,
         profile_name: b.family_rider_id
           ? familyNameMap[b.family_rider_id] ?? "Kartu lankantis raitelis"
-          : b.guest_rider_id
-            ? guestNameMap[b.guest_rider_id]
+          : b.is_guest
+            ? (b.guest_name ?? guestNameMap[b.guest_rider_id] ?? visibleBookingNames[b.id] ?? "Svečias")
             : visibleBookingNames[b.id] ?? nameMap[b.user_id],
         is_newcomer: b.guest_rider_id
           ? !!guestNewcomerMap[b.guest_rider_id]
@@ -4382,8 +4382,7 @@ export default function Grafikas() {
                                                           userId:
                                                             b.user_id,
                                                           name: b.is_guest
-                                                            ? b.guest_name ??
-                                                              "Svečias"
+                                                             ? b.guest_name ?? b.profile_name ?? "Svečias"
                                                             : b.profile_name ??
                                                               "—",
                                                           isGuest:
@@ -4404,7 +4403,7 @@ export default function Grafikas() {
                                               }
                                             >
                                               {formatBookedName(
-                                                b.is_guest ? (b.guest_name ?? "Svečias") : (b.profile_name ?? "—"),
+                                                b.is_guest ? (b.guest_name ?? b.profile_name ?? "Svečias") : (b.profile_name ?? "—"),
                                               )}
 
                                               {b.is_individual && (
