@@ -216,6 +216,9 @@ function riderReleasedMonday(): Date {
   return today.getDay() === 0 && get("hour") >= 1 ? addDays(monday, 7) : monday;
 }
 
+// This rider may select horses one additional week ahead; booking rules are unchanged.
+const EXTENDED_HORSE_SELECTION_USER_ID = "016c84e1-b5d7-430f-ab95-d9acff55a570";
+
 export default function Grafikas() {
   const { user, profile, isAdmin, isTrainer } = useAuth();
   const [riderTarget, setRiderTarget] = useState<RiderTarget | null>(null);
@@ -232,6 +235,7 @@ export default function Grafikas() {
   };
 
   const staffCalendar = isAdmin || isTrainer;
+  const extendedHorseWeeks = user?.id === EXTENDED_HORSE_SELECTION_USER_ID;
   const [releasedMonday, setReleasedMonday] = useState(riderReleasedMonday);
   const [weekStart, setWeekStart] = useState(riderReleasedMonday);
   useEffect(() => {
@@ -241,14 +245,14 @@ export default function Grafikas() {
       setReleasedMonday(monday);
       setWeekStart(current => {
         const first = monday.getTime();
-        const last = addDays(monday, 7).getTime();
+        const last = addDays(monday, extendedHorseWeeks ? 14 : 7).getTime();
         return current.getTime() < first || current.getTime() > last ? monday : current;
       });
     };
     syncRelease();
     const interval = window.setInterval(syncRelease, 60000);
     return () => window.clearInterval(interval);
-  }, [staffCalendar]);
+  }, [staffCalendar, extendedHorseWeeks]);
   const dayRefs = useRef<Array<HTMLDivElement | null>>([]);
   const calendarScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
@@ -448,7 +452,7 @@ export default function Grafikas() {
 
   const weekEnd = days[6];
   const firstRiderWeek = releasedMonday.getTime();
-  const lastRiderWeek = addDays(releasedMonday, 7).getTime();
+  const lastRiderWeek = addDays(releasedMonday, extendedHorseWeeks ? 14 : 7).getTime();
   // Keep at most two previous calendar weeks visible to staff.
   // Older bookings stay in the database for subscriptions and audit history.
   const oldestStaffWeek = startOfWeek(addDays(new Date(), -14)).getTime();
@@ -1166,6 +1170,9 @@ export default function Grafikas() {
     const sunday = new Date(`${dateISO}T12:00:00Z`);
     // Monday-Sunday bookings open the preceding Sunday, 00:00 Lithuania time.
     sunday.setUTCDate(sunday.getUTCDate() - (sunday.getUTCDay() || 7));
+    // Miglė has access to two upcoming weeks rather than one.
+    // Existing booking cutoffs and horse capacity checks remain unchanged.
+    if (extendedHorseWeeks) sunday.setUTCDate(sunday.getUTCDate() - 7);
     const opensOnISO = sunday.toISOString().slice(0, 10);
     return todayISO >= opensOnISO && (
       todayISO < dateISO || (todayISO === dateISO && vilniusTime < (time?.slice(0, 5) ?? "23:59"))
