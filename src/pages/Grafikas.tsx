@@ -1099,11 +1099,17 @@ export default function Grafikas() {
       (x) =>
         x.booking_id === b.id ||
         (
+          // Legacy assignments without a booking link may be matched by
+          // rider identity only. Never match null guest names: safe schedule
+          // APIs intentionally redact these for signed-in non-staff users.
+          // Otherwise every guest can inherit another rider's horse label.
+          !x.booking_id &&
           x.slot_date === b.slot_date &&
           x.slot_time === b.slot_time &&
           (
             b.is_guest
-              ? x.guest_name === b.guest_name
+              ? !!b.guest_name && !!x.guest_name &&
+                x.guest_name.trim() === b.guest_name.trim()
               : !!b.user_id && x.user_id === b.user_id
           )
         ),
@@ -1117,6 +1123,7 @@ export default function Grafikas() {
       (x) =>
         x.booking_id === b.id ||
         (
+          !x.booking_id &&
           x.slot_date === b.slot_date &&
           x.slot_time === b.slot_time &&
           !!b.user_id && x.user_id === b.user_id
